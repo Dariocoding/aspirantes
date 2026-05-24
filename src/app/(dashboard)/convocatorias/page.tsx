@@ -1,0 +1,36 @@
+import { ConvocatoriasView } from "@/components/convocatorias/convocatorias-view";
+import { auth } from "@/auth";
+import { isAdmin } from "@/lib/auth/roles";
+import { redirect, unauthorized } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+
+export default async function ConvocatoriasPage() {
+  const session = await auth();
+  if (!session?.user) unauthorized();
+  if (!isAdmin(session.user.role)) {
+    redirect("/sin-permiso?motivo=administracion");
+  }
+
+  const rows = await prisma.convocatoria.findMany({
+    orderBy: [{ anio: "desc" }, { createdAt: "desc" }],
+    select: {
+      id: true,
+      codigo: true,
+      nombre: true,
+      anio: true,
+      activa: true,
+      _count: { select: { aspirantes: true } },
+    },
+  });
+
+  const convocatorias = rows.map((r) => ({
+    id: r.id,
+    codigo: r.codigo,
+    nombre: r.nombre,
+    anio: r.anio,
+    activa: r.activa,
+    aspirantesCount: r._count.aspirantes,
+  }));
+
+  return <ConvocatoriasView convocatorias={convocatorias} />;
+}

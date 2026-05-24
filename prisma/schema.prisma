@@ -1,0 +1,208 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Sexo {
+  MASCULINO
+  FEMENINO
+}
+
+/// Resultado de admisión (equivalente a apto / no apto / condicional-en evaluación).
+enum CalificacionAdmision {
+  APTO
+  NO_APTO
+  EN_EVALUACION
+}
+
+enum TipoEsquela {
+  CUMPLEANOS
+  EFEMERIDE
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  OPERADOR
+  CONSULTA
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(OPERADOR)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+}
+
+/// Registro de acciones sensibles (censo, convocatorias, exportaciones).
+model AuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  userId     String?
+  userEmail  String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entityType])
+  @@index([userId])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/// Período de ingreso al censo (año y etapa del proceso). Solo una convocatoria está activa para nuevos registros.
+model Convocatoria {
+  id          String      @id @default(cuid())
+  codigo      String      @unique
+  nombre      String
+  anio        Int
+  activa      Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  aspirantes  Aspirante[]
+
+  @@index([anio])
+  @@index([activa])
+}
+
+model Aspirante {
+  id                    String               @id @default(cuid())
+  nombres               String
+  apellidos             String
+  cedula                String
+  edad                  Int
+  sexo                  Sexo
+  fechaNacimiento       DateTime
+  lugarNacimiento       String
+  /// Brigada, comando u otra unidad desde la que postula el personal.
+  unidadPostulante      String               @default("")
+  calificacionAdmision  CalificacionAdmision @default(EN_EVALUACION)
+  direccion             String?
+  telefono              String?
+  correo                String?
+  hijosCantidad         Int                  @default(0)
+  convocatoriaId        String
+  convocatoria          Convocatoria         @relation(fields: [convocatoriaId], references: [id], onDelete: Restrict)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  datosFisicos          DatosFisicosMedicos?
+  contactos             ContactoEmergencia[]
+  esquelasGeneradas     Esquela[]
+  /// Revisión de expediente, prueba física y examen médico (estructura versionada; ver `src/lib/aspirantes/ficha-evaluacion.ts`).
+  fichaEvaluacion       Json?
+
+  @@unique([cedula, convocatoriaId])
+  @@index([calificacionAdmision])
+  @@index([unidadPostulante])
+}
+
+model ContactoEmergencia {
+  id            String   @id @default(cuid())
+  nombre        String
+  parentesco    String
+  telefono      String
+  direccion     String?
+  aspiranteId   String
+  aspirante     Aspirante @relation(fields: [aspiranteId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+}
+
+model DatosFisicosMedicos {
+  id                String   @id @default(cuid())
+  estaturaCm        Float?
+  pesoKg            Float?
+  tipoSangre        String?
+  alergias          String?
+  condicionesMedicas String?
+  discapacidad      String?
+  observaciones     String?
+  aspiranteId       String   @unique
+  aspirante         Aspirante @relation(fields: [aspiranteId], references: [id], onDelete: Cascade)
+  updatedAt         DateTime @updatedAt
+}
+
+model Efemeride {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  dia         Int
+  mes         Int
+  tipo        String   @default("NACIONAL")
+  activa      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  esquelas    Esquela[]
+
+  @@unique([dia, mes, nombre])
+}
+
+model Esquela {
+  id             String      @id @default(cuid())
+  tipo           TipoEsquela
+  titulo         String
+  cuerpo         String
+  fechaEvento    DateTime
+  aspiranteId    String?
+  efemerideId    String?
+  aspirante      Aspirante?  @relation(fields: [aspiranteId], references: [id], onDelete: SetNull)
+  efemeride      Efemeride?  @relation(fields: [efemerideId], references: [id], onDelete: SetNull)
+  createdAt      DateTime    @default(now())
+}
