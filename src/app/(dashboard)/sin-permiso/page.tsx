@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
-import { auth } from "@/auth";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { auth } from "@src/auth";
+import { buttonVariants } from "@src/components/ui/button";
+import { cn } from "@src/lib/utils";
+import { routes } from "@src/lib/apps/routes";
 import { unauthorized } from "next/navigation";
 
 const COPY: Record<string, { title: string; body: string }> = {
@@ -45,10 +46,13 @@ export default async function SinPermisoPage({
       </p>
       <div className="flex flex-wrap gap-2">
         <Link href="/" className={cn(buttonVariants({ variant: "default", size: "sm" }), "bg-slate-900")}>
-          Volver al panel
+          Portal de aplicaciones
         </Link>
-        <Link href="/aspirantes" className={buttonVariants({ variant: "outline", size: "sm" })}>
-          Ir al censo
+        <Link
+          href={motivo === "administracion" ? routes.sistema.home : routes.personal.home}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          {motivo === "administracion" ? "Ir a usuarios y auditorías" : "Ir a gestión de personal"}
         </Link>
       </div>
     </div>

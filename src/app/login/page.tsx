@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { auth } from "@/auth";
-import { FanbFlagStripe } from "@/components/institution/fanb-flag-stripe";
-import { FANB_LOGIN_PHOTO_OVERLAY, INSTITUTION_LOGO_SRC } from "@/lib/branding";
-import { cn } from "@/lib/utils";
+import { auth } from "@src/auth";
+import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
+import { FANB_LOGIN_PHOTO_OVERLAY, INSTITUTION_LOGO_SRC } from "@src/lib/branding";
+import { cn } from "@src/lib/utils";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
 

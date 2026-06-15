@@ -20,6 +20,17 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@src/*": ["./src/*"],
+      "@dashboard/sistema/*": ["./src/app/(dashboard)/(sistema)/sistema/*"],
+      "@dashboard/inventario/*": ["./src/app/(dashboard)/(inventario)/inventario/*"],
+      "@dashboard/usuarios/*": ["./src/app/(dashboard)/(sistema)/sistema/usuarios/*"],
+      "@dashboard/aspirantes/*": ["./src/app/(dashboard)/(personal)/personal/aspirantes/*"],
+      "@dashboard/efemerides/*": ["./src/app/(dashboard)/(personal)/personal/efemerides/*"],
+      "@dashboard/esquelas/*": ["./src/app/(dashboard)/(personal)/personal/esquelas/*"],
+      "@dashboard/convocatorias/*": ["./src/app/(dashboard)/(personal)/personal/convocatorias/*"],
+      "@dashboard/manual/*": ["./src/app/(dashboard)/(personal)/personal/manual/*"],
+      "@dashboard/_components/*": ["./src/app/(dashboard)/_components/*"],
+      "@dashboard/*": ["./src/app/(dashboard)/*"],
       "@/generated/prisma": ["./src/generated/prisma"]
     }
   },

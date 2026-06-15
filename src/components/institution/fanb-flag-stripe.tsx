@@ -1,7 +1,7 @@
-import { FANB_FLAG_HEX } from "@/lib/branding";
-import { cn } from "@/lib/utils";
+import { FANB_FLAG_HEX } from "@src/lib/branding";
+import { cn } from "@src/lib/utils";
 
-/** Franja tricolor (amarillo · azul · rojo) — misma pieza visual en sidebar y login. */
+/** Franja tricolor (amarillo Â· azul Â· rojo) â€” misma pieza visual en sidebar y login. */
 export function FanbFlagStripe({ className }: { className?: string }) {
   return (
     <div className={cn("flex h-1.5 w-full shrink-0 shadow-sm", className)} aria-hidden>

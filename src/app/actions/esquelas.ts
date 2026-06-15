@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { CalificacionAdmision, TipoEsquela } from "@/generated/prisma";
-import { requireWriter } from "@/lib/auth/guards";
+import { prisma } from "@src/lib/prisma";
+import { CalificacionAdmision, TipoEsquela } from "@src/generated/prisma";
+import { requireWriter } from "@src/lib/auth/guards";
+import { routes } from "@src/lib/apps/routes";
 import { forbidden } from "next/navigation";
 
 export async function createBirthdayEsquela(formData: FormData) {
@@ -22,7 +23,7 @@ export async function createBirthdayEsquela(formData: FormData) {
     },
   });
 
-  revalidatePath("/esquelas");
+  revalidatePath(routes.personal.esquelas);
 }
 
 export async function createEfemerideEsquela(formData: FormData) {
@@ -40,5 +41,5 @@ export async function createEfemerideEsquela(formData: FormData) {
     },
   });
 
-  revalidatePath("/esquelas");
+  revalidatePath(routes.personal.esquelas);
 }

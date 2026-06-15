@@ -30,11 +30,76 @@ enum TipoEsquela {
   EFEMERIDE
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  OPERADOR
-  CONSULTA
+enum AreaInventario {
+  RANCHO
+}
+
+enum TipoMovimientoInventario {
+  ENTRADA
+  SALIDA
+}
+
+enum EstadoReporteInventario {
+  QUEDA
+  FALTA
+  NO_HAY
+}
+
+/// Módulo funcional del sistema (agrupa permisos atómicos).
+model AuthModule {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  label       String
+  description String?
+  /// Aplicación del portal: `personal` (gestión de personal) o `sistema` (usuarios y auditoría).
+  appId       String           @default("personal")
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions AuthPermission[]
+
+  @@index([appId])
+}
+
+/// Permiso atómico (clave estable usada en código y sesión).
+model AuthPermission {
+  id          String               @id @default(cuid())
+  key         String               @unique
+  label       String
+  description String?
+  moduleId    String
+  module      AuthModule           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  roles       AuthRolePermission[]
+
+  @@index([moduleId])
+}
+
+/// Rol asignable a usuarios; los permisos efectivos vienen de la relación N:M.
+model AuthRole {
+  id          String               @id @default(cuid())
+  key         String               @unique
+  label       String
+  description String?
+  /// Rol predefinido del sistema (no se puede eliminar).
+  isSystem    Boolean              @default(false)
+  /// Puede elegirse al crear o editar usuarios desde la interfaz.
+  assignable  Boolean              @default(true)
+  /// Acceso total; no se asigna desde la UI.
+  isSuper     Boolean              @default(false)
+  sortOrder   Int                  @default(0)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  users       User[]
+  permissions AuthRolePermission[]
+}
+
+model AuthRolePermission {
+  roleId       String
+  permissionId String
+  role         AuthRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   AuthPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
 }
 
 model User {
@@ -44,13 +109,18 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  role          UserRole  @default(OPERADOR)
+  roleId        String
+  authRole      AuthRole  @relation(fields: [roleId], references: [id], onDelete: Restrict)
   active        Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  auditLogs     AuditLog[]
+  accounts              Account[]
+  sessions              Session[]
+  auditLogs             AuditLog[]
+  inventarioMovimientos     InventarioMovimiento[]
+  inventarioReportesRancho  InventarioReporteRancho[]
+
+  @@index([roleId])
 }
 
 /// Registro de acciones sensibles (censo, convocatorias, exportaciones).
@@ -205,4 +275,79 @@ model Esquela {
   aspirante      Aspirante?  @relation(fields: [aspiranteId], references: [id], onDelete: SetNull)
   efemeride      Efemeride?  @relation(fields: [efemerideId], references: [id], onDelete: SetNull)
   createdAt      DateTime    @default(now())
+}
+
+model InventarioItem {
+  id          String                 @id @default(cuid())
+  nombre      String
+  unidad      String
+  area        AreaInventario
+  stockActual Float                  @default(0)
+  stockMinimo Float?
+  descripcion String?
+  /// Clave del objeto en S3/R2 (p. ej. inventario/rancho/{id}/foto.webp).
+  imagenKey   String?
+  activo      Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  movimientos      InventarioMovimiento[]
+  reporteLineas    InventarioReporteRanchoLinea[]
+
+  @@unique([nombre, area])
+  @@index([area])
+  @@index([activo])
+}
+
+/// Entrada o salida de stock sobre un ítem de inventario.
+model InventarioMovimiento {
+  id           String                   @id @default(cuid())
+  itemId       String
+  item         InventarioItem           @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tipo         TipoMovimientoInventario
+  cantidad     Float
+  motivo       String?
+  notas        String?
+  stockAntes   Float
+  stockDespues Float
+  userId       String?
+  user         User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt    DateTime                 @default(now())
+
+  @@index([itemId])
+  @@index([createdAt])
+}
+
+/// Reporte diario de existencias del rancho (hoy o con un día de atraso).
+model InventarioReporteRancho {
+  id        String                        @id @default(cuid())
+  /// Día al que corresponde el reporte (solo fecha, sin hora).
+  fecha     DateTime                      @db.Date
+  notas     String?
+  userId    String
+  user      User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt DateTime                      @default(now())
+  lineas    InventarioReporteRanchoLinea[]
+
+  @@unique([fecha])
+  @@index([fecha])
+}
+
+/// Línea de snapshot de un ítem dentro de un reporte diario.
+model InventarioReporteRanchoLinea {
+  id             String                   @id @default(cuid())
+  reporteId      String
+  reporte        InventarioReporteRancho  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           InventarioItem           @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  nombre         String
+  unidad         String
+  stockMinimo    Float?
+  /// Existencias al inicio del día del reporte.
+  stockAyer      Float                    @default(0)
+  stockReportado Float
+  estado         EstadoReporteInventario
+
+  @@unique([reporteId, itemId])
+  @@index([reporteId])
+  @@index([estado])
 }

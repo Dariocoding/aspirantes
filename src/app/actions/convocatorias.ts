@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { convocatoriaCreateSchema, convocatoriaUpdateSchema } from "@/lib/validators/convocatoria";
-import { zodFieldErrors } from "@/lib/zod-errors";
-import { requireAdmin } from "@/lib/auth/guards";
-import type { ConvocatoriaActionState } from "@/lib/convocatoria-action-state";
-import { writeAuditLog } from "@/lib/audit/log";
+import { prisma } from "@src/lib/prisma";
+import { convocatoriaCreateSchema, convocatoriaUpdateSchema } from "@src/lib/validators/convocatoria";
+import { zodFieldErrors } from "@src/lib/zod-errors";
+import { requireAdmin } from "@src/lib/auth/guards";
+import type { ConvocatoriaActionState } from "@src/lib/convocatoria-action-state";
+import { routes } from "@src/lib/apps/routes";
+import { writeAuditLog } from "@src/lib/audit/log";
 
 export async function createConvocatoria(
   _prev: ConvocatoriaActionState,
@@ -63,11 +64,11 @@ export async function createConvocatoria(
     metadata: { codigo: created.codigo, nombre: created.nombre, anio: d.anio, activa: created.activa },
   });
 
-  revalidatePath("/convocatorias");
-  revalidatePath("/aspirantes");
-  revalidatePath("/aspirantes/gestion");
-  revalidatePath("/");
-  revalidatePath("/esquelas");
+  revalidatePath(routes.personal.convocatorias);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.esquelas);
   return { ok: true, errors: {} };
 }
 
@@ -116,11 +117,11 @@ export async function updateConvocatoria(
     metadata: { codigo: d.codigo, nombre: d.nombre, anio: d.anio },
   });
 
-  revalidatePath("/convocatorias");
-  revalidatePath("/aspirantes");
-  revalidatePath("/aspirantes/gestion");
-  revalidatePath("/");
-  revalidatePath("/esquelas");
+  revalidatePath(routes.personal.convocatorias);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.esquelas);
   return { ok: true, errors: {} };
 }
 
@@ -172,11 +173,11 @@ export async function deleteConvocatoria(
     metadata: { codigo: row.codigo, nombre: row.nombre, anio: row.anio },
   });
 
-  revalidatePath("/convocatorias");
-  revalidatePath("/aspirantes");
-  revalidatePath("/aspirantes/gestion");
-  revalidatePath("/");
-  revalidatePath("/esquelas");
+  revalidatePath(routes.personal.convocatorias);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.esquelas);
   return { ok: true, errors: {} };
 }
 
@@ -205,9 +206,9 @@ export async function activarConvocatoria(formData: FormData) {
     metadata: { codigo: conv.codigo, nombre: conv.nombre, anio: conv.anio },
   });
 
-  revalidatePath("/convocatorias");
-  revalidatePath("/aspirantes");
-  revalidatePath("/aspirantes/gestion");
-  revalidatePath("/");
-  revalidatePath("/esquelas");
+  revalidatePath(routes.personal.convocatorias);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.esquelas);
 }

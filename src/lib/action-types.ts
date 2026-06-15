@@ -18,3 +18,10 @@ export type UsuarioActionState = {
 };
 
 export const usuarioInitialActionState: UsuarioActionState = { ok: false, errors: {} };
+
+export type InventarioActionState = {
+  ok: boolean;
+  errors: Record<string, string>;
+};
+
+export const inventarioInitialActionState: InventarioActionState = { ok: false, errors: {} };

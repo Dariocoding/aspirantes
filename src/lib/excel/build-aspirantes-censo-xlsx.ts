@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 import {
   calificacionAdmisionEtiqueta,
   sexoEtiqueta,
-} from "@/lib/aspirantes/census";
+} from "@src/lib/aspirantes/census";
 
 export type AspiranteCensoExportRow = {
   nombres: string;
@@ -108,7 +108,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
 
   ws.mergeCells("A3:I3");
   const hint = ws.getCell("A3");
-  hint.value = "Admisión y sexo con sombreado; filas alternadas para lectura rápida.";
+    hint.value = "Admisión y sexo con sombreado; filas alternadas para lectura rápida";
   hint.font = { name: "Calibri", size: 8, italic: true, color: { argb: "FF64748B" } };
   hint.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
   hint.alignment = { vertical: "middle", horizontal: "left", indent: 1 };

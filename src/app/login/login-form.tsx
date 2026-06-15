@@ -12,18 +12,18 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@src/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FANB_INSTITUTION_PANEL } from "@/lib/branding";
-import { cn } from "@/lib/utils";
+} from "@src/components/ui/card";
+import { Input } from "@src/components/ui/input";
+import { Label } from "@src/components/ui/label";
+import { FANB_INSTITUTION_PANEL } from "@src/lib/branding";
+import { cn } from "@src/lib/utils";
 
 function InputWithIcon({
   icon: Icon,
@@ -48,30 +48,35 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setPending(true);
-    const form = document.getElementById("login-form") as HTMLFormElement;
-    const fd = new FormData(form);
-    const email = String(fd.get("email") ?? "");
-    const password = String(fd.get("password") ?? "");
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const form = document.getElementById("login-form") as HTMLFormElement;
+      const fd = new FormData(form);
+      const email = String(fd.get("email") ?? "");
+      const password = String(fd.get("password") ?? "");
 
-    setPending(false);
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (res?.error) {
-      setError("Credenciales incorrectas o usuario inactivo.");
-      return;
+      if (res?.error) {
+        setError("Credenciales incorrectas o usuario inactivo.");
+        return;
+      }
+
+      router.replace("/");
+      router.refresh();
+    } catch {
+      setError("No se pudo conectar con el servicio de acceso. Intente de nuevo.");
+    } finally {
+      setPending(false);
     }
-
-    router.replace("/");
-    router.refresh();
   }
 
   const fieldClass =
@@ -132,7 +137,7 @@ export function LoginForm() {
                 type="password"
                 autoComplete="current-password"
                 required
-                placeholder="••••••••"
+                placeholder="••••••••••••"
                 className={fieldClass}
               />
             </InputWithIcon>
@@ -150,6 +155,7 @@ export function LoginForm() {
             type="submit"
             className="mt-1 h-10 w-full gap-2 border border-slate-700/70 bg-linear-to-b from-slate-800 to-slate-700 text-sm font-semibold text-white shadow-md shadow-black/30 hover:from-slate-700 hover:to-slate-600"
             disabled={pending}
+          
           >
             {pending ? (
               <>

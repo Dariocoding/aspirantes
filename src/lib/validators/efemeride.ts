@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EFEMERIDE_TIPO_ENUM } from "@/lib/efemeride-tipo";
+import { EFEMERIDE_TIPO_ENUM } from "@src/lib/efemeride-tipo";
 
 export const efemerideCreateSchema = z.object({
   nombre: z.string().trim().min(1, "Nombre obligatorio").max(200),

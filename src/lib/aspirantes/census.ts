@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@src/generated/prisma";
 
 export function calificacionAdmisionEtiqueta(c: string) {
   if (c === "APTO") return "Apto";

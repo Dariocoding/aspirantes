@@ -1,18 +1,16 @@
+import { passwordPolicySchema } from "@src/lib/validators/password";
 import { z } from "zod";
-import { passwordPolicySchema } from "@/lib/validators/password";
-
-const roleEnum = z.enum(["SUPER_ADMIN", "ADMIN", "OPERADOR", "CONSULTA"]);
 
 export const usuarioCreateSchema = z.object({
   email: z.string().trim().email("Correo inválido"),
   name: z.string().trim().min(1, "Nombre obligatorio").max(120),
   password: passwordPolicySchema,
-  role: roleEnum,
+  roleId: z.string().min(1, "Seleccione un rol"),
 });
 
 export const usuarioRoleSchema = z.object({
   userId: z.string().min(1),
-  role: roleEnum,
+  roleId: z.string().min(1),
 });
 
 export const usuarioActiveSchema = z.object({

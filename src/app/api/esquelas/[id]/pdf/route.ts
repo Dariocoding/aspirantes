@@ -1,11 +1,13 @@
 import { createElement } from "react";
-import { auth } from "@/auth";
-import { formatDate } from "@/lib/date";
-import { EsquelaPdfDocument } from "@/lib/pdf/esquela-document";
-import { readInstitutionLogoPngBuffer } from "@/lib/pdf/institution-logo";
-import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
+import { auth } from "@src/auth";
+import { authContextFromSession } from "@src/lib/auth/from-session";
+import { hasPermission, Permission } from "@src/lib/auth/permissions";
+import { formatDate } from "@src/lib/date";
+import { EsquelaPdfDocument } from "@src/lib/pdf/esquela-document";
+import { readInstitutionLogoPngBuffer } from "@src/lib/pdf/institution-logo";
+import { prisma } from "@src/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -16,6 +18,9 @@ export async function GET(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ message: "No autenticado" }, { status: 401 });
+  }
+  if (!hasPermission(authContextFromSession(session), Permission.ESQUELAS_WRITE)) {
+    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
   const { id } = await context.params;
@@ -35,9 +40,7 @@ export async function GET(
     referencia: `ESQ-${id.toUpperCase()}`,
   });
 
-  const buffer = await renderToBuffer(
-    doc as Parameters<typeof renderToBuffer>[0],
-  );
+  const buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,

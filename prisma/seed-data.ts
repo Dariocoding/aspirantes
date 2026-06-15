@@ -1,5 +1,8 @@
 import { hash } from "bcryptjs";
 import type { PrismaClient } from "../src/generated/prisma";
+import { seedRbac } from "./seed-rbac";
+import { seedInventario } from "./seed-inventario";
+import { SYSTEM_ROLE_IDS } from "../src/lib/auth/rbac-catalog";
 
 const efemeridesVenezuela = [
   // --- ENERO ---
@@ -84,6 +87,9 @@ const efemeridesVenezuela = [
  * Si ya hay usuarios pero ninguno con SUPER_ADMIN, promueve el ADMIN más antiguo.
  */
 export async function runSeed(client: PrismaClient) {
+  await seedRbac(client);
+  await seedInventario(client);
+
   const inserted = await client.efemeride.createMany({
     data: efemeridesVenezuela,
     skipDuplicates: true,
@@ -93,16 +99,18 @@ export async function runSeed(client: PrismaClient) {
     `Efemérides: ${inserted.count} filas nuevas en este paso; ${total} registros en tabla (catálogo base: ${efemeridesVenezuela.length}).`,
   );
 
-  const superCount = await client.user.count({ where: { role: "SUPER_ADMIN" } });
+  const superCount = await client.user.count({
+    where: { roleId: SYSTEM_ROLE_IDS.SUPER_ADMIN },
+  });
   if (superCount === 0) {
     const oldestAdmin = await client.user.findFirst({
-      where: { role: "ADMIN" },
+      where: { roleId: SYSTEM_ROLE_IDS.ADMIN },
       orderBy: { createdAt: "asc" },
     });
     if (oldestAdmin) {
       await client.user.update({
         where: { id: oldestAdmin.id },
-        data: { role: "SUPER_ADMIN" },
+        data: { roleId: SYSTEM_ROLE_IDS.SUPER_ADMIN },
       });
       console.log(
         "[seed] Ningún super administrador en la base: el usuario ADMIN más antiguo fue promovido a SUPER_ADMIN.",
@@ -129,7 +137,7 @@ export async function runSeed(client: PrismaClient) {
           email: adminEmail,
           name: "Super administrador",
           passwordHash,
-          role: "SUPER_ADMIN",
+          roleId: SYSTEM_ROLE_IDS.SUPER_ADMIN,
         },
       });
       console.log("Usuario super administrador creado.");

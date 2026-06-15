@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { ManualUsuarioPdfDocument } from "@/lib/pdf/manual-usuario-document";
+import { auth } from "@src/auth";
+import { ManualUsuarioPdfDocument } from "@src/lib/pdf/manual-usuario-document";
 
 export const runtime = "nodejs";
 

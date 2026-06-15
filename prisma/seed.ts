@@ -1,5 +1,9 @@
+import dotenv from "dotenv";
 import { PrismaClient } from "../src/generated/prisma";
 import { runSeed } from "./seed-data";
+
+dotenv.config({ path: ".env.local" });
+dotenv.config();
 
 const prisma = new PrismaClient();
 

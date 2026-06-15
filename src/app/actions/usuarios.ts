@@ -3,12 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { hash } from "bcryptjs";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth/guards";
-import { canAssignUserRole, canManageUserWithRole } from "@/lib/auth/roles";
-import { usuarioActiveSchema, usuarioCreateSchema, usuarioRoleSchema } from "@/lib/validators/usuario";
-import { zodFieldErrors } from "@/lib/zod-errors";
-import type { UsuarioActionState } from "@/lib/action-types";
+import { prisma } from "@src/lib/prisma";
+import { requireAdmin } from "@src/lib/auth/guards";
+import { authContextFromSession } from "@src/lib/auth/from-session";
+import {
+  canAssignRole,
+  canManageUser,
+  getRoleById,
+} from "@src/lib/auth/rbac";
+import { SYSTEM_ROLE_IDS } from "@src/lib/auth/rbac-catalog";
+import { routes } from "@src/lib/apps/routes";
+import { usuarioActiveSchema, usuarioCreateSchema, usuarioRoleSchema } from "@src/lib/validators/usuario";
+import { zodFieldErrors } from "@src/lib/zod-errors";
+import type { UsuarioActionState } from "@src/lib/action-types";
 
 const SIN_PERMISO_ADMIN = "/sin-permiso?motivo=administracion";
 
@@ -17,12 +24,13 @@ export async function createUsuario(
   formData: FormData,
 ): Promise<UsuarioActionState> {
   const session = await requireAdmin();
+  const actor = authContextFromSession(session);
 
   const raw = {
     email: formData.get("email"),
     name: formData.get("name"),
     password: formData.get("password"),
-    role: formData.get("role"),
+    roleId: formData.get("roleId"),
   };
 
   const parsed = usuarioCreateSchema.safeParse(raw);
@@ -30,35 +38,36 @@ export async function createUsuario(
     return { ok: false, errors: zodFieldErrors(parsed.error) };
   }
 
-  const d = parsed.data;
-  if (!canAssignUserRole(session.user.role, d.role)) {
+  const targetRole = await getRoleById(parsed.data.roleId);
+  if (!targetRole || !canAssignRole(actor, targetRole)) {
     redirect(SIN_PERMISO_ADMIN);
   }
 
-  const passwordHash = await hash(d.password, 12);
+  const passwordHash = await hash(parsed.data.password, 12);
 
   try {
     await prisma.user.create({
       data: {
-        email: d.email,
-        name: d.name,
+        email: parsed.data.email,
+        name: parsed.data.name,
         passwordHash,
-        role: d.role,
+        roleId: parsed.data.roleId,
       },
     });
   } catch {
     return { ok: false, errors: { email: "Ya existe un usuario con ese correo" } };
   }
 
-  revalidatePath("/usuarios");
+  revalidatePath(routes.sistema.usuarios);
   return { ok: true, errors: {} };
 }
 
 export async function updateUsuarioRole(formData: FormData) {
   const session = await requireAdmin();
+  const actor = authContextFromSession(session);
   const raw = {
     userId: formData.get("userId"),
-    role: formData.get("role"),
+    roleId: formData.get("roleId"),
   };
   const parsed = usuarioRoleSchema.safeParse(raw);
   if (!parsed.success) return;
@@ -67,31 +76,40 @@ export async function updateUsuarioRole(formData: FormData) {
 
   const target = await prisma.user.findUnique({
     where: { id: parsed.data.userId },
-    select: { role: true },
+    select: {
+      roleId: true,
+      authRole: { select: { isSuper: true, assignable: true } },
+    },
   });
   if (!target) return;
 
-  if (!canManageUserWithRole(session.user.role, target.role)) {
+  const newRole = await getRoleById(parsed.data.roleId);
+  if (!newRole) return;
+
+  if (!canManageUser(actor, target.authRole)) {
     redirect(SIN_PERMISO_ADMIN);
   }
-  if (!canAssignUserRole(session.user.role, parsed.data.role)) {
+  if (!canAssignRole(actor, newRole)) {
     redirect(SIN_PERMISO_ADMIN);
   }
 
-  if (target.role === "SUPER_ADMIN" && parsed.data.role !== "SUPER_ADMIN") {
-    const superCount = await prisma.user.count({ where: { role: "SUPER_ADMIN" } });
+  if (target.authRole.isSuper && !newRole.isSuper) {
+    const superCount = await prisma.user.count({
+      where: { roleId: SYSTEM_ROLE_IDS.SUPER_ADMIN },
+    });
     if (superCount <= 1) return;
   }
 
   await prisma.user.update({
     where: { id: parsed.data.userId },
-    data: { role: parsed.data.role },
+    data: { roleId: parsed.data.roleId },
   });
-  revalidatePath("/usuarios");
+  revalidatePath(routes.sistema.usuarios);
 }
 
 export async function updateUsuarioActive(formData: FormData) {
   const session = await requireAdmin();
+  const actor = authContextFromSession(session);
   const raw = {
     userId: formData.get("userId"),
     active: formData.get("active"),
@@ -106,17 +124,25 @@ export async function updateUsuarioActive(formData: FormData) {
 
   const target = await prisma.user.findUnique({
     where: { id: parsed.data.userId },
-    select: { role: true, active: true },
+    select: {
+      roleId: true,
+      active: true,
+      authRole: { select: { isSuper: true } },
+    },
   });
   if (!target) return;
 
-  if (!canManageUserWithRole(session.user.role, target.role)) {
+  if (!canManageUser(actor, target.authRole)) {
     redirect(SIN_PERMISO_ADMIN);
   }
 
-  if (!parsed.data.active && target.role === "SUPER_ADMIN") {
+  if (!parsed.data.active && target.authRole.isSuper) {
     const otherActiveSupers = await prisma.user.count({
-      where: { role: "SUPER_ADMIN", active: true, id: { not: parsed.data.userId } },
+      where: {
+        roleId: SYSTEM_ROLE_IDS.SUPER_ADMIN,
+        active: true,
+        id: { not: parsed.data.userId },
+      },
     });
     if (otherActiveSupers === 0) return;
   }
@@ -125,5 +151,5 @@ export async function updateUsuarioActive(formData: FormData) {
     where: { id: parsed.data.userId },
     data: { active: parsed.data.active },
   });
-  revalidatePath("/usuarios");
+  revalidatePath(routes.sistema.usuarios);
 }

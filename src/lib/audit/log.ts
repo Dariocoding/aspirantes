@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
-import type { Prisma } from "@/generated/prisma";
-import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@src/generated/prisma";
+import { prisma } from "@src/lib/prisma";
 
 export type AuditWriteInput = {
   userId: string;

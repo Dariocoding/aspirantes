@@ -1,5 +1,5 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import { ESQUELA_PDF_FONT_FAMILY, registerEsquelaPdfFonts } from "@/lib/pdf/register-esquela-pdf-fonts";
+import { ESQUELA_PDF_FONT_FAMILY, registerEsquelaPdfFonts } from "@src/lib/pdf/register-esquela-pdf-fonts";
 
 registerEsquelaPdfFonts();
 

@@ -1,8 +1,7 @@
-import type { UserRole } from "@/generated/prisma";
+import type { AuthContext } from "@src/lib/auth/session";
 
 /**
- * Permisos atómicos del sistema. Los roles se mapean a subconjuntos en `rolePermissions`.
- * Ampliar aquí y en el mapa cuando aparezcan nuevos módulos o acciones sensibles.
+ * Permisos atómicos del sistema. Las claves se sincronizan con `rbac-catalog` y la base de datos.
  */
 export const Permission = {
   DASHBOARD_READ: "dashboard.read",
@@ -12,55 +11,24 @@ export const Permission = {
   EFEMERIDES_WRITE: "efemerides.write",
   ESQUELAS_WRITE: "esquelas.write",
   USERS_READ: "users.read",
-  /** Alta y edición de usuarios (no incluye rol super ni tocar cuentas super). */
   USERS_MANAGE: "users.manage",
-  /** Asignar SUPER_ADMIN y modificar cuentas con ese rol. */
   USERS_SUPER: "users.super",
   AUDIT_READ: "audit.read",
+  ROLES_READ: "roles.read",
+  ROLES_MANAGE: "roles.manage",
+  MODULES_MANAGE: "modules.manage",
+  INVENTARIO_RANCHO_READ: "inventario.rancho.read",
+  INVENTARIO_RANCHO_WRITE: "inventario.rancho.write",
 } as const;
 
 export type PermissionKey = (typeof Permission)[keyof typeof Permission];
 
-const ALL: PermissionKey[] = Object.values(Permission);
-
-const SUPER_ADMIN_SET = new Set<PermissionKey>(ALL);
-
-const ADMIN_SET = new Set<PermissionKey>([
-  Permission.DASHBOARD_READ,
-  Permission.ASPIRANTES_READ,
-  Permission.ASPIRANTES_WRITE,
-  Permission.CONVOCATORIAS_MANAGE,
-  Permission.EFEMERIDES_WRITE,
-  Permission.ESQUELAS_WRITE,
-  Permission.USERS_READ,
-  Permission.USERS_MANAGE,
-  Permission.AUDIT_READ,
-]);
-
-const OPERADOR_SET = new Set<PermissionKey>([
-  Permission.DASHBOARD_READ,
-  Permission.ASPIRANTES_READ,
-  Permission.ASPIRANTES_WRITE,
-  Permission.EFEMERIDES_WRITE,
-  Permission.ESQUELAS_WRITE,
-]);
-
-const CONSULTA_SET = new Set<PermissionKey>([
-  Permission.DASHBOARD_READ,
-  Permission.ASPIRANTES_READ,
-]);
-
-const byRole: Record<UserRole, ReadonlySet<PermissionKey>> = {
-  SUPER_ADMIN: SUPER_ADMIN_SET,
-  ADMIN: ADMIN_SET,
-  OPERADOR: OPERADOR_SET,
-  CONSULTA: CONSULTA_SET,
-};
-
-export function hasPermission(role: UserRole, key: PermissionKey): boolean {
-  return byRole[role]?.has(key) ?? false;
+export function hasPermission(ctx: AuthContext, key: PermissionKey | string): boolean {
+  if (ctx.isSuper) return true;
+  return ctx.permissions.includes(key);
 }
 
-export function listPermissions(role: UserRole): PermissionKey[] {
-  return Array.from(byRole[role] ?? []);
+export function listPermissions(ctx: AuthContext): string[] {
+  if (ctx.isSuper) return Object.values(Permission);
+  return [...ctx.permissions];
 }

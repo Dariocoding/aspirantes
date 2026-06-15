@@ -5,8 +5,8 @@ import {
   manualUsuarioIntro,
   manualUsuarioResumenRoles,
   manualUsuarioSections,
-} from "@/lib/manual-usuario-content";
-import { ESQUELA_PDF_FONT_FAMILY, registerEsquelaPdfFonts } from "@/lib/pdf/register-esquela-pdf-fonts";
+} from "@src/lib/manual-usuario-content";
+import { ESQUELA_PDF_FONT_FAMILY, registerEsquelaPdfFonts } from "@src/lib/pdf/register-esquela-pdf-fonts";
 
 registerEsquelaPdfFonts();
 

@@ -1,7 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { Button } from "@src/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +8,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+} from "@src/components/ui/dialog";
+import { cn } from "@src/lib/utils";
+import type { CSSProperties } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 export type SuccessCelebrationVariant = "saved" | "created" | "deleted";
 
@@ -46,7 +46,10 @@ function ConfettiBurst({ active }: { active: boolean }) {
   const angles = [0, 45, 90, 135, 180, 225, 270, 315];
   if (!active) return null;
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
+    <div
+      className="pointer-events-none absolute inset-0 flex items-center justify-center"
+      aria-hidden
+    >
       {angles.map((deg) => (
         <span
           key={deg}
@@ -118,7 +121,10 @@ export function SuccessCelebrationDialog({
         </div>
 
         <DialogHeader className="border-0 px-6 pb-1 pt-2 text-center sm:text-center">
-          <DialogTitle id={titleId} className="text-center text-lg font-semibold tracking-tight text-emerald-950 dark:text-emerald-50">
+          <DialogTitle
+            id={titleId}
+            className="text-center text-lg font-semibold tracking-tight text-emerald-950 dark:text-emerald-50"
+          >
             {title}
           </DialogTitle>
           <DialogDescription className="text-center text-sm leading-relaxed text-emerald-900/75 dark:text-emerald-100/70">

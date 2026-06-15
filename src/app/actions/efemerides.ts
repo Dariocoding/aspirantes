@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { efemerideCreateSchema, efemerideUpdateSchema } from "@/lib/validators/efemeride";
-import { zodFieldErrors } from "@/lib/zod-errors";
-import { requireWriter } from "@/lib/auth/guards";
-import type { EfemerideActionState } from "@/lib/action-types";
+import { prisma } from "@src/lib/prisma";
+import { efemerideCreateSchema, efemerideUpdateSchema } from "@src/lib/validators/efemeride";
+import { zodFieldErrors } from "@src/lib/zod-errors";
+import { requireWriter } from "@src/lib/auth/guards";
+import { routes } from "@src/lib/apps/routes";
+import type { EfemerideActionState } from "@src/lib/action-types";
 
 export async function createEfemeride(
   _prev: EfemerideActionState,
@@ -38,8 +39,8 @@ export async function createEfemeride(
     },
   });
 
-  revalidatePath("/");
-  revalidatePath("/efemerides");
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.efemerides);
   return { ok: true, errors: {} };
 }
 
@@ -78,8 +79,8 @@ export async function updateEfemeride(
     },
   });
 
-  revalidatePath("/");
-  revalidatePath("/efemerides");
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.efemerides);
   return { ok: true, errors: {} };
 }
 
@@ -88,6 +89,6 @@ export async function deleteEfemeride(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await prisma.efemeride.delete({ where: { id } });
-  revalidatePath("/");
-  revalidatePath("/efemerides");
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.efemerides);
 }

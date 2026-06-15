@@ -1,16 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@/generated/prisma";
-import { prisma } from "@/lib/prisma";
-import { CalificacionAdmision, Sexo } from "@/generated/prisma";
-import { aspiranteCreateSchema, aspiranteUpdateSchema } from "@/lib/validators/aspirante";
-import { zodFieldErrors } from "@/lib/zod-errors";
-import { requireWriter } from "@/lib/auth/guards";
-import { getConvocatoriaActiva } from "@/lib/convocatoria";
-import type { AspiranteActionState } from "@/lib/action-types";
-import { writeAuditLog } from "@/lib/audit/log";
-import { isFichaEvaluacionVacia, normalizeFichaEvaluacionForDb } from "@/lib/aspirantes/ficha-evaluacion";
+import { Prisma } from "@src/generated/prisma";
+import { prisma } from "@src/lib/prisma";
+import { CalificacionAdmision, Sexo } from "@src/generated/prisma";
+import { aspiranteCreateSchema, aspiranteUpdateSchema } from "@src/lib/validators/aspirante";
+import { zodFieldErrors } from "@src/lib/zod-errors";
+import { requireWriter } from "@src/lib/auth/guards";
+import { getConvocatoriaActiva } from "@src/lib/convocatoria";
+import type { AspiranteActionState } from "@src/lib/action-types";
+import { writeAuditLog } from "@src/lib/audit/log";
+import { routes } from "@src/lib/apps/routes";
+import { isFichaEvaluacionVacia, normalizeFichaEvaluacionForDb } from "@src/lib/aspirantes/ficha-evaluacion";
 
 function toPrismaFichaEvaluacion(
   payload: object | null | undefined,
@@ -143,7 +144,7 @@ export async function createAspirante(
         convocatoriaCodigo: convocatoria.codigo,
       },
     });
-    revalidatePath(`/aspirantes/${created.id}`);
+    revalidatePath(routes.personal.aspirante(created.id));
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return {
@@ -154,9 +155,9 @@ export async function createAspirante(
     throw e;
   }
 
-  revalidatePath("/");
-  revalidatePath("/aspirantes");
-  revalidatePath("/aspirantes/gestion");
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
   return { ok: true, errors: {} };
 }
 
@@ -178,10 +179,10 @@ export async function deleteAspirante(formData: FormData) {
     entityId: id,
     metadata: { cedula: row.cedula, convocatoriaId: row.convocatoriaId },
   });
-  revalidatePath("/");
-  revalidatePath("/aspirantes");
-  revalidatePath("/aspirantes/gestion");
-  revalidatePath(`/aspirantes/${id}`);
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.personal.aspirante(id));
 }
 
 export async function updateAspirante(
@@ -340,9 +341,9 @@ export async function updateAspirante(
     throw e;
   }
 
-  revalidatePath("/");
-  revalidatePath("/aspirantes");
-  revalidatePath("/aspirantes/gestion");
-  revalidatePath(`/aspirantes/${aspiranteId}`);
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.personal.aspirante(aspiranteId));
   return { ok: true, errors: {} };
 }

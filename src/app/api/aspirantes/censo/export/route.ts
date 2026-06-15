@@ -1,13 +1,14 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-import { writeAuditLog } from "@/lib/audit/log";
-import { buildAspiranteCensusWhere } from "@/lib/aspirantes/census";
-import { canWrite } from "@/lib/auth/roles";
-import { buildAspirantesCensoXlsxBuffer } from "@/lib/excel/build-aspirantes-censo-xlsx";
-import { AspirantesCensoPdfDocument } from "@/lib/pdf/aspirantes-censo-document";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@src/auth";
+import { writeAuditLog } from "@src/lib/audit/log";
+import { buildAspiranteCensusWhere } from "@src/lib/aspirantes/census";
+import { authContextFromSession } from "@src/lib/auth/from-session";
+import { canWrite } from "@src/lib/auth/roles";
+import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
+import { AspirantesCensoPdfDocument } from "@src/lib/pdf/aspirantes-censo-document";
+import { prisma } from "@src/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ message: "No autenticado" }, { status: 401 });
   }
-  if (!canWrite(session.user.role)) {
+  if (!canWrite(authContextFromSession(session))) {
     return NextResponse.json(
       { message: "No autorizado: el rol consulta no puede exportar el censo." },
       { status: 403 },

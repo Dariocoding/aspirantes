@@ -3,15 +3,16 @@ import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { headers } from "next/headers";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@src/lib/prisma";
 import {
   clearLoginFailures,
   clientKeyFromHeaders,
   isLoginIpLocked,
   recordLoginFailure,
-} from "@/lib/auth/login-attempts";
-import { loginSchema } from "@/lib/validators/auth";
-import { authConfig } from "@/auth.config";
+} from "@src/lib/auth/login-attempts";
+import { loadAuthContextForUser } from "@src/lib/auth/rbac";
+import { loginSchema } from "@src/lib/validators/auth";
+import { authConfig } from "@src/auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -52,12 +53,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
+        const authCtx = await loadAuthContextForUser(user.id);
+        if (!authCtx) return null;
+
         clearLoginFailures(ip);
         return {
           id: user.id,
           email: user.email ?? "",
           name: user.name ?? "",
-          role: user.role,
+          roleId: authCtx.roleId,
+          roleKey: authCtx.roleKey,
+          roleLabel: authCtx.roleLabel,
+          isSuper: authCtx.isSuper,
+          permissions: authCtx.permissions,
         };
       },
     }),

@@ -2,7 +2,7 @@ import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import {
   calificacionAdmisionEtiqueta,
   sexoEtiqueta,
-} from "@/lib/aspirantes/census";
+} from "@src/lib/aspirantes/census";
 
 export type AspiranteCensoPdfRow = {
   nombres: string;
@@ -176,25 +176,25 @@ function TableHead() {
       <Text style={[styles.th, { width: COL.ced }]}>Cédula</Text>
       <Text style={[styles.th, { width: COL.sx }]}>Sexo</Text>
       <Text style={[styles.th, { width: COL.ed }]}>Ed.</Text>
-      <Text style={[styles.th, { width: COL.fn, borderRightWidth: 0 }]}>Nac.</Text>
+      <Text style={[styles.th, { width: COL.fn, borderRightWidth: 0 }]}>
+        Nac.
+      </Text>
     </View>
   );
 }
 
-function DataRow({
-  r,
-  zebra,
-}: {
-  r: AspiranteCensoPdfRow;
-  zebra: boolean;
-}) {
+function DataRow({ r, zebra }: { r: AspiranteCensoPdfRow; zebra: boolean }) {
   const bg = zebra ? "#f8fafc" : "#ffffff";
   const nombre = `${r.nombres} ${r.apellidos}`.trim();
   const unidad = (r.unidadPostulante ?? "").trim() || "—";
-  const convCod = r.convocatoriaActiva ? `${r.convocatoriaCodigo}*` : r.convocatoriaCodigo;
+  const convCod = r.convocatoriaActiva
+    ? `${r.convocatoriaCodigo}*`
+    : r.convocatoriaCodigo;
   return (
     <View style={[styles.row, { backgroundColor: bg }]} wrap={false}>
-      <Text style={[styles.cell, { width: COL.n, fontWeight: "bold" }]}>{nombre}</Text>
+      <Text style={[styles.cell, { width: COL.n, fontWeight: "bold" }]}>
+        {nombre}
+      </Text>
       <Text style={[styles.cell, { width: COL.u }]}>{unidad}</Text>
       <Text
         style={[
@@ -210,9 +210,15 @@ function DataRow({
       >
         {calificacionAdmisionEtiqueta(r.calificacionAdmision)}
       </Text>
-      <Text style={[styles.cellMono, { width: COL.cc, textAlign: "center" }]}>{convCod}</Text>
-      <Text style={[styles.cell, { width: COL.cn, fontSize: 6 }]}>{r.convocatoriaNombre}</Text>
-      <Text style={[styles.cellMono, { width: COL.ced, textAlign: "center" }]}>{r.cedula}</Text>
+      <Text style={[styles.cellMono, { width: COL.cc, textAlign: "center" }]}>
+        {convCod}
+      </Text>
+      <Text style={[styles.cell, { width: COL.cn, fontSize: 6 }]}>
+        {r.convocatoriaNombre}
+      </Text>
+      <Text style={[styles.cellMono, { width: COL.ced, textAlign: "center" }]}>
+        {r.cedula}
+      </Text>
       <Text
         style={[
           styles.cell,
@@ -226,8 +232,15 @@ function DataRow({
       >
         {sexoEtiqueta(r.sexo)}
       </Text>
-      <Text style={[styles.cell, { width: COL.ed, textAlign: "center" }]}>{r.edad}</Text>
-      <Text style={[styles.cell, { width: COL.fn, textAlign: "center", borderRightWidth: 0 }]}>
+      <Text style={[styles.cell, { width: COL.ed, textAlign: "center" }]}>
+        {r.edad}
+      </Text>
+      <Text
+        style={[
+          styles.cell,
+          { width: COL.fn, textAlign: "center", borderRightWidth: 0 },
+        ]}
+      >
         {r.fechaNacimiento.toLocaleDateString("es-VE")}
       </Text>
     </View>
@@ -246,7 +259,12 @@ export function AspirantesCensoPdfDocument({
   return (
     <Document title={`Censo ${convocatoriaCodigo}`} author="FANB Aspirantes">
       {chunks.map((pageRows, pageIdx) => (
-        <Page key={pageIdx} size="A4" orientation="landscape" style={styles.page}>
+        <Page
+          key={pageIdx}
+          size="A4"
+          orientation="landscape"
+          style={styles.page}
+        >
           {pageIdx === 0 ? (
             <>
               <View style={styles.band} fixed />
@@ -257,14 +275,17 @@ export function AspirantesCensoPdfDocument({
                 </Text>
                 <Text style={styles.meta}>
                   Total registros: {rows.length} · Generado: {generatedAt}
-                  {chunks.length > 1 ? ` · Pág. ${pageIdx + 1} de ${chunks.length}` : ""}
+                  {chunks.length > 1
+                    ? ` · Pág. ${pageIdx + 1} de ${chunks.length}`
+                    : ""}
                 </Text>
               </View>
             </>
           ) : (
             <View style={styles.miniHead} fixed>
               <Text style={styles.miniTitle}>
-                Censo (continuación) · {convocatoriaCodigo} · Pág. {pageIdx + 1}/{chunks.length}
+                Censo (continuación) · {convocatoriaCodigo} · Pág. {pageIdx + 1}
+                /{chunks.length}
               </Text>
             </View>
           )}
@@ -272,18 +293,31 @@ export function AspirantesCensoPdfDocument({
           <TableHead />
 
           {pageRows.length === 0 ? (
-            <Text style={{ marginTop: 12, fontSize: 8, color: "#64748b", textAlign: "center" }}>
+            <Text
+              style={{
+                marginTop: 12,
+                fontSize: 8,
+                color: "#64748b",
+                textAlign: "center",
+              }}
+            >
               No hay aspirantes con los filtros aplicados.
             </Text>
           ) : (
             pageRows.map((r, i) => (
-              <DataRow key={`p${pageIdx}-r${i}-${r.cedula}`} r={r} zebra={i % 2 === 0} />
+              <DataRow
+                key={`p${pageIdx}-r${i}-${r.cedula}`}
+                r={r}
+                zebra={i % 2 === 0}
+              />
             ))
           )}
 
           <Text style={styles.foot} fixed>
             FANB · Documento interno · Uso oficial
-            {chunks.length > 1 ? ` · Página ${pageIdx + 1} de ${chunks.length}` : ""}
+            {chunks.length > 1
+              ? ` · Página ${pageIdx + 1} de ${chunks.length}`
+              : ""}
           </Text>
         </Page>
       ))}
