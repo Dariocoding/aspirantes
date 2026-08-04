@@ -74,3 +74,19 @@ export async function getPresignedGetUrl(key: string, expiresInSeconds = 3600): 
   });
   return getSignedUrl(getS3Client(), command, { expiresIn: expiresInSeconds });
 }
+
+/** Lee un objeto del bucket como Buffer (p. ej. foto embebida en PDF). */
+export async function getObjectBuffer(key: string): Promise<{ body: Buffer; contentType?: string }> {
+  const res = await getS3Client().send(
+    new GetObjectCommand({
+      Bucket: getS3BucketName(),
+      Key: key,
+    }),
+  );
+  const bytes = await res.Body?.transformToByteArray();
+  if (!bytes) throw new Error(`Objeto S3 vacío: ${key}`);
+  return {
+    body: Buffer.from(bytes),
+    contentType: res.ContentType,
+  };
+}

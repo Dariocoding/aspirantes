@@ -6,6 +6,8 @@ import {
   type FichaEvaluacionState,
 } from "@src/lib/aspirantes/ficha-evaluacion";
 import { calificacionAdmisionEtiqueta } from "@src/lib/aspirantes/census";
+import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
+import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { Separator } from "@src/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@src/components/ui/table";
@@ -48,6 +50,7 @@ export type AspirantePerfilSerializado = {
   contactoTelefono: string | null;
   contactoDireccion: string | null;
   fichaEvaluacion: unknown | null;
+  fotoKey: string | null;
 };
 
 function Campo({ label, value }: { label: string; value: string | null | undefined }) {
@@ -325,15 +328,23 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
       <Card className="overflow-hidden shadow-sm ring-slate-200/80">
         <CardHeader className="border-b border-slate-200/80 bg-linear-to-br from-slate-50 to-white">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <CardTitle className="text-xl font-semibold tracking-tight text-slate-900">{nombreCompleto}</CardTitle>
-              <CardDescription className="text-sm text-slate-600">
-                Cédula <span className="font-mono font-semibold text-slate-800">{a.cedula}</span>
-                {" · "}
-                {a.sexo === "FEMENINO" ? "Femenino" : "Masculino"}
-                {" · "}
-                <span className="tabular-nums">{a.edad}</span> años
-              </CardDescription>
+            <div className="flex min-w-0 items-start gap-3">
+              <AspiranteFotoThumbnail
+                aspiranteId={a.id}
+                fotoKey={a.fotoKey}
+                nombre={nombreCompleto}
+                size="lg"
+              />
+              <div className="min-w-0 space-y-1">
+                <CardTitle className="text-xl font-semibold tracking-tight text-slate-900">{nombreCompleto}</CardTitle>
+                <CardDescription className="text-sm text-slate-600">
+                  Cédula <span className="font-mono font-semibold text-slate-800">{a.cedula}</span>
+                  {" · "}
+                  {a.sexo === "FEMENINO" ? "Femenino" : "Masculino"}
+                  {" · "}
+                  <span className="tabular-nums">{a.edad}</span> años
+                </CardDescription>
+              </div>
             </div>
             <span
               className={cn(
@@ -343,6 +354,9 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             >
               {calificacionAdmisionEtiqueta(a.calificacionAdmision as "APTO" | "NO_APTO" | "EN_EVALUACION")}
             </span>
+          </div>
+          <div className="mt-3">
+            <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica PDF" />
           </div>
           <p className="text-xs text-slate-600">
             Convocatoria:{" "}

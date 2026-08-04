@@ -2,6 +2,7 @@
 
 import { createAspirante, updateAspirante } from "@src/app/actions/aspirantes";
 import { AspiranteFichaEvaluacionFields } from "@dashboard/aspirantes/_components/aspirante-ficha-evaluacion-fields";
+import { AspiranteFotoField } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { Button } from "@src/components/ui/button";
 import { Input } from "@src/components/ui/input";
 import { Label } from "@src/components/ui/label";
@@ -77,12 +78,13 @@ export type AspiranteRegistroInitial = {
   contactoDireccion: string | null;
   /** JSON almacenado en BD (`fichaEvaluacion`); el cliente lo parsea con el catálogo actual. */
   fichaEvaluacion?: unknown | null;
+  fotoKey?: string | null;
 };
 
 const STEPS = [
   {
     title: "Identidad",
-    description: "Nombre, unidad postulante, admisión y nacimiento",
+    description: "Foto, nombre, unidad, admisión y nacimiento",
   },
   { title: "Contacto", description: "Ubicación y comunicación" },
   { title: "Salud y físico", description: "Medidas y antecedentes" },
@@ -226,6 +228,7 @@ export function AspiranteRegistroForm({
       <form
         ref={formRef}
         action={formAction}
+        encType="multipart/form-data"
         className="space-y-5"
         onSubmit={(e) => {
           const form = e.currentTarget;
@@ -367,6 +370,12 @@ export function AspiranteRegistroForm({
             Paso 1: {STEPS[0].title}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
+            <AspiranteFotoField
+              id="aspirante-foto"
+              aspiranteId={initial?.id}
+              fotoKey={initial?.fotoKey}
+              nombre={`${defaults.nombres} ${defaults.apellidos}`.trim() || "aspirante"}
+            />
             <div>
               <Label>Nombres</Label>
               <Input

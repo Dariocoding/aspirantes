@@ -10,6 +10,8 @@ import {
   UserPlus,
 } from "lucide-react";
 import { AspiranteDeleteForm } from "@dashboard/aspirantes/_components/aspirante-delete-form";
+import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
+import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { AspirantesExportLinks } from "@dashboard/aspirantes/_components/aspirantes-export-links";
 import { AspirantesFiltersDrawer } from "@dashboard/aspirantes/_components/aspirantes-filters-drawer";
 import { SinConvocatoriasPanel } from "@dashboard/aspirantes/_components/sin-convocatorias-panel";
@@ -358,7 +360,17 @@ export default async function AspirantesPage({
                   aspirantes.map((a) => (
                     <TableRow key={a.id} className="border-slate-100 transition-colors">
                       <TableCell className="px-4 py-3 font-medium text-slate-900">
-                        {a.nombres} {a.apellidos}
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <AspiranteFotoThumbnail
+                            aspiranteId={a.id}
+                            fotoKey={a.fotoKey}
+                            nombre={`${a.nombres} ${a.apellidos}`}
+                            size="sm"
+                          />
+                          <span className="min-w-0 truncate">
+                            {a.nombres} {a.apellidos}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="max-w-40 px-4 py-3 text-sm text-slate-800">
                         {(a.unidadPostulante ?? "").trim() ? (
@@ -404,17 +416,24 @@ export default async function AspirantesPage({
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3">
-                        <Link
-                          href={routes.personal.aspirante(a.id)}
-                          prefetch={false}
-                          className={cn(
-                            buttonVariants({ variant: "ghost", size: "sm" }),
-                            "h-8 gap-1.5 px-2 text-slate-700 hover:bg-slate-100 hover:text-slate-900",
-                          )}
-                        >
-                          <UserRound className="h-3.5 w-3.5" aria-hidden />
-                          Perfil
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Link
+                            href={routes.personal.aspirante(a.id)}
+                            prefetch={false}
+                            className={cn(
+                              buttonVariants({ variant: "ghost", size: "sm" }),
+                              "h-8 gap-1.5 px-2 text-slate-700 hover:bg-slate-100 hover:text-slate-900",
+                            )}
+                          >
+                            <UserRound className="h-3.5 w-3.5" aria-hidden />
+                            Perfil
+                          </Link>
+                          <AspiranteFichaTecnicaPdfLink
+                            aspiranteId={a.id}
+                            className="h-8 px-2"
+                            label="PDF"
+                          />
+                        </div>
                       </TableCell>
                       {write ? (
                         <TableCell className="px-4 py-3 text-right">

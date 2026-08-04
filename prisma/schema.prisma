@@ -218,6 +218,8 @@ model Aspirante {
   esquelasGeneradas     Esquela[]
   /// Revisión de expediente, prueba física y examen médico (estructura versionada; ver `src/lib/aspirantes/ficha-evaluacion.ts`).
   fichaEvaluacion       Json?
+  /// Clave del objeto en S3/R2 (p. ej. aspirantes/{id}/foto.webp).
+  fotoKey               String?
 
   @@unique([cedula, convocatoriaId])
   @@index([calificacionAdmision])
