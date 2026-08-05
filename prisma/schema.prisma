@@ -220,6 +220,10 @@ model Aspirante {
   fichaEvaluacion       Json?
   /// Clave del objeto en S3/R2 (p. ej. aspirantes/{id}/foto.webp).
   fotoKey               String?
+  /// Foto de la cédula de identidad (S3/R2).
+  fotoCedulaKey         String?
+  /// Foto del título universitario / fondo negro (S3/R2).
+  fotoTituloKey         String?
 
   @@unique([cedula, convocatoriaId])
   @@index([calificacionAdmision])

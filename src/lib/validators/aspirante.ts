@@ -58,3 +58,56 @@ export const aspiranteCreateSchema = z.object({
 export const aspiranteUpdateSchema = aspiranteCreateSchema.extend({
   aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
 });
+
+/** Verificación pública: cédula + fecha de nacimiento (convocatoria activa). */
+export const aspiranteSelfServiceVerifySchema = z.object({
+  cedula: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{6,12}$/, "Cédula: solo dígitos, entre 6 y 12 caracteres"),
+  fechaNacimiento: z
+    .string()
+    .min(1, "Fecha de nacimiento obligatoria")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida"),
+});
+
+/**
+ * Actualización desde el portal público.
+ * No incluye unidad, calificación, ficha de evaluación ni cédula/sexo/fecha (identidad de acceso).
+ */
+export const aspiranteSelfServiceUpdateSchema = z.object({
+  aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
+  cedula: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{6,12}$/, "Cédula: solo dígitos, entre 6 y 12 caracteres"),
+  fechaNacimiento: z
+    .string()
+    .min(1, "Fecha de nacimiento obligatoria")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida"),
+  nombres: z.string().trim().min(1, "Nombres obligatorios").max(120),
+  apellidos: z.string().trim().min(1, "Apellidos obligatorios").max(120),
+  lugarNacimiento: z.string().trim().min(1, "Lugar de nacimiento obligatorio").max(200),
+  edad: z.coerce.number().int().min(16, "Edad mínima 16").max(80, "Edad máxima 80"),
+  direccion: z.string().trim().max(500).optional().nullable(),
+  telefono: z.string().trim().max(40).optional().nullable(),
+  correo: z.preprocess(
+    (v) => (v === null || v === undefined || v === "" ? undefined : String(v).trim()),
+    z.string().email("Correo inválido").optional(),
+  ),
+  hijosCantidad: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? 0 : v),
+    z.coerce.number().int().min(0).max(30),
+  ),
+  estaturaCm: optionalFloat(300),
+  pesoKg: optionalFloat(400),
+  tipoSangre: z.string().trim().max(10).optional().nullable(),
+  alergias: z.string().trim().max(500).optional().nullable(),
+  condicionesMedicas: z.string().trim().max(2000).optional().nullable(),
+  discapacidad: z.string().trim().max(500).optional().nullable(),
+  observaciones: z.string().trim().max(2000).optional().nullable(),
+  contactoNombre: z.string().trim().min(1, "Contacto de emergencia obligatorio").max(120),
+  contactoParentesco: z.string().trim().min(1, "Parentesco obligatorio").max(80),
+  contactoTelefono: z.string().trim().min(1, "Teléfono de emergencia obligatorio").max(40),
+  contactoDireccion: z.string().trim().max(500).optional().nullable(),
+});

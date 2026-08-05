@@ -99,6 +99,8 @@ export default async function AspirantesGestionPage({
         contactoDireccion: c?.direccion ?? null,
         fichaEvaluacion: a.fichaEvaluacion,
         fotoKey: a.fotoKey,
+        fotoCedulaKey: a.fotoCedulaKey,
+        fotoTituloKey: a.fotoTituloKey,
       };
     }
   }

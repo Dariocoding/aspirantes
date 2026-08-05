@@ -106,6 +106,8 @@ export default async function AspirantePerfilPage({
           contactoDireccion: c?.direccion ?? null,
           fichaEvaluacion: a.fichaEvaluacion,
           fotoKey: a.fotoKey,
+          fotoCedulaKey: a.fotoCedulaKey,
+          fotoTituloKey: a.fotoTituloKey,
         }}
       />
     </div>

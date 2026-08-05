@@ -18,6 +18,12 @@ const legacyRedirects = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Fotos de cédula/título pueden ser pesadas; sin tope práctico de app.
+    serverActions: {
+      bodySizeLimit: "100mb",
+    },
+  },
   async redirects() {
     return legacyRedirects.map(({ source, destination }) => ({
       source,

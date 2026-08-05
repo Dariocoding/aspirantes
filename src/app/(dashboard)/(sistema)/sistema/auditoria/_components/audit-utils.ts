@@ -3,6 +3,7 @@ import { cn } from "@src/lib/utils";
 const ACTION_LABELS: Record<string, string> = {
   ASPIRANTE_CREATE: "Alta de aspirante",
   ASPIRANTE_UPDATE: "Actualización de aspirante",
+  ASPIRANTE_SELF_UPDATE: "Actualización por el aspirante (portal público)",
   ASPIRANTE_DELETE: "Eliminación de aspirante",
   CONVOCATORIA_CREATE: "Nueva convocatoria",
   CONVOCATORIA_CREATE_ACTIVA: "Convocatoria creada (activa)",

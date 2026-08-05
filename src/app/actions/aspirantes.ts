@@ -13,59 +13,9 @@ import { writeAuditLog } from "@src/lib/audit/log";
 import { routes } from "@src/lib/apps/routes";
 import { isFichaEvaluacionVacia, normalizeFichaEvaluacionForDb } from "@src/lib/aspirantes/ficha-evaluacion";
 import {
-  AspiranteFotoError,
-  parseAspiranteFotoFile,
-  removeAspiranteFoto,
-  shouldRemoveAspiranteFoto,
-  uploadAspiranteFoto,
-} from "@src/lib/storage/aspirante-foto";
-
-function fotoFieldError(message: string): AspiranteActionState {
-  return { ok: false, errors: { imagen: message } };
-}
-
-async function applyAspiranteFotoFromForm(
-  formData: FormData,
-  aspiranteId: string,
-  previousKey: string | null,
-): Promise<AspiranteActionState | { fotoKey: string | null }> {
-  const file = parseAspiranteFotoFile(formData);
-  const quitar = shouldRemoveAspiranteFoto(formData);
-
-  if (file && quitar) {
-    return fotoFieldError("No puede subir una foto nueva y quitar la actual a la vez.");
-  }
-
-  if (quitar) {
-    await removeAspiranteFoto(previousKey);
-    await prisma.aspirante.update({
-      where: { id: aspiranteId },
-      data: { fotoKey: null },
-    });
-    return { fotoKey: null };
-  }
-
-  if (!file) {
-    return { fotoKey: previousKey };
-  }
-
-  try {
-    const newKey = await uploadAspiranteFoto(file, aspiranteId);
-    await prisma.aspirante.update({
-      where: { id: aspiranteId },
-      data: { fotoKey: newKey },
-    });
-    if (previousKey && previousKey !== newKey) {
-      await removeAspiranteFoto(previousKey);
-    }
-    return { fotoKey: newKey };
-  } catch (e) {
-    if (e instanceof AspiranteFotoError) {
-      return fotoFieldError(e.message);
-    }
-    throw e;
-  }
-}
+  applyAspiranteFotosFromForm,
+  removeAllAspiranteFotos,
+} from "@src/lib/aspirantes/apply-fotos";
 
 function toPrismaFichaEvaluacion(
   payload: object | null | undefined,
@@ -187,7 +137,11 @@ export async function createAspirante(
       },
     });
 
-    const fotoResult = await applyAspiranteFotoFromForm(formData, created.id, null);
+    const fotoResult = await applyAspiranteFotosFromForm(formData, created.id, {
+      fotoKey: null,
+      fotoCedulaKey: null,
+      fotoTituloKey: null,
+    });
     if ("ok" in fotoResult && fotoResult.ok === false) {
       return fotoResult;
     }
@@ -227,11 +181,21 @@ export async function deleteAspirante(formData: FormData) {
   if (!id) return;
   const row = await prisma.aspirante.findUnique({
     where: { id },
-    select: { cedula: true, convocatoriaId: true, fotoKey: true },
+    select: {
+      cedula: true,
+      convocatoriaId: true,
+      fotoKey: true,
+      fotoCedulaKey: true,
+      fotoTituloKey: true,
+    },
   });
   if (!row) return;
   await prisma.aspirante.delete({ where: { id } });
-  await removeAspiranteFoto(row.fotoKey);
+  await removeAllAspiranteFotos({
+    fotoKey: row.fotoKey,
+    fotoCedulaKey: row.fotoCedulaKey,
+    fotoTituloKey: row.fotoTituloKey,
+  });
   await writeAuditLog({
     userId: session.user.id,
     userEmail: session.user.email,
@@ -385,7 +349,11 @@ export async function updateAspirante(
       }
     });
 
-    const fotoResult = await applyAspiranteFotoFromForm(formData, aspiranteId, existing.fotoKey);
+    const fotoResult = await applyAspiranteFotosFromForm(formData, aspiranteId, {
+      fotoKey: existing.fotoKey,
+      fotoCedulaKey: existing.fotoCedulaKey,
+      fotoTituloKey: existing.fotoTituloKey,
+    });
     if ("ok" in fotoResult && fotoResult.ok === false) {
       return fotoResult;
     }

@@ -14,7 +14,11 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request }) {
       const path = request.nextUrl.pathname;
-      if (path.startsWith("/login") || path.startsWith("/api/auth")) {
+      if (
+        path.startsWith("/login") ||
+        path.startsWith("/api/auth") ||
+        path.startsWith("/actualizar-datos")
+      ) {
         return true;
       }
       return !!auth?.user;

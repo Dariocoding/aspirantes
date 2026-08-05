@@ -1,228 +1,221 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { FichaEvaluacionState } from "@src/lib/aspirantes/ficha-evaluacion";
 
-const GREEN = "#1B5E20";
-const BORDER = "#111111";
-const LABEL = "#111111";
+/** Verde institucional del encabezado (aprox. sample oficial). */
+const GREEN = "#1A5C2A";
+const GREEN_SOFT = "#D8F0DC";
+const RED_UNIT = "#C62828";
+const BORDER = "#000000";
 
 const styles = StyleSheet.create({
   page: {
-    flexDirection: "row",
     backgroundColor: "#FFFFFF",
     fontFamily: "Helvetica",
     fontSize: 7,
-    color: LABEL,
-  },
-  main: {
-    flex: 1,
+    color: "#000000",
     padding: 10,
-    paddingRight: 6,
-    gap: 4,
   },
-  sidebar: {
-    width: 52,
+  header: {
     backgroundColor: GREEN,
-    alignItems: "center",
-    paddingTop: 8,
-    paddingBottom: 10,
-    paddingHorizontal: 4,
-  },
-  foto: {
-    width: 42,
-    height: 52,
-    objectFit: "cover",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 0,
     borderWidth: 1,
-    borderColor: "#FFFFFF",
-    marginBottom: 8,
+    borderColor: BORDER,
+    borderBottomWidth: 0,
   },
-  fotoPlaceholder: {
-    width: 42,
-    height: 52,
-    backgroundColor: "#E8F5E9",
-    borderWidth: 1,
-    borderColor: "#FFFFFF",
-    marginBottom: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  photoPlaceholderText: {
-    color: GREEN,
-    fontSize: 5,
-    textAlign: "center",
-  },
-  verticalLetters: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 1,
-  },
-  verticalLetter: {
+  headerText: {
     color: "#FFFFFF",
-    fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 0.5,
+    fontSize: 16,
+    textAlign: "center",
+    letterSpacing: 1.2,
+  },
+  grid: {
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   row: {
     flexDirection: "row",
-    gap: 4,
   },
-  col: {
-    flex: 1,
-    gap: 4,
-  },
-  box: {
-    borderWidth: 1,
+  cell: {
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
     borderColor: BORDER,
+    padding: 3,
   },
-  boxPad: {
-    borderWidth: 1,
+  cellLast: {
+    borderRightWidth: 0,
+  },
+  cellNoBottom: {
+    borderBottomWidth: 0,
+  },
+  label: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 6,
+    textTransform: "uppercase",
+  },
+  value: {
+    fontSize: 7.5,
+    textTransform: "uppercase",
+    marginTop: 1,
+  },
+  valueCenter: {
+    fontSize: 7.5,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+  valueRed: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: RED_UNIT,
+    textTransform: "uppercase",
+    textAlign: "center",
+    marginTop: 2,
+  },
+  sectionBanner: {
+    backgroundColor: "#F3F4F6",
+    borderBottomWidth: 1,
     borderColor: BORDER,
-    padding: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
   },
-  sectionTitle: {
+  sectionBannerText: {
     fontFamily: "Helvetica-Bold",
     fontSize: 7,
+    textAlign: "center",
     textTransform: "uppercase",
-    marginBottom: 3,
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
+  },
+  fotoWrap: {
+    width: 88,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    padding: 3,
+  },
+  foto: {
+    width: 78,
+    height: 98,
+    objectFit: "cover",
+  },
+  fotoPlaceholder: {
+    width: 78,
+    height: 98,
+    backgroundColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  meritoBox: {
+    width: 88,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: BORDER,
+    padding: 3,
+    backgroundColor: GREEN_SOFT,
+  },
+  meritoLabel: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 5.5,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+  meritoValue: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 12,
+    color: GREEN,
+    textAlign: "center",
+    marginTop: 2,
   },
   fieldRow: {
     flexDirection: "row",
-    marginBottom: 2,
-    alignItems: "flex-end",
+    borderBottomWidth: 1,
+    borderColor: BORDER,
+    minHeight: 16,
   },
-  fieldLabel: {
-    fontFamily: "Helvetica-Bold",
-    fontSize: 6.5,
-    textTransform: "uppercase",
-    marginRight: 3,
+  fieldLabelCell: {
+    width: "42%",
+    paddingHorizontal: 3,
+    paddingVertical: 2,
+    justifyContent: "center",
+    borderRightWidth: 1,
+    borderColor: BORDER,
+    backgroundColor: "#FAFAFA",
   },
-  fieldValue: {
-    flex: 1,
-    fontSize: 7,
-    textTransform: "uppercase",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#888",
-    paddingBottom: 1,
+  fieldValueCell: {
+    width: "58%",
+    paddingHorizontal: 3,
+    paddingVertical: 2,
+    justifyContent: "center",
   },
-  table: {
+  checkBox: {
+    width: 9,
+    height: 9,
     borderWidth: 1,
     borderColor: BORDER,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 2,
   },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#F3F4F6",
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+  checkX: {
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
   },
-  tableRow: {
+  siNo: {
     flexDirection: "row",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#999",
-    minHeight: 14,
+    alignItems: "center",
+    gap: 2,
+  },
+  siNoCaption: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 5.5,
   },
   th: {
     fontFamily: "Helvetica-Bold",
     fontSize: 5.5,
     textTransform: "uppercase",
+    textAlign: "center",
     padding: 2,
-    borderRightWidth: 0.5,
-    borderRightColor: BORDER,
+    borderRightWidth: 1,
+    borderColor: BORDER,
+    backgroundColor: "#F3F4F6",
   },
   td: {
-    fontSize: 6,
+    fontSize: 6.5,
     textTransform: "uppercase",
     padding: 2,
-    borderRightWidth: 0.5,
-    borderRightColor: "#CCC",
+    borderRightWidth: 1,
+    borderColor: BORDER,
+    textAlign: "center",
   },
-  checkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-    gap: 4,
-  },
-  checkLabel: {
-    flex: 1,
-    fontSize: 6,
+  apreciacion: {
+    fontSize: 6.5,
+    lineHeight: 1.35,
+    textAlign: "justify",
     textTransform: "uppercase",
-  },
-  checkPair: {
-    flexDirection: "row",
-    gap: 6,
-    alignItems: "center",
-  },
-  checkItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  checkbox: {
-    width: 8,
-    height: 8,
-    borderWidth: 1,
-    borderColor: BORDER,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkX: {
-    fontSize: 6,
-    fontFamily: "Helvetica-Bold",
-  },
-  checkCaption: {
-    fontSize: 5.5,
-    fontFamily: "Helvetica-Bold",
-  },
-  fisicoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  fisicoCell: {
-    width: "33.33%",
-    borderWidth: 0.5,
-    borderColor: BORDER,
-    padding: 3,
-    minHeight: 22,
+    minHeight: 52,
   },
   fisicoLabel: {
     fontFamily: "Helvetica-Bold",
     fontSize: 5.5,
     textTransform: "uppercase",
-    marginBottom: 2,
+    width: "55%",
   },
   fisicoValue: {
-    fontSize: 8,
+    fontSize: 7,
     textAlign: "center",
+    width: "45%",
   },
-  apreciacionBody: {
-    fontSize: 6.5,
-    lineHeight: 1.35,
-    textAlign: "justify",
-    minHeight: 48,
-  },
-  gradoRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 2,
-  },
-  headerBand: {
-    borderWidth: 1,
+  gradoCell: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRightWidth: 1,
     borderColor: BORDER,
-    padding: 4,
-    marginBottom: 2,
-    backgroundColor: "#F9FAFB",
-  },
-  headerBandText: {
-    fontFamily: "Helvetica-Bold",
-    fontSize: 8,
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  smallMuted: {
-    fontSize: 5.5,
-    color: "#555",
-    marginTop: 2,
+    paddingVertical: 3,
+    gap: 2,
   },
 });
 
@@ -237,36 +230,60 @@ function formatCedulaVe(cedula: string): string {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+function formatPhone(tel: string | null | undefined): string {
+  const d = (tel ?? "").replace(/\D/g, "");
+  if (d.length === 11) return `${d.slice(0, 4)}-${d.slice(4)}`;
+  if (d.length === 10) return `${d.slice(0, 4)}-${d.slice(4)}`;
+  return dash(tel);
+}
+
 function Check({ checked }: { checked: boolean }) {
   return (
-    <View style={styles.checkbox}>
-      {checked ? <Text style={styles.checkX}>X</Text> : null}
-    </View>
+    <View style={styles.checkBox}>{checked ? <Text style={styles.checkX}>X</Text> : null}</View>
   );
 }
 
 function SiNo({ value }: { value: boolean | null }) {
   return (
-    <View style={styles.checkPair}>
-      <View style={styles.checkItem}>
-        <Text style={styles.checkCaption}>SI</Text>
-        <Check checked={value === true} />
+    <View style={styles.siNo}>
+      <Text style={styles.siNoCaption}>SI</Text>
+      <Check checked={value === true} />
+      <Text style={styles.siNoCaption}>NO</Text>
+      <Check checked={value === false} />
+    </View>
+  );
+}
+
+function FieldRow({
+  label,
+  value,
+  last,
+}: {
+  label: string;
+  value: string;
+  last?: boolean;
+}) {
+  return (
+    <View style={[styles.fieldRow, last ? { borderBottomWidth: 0 } : {}]}>
+      <View style={styles.fieldLabelCell}>
+        <Text style={styles.label}>{label}</Text>
       </View>
-      <View style={styles.checkItem}>
-        <Text style={styles.checkCaption}>NO</Text>
-        <Check checked={value === false} />
+      <View style={styles.fieldValueCell}>
+        <Text style={styles.value}>{dash(value)}</Text>
       </View>
     </View>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.fieldRow}>
-      <Text style={styles.fieldLabel}>{label}:</Text>
-      <Text style={styles.fieldValue}>{dash(value)}</Text>
-    </View>
-  );
+function valorPrueba(
+  ficha: FichaEvaluacionState,
+  id: string,
+  sexo: "MASCULINO" | "FEMENINO",
+): string {
+  const fila = ficha.pruebaFisica.filas[id];
+  if (!fila) return "";
+  const prefer = sexo === "FEMENINO" ? fila.datosF || fila.datosM : fila.datosM || fila.datosF;
+  return (prefer || fila.calificacion || "").trim();
 }
 
 export type AspiranteFichaTecnicaPdfProps = {
@@ -280,10 +297,8 @@ export type AspiranteFichaTecnicaPdfProps = {
   unidadPostulante: string;
   convocatoriaNombre: string;
   convocatoriaCodigo: string;
-  /** JPEG/PNG buffer para @react-pdf; null si no hay foto usable. */
   foto: Buffer | null;
   ficha: FichaEvaluacionState;
-  /** Campos aún no modelados en BD — se dejan en blanco o con valor opcional. */
   estadoCivil?: string | null;
   especialidad?: string | null;
   nivelEducativo?: string | null;
@@ -291,14 +306,14 @@ export type AspiranteFichaTecnicaPdfProps = {
   cmdteCursoNombre?: string | null;
   cmdteCursoTelefono?: string | null;
   apreciacionGeneral?: string | null;
-  inscritoSacs?: boolean | null;
-  sacsPorQue?: string | null;
+  estudioCulminado?: boolean | null;
+  estudioCulminadoPorQue?: string | null;
   otorgamientoGrado?: "CAP_TN" | "PTTE_TF" | "TTE_TC" | null;
   investigacionAdministrativa?: boolean | null;
   investigacionPenalMilitar?: boolean | null;
   investigacionJudicial?: boolean | null;
   juicioAbierto?: boolean | null;
-  registroSipol?: boolean | null;
+  registroSiipol?: boolean | null;
   estudios?: Array<{
     universidad: string;
     titulo: string;
@@ -307,21 +322,8 @@ export type AspiranteFichaTecnicaPdfProps = {
     anioEgreso: string;
     nucleo: string;
   }>;
-  cursosRealizados?: string[];
+  cursosRealizados?: string | null;
 };
-
-function valorPrueba(
-  ficha: FichaEvaluacionState,
-  id: string,
-  sexo: "MASCULINO" | "FEMENINO",
-): string {
-  const fila = ficha.pruebaFisica.filas[id];
-  if (!fila) return "";
-  const prefer = sexo === "FEMENINO" ? fila.datosF || fila.datosM : fila.datosM || fila.datosF;
-  return (prefer || fila.calificacion || "").trim();
-}
-
-const SIDEBAR_TITLE = "EJÉRCITO BOLIVARIANO";
 
 export function AspiranteFichaTecnicaPdfDocument(props: AspiranteFichaTecnicaPdfProps) {
   const nombreCompleto = `${props.nombres} ${props.apellidos}`.trim().toUpperCase();
@@ -333,16 +335,39 @@ export function AspiranteFichaTecnicaPdfDocument(props: AspiranteFichaTecnicaPdf
       ];
 
   const fisica = [
-    { label: "CARRERA", value: valorPrueba(props.ficha, "potencia_aerobica_2400m", props.sexo) },
-    { label: "BARRA FIJA", value: valorPrueba(props.ficha, "barra_fija_dominada", props.sexo) },
-    { label: "ABDOMINAL", value: valorPrueba(props.ficha, "abdominales_60", props.sexo) },
-    { label: "FLEXIONES", value: valorPrueba(props.ficha, "flexiones_60", props.sexo) },
-    { label: "PISCINA", value: valorPrueba(props.ficha, "natacion_50m", props.sexo) },
+    {
+      label: "CARRERA",
+      value: valorPrueba(props.ficha, "potencia_aerobica_2400m", props.sexo) || "00:00",
+    },
+    {
+      label: "BARRA",
+      value: valorPrueba(props.ficha, "barra_fija_dominada", props.sexo) || "0",
+    },
+    {
+      label: "ABDOMINAL",
+      value: valorPrueba(props.ficha, "abdominales_60", props.sexo) || "0",
+    },
+    {
+      label: "FLEXIONES",
+      value: valorPrueba(props.ficha, "flexiones_60", props.sexo) || "0",
+    },
+    {
+      label: "PISCINA",
+      value: valorPrueba(props.ficha, "natacion_50m", props.sexo) || "0 M",
+    },
     {
       label: "TOTAL",
-      value: (props.ficha.pruebaFisica.calificacionObtenida || "").trim(),
+      value: (props.ficha.pruebaFisica.calificacionObtenida || "").trim() || "00,00",
     },
   ];
+
+  const disc = [
+    ["INVESTIGACIÓN ADMINISTRATIVA", props.investigacionAdministrativa ?? false],
+    ["INVESTIGACIÓN JUDICIAL", props.investigacionJudicial ?? false],
+    ["REGISTRO SIIPOL", props.registroSiipol ?? false],
+    ["INVESTIGACIÓN PENAL MILITAR", props.investigacionPenalMilitar ?? false],
+    ["JUICIO ABIERTO", props.juicioAbierto ?? false],
+  ] as const;
 
   return (
     <Document
@@ -350,169 +375,230 @@ export function AspiranteFichaTecnicaPdfDocument(props: AspiranteFichaTecnicaPdf
       author="Ejército Bolivariano"
       subject="Ficha técnica de aspirante"
     >
-      <Page size="A4" orientation="landscape" style={styles.page}>
-        <View style={styles.main}>
-          <View style={styles.headerBand}>
-            <Text style={styles.headerBandText}>
-              Ficha técnica del aspirante · {props.convocatoriaNombre} ({props.convocatoriaCodigo})
-            </Text>
-          </View>
+      <Page size="LETTER" orientation="landscape" style={styles.page}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>EJÉRCITO BOLIVARIANO</Text>
+        </View>
 
+        <View style={styles.grid}>
+          {/* Fila superior: foto | datos | grado+física */}
           <View style={styles.row}>
-            {/* Columna izquierda */}
-            <View style={[styles.col, { flex: 1.15 }]}>
-              <View style={styles.boxPad}>
-                <Field label="Unidad quien postula" value={props.unidadPostulante} />
-              </View>
-
-              <View style={styles.boxPad}>
-                <Text style={styles.sectionTitle}>Estudios conducentes a título universitario</Text>
-                <View style={styles.table}>
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.th, { width: "28%" }]}>Universidad</Text>
-                    <Text style={[styles.th, { width: "24%" }]}>Título</Text>
-                    <Text style={[styles.th, { width: "12%" }]}>País</Text>
-                    <Text style={[styles.th, { width: "10%" }]}>Ingreso</Text>
-                    <Text style={[styles.th, { width: "10%" }]}>Egreso</Text>
-                    <Text style={[styles.th, { width: "16%", borderRightWidth: 0 }]}>Núcleo</Text>
+            <View style={{ width: 88 }}>
+              <View style={[styles.fotoWrap, { borderBottomWidth: 0 }]}>
+                {props.foto ? (
+                  // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
+                  <Image src={props.foto} style={styles.foto} />
+                ) : (
+                  <View style={styles.fotoPlaceholder}>
+                    <Text style={{ fontSize: 6, color: "#666" }}>SIN FOTO</Text>
                   </View>
-                  {estudios.map((e, i) => (
-                    <View key={i} style={styles.tableRow}>
-                      <Text style={[styles.td, { width: "28%" }]}>{dash(e.universidad)}</Text>
-                      <Text style={[styles.td, { width: "24%" }]}>{dash(e.titulo)}</Text>
-                      <Text style={[styles.td, { width: "12%" }]}>{dash(e.pais)}</Text>
-                      <Text style={[styles.td, { width: "10%" }]}>{dash(e.anioIngreso)}</Text>
-                      <Text style={[styles.td, { width: "10%" }]}>{dash(e.anioEgreso)}</Text>
-                      <Text style={[styles.td, { width: "16%", borderRightWidth: 0 }]}>
-                        {dash(e.nucleo)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+                )}
               </View>
-
-              <View style={styles.boxPad}>
-                <Text style={styles.sectionTitle}>Cursos realizados</Text>
-                {(props.cursosRealizados?.length ? props.cursosRealizados : ["", ""]).map((c, i) => (
-                  <Text key={i} style={[styles.fieldValue, { marginBottom: 3 }]}>
-                    {dash(c)}
-                  </Text>
-                ))}
-              </View>
-
-              <View style={styles.boxPad}>
-                <View style={[styles.fieldRow, { alignItems: "center" }]}>
-                  <Text style={[styles.fieldLabel, { marginRight: 8 }]}>Inscrito en el SACS</Text>
-                  <SiNo value={props.inscritoSacs ?? null} />
-                </View>
-                <Field label="¿Por qué?" value={props.sacsPorQue ?? ""} />
-              </View>
-
-              <View style={[styles.boxPad, { flex: 1 }]}>
-                <Text style={styles.sectionTitle}>Apreciación general</Text>
-                <Text style={styles.apreciacionBody}>
-                  {dash(props.apreciacionGeneral) === " "
-                    ? ""
-                    : props.apreciacionGeneral}
-                </Text>
-                {!props.apreciacionGeneral?.trim() ? (
-                  <Text style={styles.smallMuted}>
-                    (Pendiente de cargar en el sistema — se imprimirá cuando esté disponible.)
-                  </Text>
-                ) : null}
+              <View style={styles.meritoBox}>
+                <Text style={styles.meritoLabel}>Orden de mérito</Text>
+                <Text style={styles.meritoValue}>{dash(props.ordenMerito) === " " ? "—" : props.ordenMerito}</Text>
               </View>
             </View>
 
-            {/* Columna derecha (antes de la barra verde) */}
-            <View style={[styles.col, { flex: 1 }]}>
-              <View style={styles.boxPad}>
-                <Field label="Nombres y apellidos" value={nombreCompleto} />
-                <Field label="Cédula de identidad" value={formatCedulaVe(props.cedula)} />
-                <Field label="Edad" value={`${props.edad} AÑOS`} />
-                <Field label="Estado civil" value={props.estadoCivil ?? ""} />
-                <Field
-                  label="Hijos"
-                  value={String(props.hijosCantidad).padStart(2, "0")}
-                />
-                <Field label="Especialidad" value={props.especialidad ?? ""} />
-                <Field label="Nivel educativo" value={props.nivelEducativo ?? ""} />
-                <Field label="N° de teléfono aspirante" value={props.telefono ?? ""} />
-              </View>
+            <View style={{ flex: 1.35, borderRightWidth: 1, borderColor: BORDER }}>
+              <FieldRow label="Nombres y apellidos" value={nombreCompleto} />
+              <FieldRow label="Cédula de identidad" value={formatCedulaVe(props.cedula)} />
+              <FieldRow label="Edad" value={`${props.edad} AÑOS`} />
+              <FieldRow label="Estado civil" value={props.estadoCivil ?? ""} />
+              <FieldRow
+                label="Hijos"
+                value={String(props.hijosCantidad).padStart(2, "0")}
+              />
+              <FieldRow label="Especialidad" value={props.especialidad ?? ""} />
+              <FieldRow label="Nivel educativo" value={props.nivelEducativo ?? ""} />
+              <FieldRow
+                label="N° de teléfono aspirante"
+                value={formatPhone(props.telefono)}
+                last
+              />
+            </View>
 
-              <View style={styles.boxPad}>
-                <Field label="Orden de mérito" value={props.ordenMerito ?? ""} />
-                <Field label="Nombre del Cmdte de curso" value={props.cmdteCursoNombre ?? ""} />
-                <Field label="Teléfono del Cmdte de curso" value={props.cmdteCursoTelefono ?? ""} />
+            <View style={{ width: 210 }}>
+              <View style={[styles.sectionBanner, { borderRightWidth: 0 }]}>
+                <Text style={styles.sectionBannerText}>Otorgamiento de grado</Text>
               </View>
-
-              <View style={styles.boxPad}>
-                <Text style={styles.sectionTitle}>Régimen disciplinario / antecedentes</Text>
+              <View style={[styles.row, { borderBottomWidth: 1, borderColor: BORDER }]}>
                 {(
                   [
-                    ["Investigación administrativa", props.investigacionAdministrativa],
-                    ["Investigación penal militar", props.investigacionPenalMilitar],
-                    ["Investigación judicial", props.investigacionJudicial],
-                    ["Juicio abierto", props.juicioAbierto],
-                    ["Registro SIPOL", props.registroSipol],
+                    ["CAP/TN", "CAP_TN"],
+                    ["PTTE/TF", "PTTE_TF"],
+                    ["TTE/TC", "TTE_TC"],
                   ] as const
-                ).map(([label, val]) => (
-                  <View key={label} style={styles.checkRow}>
-                    <Text style={styles.checkLabel}>{label}</Text>
-                    <SiNo value={val ?? null} />
+                ).map(([label, key], i) => (
+                  <View
+                    key={key}
+                    style={[styles.gradoCell, i === 2 ? { borderRightWidth: 0 } : {}]}
+                  >
+                    <Text style={styles.label}>{label}</Text>
+                    <Check checked={props.otorgamientoGrado === key} />
                   </View>
                 ))}
               </View>
 
-              <View style={styles.boxPad}>
-                <Text style={styles.sectionTitle}>Resultados de evaluación física</Text>
-                <View style={styles.fisicoGrid}>
-                  {fisica.map((f) => (
-                    <View key={f.label} style={styles.fisicoCell}>
-                      <Text style={styles.fisicoLabel}>{f.label}</Text>
-                      <Text style={styles.fisicoValue}>{dash(f.value)}</Text>
-                    </View>
-                  ))}
-                </View>
+              <View style={styles.sectionBanner}>
+                <Text style={styles.sectionBannerText}>Resultados de evaluación física</Text>
               </View>
-
-              <View style={styles.boxPad}>
-                <Text style={styles.sectionTitle}>Otorgamiento de grado</Text>
-                <View style={styles.gradoRow}>
-                  {(
-                    [
-                      ["CAP/TN", "CAP_TN"],
-                      ["PTTE/TF", "PTTE_TF"],
-                      ["TTE/TC", "TTE_TC"],
-                    ] as const
-                  ).map(([label, key]) => (
-                    <View key={key} style={styles.checkItem}>
-                      <Text style={styles.checkCaption}>{label}</Text>
-                      <Check checked={props.otorgamientoGrado === key} />
-                    </View>
-                  ))}
+              {fisica.map((f, i) => (
+                <View
+                  key={f.label}
+                  style={[
+                    styles.row,
+                    {
+                      borderBottomWidth: i === fisica.length - 1 ? 0 : 1,
+                      borderColor: BORDER,
+                      paddingVertical: 2,
+                      paddingHorizontal: 4,
+                      alignItems: "center",
+                    },
+                  ]}
+                >
+                  <Text style={styles.fisicoLabel}>{f.label}</Text>
+                  <Text style={styles.fisicoValue}>{f.value}</Text>
                 </View>
-              </View>
+              ))}
             </View>
           </View>
-        </View>
 
-        <View style={styles.sidebar}>
-          {props.foto ? (
-            // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
-            <Image src={props.foto} style={styles.foto} />
-          ) : (
-            <View style={styles.fotoPlaceholder}>
-              <Text style={styles.photoPlaceholderText}>SIN{"\n"}FOTO</Text>
+          {/* Cmdte */}
+          <View style={styles.row}>
+            <View style={[styles.cell, { flex: 1.6 }]}>
+              <Text style={styles.label}>Nombre del Cmdte de curso</Text>
+              <Text style={styles.value}>{dash(props.cmdteCursoNombre)}</Text>
             </View>
-          )}
-          <View style={styles.verticalLetters}>
-            {SIDEBAR_TITLE.split("").map((ch, i) => (
-              <Text key={`${ch}-${i}`} style={styles.verticalLetter}>
-                {ch === " " ? "·" : ch}
-              </Text>
+            <View style={[styles.cell, styles.cellLast, { flex: 1 }]}>
+              <Text style={styles.label}>Teléfono del Cmdte de curso</Text>
+              <Text style={styles.value}>{formatPhone(props.cmdteCursoTelefono)}</Text>
+            </View>
+          </View>
+
+          {/* Régimen disciplinario */}
+          <View style={[styles.sectionBanner, { borderRightWidth: 0 }]}>
+            <Text style={styles.sectionBannerText}>Régimen disciplinario militar</Text>
+          </View>
+          <View style={styles.row}>
+            {disc.map(([label, val], i) => (
+              <View
+                key={label}
+                style={[
+                  styles.cell,
+                  i === disc.length - 1 ? styles.cellLast : {},
+                  { flex: 1, alignItems: "center", gap: 3, paddingVertical: 4 },
+                ]}
+              >
+                <Text style={[styles.label, { textAlign: "center", fontSize: 5 }]}>{label}</Text>
+                <SiNo value={val} />
+              </View>
             ))}
           </View>
+
+          {/* Unidad + cursos */}
+          <View style={styles.row}>
+            <View style={[styles.cell, { width: "32%" }]}>
+              <Text style={styles.label}>Unidad quien postula</Text>
+              <Text style={styles.valueRed}>
+                {dash(props.unidadPostulante) === " " ? "—" : props.unidadPostulante}
+              </Text>
+            </View>
+            <View style={[styles.cell, styles.cellLast, { flex: 1 }]}>
+              <Text style={styles.label}>Cursos realizados</Text>
+              <Text style={styles.value}>{dash(props.cursosRealizados)}</Text>
+            </View>
+          </View>
+
+          {/* Estudios */}
+          <View style={[styles.sectionBanner, { borderRightWidth: 0 }]}>
+            <Text style={styles.sectionBannerText}>
+              Estudios conducentes a título universitario
+            </Text>
+          </View>
+          <View style={[styles.row, { borderBottomWidth: 1, borderColor: BORDER }]}>
+            <Text style={[styles.th, { width: "28%" }]}>Universidad</Text>
+            <Text style={[styles.th, { width: "22%" }]}>Título</Text>
+            <Text style={[styles.th, { width: "12%" }]}>País</Text>
+            <Text style={[styles.th, { width: "12%" }]}>Año ingreso</Text>
+            <Text style={[styles.th, { width: "12%" }]}>Año egreso</Text>
+            <Text style={[styles.th, { width: "14%", borderRightWidth: 0 }]}>Núcleo</Text>
+          </View>
+          {estudios.map((e, i) => (
+            <View
+              key={i}
+              style={[
+                styles.row,
+                {
+                  borderBottomWidth: 1,
+                  borderColor: BORDER,
+                  minHeight: 14,
+                },
+              ]}
+            >
+              <Text style={[styles.td, { width: "28%", textAlign: "left" }]}>
+                {dash(e.universidad)}
+              </Text>
+              <Text style={[styles.td, { width: "22%" }]}>{dash(e.titulo)}</Text>
+              <Text style={[styles.td, { width: "12%" }]}>{dash(e.pais)}</Text>
+              <Text style={[styles.td, { width: "12%" }]}>{dash(e.anioIngreso)}</Text>
+              <Text style={[styles.td, { width: "12%" }]}>{dash(e.anioEgreso)}</Text>
+              <Text style={[styles.td, { width: "14%", borderRightWidth: 0 }]}>
+                {dash(e.nucleo)}
+              </Text>
+            </View>
+          ))}
+
+          {/* Estudio culminado */}
+          <View style={styles.row}>
+            <View
+              style={[
+                styles.cell,
+                {
+                  width: "40%",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                },
+              ]}
+            >
+              <Text style={styles.label}>Estudio culminado</Text>
+              <SiNo value={props.estudioCulminado ?? null} />
+            </View>
+            <View style={[styles.cell, styles.cellLast, { flex: 1 }]}>
+              <Text style={styles.label}>¿Por qué?</Text>
+              <Text style={styles.value}>{dash(props.estudioCulminadoPorQue)}</Text>
+            </View>
+          </View>
+
+          {/* Apreciación */}
+          <View style={[styles.sectionBanner, { borderRightWidth: 0, borderBottomWidth: 1 }]}>
+            <Text style={styles.sectionBannerText}>Apreciación general</Text>
+          </View>
+          <View style={[styles.cell, styles.cellLast, styles.cellNoBottom, { padding: 6 }]}>
+            <Text style={styles.apreciacion}>
+              {props.apreciacionGeneral?.trim()
+                ? props.apreciacionGeneral.trim().toUpperCase()
+                : " "}
+            </Text>
+            {!props.apreciacionGeneral?.trim() ? (
+              <Text style={{ fontSize: 5.5, color: "#666", marginTop: 4 }}>
+                (Pendiente de registro en el sistema)
+              </Text>
+            ) : null}
+          </View>
         </View>
+
+        <Text
+          style={{
+            marginTop: 4,
+            fontSize: 5.5,
+            color: "#666",
+            textAlign: "right",
+          }}
+        >
+          {props.convocatoriaNombre} ({props.convocatoriaCodigo})
+        </Text>
       </Page>
     </Document>
   );

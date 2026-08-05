@@ -3,7 +3,7 @@ import type { Prisma } from "@src/generated/prisma";
 import { prisma } from "@src/lib/prisma";
 
 export type AuditWriteInput = {
-  userId: string;
+  userId?: string | null;
   userEmail?: string | null;
   action: string;
   entityType: string;
@@ -21,7 +21,7 @@ export async function writeAuditLog(input: AuditWriteInput): Promise<void> {
     const userAgent = h.get("user-agent") ?? null;
     await prisma.auditLog.create({
       data: {
-        userId: input.userId,
+        userId: input.userId ?? null,
         userEmail: input.userEmail ?? null,
         action: input.action,
         entityType: input.entityType,

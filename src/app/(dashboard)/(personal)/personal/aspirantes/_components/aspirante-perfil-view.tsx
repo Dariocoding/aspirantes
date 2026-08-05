@@ -51,6 +51,8 @@ export type AspirantePerfilSerializado = {
   contactoDireccion: string | null;
   fichaEvaluacion: unknown | null;
   fotoKey: string | null;
+  fotoCedulaKey?: string | null;
+  fotoTituloKey?: string | null;
 };
 
 function Campo({ label, value }: { label: string; value: string | null | undefined }) {
@@ -355,9 +357,39 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               {calificacionAdmisionEtiqueta(a.calificacionAdmision as "APTO" | "NO_APTO" | "EN_EVALUACION")}
             </span>
           </div>
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap gap-2">
             <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica PDF" />
           </div>
+          {(a.fotoCedulaKey || a.fotoTituloKey) ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {a.fotoCedulaKey ? (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Foto de la cédula
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/aspirantes/foto/${a.id}?tipo=cedula`}
+                    alt="Cédula"
+                    className="h-36 w-full max-w-xs rounded-md border border-slate-200 object-cover"
+                  />
+                </div>
+              ) : null}
+              {a.fotoTituloKey ? (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Foto del título
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/aspirantes/foto/${a.id}?tipo=titulo`}
+                    alt="Título"
+                    className="h-36 w-full max-w-xs rounded-md border border-slate-200 object-cover"
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <p className="text-xs text-slate-600">
             Convocatoria:{" "}
             <strong className="text-slate-900">

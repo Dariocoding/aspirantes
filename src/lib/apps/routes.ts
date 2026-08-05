@@ -1,6 +1,8 @@
 /** Rutas canónicas del dashboard (prefijadas por aplicación). */
 export const routes = {
   hub: "/",
+  /** Portal público: el aspirante actualiza sus datos con cédula + fecha de nacimiento. */
+  actualizarDatos: "/actualizar-datos",
   personal: {
     home: "/personal",
     aspirantes: "/personal/aspirantes",
