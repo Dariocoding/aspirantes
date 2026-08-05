@@ -12,7 +12,6 @@ import {
   recordSelfServiceFailure,
 } from "@src/lib/auth/self-service-attempts";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
-import { toDateInputValue } from "@src/lib/date-input";
 import { prisma } from "@src/lib/prisma";
 import {
   aspiranteSelfServiceUpdateSchema,
@@ -20,6 +19,7 @@ import {
 } from "@src/lib/validators/aspirante";
 import { zodFieldErrors } from "@src/lib/zod-errors";
 import { applyAspiranteFotosFromForm } from "@src/lib/aspirantes/apply-fotos";
+import { toDateInputValue } from "@src/lib/date-input";
 
 function emptyToNull(v: unknown) {
   const s = String(v ?? "").trim();
@@ -31,14 +31,14 @@ function onlyDigitsCedula(raw: string): string {
 }
 
 const GENERIC_NOT_FOUND =
-  "No se encontró un aspirante con esos datos en la convocatoria activa. Verifique cédula y fecha de nacimiento.";
+  "No se encontró un aspirante con esa cédula en la convocatoria activa.";
 
 async function clientIp(): Promise<string> {
   const h = await headers();
   return clientKeyFromHeaders(h);
 }
 
-async function findVerifiedAspirante(cedula: string, fechaNacimientoInput: string) {
+async function findVerifiedAspirante(cedula: string) {
   const convocatoria = await getConvocatoriaActiva();
   if (!convocatoria) return { convocatoria: null, aspirante: null };
 
@@ -52,10 +52,6 @@ async function findVerifiedAspirante(cedula: string, fechaNacimientoInput: strin
   });
   if (!aspirante) return { convocatoria, aspirante: null };
 
-  if (toDateInputValue(aspirante.fechaNacimiento) !== fechaNacimientoInput) {
-    return { convocatoria, aspirante: null };
-  }
-
   return { convocatoria, aspirante };
 }
 
@@ -66,9 +62,9 @@ function toSelfServiceRecord(
   return {
     aspiranteId: a.id,
     cedula: a.cedula,
-    fechaNacimiento: toDateInputValue(a.fechaNacimiento),
     nombres: a.nombres,
     apellidos: a.apellidos,
+    fechaNacimiento: toDateInputValue(a.fechaNacimiento),
     lugarNacimiento: a.lugarNacimiento,
     edad: a.edad,
     sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
@@ -113,17 +109,13 @@ export async function verifyAspiranteSelfService(
 
   const parsed = aspiranteSelfServiceVerifySchema.safeParse({
     cedula: onlyDigitsCedula(String(formData.get("cedula") ?? "")),
-    fechaNacimiento: formData.get("fechaNacimiento"),
   });
   if (!parsed.success) {
     recordSelfServiceFailure(ip);
     return { ok: false, errors: zodFieldErrors(parsed.error), record: null };
   }
 
-  const { convocatoria, aspirante } = await findVerifiedAspirante(
-    parsed.data.cedula,
-    parsed.data.fechaNacimiento,
-  );
+  const { convocatoria, aspirante } = await findVerifiedAspirante(parsed.data.cedula);
 
   if (!convocatoria) {
     return {
@@ -166,9 +158,9 @@ export async function updateAspiranteSelfService(
   const raw = {
     aspiranteId: formData.get("aspiranteId"),
     cedula: onlyDigitsCedula(String(formData.get("cedula") ?? "")),
-    fechaNacimiento: formData.get("fechaNacimiento"),
     nombres: formData.get("nombres"),
     apellidos: formData.get("apellidos"),
+    fechaNacimiento: formData.get("fechaNacimiento"),
     lugarNacimiento: formData.get("lugarNacimiento"),
     edad: formData.get("edad"),
     direccion: emptyToNull(formData.get("direccion")),
@@ -194,7 +186,7 @@ export async function updateAspiranteSelfService(
   }
 
   const d = parsed.data;
-  const { convocatoria, aspirante } = await findVerifiedAspirante(d.cedula, d.fechaNacimiento);
+  const { convocatoria, aspirante } = await findVerifiedAspirante(d.cedula);
 
   if (!convocatoria) {
     return {
@@ -217,6 +209,7 @@ export async function updateAspiranteSelfService(
       data: {
         nombres: d.nombres,
         apellidos: d.apellidos,
+        fechaNacimiento: d.fechaNacimiento,
         lugarNacimiento: d.lugarNacimiento,
         edad: d.edad,
         direccion: d.direccion ?? null,
@@ -301,7 +294,7 @@ export async function updateAspiranteSelfService(
   revalidatePath(routes.personal.aspirantes);
   revalidatePath(routes.personal.aspirante(aspirante.id));
 
-  const refreshed = await findVerifiedAspirante(d.cedula, d.fechaNacimiento);
+  const refreshed = await findVerifiedAspirante(d.cedula);
   return {
     ok: true,
     errors: {},

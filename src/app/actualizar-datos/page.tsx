@@ -1,8 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
 import { FANB_LOGIN_PHOTO_OVERLAY, INSTITUTION_LOGO_SRC } from "@src/lib/branding";
-import { routes } from "@src/lib/apps/routes";
 import { cn } from "@src/lib/utils";
 import { ActualizarDatosClient } from "./_components/actualizar-datos-client";
 
@@ -32,7 +30,7 @@ export default function ActualizarDatosPage() {
       <div className="relative z-10 flex w-full max-w-2xl flex-col items-center gap-4 pt-2 sm:gap-6 sm:pt-3">
         <Image
           src={INSTITUTION_LOGO_SRC}
-          alt="Fuerza Armada Nacional Bolivariana — Gestión de Personal"
+          alt="Fuerza Armada Nacional Bolivariano — Gestión de Personal"
           width={280}
           height={72}
           priority
@@ -48,20 +46,6 @@ export default function ActualizarDatosPage() {
         </div>
 
         <ActualizarDatosClient />
-
-        <p className="text-center text-xs text-slate-200/90">
-          ¿Personal autorizado?{" "}
-          <Link href="/login" className="font-medium text-amber-200 underline-offset-2 hover:underline">
-            Ingresar al sistema
-          </Link>
-          {" · "}
-          <Link
-            href={routes.hub}
-            className="font-medium text-amber-200 underline-offset-2 hover:underline"
-          >
-            Inicio
-          </Link>
-        </p>
       </div>
     </div>
   );

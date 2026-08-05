@@ -69,7 +69,7 @@ function VerifyForm({
           Identifíquese
         </CardTitle>
         <CardDescription className="text-slate-600">
-          Ingrese su cédula y fecha de nacimiento para cargar su ficha en la convocatoria activa.
+          Ingrese su cédula para cargar su ficha en la convocatoria activa.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -84,16 +84,6 @@ function VerifyForm({
               inputMode="numeric"
               autoComplete="off"
               placeholder="Solo números"
-              className="bg-white"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fechaNacimiento">Fecha de nacimiento</Label>
-            <Input
-              id="fechaNacimiento"
-              name="fechaNacimiento"
-              type="date"
-              required
               className="bg-white"
             />
           </div>
@@ -172,7 +162,6 @@ function EditForm({
       <form key={formKey} action={formAction} encType="multipart/form-data" className="space-y-4">
         <input type="hidden" name="aspiranteId" value={defaults.aspiranteId} />
         <input type="hidden" name="cedula" value={defaults.cedula} />
-        <input type="hidden" name="fechaNacimiento" value={defaults.fechaNacimiento} />
 
         <ErrorBanner errors={state.errors} />
 
@@ -214,7 +203,9 @@ function EditForm({
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Identidad</CardTitle>
-            <CardDescription>Puede corregir nombres y lugar de nacimiento.</CardDescription>
+            <CardDescription>
+              Puede corregir nombres, fecha y lugar de nacimiento.
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -224,6 +215,15 @@ function EditForm({
             <div className="space-y-1.5">
               <Label>Apellidos</Label>
               <Input name="apellidos" required defaultValue={defaults.apellidos} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Fecha de nacimiento</Label>
+              <Input
+                name="fechaNacimiento"
+                type="date"
+                required
+                defaultValue={defaults.fechaNacimiento}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Lugar de nacimiento</Label>

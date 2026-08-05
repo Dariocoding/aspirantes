@@ -59,21 +59,17 @@ export const aspiranteUpdateSchema = aspiranteCreateSchema.extend({
   aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
 });
 
-/** Verificación pública: cédula + fecha de nacimiento (convocatoria activa). */
+/** Verificación pública: cédula en la convocatoria activa. */
 export const aspiranteSelfServiceVerifySchema = z.object({
   cedula: z
     .string()
     .trim()
     .regex(/^[0-9]{6,12}$/, "Cédula: solo dígitos, entre 6 y 12 caracteres"),
-  fechaNacimiento: z
-    .string()
-    .min(1, "Fecha de nacimiento obligatoria")
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida"),
 });
 
 /**
  * Actualización desde el portal público.
- * No incluye unidad, calificación, ficha de evaluación ni cédula/sexo/fecha (identidad de acceso).
+ * No incluye unidad, calificación, ficha de evaluación ni cédula/sexo (identidad de acceso).
  */
 export const aspiranteSelfServiceUpdateSchema = z.object({
   aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
@@ -81,12 +77,13 @@ export const aspiranteSelfServiceUpdateSchema = z.object({
     .string()
     .trim()
     .regex(/^[0-9]{6,12}$/, "Cédula: solo dígitos, entre 6 y 12 caracteres"),
+  nombres: z.string().trim().min(1, "Nombres obligatorios").max(120),
+  apellidos: z.string().trim().min(1, "Apellidos obligatorios").max(120),
   fechaNacimiento: z
     .string()
     .min(1, "Fecha de nacimiento obligatoria")
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida"),
-  nombres: z.string().trim().min(1, "Nombres obligatorios").max(120),
-  apellidos: z.string().trim().min(1, "Apellidos obligatorios").max(120),
+    .transform((s) => new Date(s))
+    .refine((d) => !Number.isNaN(d.getTime()), "Fecha de nacimiento inválida"),
   lugarNacimiento: z.string().trim().min(1, "Lugar de nacimiento obligatorio").max(200),
   edad: z.coerce.number().int().min(16, "Edad mínima 16").max(80, "Edad máxima 80"),
   direccion: z.string().trim().max(500).optional().nullable(),

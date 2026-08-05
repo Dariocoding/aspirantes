@@ -16,9 +16,9 @@ export type AspiranteSelfServiceState = {
 export type AspiranteSelfServiceRecord = {
   aspiranteId: string;
   cedula: string;
-  fechaNacimiento: string;
   nombres: string;
   apellidos: string;
+  fechaNacimiento: string;
   lugarNacimiento: string;
   edad: number;
   sexo: "MASCULINO" | "FEMENINO";
