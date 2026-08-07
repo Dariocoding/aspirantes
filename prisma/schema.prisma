@@ -25,6 +25,28 @@ enum CalificacionAdmision {
   EN_EVALUACION
 }
 
+/// Nivel / grado educativo del aspirante (TSU o superior).
+enum TipoEstudioAspirante {
+  TSU
+  PREGRADO
+  ESPECIALIZACION
+  MAESTRIA
+  DOCTORADO
+  /// @deprecated Preferir PREGRADO. Se mantiene por filas históricas.
+  UNIVERSIDAD
+  /// @deprecated Fuera de alcance (solo TSU+). Se mantiene por filas históricas.
+  BACHILLER
+}
+
+/// Estado civil del aspirante.
+enum EstadoCivil {
+  SOLTERO
+  CASADO
+  DIVORCIADO
+  VIUDO
+  UNION_ESTABLE
+}
+
 enum TipoEsquela {
   CUMPLEANOS
   EFEMERIDE
@@ -180,14 +202,18 @@ model VerificationToken {
 
 /// Período de ingreso al censo (año y etapa del proceso). Solo una convocatoria está activa para nuevos registros.
 model Convocatoria {
-  id          String      @id @default(cuid())
-  codigo      String      @unique
-  nombre      String
-  anio        Int
-  activa      Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  aspirantes  Aspirante[]
+  id                   String      @id @default(cuid())
+  codigo               String      @unique
+  nombre               String
+  anio                 Int
+  activa               Boolean     @default(false)
+  /// Nombre del comandante de la convocatoria / curso.
+  comandanteNombre     String?
+  /// Teléfono del comandante de la convocatoria / curso.
+  comandanteTelefono   String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  aspirantes           Aspirante[]
 
   @@index([anio])
   @@index([activa])
@@ -209,6 +235,7 @@ model Aspirante {
   telefono              String?
   correo                String?
   hijosCantidad         Int                  @default(0)
+  estadoCivil           EstadoCivil?
   convocatoriaId        String
   convocatoria          Convocatoria         @relation(fields: [convocatoriaId], references: [id], onDelete: Restrict)
   createdAt             DateTime             @default(now())
@@ -224,6 +251,20 @@ model Aspirante {
   fotoCedulaKey         String?
   /// Foto del título universitario / fondo negro (S3/R2).
   fotoTituloKey         String?
+  /// Universidad egresado o TSU.
+  tipoEstudio              TipoEstudioAspirante?
+  /// Nombre de la universidad o instituto.
+  nombreUniversidad        String?
+  /// Título obtenido (p. ej. Abogada, Ingeniero).
+  tituloUniversidad        String?
+  /// País donde cursó los estudios.
+  paisUniversidad          String?
+  /// Núcleo / sede de la universidad.
+  nucleoUniversidad        String?
+  /// Año de ingreso a la universidad / TSU.
+  anioIngresoUniversidad   Int?
+  /// Año de egreso de la universidad / TSU.
+  anioEgresoUniversidad    Int?
 
   @@unique([cedula, convocatoriaId])
   @@index([calificacionAdmision])

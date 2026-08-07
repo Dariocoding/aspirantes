@@ -1,3 +1,5 @@
+import type { TipoEstudioValue } from "@src/lib/aspirantes/tipo-estudio";
+
 export type AspiranteActionState = {
   ok: boolean;
   errors: Record<string, string>;
@@ -26,6 +28,7 @@ export type AspiranteSelfServiceRecord = {
   telefono: string | null;
   correo: string | null;
   hijosCantidad: number;
+  estadoCivil: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
@@ -41,8 +44,17 @@ export type AspiranteSelfServiceRecord = {
   convocatoriaNombre: string;
   convocatoriaCodigo: string;
   fotoKey: string | null;
+  /** URL firmada temporal para previsualizar la foto tipo carnet en el portal público. */
+  fotoPerfilUrl: string | null;
   fotoCedulaKey: string | null;
   fotoTituloKey: string | null;
+  tipoEstudio: TipoEstudioValue | null;
+  nombreUniversidad: string | null;
+  tituloUniversidad: string | null;
+  paisUniversidad: string | null;
+  nucleoUniversidad: string | null;
+  anioIngresoUniversidad: number | null;
+  anioEgresoUniversidad: number | null;
 };
 
 export const aspiranteSelfServiceInitialState: AspiranteSelfServiceState = {

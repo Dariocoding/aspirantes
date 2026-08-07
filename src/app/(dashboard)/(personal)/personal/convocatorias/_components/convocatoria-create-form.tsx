@@ -74,6 +74,23 @@ export function ConvocatoriaCreateForm({ onSuccess }: ConvocatoriaCreateFormProp
         <Label htmlFor="conv-nombre">Nombre descriptivo</Label>
         <Input id="conv-nombre" name="nombre" required placeholder="Censo de aspirantes 2026 — segunda etapa" />
       </div>
+      <div>
+        <Label htmlFor="conv-comandante">Nombre del comandante</Label>
+        <Input
+          id="conv-comandante"
+          name="comandanteNombre"
+          placeholder="Nombre y apellido del Cmdte de curso"
+        />
+      </div>
+      <div>
+        <Label htmlFor="conv-comandante-tel">Teléfono del comandante</Label>
+        <Input
+          id="conv-comandante-tel"
+          name="comandanteTelefono"
+          type="tel"
+          placeholder="Ej.: 0412-0000000"
+        />
+      </div>
       <div className="md:col-span-2 flex items-center gap-2">
         <input id="conv-marcar" type="checkbox" name="marcarActiva" className="h-4 w-4 rounded border-slate-300" />
         <Label htmlFor="conv-marcar" className="mb-0 font-normal text-slate-700">

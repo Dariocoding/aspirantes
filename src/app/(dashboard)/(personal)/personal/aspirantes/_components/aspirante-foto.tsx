@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, FileImage, Trash2, Upload, UserRound } from "lucide-react";
+import { Camera, CheckCircle2, FileImage, Trash2, Upload, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@src/components/ui/button";
 import {
@@ -148,6 +148,10 @@ export function AspiranteFotoField({
   kind = "perfil",
   /** Si true, no usa URL de API (portal público: solo preview local / indicador). */
   previewOnlyLocal = false,
+  /** URL firmada u otra URL directa para previsualizar la imagen ya guardada (p. ej. portal público). */
+  storedPreviewUrl = null,
+  /** Si true, no muestra la imagen guardada (solo estado “cargado” y preview local al elegir archivo). */
+  hideStoredImage = false,
 }: {
   id: string;
   aspiranteId?: string;
@@ -155,6 +159,8 @@ export function AspiranteFotoField({
   nombre?: string;
   kind?: AspiranteFotoKind;
   previewOnlyLocal?: boolean;
+  storedPreviewUrl?: string | null;
+  hideStoredImage?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -168,11 +174,16 @@ export function AspiranteFotoField({
   const rounded = isDoc ? "md" : "full";
 
   const hasStoredFoto = Boolean(fotoKey && !quitar);
-  const storedUrl =
-    hasStoredFoto && aspiranteId && !previewOnlyLocal
-      ? aspiranteFotoUrl(aspiranteId, kind)
+  const remoteStoredUrl =
+    hasStoredFoto && !hideStoredImage
+      ? !previewOnlyLocal && aspiranteId
+        ? aspiranteFotoUrl(aspiranteId, kind)
+        : storedPreviewUrl
       : null;
-  const displayUrl = previewUrl ?? storedUrl;
+  // Documentos sensibles (cédula/título): nunca mostrar imagen; solo estado / nombre de archivo.
+  const displayUrl = hideStoredImage ? null : previewUrl ?? remoteStoredUrl;
+  const showUploadedStatus = Boolean(hideStoredImage && hasStoredFoto && !previewUrl);
+  const showPendingReplace = Boolean(hideStoredImage && previewUrl);
 
   useEffect(() => {
     return () => {
@@ -209,6 +220,7 @@ export function AspiranteFotoField({
   };
 
   const showStoredRemoved = Boolean(fotoKey && quitar && !previewUrl);
+  const canChange = Boolean(displayUrl || hasStoredFoto || previewUrl);
 
   return (
     <div className="flex flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-start">
@@ -220,9 +232,12 @@ export function AspiranteFotoField({
             "group relative flex shrink-0 items-center justify-center",
             isDoc ? "rounded-md" : "rounded-full",
             thumbClass,
-            "ring-2 ring-slate-200/90 ring-offset-2 ring-offset-white transition-shadow hover:ring-slate-400/80 focus-visible:outline-none focus-visible:ring-slate-500",
+            "ring-2 ring-offset-2 ring-offset-white transition-shadow focus-visible:outline-none",
+            showUploadedStatus || showPendingReplace
+              ? "ring-emerald-300/90 hover:ring-emerald-400/90 focus-visible:ring-emerald-500"
+              : "ring-slate-200/90 hover:ring-slate-400/80 focus-visible:ring-slate-500",
           )}
-          aria-label={displayUrl ? `Cambiar ${copy.aria}` : `Subir ${copy.aria}`}
+          aria-label={canChange ? `Cambiar ${copy.aria}` : `Subir ${copy.aria}`}
         >
           {displayUrl ? (
             <AspiranteFotoImage
@@ -232,6 +247,19 @@ export function AspiranteFotoField({
               iconSize="lg"
               rounded={rounded}
             />
+          ) : showUploadedStatus || showPendingReplace ? (
+            <div
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 border border-emerald-200 bg-linear-to-br from-emerald-50 via-white to-emerald-50/80 text-emerald-700",
+                isDoc ? "rounded-md" : "rounded-full",
+                thumbClass,
+              )}
+            >
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" aria-hidden />
+              <span className="text-[10px] font-semibold tracking-wide uppercase">
+                {showPendingReplace ? "Listo" : "Cargado"}
+              </span>
+            </div>
           ) : (
             <div
               className={cn(
@@ -257,14 +285,16 @@ export function AspiranteFotoField({
           >
             <Camera className="h-5 w-5" aria-hidden />
             <span className="text-[10px] font-medium tracking-wide uppercase">
-              {displayUrl ? "Cambiar" : "Subir"}
+              {canChange ? "Cambiar" : "Subir"}
             </span>
           </span>
         </button>
         <p className="text-center text-[11px] text-slate-500 sm:text-left">
-          {previewOnlyLocal && hasStoredFoto && !previewUrl && !quitar
-            ? "Documento ya cargado. Puede reemplazarlo."
-            : "Pulse o use los botones"}
+          {showUploadedStatus
+            ? "Ya está en el sistema. Suba otra solo si desea reemplazarla."
+            : showPendingReplace
+              ? "Nueva imagen lista. Guarde para reemplazar la anterior."
+              : "Pulse o use los botones"}
         </p>
       </div>
 
@@ -292,6 +322,22 @@ export function AspiranteFotoField({
               Deshacer
             </button>
           </p>
+        ) : showUploadedStatus ? (
+          <p className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50/90 px-2.5 py-2 text-xs text-emerald-950">
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
+            <span>
+              <span className="font-medium">Documento ya cargado.</span> No es necesario volver a
+              subirlo; elija otra imagen solo si quiere reemplazarlo.
+            </span>
+          </p>
+        ) : showPendingReplace ? (
+          <p className="flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50/90 px-2.5 py-2 text-xs text-sky-950">
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600" aria-hidden />
+            <span>
+              <span className="font-medium">Archivo seleccionado.</span> Se guardará al enviar el
+              formulario{hasStoredFoto ? " y reemplazará el documento actual" : ""}.
+            </span>
+          </p>
         ) : hasStoredFoto && !previewUrl ? (
           <p className="text-xs text-slate-600">Imagen actual en el sistema. Suba otra para reemplazarla.</p>
         ) : null}
@@ -299,7 +345,7 @@ export function AspiranteFotoField({
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" className="gap-1.5 shadow-xs" onClick={openPicker}>
             <Upload className="h-3.5 w-3.5" aria-hidden />
-            {displayUrl || (hasStoredFoto && previewOnlyLocal) ? "Cambiar" : "Elegir imagen"}
+            {canChange ? "Cambiar" : "Elegir imagen"}
           </Button>
 
           {(hasStoredFoto || previewUrl) && !showStoredRemoved ? (

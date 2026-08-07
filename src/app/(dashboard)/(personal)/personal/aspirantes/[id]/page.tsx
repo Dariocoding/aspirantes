@@ -9,6 +9,8 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
+import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
+import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { prisma } from "@src/lib/prisma";
 import { cn } from "@src/lib/utils";
 
@@ -89,6 +91,7 @@ export default async function AspirantePerfilPage({
           telefono: a.telefono,
           correo: a.correo,
           hijosCantidad: a.hijosCantidad,
+          estadoCivil: isEstadoCivilValue(a.estadoCivil) ? a.estadoCivil : null,
           convocatoriaCodigo: a.convocatoria.codigo,
           convocatoriaNombre: a.convocatoria.nombre,
           convocatoriaAnio: a.convocatoria.anio,
@@ -108,6 +111,13 @@ export default async function AspirantePerfilPage({
           fotoKey: a.fotoKey,
           fotoCedulaKey: a.fotoCedulaKey,
           fotoTituloKey: a.fotoTituloKey,
+          tipoEstudio: normalizeTipoEstudio(a.tipoEstudio),
+          nombreUniversidad: a.nombreUniversidad,
+          tituloUniversidad: a.tituloUniversidad,
+          paisUniversidad: a.paisUniversidad,
+          nucleoUniversidad: a.nucleoUniversidad,
+          anioIngresoUniversidad: a.anioIngresoUniversidad,
+          anioEgresoUniversidad: a.anioEgresoUniversidad,
         }}
       />
     </div>

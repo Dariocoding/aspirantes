@@ -4,13 +4,18 @@ import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
 import { writeAuditLog } from "@src/lib/audit/log";
 import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
+import { labelEstadoCivilPdf } from "@src/lib/aspirantes/estado-civil";
+import { labelTipoEstudioPdf } from "@src/lib/aspirantes/tipo-estudio";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { AspiranteFichaTecnicaPdfDocument } from "@src/lib/pdf/aspirante-ficha-tecnica-document";
+import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 import { prisma } from "@src/lib/prisma";
 import { getObjectBuffer } from "@src/lib/storage/s3";
 
 export const runtime = "nodejs";
+
+registerFichaTecnicaPdfFonts();
 
 async function loadFotoForPdf(fotoKey: string | null): Promise<Buffer | null> {
   if (!fotoKey) return null;
@@ -64,11 +69,35 @@ export async function GET(
     sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
     telefono: a.telefono,
     hijosCantidad: a.hijosCantidad,
+    estadoCivil: labelEstadoCivilPdf(a.estadoCivil),
     unidadPostulante: a.unidadPostulante,
     convocatoriaNombre: a.convocatoria.nombre,
     convocatoriaCodigo: a.convocatoria.codigo,
     foto,
     ficha,
+    nivelEducativo: labelTipoEstudioPdf(a.tipoEstudio),
+    cmdteCursoNombre: a.convocatoria.comandanteNombre,
+    cmdteCursoTelefono: a.convocatoria.comandanteTelefono,
+    estudios: a.nombreUniversidad || a.tituloUniversidad
+      ? [
+          {
+            universidad: a.nombreUniversidad ?? "",
+            titulo: a.tituloUniversidad ?? "",
+            pais: a.paisUniversidad ?? "",
+            anioIngreso: a.anioIngresoUniversidad != null ? String(a.anioIngresoUniversidad) : "",
+            anioEgreso: a.anioEgresoUniversidad != null ? String(a.anioEgresoUniversidad) : "",
+            nucleo: a.nucleoUniversidad ?? "",
+          },
+        ]
+      : undefined,
+    // Régimen disciplinario militar: por defecto todo en NO
+    investigacionAdministrativa: false,
+    investigacionJudicial: false,
+    registroSiipol: false,
+    investigacionPenalMilitar: false,
+    juicioAbierto: false,
+    // Estudio culminado: por defecto SI
+    estudioCulminado: true,
   });
 
   const buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);

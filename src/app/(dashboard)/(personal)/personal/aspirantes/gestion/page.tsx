@@ -12,6 +12,8 @@ import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
 import { redirect, unauthorized } from "next/navigation";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
+import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
+import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { toDateInputValue } from "@src/lib/date-input";
 import { prisma } from "@src/lib/prisma";
 
@@ -86,6 +88,7 @@ export default async function AspirantesGestionPage({
         telefono: a.telefono,
         correo: a.correo,
         hijosCantidad: a.hijosCantidad,
+        estadoCivil: isEstadoCivilValue(a.estadoCivil) ? a.estadoCivil : null,
         estaturaCm: a.datosFisicos?.estaturaCm ?? null,
         pesoKg: a.datosFisicos?.pesoKg ?? null,
         tipoSangre: a.datosFisicos?.tipoSangre ?? null,
@@ -101,6 +104,13 @@ export default async function AspirantesGestionPage({
         fotoKey: a.fotoKey,
         fotoCedulaKey: a.fotoCedulaKey,
         fotoTituloKey: a.fotoTituloKey,
+        tipoEstudio: normalizeTipoEstudio(a.tipoEstudio),
+        nombreUniversidad: a.nombreUniversidad,
+        tituloUniversidad: a.tituloUniversidad,
+        paisUniversidad: a.paisUniversidad,
+        nucleoUniversidad: a.nucleoUniversidad,
+        anioIngresoUniversidad: a.anioIngresoUniversidad,
+        anioEgresoUniversidad: a.anioEgresoUniversidad,
       };
     }
   }

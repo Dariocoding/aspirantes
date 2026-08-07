@@ -6,6 +6,11 @@ import {
   type FichaEvaluacionState,
 } from "@src/lib/aspirantes/ficha-evaluacion";
 import { calificacionAdmisionEtiqueta } from "@src/lib/aspirantes/census";
+import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
+import {
+  labelTipoEstudioShort,
+  type TipoEstudioValue,
+} from "@src/lib/aspirantes/tipo-estudio";
 import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
@@ -34,6 +39,7 @@ export type AspirantePerfilSerializado = {
   telefono: string | null;
   correo: string | null;
   hijosCantidad: number;
+  estadoCivil: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
   convocatoriaCodigo: string;
   convocatoriaNombre: string;
   convocatoriaAnio: number;
@@ -53,6 +59,13 @@ export type AspirantePerfilSerializado = {
   fotoKey: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
+  tipoEstudio: TipoEstudioValue | null;
+  nombreUniversidad: string | null;
+  tituloUniversidad: string | null;
+  paisUniversidad: string | null;
+  nucleoUniversidad: string | null;
+  anioIngresoUniversidad: number | null;
+  anioEgresoUniversidad: number | null;
 };
 
 function Campo({ label, value }: { label: string; value: string | null | undefined }) {
@@ -411,10 +424,33 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <Campo label="Lugar de nacimiento" value={a.lugarNacimiento} />
               <Campo label="Teléfono" value={a.telefono} />
               <Campo label="Correo" value={a.correo} />
+              <Campo label="Estado civil" value={labelEstadoCivil(a.estadoCivil)} />
               <Campo label="Hijos" value={String(a.hijosCantidad)} />
               <div className="sm:col-span-2 lg:col-span-3">
                 <Campo label="Dirección" value={a.direccion} />
               </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Estudios conducentes a título universitario
+            </h2>
+            <Separator className="my-3" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Campo label="Grado educativo" value={labelTipoEstudioShort(a.tipoEstudio)} />
+              <Campo label="Universidad" value={a.nombreUniversidad} />
+              <Campo label="Título" value={a.tituloUniversidad} />
+              <Campo label="País" value={a.paisUniversidad} />
+              <Campo
+                label="Año ingreso"
+                value={a.anioIngresoUniversidad != null ? String(a.anioIngresoUniversidad) : null}
+              />
+              <Campo
+                label="Año egreso"
+                value={a.anioEgresoUniversidad != null ? String(a.anioEgresoUniversidad) : null}
+              />
+              <Campo label="Núcleo" value={a.nucleoUniversidad} />
             </div>
           </div>
 

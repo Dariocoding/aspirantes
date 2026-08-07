@@ -1,13 +1,14 @@
 ﻿import Link from "next/link";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Mars,
   Pencil,
   Search,
   UserRound,
   UserPlus,
+  Venus,
 } from "lucide-react";
 import { AspiranteDeleteForm } from "@dashboard/aspirantes/_components/aspirante-delete-form";
 import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
@@ -109,7 +110,7 @@ export default async function AspirantesPage({
     prisma.aspirante.count({ where }),
     prisma.aspirante.findMany({
       where,
-      include: { datosFisicos: true, contactos: true, convocatoria: true },
+      include: { datosFisicos: true, contactos: true },
       orderBy: sort,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -306,35 +307,29 @@ export default async function AspirantesPage({
             <Table>
               <TableHeader className="[&_tr]:border-slate-200 [&_tr]:hover:bg-transparent">
                 <TableRow className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90">
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Nombre completo
                   </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Unidad postulante
+                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                    Unidad
                   </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Admisión
                   </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Convocatoria
-                  </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Cédula
                   </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-10 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Sexo
                   </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-12 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Edad
                   </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Nacimiento
-                  </TableHead>
-                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Ficha
                   </TableHead>
                   {write ? (
-                    <TableHead className="h-11 px-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    <TableHead className="h-9 px-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                       Acciones
                     </TableHead>
                   ) : null}
@@ -344,12 +339,12 @@ export default async function AspirantesPage({
                 {aspirantes.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={write ? 10 : 9}
-                      className="h-32 whitespace-normal px-4 text-center text-sm text-slate-500"
+                      colSpan={write ? 8 : 7}
+                      className="h-28 whitespace-normal px-3 text-center text-sm text-slate-500"
                     >
-                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                          <Search className="h-5 w-5" aria-hidden />
+                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                          <Search className="h-4 w-4" aria-hidden />
                         </div>
                         <p className="font-medium text-slate-700">No hay resultados con estos criterios</p>
                         <p className="text-xs text-slate-500">Ajuste la búsqueda o limpie los filtros para ver el censo.</p>
@@ -357,107 +352,108 @@ export default async function AspirantesPage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  aspirantes.map((a) => (
-                    <TableRow key={a.id} className="border-slate-100 transition-colors">
-                      <TableCell className="px-4 py-3 font-medium text-slate-900">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <AspiranteFotoThumbnail
-                            aspiranteId={a.id}
-                            fotoKey={a.fotoKey}
-                            nombre={`${a.nombres} ${a.apellidos}`}
-                            size="sm"
-                          />
-                          <span className="min-w-0 truncate">
-                            {a.nombres} {a.apellidos}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-40 px-4 py-3 text-sm text-slate-800">
-                        {(a.unidadPostulante ?? "").trim() ? (
-                          <span className="font-medium">{a.unidadPostulante ?? ""}</span>
-                        ) : (
+                  aspirantes.map((a) => {
+                    const esFemenino = a.sexo === "FEMENINO";
+                    return (
+                      <TableRow key={a.id} className="border-slate-100 transition-colors">
+                        <TableCell className="px-3 py-2 font-medium text-slate-900">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <AspiranteFotoThumbnail
+                              aspiranteId={a.id}
+                              fotoKey={a.fotoKey}
+                              nombre={`${a.nombres} ${a.apellidos}`}
+                              size="sm"
+                            />
+                            <span className="min-w-0 truncate text-sm">
+                              {a.nombres} {a.apellidos}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-36 px-3 py-2 text-sm text-slate-800">
+                          {(a.unidadPostulante ?? "").trim() ? (
+                            <span className="font-medium">{a.unidadPostulante ?? ""}</span>
+                          ) : (
                             <span className="text-slate-400">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                            calificacionAdmisionBadgeClass(a.calificacionAdmision),
                           )}
-                        >
-                          {calificacionAdmisionEtiqueta(a.calificacionAdmision)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="max-w-40 px-4 py-3 text-xs text-slate-700">
-                        <span className="font-mono text-[11px] text-slate-600">{a.convocatoria.codigo}</span>
-                        {a.convocatoria.activa ? (
-                          <span className="ml-1.5 text-[10px] font-semibold uppercase text-emerald-700">activa</span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="px-4 py-3 font-mono text-sm tabular-nums text-slate-700">{a.cedula}</TableCell>
-                      <TableCell className="px-4 py-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                            a.sexo === "FEMENINO"
-                              ? "border-rose-200 bg-rose-50 text-rose-800"
-                              : "border-sky-200 bg-sky-50 text-sky-900",
-                          )}
-                        >
-                          {a.sexo === "FEMENINO" ? "Femenino" : "Masculino"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-4 py-3 tabular-nums text-slate-700">{a.edad}</TableCell>
-                      <TableCell className="px-4 py-3 text-slate-700">
-                        <span className="inline-flex items-center gap-1.5 tabular-nums">
-                          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
-                          {a.fechaNacimiento.toLocaleDateString("es-VE")}
-                        </span>
-                      </TableCell>
-                      <TableCell className="px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <Link
-                            href={routes.personal.aspirante(a.id)}
-                            prefetch={false}
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
+                          <span
                             className={cn(
-                              buttonVariants({ variant: "ghost", size: "sm" }),
-                              "h-8 gap-1.5 px-2 text-slate-700 hover:bg-slate-100 hover:text-slate-900",
+                              "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                              calificacionAdmisionBadgeClass(a.calificacionAdmision),
                             )}
                           >
-                            <UserRound className="h-3.5 w-3.5" aria-hidden />
-                            Perfil
-                          </Link>
-                          <AspiranteFichaTecnicaPdfLink
-                            aspiranteId={a.id}
-                            className="h-8 px-2"
-                            label="PDF"
-                          />
-                        </div>
-                      </TableCell>
-                      {write ? (
-                        <TableCell className="px-4 py-3 text-right">
-                          <div className="inline-flex flex-wrap justify-end gap-2">
+                            {calificacionAdmisionEtiqueta(a.calificacionAdmision)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-3 py-2 font-mono text-sm tabular-nums text-slate-700">
+                          {a.cedula}
+                        </TableCell>
+                        <TableCell className="px-2 py-2 text-center">
+                          <span
+                            title={esFemenino ? "Femenino" : "Masculino"}
+                            aria-label={esFemenino ? "Femenino" : "Masculino"}
+                            className={cn(
+                              "inline-flex h-7 w-7 items-center justify-center rounded-full border",
+                              esFemenino
+                                ? "border-rose-200 bg-rose-50 text-rose-600"
+                                : "border-sky-200 bg-sky-50 text-sky-700",
+                            )}
+                          >
+                            {esFemenino ? (
+                              <Venus className="h-3.5 w-3.5" aria-hidden />
+                            ) : (
+                              <Mars className="h-3.5 w-3.5" aria-hidden />
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
+                          {a.edad}
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
+                          <div className="flex flex-wrap items-center gap-1">
                             <Link
-                              href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
+                              href={routes.personal.aspirante(a.id)}
                               prefetch={false}
                               className={cn(
-                                buttonVariants({ variant: "outline", size: "sm" }),
-                                "gap-1.5 border-slate-200 bg-white shadow-sm",
+                                buttonVariants({ variant: "ghost", size: "sm" }),
+                                "h-7 gap-1 px-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900",
                               )}
                             >
-                              <Pencil className="h-3.5 w-3.5" aria-hidden />
-                              Editar
+                              <UserRound className="h-3.5 w-3.5" aria-hidden />
+                              Perfil
                             </Link>
-                            <AspiranteDeleteForm
+                            <AspiranteFichaTecnicaPdfLink
                               aspiranteId={a.id}
-                              nombreCompleto={`${a.nombres} ${a.apellidos}`}
+                              className="h-7 px-1.5 text-xs"
+                              label="PDF"
                             />
                           </div>
                         </TableCell>
-                      ) : null}
-                    </TableRow>
-                  ))
+                        {write ? (
+                          <TableCell className="px-3 py-2 text-right">
+                            <div className="inline-flex flex-wrap justify-end gap-1.5">
+                              <Link
+                                href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
+                                prefetch={false}
+                                className={cn(
+                                  buttonVariants({ variant: "outline", size: "sm" }),
+                                  "h-7 gap-1 border-slate-200 bg-white px-2 text-xs shadow-sm",
+                                )}
+                              >
+                                <Pencil className="h-3.5 w-3.5" aria-hidden />
+                                Editar
+                              </Link>
+                              <AspiranteDeleteForm
+                                aspiranteId={a.id}
+                                nombreCompleto={`${a.nombres} ${a.apellidos}`}
+                              />
+                            </div>
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

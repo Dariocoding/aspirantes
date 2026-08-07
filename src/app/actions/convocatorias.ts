@@ -19,6 +19,8 @@ export async function createConvocatoria(
     codigo: formData.get("codigo"),
     nombre: formData.get("nombre"),
     anio: formData.get("anio"),
+    comandanteNombre: formData.get("comandanteNombre"),
+    comandanteTelefono: formData.get("comandanteTelefono"),
     marcarActiva: formData.get("marcarActiva"),
   };
 
@@ -43,6 +45,8 @@ export async function createConvocatoria(
           nombre: d.nombre,
           anio: d.anio,
           activa: marcar,
+          comandanteNombre: d.comandanteNombre ?? null,
+          comandanteTelefono: d.comandanteTelefono ?? null,
         },
         select: { id: true, codigo: true, nombre: true, activa: true },
       });
@@ -83,6 +87,8 @@ export async function updateConvocatoria(
     codigo: formData.get("codigo"),
     nombre: formData.get("nombre"),
     anio: formData.get("anio"),
+    comandanteNombre: formData.get("comandanteNombre"),
+    comandanteTelefono: formData.get("comandanteTelefono"),
   };
 
   const parsed = convocatoriaUpdateSchema.safeParse(raw);
@@ -95,7 +101,13 @@ export async function updateConvocatoria(
   try {
     await prisma.convocatoria.update({
       where: { id: d.id },
-      data: { codigo: d.codigo, nombre: d.nombre, anio: d.anio },
+      data: {
+        codigo: d.codigo,
+        nombre: d.nombre,
+        anio: d.anio,
+        comandanteNombre: d.comandanteNombre ?? null,
+        comandanteTelefono: d.comandanteTelefono ?? null,
+      },
     });
   } catch (e: unknown) {
     const code = typeof e === "object" && e !== null && "code" in e ? String((e as { code?: string }).code) : "";

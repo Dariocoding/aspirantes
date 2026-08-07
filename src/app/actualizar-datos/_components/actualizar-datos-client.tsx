@@ -18,6 +18,8 @@ import { Label } from "@src/components/ui/label";
 import { Textarea } from "@src/components/ui/textarea";
 import type { AspiranteSelfServiceRecord, AspiranteSelfServiceState } from "@src/lib/action-types";
 import { aspiranteSelfServiceInitialState } from "@src/lib/action-types";
+import { ESTADO_CIVIL_LABELS, ESTADO_CIVIL_VALUES } from "@src/lib/aspirantes/estado-civil";
+import { TIPO_ESTUDIO_LABELS, TIPO_ESTUDIO_VALUES } from "@src/lib/aspirantes/tipo-estudio";
 import { FANB_INSTITUTION_PANEL } from "@src/lib/branding";
 import { cn } from "@src/lib/utils";
 import { CheckCircle2, IdCard, Loader2, Save, Search } from "lucide-react";
@@ -180,6 +182,7 @@ function EditForm({
               nombre={`${defaults.nombres} ${defaults.apellidos}`}
               kind="perfil"
               previewOnlyLocal
+              storedPreviewUrl={defaults.fotoPerfilUrl}
             />
             <AspiranteFotoField
               id="self-foto-cedula"
@@ -188,6 +191,7 @@ function EditForm({
               nombre="cédula"
               kind="cedula"
               previewOnlyLocal
+              hideStoredImage
             />
             <AspiranteFotoField
               id="self-foto-titulo"
@@ -196,6 +200,7 @@ function EditForm({
               nombre="título"
               kind="titulo"
               previewOnlyLocal
+              hideStoredImage
             />
           </CardContent>
         </Card>
@@ -204,10 +209,21 @@ function EditForm({
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Identidad</CardTitle>
             <CardDescription>
-              Puede corregir nombres, fecha y lugar de nacimiento.
+              Puede corregir nombres, fecha y lugar de nacimiento, y la unidad que lo postula.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="unidadPostulante">Unidad que lo postula</Label>
+              <Input
+                id="unidadPostulante"
+                name="unidadPostulante"
+                required
+                defaultValue={defaults.unidadPostulante}
+                placeholder="Ej.: 12 BRIGADA, COMANDO AV, CGEB..."
+                autoComplete="organization"
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Nombres</Label>
               <Input name="nombres" required defaultValue={defaults.nombres} />
@@ -245,6 +261,95 @@ function EditForm({
 
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="pb-3">
+            <CardTitle className="text-base">Estudios conducentes a título universitario</CardTitle>
+            <CardDescription>
+              Universidad, título, país, años de ingreso/egreso y núcleo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="tipoEstudio">Grado educativo</Label>
+              <select
+                id="tipoEstudio"
+                name="tipoEstudio"
+                className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={defaults.tipoEstudio ?? ""}
+              >
+                <option value="">Sin indicar</option>
+                {TIPO_ESTUDIO_VALUES.map((v) => (
+                  <option key={v} value={v}>
+                    {TIPO_ESTUDIO_LABELS[v]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="nombreUniversidad">Universidad</Label>
+              <Input
+                id="nombreUniversidad"
+                name="nombreUniversidad"
+                defaultValue={defaults.nombreUniversidad ?? ""}
+                placeholder="Universidad, instituto o centro de estudios"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tituloUniversidad">Título</Label>
+              <Input
+                id="tituloUniversidad"
+                name="tituloUniversidad"
+                defaultValue={defaults.tituloUniversidad ?? ""}
+                placeholder="Ej.: Abogada, Ingeniero"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="paisUniversidad">País</Label>
+              <Input
+                id="paisUniversidad"
+                name="paisUniversidad"
+                defaultValue={defaults.paisUniversidad ?? ""}
+                placeholder="Ej.: Venezuela"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="anioIngresoUniversidad">Año de ingreso</Label>
+              <Input
+                id="anioIngresoUniversidad"
+                name="anioIngresoUniversidad"
+                type="number"
+                inputMode="numeric"
+                min={1950}
+                max={2100}
+                placeholder="Ej.: 2018"
+                defaultValue={defaults.anioIngresoUniversidad ?? ""}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="anioEgresoUniversidad">Año de egreso</Label>
+              <Input
+                id="anioEgresoUniversidad"
+                name="anioEgresoUniversidad"
+                type="number"
+                inputMode="numeric"
+                min={1950}
+                max={2100}
+                placeholder="Ej.: 2023"
+                defaultValue={defaults.anioEgresoUniversidad ?? ""}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="nucleoUniversidad">Núcleo</Label>
+              <Input
+                id="nucleoUniversidad"
+                name="nucleoUniversidad"
+                defaultValue={defaults.nucleoUniversidad ?? ""}
+                placeholder="Ej.: Dtto. Capital"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Contacto</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -265,6 +370,22 @@ function EditForm({
                 max={30}
                 defaultValue={defaults.hijosCantidad}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="estadoCivil">Estado civil</Label>
+              <select
+                id="estadoCivil"
+                name="estadoCivil"
+                className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={defaults.estadoCivil ?? ""}
+              >
+                <option value="">Sin indicar</option>
+                {ESTADO_CIVIL_VALUES.map((v) => (
+                  <option key={v} value={v}>
+                    {ESTADO_CIVIL_LABELS[v]}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Dirección</Label>

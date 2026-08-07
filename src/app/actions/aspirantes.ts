@@ -12,6 +12,7 @@ import type { AspiranteActionState } from "@src/lib/action-types";
 import { writeAuditLog } from "@src/lib/audit/log";
 import { routes } from "@src/lib/apps/routes";
 import { isFichaEvaluacionVacia, normalizeFichaEvaluacionForDb } from "@src/lib/aspirantes/ficha-evaluacion";
+import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import {
   applyAspiranteFotosFromForm,
   removeAllAspiranteFotos,
@@ -63,6 +64,7 @@ export async function createAspirante(
     telefono: emptyToNull(formData.get("telefono")),
     correo: emptyToNull(formData.get("correo")),
     hijosCantidad: formData.get("hijosCantidad") || "0",
+    estadoCivil: emptyToNull(formData.get("estadoCivil")),
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
     tipoSangre: emptyToNull(formData.get("tipoSangre")),
@@ -74,6 +76,13 @@ export async function createAspirante(
     contactoParentesco: formData.get("contactoParentesco"),
     contactoTelefono: formData.get("contactoTelefono"),
     contactoDireccion: emptyToNull(formData.get("contactoDireccion")),
+    tipoEstudio: emptyToNull(formData.get("tipoEstudio")),
+    nombreUniversidad: emptyToNull(formData.get("nombreUniversidad")),
+    tituloUniversidad: emptyToNull(formData.get("tituloUniversidad")),
+    paisUniversidad: emptyToNull(formData.get("paisUniversidad")),
+    nucleoUniversidad: emptyToNull(formData.get("nucleoUniversidad")),
+    anioIngresoUniversidad: formData.get("anioIngresoUniversidad"),
+    anioEgresoUniversidad: formData.get("anioEgresoUniversidad"),
   };
 
   const parsed = aspiranteCreateSchema.safeParse(raw);
@@ -113,7 +122,15 @@ export async function createAspirante(
         telefono: d.telefono ?? null,
         correo: d.correo ?? null,
         hijosCantidad: d.hijosCantidad,
+        estadoCivil: d.estadoCivil ?? null,
         convocatoriaId: convocatoria.id,
+        tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
+        nombreUniversidad: d.nombreUniversidad ?? null,
+        tituloUniversidad: d.tituloUniversidad ?? null,
+        paisUniversidad: d.paisUniversidad ?? null,
+        nucleoUniversidad: d.nucleoUniversidad ?? null,
+        anioIngresoUniversidad: d.anioIngresoUniversidad ?? null,
+        anioEgresoUniversidad: d.anioEgresoUniversidad ?? null,
         ...(fichaPayload !== undefined ? { fichaEvaluacion: toPrismaFichaEvaluacion(fichaPayload) } : {}),
         datosFisicos: {
           create: {
@@ -231,6 +248,7 @@ export async function updateAspirante(
     telefono: emptyToNull(formData.get("telefono")),
     correo: emptyToNull(formData.get("correo")),
     hijosCantidad: formData.get("hijosCantidad") || "0",
+    estadoCivil: emptyToNull(formData.get("estadoCivil")),
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
     tipoSangre: emptyToNull(formData.get("tipoSangre")),
@@ -242,6 +260,13 @@ export async function updateAspirante(
     contactoParentesco: formData.get("contactoParentesco"),
     contactoTelefono: formData.get("contactoTelefono"),
     contactoDireccion: emptyToNull(formData.get("contactoDireccion")),
+    tipoEstudio: emptyToNull(formData.get("tipoEstudio")),
+    nombreUniversidad: emptyToNull(formData.get("nombreUniversidad")),
+    tituloUniversidad: emptyToNull(formData.get("tituloUniversidad")),
+    paisUniversidad: emptyToNull(formData.get("paisUniversidad")),
+    nucleoUniversidad: emptyToNull(formData.get("nucleoUniversidad")),
+    anioIngresoUniversidad: formData.get("anioIngresoUniversidad"),
+    anioEgresoUniversidad: formData.get("anioEgresoUniversidad"),
   };
 
   const parsed = aspiranteUpdateSchema.safeParse(raw);
@@ -298,6 +323,14 @@ export async function updateAspirante(
           telefono: d.telefono ?? null,
           correo: d.correo ?? null,
           hijosCantidad: d.hijosCantidad,
+          estadoCivil: d.estadoCivil ?? null,
+          tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
+          nombreUniversidad: d.nombreUniversidad ?? null,
+          tituloUniversidad: d.tituloUniversidad ?? null,
+          paisUniversidad: d.paisUniversidad ?? null,
+          nucleoUniversidad: d.nucleoUniversidad ?? null,
+          anioIngresoUniversidad: d.anioIngresoUniversidad ?? null,
+          anioEgresoUniversidad: d.anioEgresoUniversidad ?? null,
           ...(fichaPayload !== undefined ? { fichaEvaluacion: toPrismaFichaEvaluacion(fichaPayload) } : {}),
         },
       });

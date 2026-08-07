@@ -19,7 +19,10 @@ import {
 } from "@src/lib/validators/aspirante";
 import { zodFieldErrors } from "@src/lib/zod-errors";
 import { applyAspiranteFotosFromForm } from "@src/lib/aspirantes/apply-fotos";
+import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
+import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { toDateInputValue } from "@src/lib/date-input";
+import { getPresignedGetUrl } from "@src/lib/storage/s3";
 
 function emptyToNull(v: unknown) {
   const s = String(v ?? "").trim();
@@ -55,10 +58,19 @@ async function findVerifiedAspirante(cedula: string) {
   return { convocatoria, aspirante };
 }
 
-function toSelfServiceRecord(
+async function toSelfServiceRecord(
   a: NonNullable<Awaited<ReturnType<typeof findVerifiedAspirante>>["aspirante"]>,
-): NonNullable<AspiranteSelfServiceState["record"]> {
+): Promise<NonNullable<AspiranteSelfServiceState["record"]>> {
   const c = a.contactos[0];
+  let fotoPerfilUrl: string | null = null;
+  if (a.fotoKey) {
+    try {
+      fotoPerfilUrl = await getPresignedGetUrl(a.fotoKey, 3600);
+    } catch {
+      fotoPerfilUrl = null;
+    }
+  }
+
   return {
     aspiranteId: a.id,
     cedula: a.cedula,
@@ -72,6 +84,7 @@ function toSelfServiceRecord(
     telefono: a.telefono,
     correo: a.correo,
     hijosCantidad: a.hijosCantidad,
+    estadoCivil: isEstadoCivilValue(a.estadoCivil) ? a.estadoCivil : null,
     estaturaCm: a.datosFisicos?.estaturaCm ?? null,
     pesoKg: a.datosFisicos?.pesoKg ?? null,
     tipoSangre: a.datosFisicos?.tipoSangre ?? null,
@@ -87,8 +100,16 @@ function toSelfServiceRecord(
     convocatoriaNombre: a.convocatoria.nombre,
     convocatoriaCodigo: a.convocatoria.codigo,
     fotoKey: a.fotoKey,
+    fotoPerfilUrl,
     fotoCedulaKey: a.fotoCedulaKey,
     fotoTituloKey: a.fotoTituloKey,
+    tipoEstudio: normalizeTipoEstudio(a.tipoEstudio),
+    nombreUniversidad: a.nombreUniversidad,
+    tituloUniversidad: a.tituloUniversidad,
+    paisUniversidad: a.paisUniversidad,
+    nucleoUniversidad: a.nucleoUniversidad,
+    anioIngresoUniversidad: a.anioIngresoUniversidad,
+    anioEgresoUniversidad: a.anioEgresoUniversidad,
   };
 }
 
@@ -136,7 +157,7 @@ export async function verifyAspiranteSelfService(
   return {
     ok: true,
     errors: {},
-    record: toSelfServiceRecord(aspirante),
+    record: await toSelfServiceRecord(aspirante),
   };
 }
 
@@ -158,6 +179,7 @@ export async function updateAspiranteSelfService(
   const raw = {
     aspiranteId: formData.get("aspiranteId"),
     cedula: onlyDigitsCedula(String(formData.get("cedula") ?? "")),
+    unidadPostulante: formData.get("unidadPostulante"),
     nombres: formData.get("nombres"),
     apellidos: formData.get("apellidos"),
     fechaNacimiento: formData.get("fechaNacimiento"),
@@ -167,6 +189,7 @@ export async function updateAspiranteSelfService(
     telefono: emptyToNull(formData.get("telefono")),
     correo: emptyToNull(formData.get("correo")),
     hijosCantidad: formData.get("hijosCantidad") || "0",
+    estadoCivil: emptyToNull(formData.get("estadoCivil")),
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
     tipoSangre: emptyToNull(formData.get("tipoSangre")),
@@ -178,6 +201,13 @@ export async function updateAspiranteSelfService(
     contactoParentesco: formData.get("contactoParentesco"),
     contactoTelefono: formData.get("contactoTelefono"),
     contactoDireccion: emptyToNull(formData.get("contactoDireccion")),
+    tipoEstudio: emptyToNull(formData.get("tipoEstudio")),
+    nombreUniversidad: emptyToNull(formData.get("nombreUniversidad")),
+    tituloUniversidad: emptyToNull(formData.get("tituloUniversidad")),
+    paisUniversidad: emptyToNull(formData.get("paisUniversidad")),
+    nucleoUniversidad: emptyToNull(formData.get("nucleoUniversidad")),
+    anioIngresoUniversidad: formData.get("anioIngresoUniversidad"),
+    anioEgresoUniversidad: formData.get("anioEgresoUniversidad"),
   };
 
   const parsed = aspiranteSelfServiceUpdateSchema.safeParse(raw);
@@ -207,6 +237,7 @@ export async function updateAspiranteSelfService(
     await tx.aspirante.update({
       where: { id: aspirante.id },
       data: {
+        unidadPostulante: d.unidadPostulante,
         nombres: d.nombres,
         apellidos: d.apellidos,
         fechaNacimiento: d.fechaNacimiento,
@@ -216,6 +247,14 @@ export async function updateAspiranteSelfService(
         telefono: d.telefono ?? null,
         correo: d.correo ?? null,
         hijosCantidad: d.hijosCantidad,
+        estadoCivil: d.estadoCivil ?? null,
+        tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
+        nombreUniversidad: d.nombreUniversidad ?? null,
+        tituloUniversidad: d.tituloUniversidad ?? null,
+        paisUniversidad: d.paisUniversidad ?? null,
+        nucleoUniversidad: d.nucleoUniversidad ?? null,
+        anioIngresoUniversidad: d.anioIngresoUniversidad ?? null,
+        anioEgresoUniversidad: d.anioEgresoUniversidad ?? null,
       },
     });
 
@@ -272,7 +311,7 @@ export async function updateAspiranteSelfService(
     fotoTituloKey: aspirante.fotoTituloKey,
   });
   if ("ok" in fotoResult && fotoResult.ok === false) {
-    return { ...fotoResult, record: toSelfServiceRecord(aspirante) };
+    return { ...fotoResult, record: await toSelfServiceRecord(aspirante) };
   }
 
   await writeAuditLog({
@@ -298,6 +337,6 @@ export async function updateAspiranteSelfService(
   return {
     ok: true,
     errors: {},
-    record: refreshed.aspirante ? toSelfServiceRecord(refreshed.aspirante) : null,
+    record: refreshed.aspirante ? await toSelfServiceRecord(refreshed.aspirante) : null,
   };
 }

@@ -9,6 +9,14 @@ const convocatoriaFields = {
     .regex(/^[A-Za-z0-9._-]+$/, "Solo letras, números, punto, guión y guión bajo"),
   nombre: z.string().trim().min(3, "Nombre obligatorio").max(200),
   anio: z.coerce.number().int().min(2000).max(2100),
+  comandanteNombre: z.preprocess(
+    (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
+    z.string().max(120).nullable(),
+  ),
+  comandanteTelefono: z.preprocess(
+    (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
+    z.string().max(40).nullable(),
+  ),
 } as const;
 
 export const convocatoriaCreateSchema = z.object({

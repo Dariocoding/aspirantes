@@ -32,6 +32,8 @@ export type ConvocatoriaEditDefaults = {
   codigo: string;
   nombre: string;
   anio: number;
+  comandanteNombre: string | null;
+  comandanteTelefono: string | null;
 };
 
 type ConvocatoriaEditFormProps = {
@@ -101,6 +103,25 @@ export function ConvocatoriaEditForm({ defaults, onSuccess }: ConvocatoriaEditFo
       <div className="md:col-span-2">
         <Label htmlFor={`conv-edit-nombre-${defaults.id}`}>Nombre descriptivo</Label>
         <Input id={`conv-edit-nombre-${defaults.id}`} name="nombre" required defaultValue={defaults.nombre} />
+      </div>
+      <div>
+        <Label htmlFor={`conv-edit-comandante-${defaults.id}`}>Nombre del comandante</Label>
+        <Input
+          id={`conv-edit-comandante-${defaults.id}`}
+          name="comandanteNombre"
+          defaultValue={defaults.comandanteNombre ?? ""}
+          placeholder="Nombre y apellido del Cmdte de curso"
+        />
+      </div>
+      <div>
+        <Label htmlFor={`conv-edit-comandante-tel-${defaults.id}`}>Teléfono del comandante</Label>
+        <Input
+          id={`conv-edit-comandante-tel-${defaults.id}`}
+          name="comandanteTelefono"
+          type="tel"
+          defaultValue={defaults.comandanteTelefono ?? ""}
+          placeholder="Ej.: 0412-0000000"
+        />
       </div>
       <div className="md:col-span-2">
         <Button type="submit" className="bg-slate-900 hover:bg-slate-800">

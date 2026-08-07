@@ -10,6 +10,9 @@ import { SuccessCelebrationDialog } from "@src/components/ui/success-celebration
 import { Textarea } from "@src/components/ui/textarea";
 import type { AspiranteActionState } from "@src/lib/action-types";
 import { aspiranteInitialActionState } from "@src/lib/action-types";
+import { ESTADO_CIVIL_LABELS, ESTADO_CIVIL_VALUES } from "@src/lib/aspirantes/estado-civil";
+import type { TipoEstudioValue } from "@src/lib/aspirantes/tipo-estudio";
+import { TIPO_ESTUDIO_LABELS, TIPO_ESTUDIO_VALUES } from "@src/lib/aspirantes/tipo-estudio";
 import { cn } from "@src/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -65,6 +68,7 @@ export type AspiranteRegistroInitial = {
   telefono: string | null;
   correo: string | null;
   hijosCantidad: number;
+  estadoCivil?: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
@@ -81,6 +85,13 @@ export type AspiranteRegistroInitial = {
   fotoKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
+  tipoEstudio?: TipoEstudioValue | null;
+  nombreUniversidad?: string | null;
+  tituloUniversidad?: string | null;
+  paisUniversidad?: string | null;
+  nucleoUniversidad?: string | null;
+  anioIngresoUniversidad?: number | null;
+  anioEgresoUniversidad?: number | null;
 };
 
 const STEPS = [
@@ -89,6 +100,7 @@ const STEPS = [
     description: "Foto, nombre, unidad, admisión y nacimiento",
   },
   { title: "Contacto", description: "Ubicación y comunicación" },
+  { title: "Estudios", description: "Universidad, título, país y núcleo" },
   { title: "Salud y físico", description: "Medidas y antecedentes" },
   { title: "Emergencia", description: "Persona de contacto" },
   {
@@ -159,6 +171,7 @@ export function AspiranteRegistroForm({
       fechaNacimiento: initial?.fechaNacimiento ?? "",
       lugarNacimiento: initial?.lugarNacimiento ?? "",
       hijosCantidad: initial != null ? String(initial.hijosCantidad) : "0",
+      estadoCivil: initial?.estadoCivil ?? "",
       telefono: initial?.telefono ?? "",
       correo: initial?.correo ?? "",
       direccion: initial?.direccion ?? "",
@@ -173,6 +186,15 @@ export function AspiranteRegistroForm({
       contactoParentesco: initial?.contactoParentesco ?? "",
       contactoTelefono: initial?.contactoTelefono ?? "",
       contactoDireccion: initial?.contactoDireccion ?? "",
+      tipoEstudio: initial?.tipoEstudio ?? "",
+      nombreUniversidad: initial?.nombreUniversidad ?? "",
+      tituloUniversidad: initial?.tituloUniversidad ?? "",
+      paisUniversidad: initial?.paisUniversidad ?? "",
+      nucleoUniversidad: initial?.nucleoUniversidad ?? "",
+      anioIngresoUniversidad:
+        initial?.anioIngresoUniversidad != null ? String(initial.anioIngresoUniversidad) : "",
+      anioEgresoUniversidad:
+        initial?.anioEgresoUniversidad != null ? String(initial.anioEgresoUniversidad) : "",
     }),
     [initial],
   );
@@ -503,6 +525,22 @@ export function AspiranteRegistroForm({
               />
             </div>
             <div>
+              <Label htmlFor="estadoCivil">Estado civil</Label>
+              <select
+                id="estadoCivil"
+                name="estadoCivil"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={defaults.estadoCivil}
+              >
+                <option value="">Sin indicar</option>
+                {ESTADO_CIVIL_VALUES.map((v) => (
+                  <option key={v} value={v}>
+                    {ESTADO_CIVIL_LABELS[v]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <Label>Teléfono</Label>
               <Input
                 name="telefono"
@@ -533,6 +571,90 @@ export function AspiranteRegistroForm({
         >
           <p id="step-3-title" className="sr-only">
             Paso 3: {STEPS[2].title}
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label>Grado educativo</Label>
+              <select
+                name="tipoEstudio"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={defaults.tipoEstudio ?? ""}
+              >
+                <option value="">Sin indicar</option>
+                {TIPO_ESTUDIO_VALUES.map((v) => (
+                  <option key={v} value={v}>
+                    {TIPO_ESTUDIO_LABELS[v]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <Label>Universidad</Label>
+              <Input
+                name="nombreUniversidad"
+                defaultValue={defaults.nombreUniversidad}
+                placeholder="Universidad, instituto o centro de estudios"
+              />
+            </div>
+            <div>
+              <Label>Título</Label>
+              <Input
+                name="tituloUniversidad"
+                defaultValue={defaults.tituloUniversidad}
+                placeholder="Ej.: Abogada, Ingeniero"
+              />
+            </div>
+            <div>
+              <Label>País</Label>
+              <Input
+                name="paisUniversidad"
+                defaultValue={defaults.paisUniversidad}
+                placeholder="Ej.: Venezuela"
+              />
+            </div>
+            <div>
+              <Label>Año de ingreso</Label>
+              <Input
+                name="anioIngresoUniversidad"
+                type="number"
+                inputMode="numeric"
+                min={1950}
+                max={2100}
+                placeholder="Ej.: 2018"
+                defaultValue={defaults.anioIngresoUniversidad}
+              />
+            </div>
+            <div>
+              <Label>Año de egreso</Label>
+              <Input
+                name="anioEgresoUniversidad"
+                type="number"
+                inputMode="numeric"
+                min={1950}
+                max={2100}
+                placeholder="Ej.: 2023"
+                defaultValue={defaults.anioEgresoUniversidad}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Núcleo</Label>
+              <Input
+                name="nucleoUniversidad"
+                defaultValue={defaults.nucleoUniversidad}
+                placeholder="Ej.: Dtto. Capital"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset
+          data-registro-step={3}
+          hidden={step !== 3}
+          className="min-w-0 space-y-3 border-0 p-0"
+          aria-labelledby="step-4-title"
+        >
+          <p id="step-4-title" className="sr-only">
+            Paso 4: {STEPS[3].title}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
@@ -583,13 +705,13 @@ export function AspiranteRegistroForm({
         </fieldset>
 
         <fieldset
-          data-registro-step={3}
-          hidden={step !== 3}
+          data-registro-step={4}
+          hidden={step !== 4}
           className="min-w-0 space-y-3 border-0 p-0"
-          aria-labelledby="step-4-title"
+          aria-labelledby="step-5-title"
         >
-          <p id="step-4-title" className="sr-only">
-            Paso 4: {STEPS[3].title}
+          <p id="step-5-title" className="sr-only">
+            Paso 5: {STEPS[4].title}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
@@ -628,13 +750,13 @@ export function AspiranteRegistroForm({
         </fieldset>
 
         <fieldset
-          data-registro-step={4}
-          hidden={step !== 4}
+          data-registro-step={5}
+          hidden={step !== 5}
           className="min-w-0 space-y-3 border-0 p-0"
-          aria-labelledby="step-5-title"
+          aria-labelledby="step-6-title"
         >
-          <p id="step-5-title" className="sr-only">
-            Paso 5: {STEPS[4].title}
+          <p id="step-6-title" className="sr-only">
+            Paso 6: {STEPS[5].title}
           </p>
           <p className="text-xs text-slate-600">
             Los requisitos y tablas provienen de un catálogo en sistema: al
