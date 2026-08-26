@@ -57,6 +57,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# Evita que el CLI cargue prisma.config.ts (dotenv / TS) en runtime
+RUN rm -f /app/prisma.config.ts
+
 # CLI de Prisma en directorio aparte (con deps: effect, etc.) — no rompe standalone
 RUN mkdir -p /opt/prisma \
   && cd /opt/prisma \

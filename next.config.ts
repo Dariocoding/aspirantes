@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./src/generated/prisma/**/*"],
   },
+  outputFileTracingExcludes: {
+    "/**": ["./prisma.config.ts"],
+  },
   experimental: {
     // Fotos de cédula/título pueden ser pesadas; sin tope práctico de app.
     serverActions: {
