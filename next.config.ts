@@ -18,12 +18,19 @@ const legacyRedirects = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  // Imagen Docker mínima: solo archivos trazados (no todo node_modules).
+  output: "standalone",
+  // Prisma genera el client fuera de node_modules; hay que incluirlo en el trace.
+  outputFileTracingIncludes: {
+    "/**": ["./src/generated/prisma/**/*"],
+  },
   experimental: {
     // Fotos de cédula/título pueden ser pesadas; sin tope práctico de app.
     serverActions: {
       bodySizeLimit: "100mb",
     },
   },
+
   async redirects() {
     return legacyRedirects.map(({ source, destination }) => ({
       source,

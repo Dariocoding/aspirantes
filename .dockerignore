@@ -1,0 +1,33 @@
+# deps & build
+node_modules
+.next
+out
+build
+coverage
+
+# git / IDE
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# docs & misc
+*.md
+!README.md
+agent-transcripts
+tmp-ficha-compare
+tmp-pptx
+tmp-pptx.zip
+referencia.png
+referencia-form.png
+
+# tests / local artifacts
+**/*.tsbuildinfo
+.vercel
+.npm
