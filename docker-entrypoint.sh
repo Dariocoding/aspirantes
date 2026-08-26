@@ -6,7 +6,7 @@ echo "  NODE_ENV=${NODE_ENV:-} PORT=${PORT:-} HOSTNAME=${HOSTNAME:-}"
 
 if [ -n "${DATABASE_URL:-}" ]; then
   echo "prisma migrate deploy"
-  if ! node node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma; then
+  if ! /opt/prisma/node_modules/.bin/prisma migrate deploy --schema=prisma/schema.prisma; then
     echo "prisma migrate deploy failed (is DATABASE_URL reachable from the container?)"
     exit 1
   fi

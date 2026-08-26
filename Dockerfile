@@ -27,7 +27,6 @@ RUN apt-get update -y \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# prisma generate (postinstall ya lo hace, pero asegura client en build limpio)
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 # URL dummy solo para generate; la real llega en runtime vía Coolify
@@ -39,6 +38,8 @@ RUN npx prisma generate && npm run build
 # ---------- runner ----------
 FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
+
+ARG PRISMA_VERSION=6.19.3
 
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -54,14 +55,16 @@ ENV HOSTNAME=0.0.0.0
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Migraciones en arranque (Coolify)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# CLI de Prisma en directorio aparte (con deps: effect, etc.) — no rompe standalone
+RUN mkdir -p /opt/prisma \
+  && cd /opt/prisma \
+  && npm init -y >/dev/null \
+  && npm install "prisma@${PRISMA_VERSION}" --omit=dev --no-audit --no-fund \
+  && chown -R nextjs:nodejs /opt/prisma
 
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
-# Evita fallo de arranque si el script llega con CRLF (Windows/git)
 RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 
 USER nextjs
