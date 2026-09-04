@@ -34,6 +34,9 @@ const optionalTrimmedString = (max: number) =>
     z.string().max(max).nullable(),
   );
 
+/** Fecha placeholder cuando el nacimiento aún no se cargó (alta mínima). */
+export const ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE = new Date(1900, 0, 1);
+
 const estudioFields = {
   tipoEstudio: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? null : v),
@@ -101,27 +104,59 @@ function refineEstudioFields(data: EstudioShape, ctx: z.RefinementCtx) {
   }
 }
 
-const aspiranteCreateBaseSchema = z.object({
-  unidadPostulante: z
-    .string()
-    .trim()
-    .min(1, "Unidad postulante obligatoria")
-    .max(200, "Unidad postulante demasiado larga"),
-  calificacionAdmision: calificacionAdmisionEnum,
+const optionalSexo = z.preprocess(
+  (v) => (v === "" || v === null || v === undefined ? undefined : v),
+  sexoEnum.optional(),
+);
+
+const optionalFechaNacimiento = z.preprocess((v) => {
+  if (v === "" || v === null || v === undefined) return null;
+  const d = new Date(String(v));
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d;
+}, z.date().nullable());
+
+const optionalEdad = z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return undefined;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : undefined;
+}, z.number().int().min(0, "Edad inválida").max(80, "Edad máxima 80").optional());
+
+const optionalContactoString = (max: number) =>
+  z.preprocess(
+    (v) => (v === null || v === undefined ? "" : String(v).trim()),
+    z.string().max(max),
+  );
+
+/**
+ * Alta / edición desde personal: basta con nombres y cédula.
+ * El resto se completa después (defaults seguros en BD).
+ */
+const aspiranteStaffBaseSchema = z.object({
+  unidadPostulante: z.preprocess(
+    (v) => (v === null || v === undefined ? "" : String(v).trim()),
+    z.string().max(200, "Unidad postulante demasiado larga"),
+  ),
+  calificacionAdmision: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? "EN_EVALUACION" : v),
+    calificacionAdmisionEnum,
+  ),
   nombres: z.string().trim().min(1, "Nombres obligatorios").max(120),
-  apellidos: z.string().trim().min(1, "Apellidos obligatorios").max(120),
+  apellidos: z.preprocess(
+    (v) => (v === null || v === undefined ? "" : String(v).trim()),
+    z.string().max(120),
+  ),
   cedula: z
     .string()
     .trim()
     .regex(/^[0-9]{6,12}$/, "Cédula: solo dígitos, entre 6 y 12 caracteres"),
-  edad: z.coerce.number().int().min(16, "Edad mínima 16").max(80, "Edad máxima 80"),
-  sexo: sexoEnum,
-  fechaNacimiento: z
-    .string()
-    .min(1, "Fecha de nacimiento obligatoria")
-    .transform((s) => new Date(s))
-    .refine((d) => !Number.isNaN(d.getTime()), "Fecha de nacimiento inválida"),
-  lugarNacimiento: z.string().trim().min(1, "Lugar de nacimiento obligatorio").max(200),
+  edad: optionalEdad,
+  sexo: optionalSexo,
+  fechaNacimiento: optionalFechaNacimiento,
+  lugarNacimiento: z.preprocess(
+    (v) => (v === null || v === undefined ? "" : String(v).trim()),
+    z.string().max(200),
+  ),
   direccion: z.string().trim().max(500).optional().nullable(),
   telefono: z.string().trim().max(40).optional().nullable(),
   correo: z.preprocess(
@@ -140,16 +175,16 @@ const aspiranteCreateBaseSchema = z.object({
   condicionesMedicas: z.string().trim().max(2000).optional().nullable(),
   discapacidad: z.string().trim().max(500).optional().nullable(),
   observaciones: z.string().trim().max(2000).optional().nullable(),
-  contactoNombre: z.string().trim().min(1, "Contacto de emergencia obligatorio").max(120),
-  contactoParentesco: z.string().trim().min(1, "Parentesco obligatorio").max(80),
-  contactoTelefono: z.string().trim().min(1, "Teléfono de emergencia obligatorio").max(40),
+  contactoNombre: optionalContactoString(120),
+  contactoParentesco: optionalContactoString(80),
+  contactoTelefono: optionalContactoString(40),
   contactoDireccion: z.string().trim().max(500).optional().nullable(),
   ...estudioFields,
 });
 
-export const aspiranteCreateSchema = aspiranteCreateBaseSchema.superRefine(refineEstudioFields);
+export const aspiranteCreateSchema = aspiranteStaffBaseSchema.superRefine(refineEstudioFields);
 
-export const aspiranteUpdateSchema = aspiranteCreateBaseSchema
+export const aspiranteUpdateSchema = aspiranteStaffBaseSchema
   .extend({
     aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
   })

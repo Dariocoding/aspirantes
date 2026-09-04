@@ -97,7 +97,7 @@ export type AspiranteRegistroInitial = {
 const STEPS = [
   {
     title: "Identidad",
-    description: "Foto, nombre, unidad, admisión y nacimiento",
+    description: "Nombres y cédula bastan para el alta; el resto es opcional",
   },
   { title: "Contacto", description: "Ubicación y comunicación" },
   { title: "Estudios", description: "Universidad, título, país y núcleo" },
@@ -166,7 +166,7 @@ export function AspiranteRegistroForm({
       nombres: initial?.nombres ?? "",
       apellidos: initial?.apellidos ?? "",
       cedula: initial?.cedula ?? "",
-      edad: initial != null ? String(initial.edad) : "",
+      edad: initial != null && initial.edad > 0 ? String(initial.edad) : "",
       sexo: initial?.sexo ?? "MASCULINO",
       fechaNacimiento: initial?.fechaNacimiento ?? "",
       lugarNacimiento: initial?.lugarNacimiento ?? "",
@@ -243,10 +243,10 @@ export function AspiranteRegistroForm({
         onOpenChange={onCelebrateOpenChange}
         variant={isEdit ? "saved" : "created"}
         title={isEdit ? "Ficha actualizada" : "Aspirante registrado"}
-        description={
+            description={
           isEdit
             ? "Los datos del aspirante quedaron guardados correctamente."
-            : "El nuevo registro se incorporó al censo de la convocatoria activa."
+            : "El nuevo registro se incorporó al censo. Puede completar el resto de datos después."
         }
       />
       <form
@@ -416,7 +416,9 @@ export function AspiranteRegistroForm({
               kind="titulo"
             />
             <div>
-              <Label>Nombres</Label>
+              <Label>
+                Nombres <span className="text-red-600">*</span>
+              </Label>
               <Input
                 name="nombres"
                 required
@@ -428,13 +430,14 @@ export function AspiranteRegistroForm({
               <Label>Apellidos</Label>
               <Input
                 name="apellidos"
-                required
                 defaultValue={defaults.apellidos}
                 autoComplete="family-name"
               />
             </div>
             <div>
-              <Label>Cédula</Label>
+              <Label>
+                Cédula <span className="text-red-600">*</span>
+              </Label>
               <Input
                 name="cedula"
                 required
@@ -446,7 +449,6 @@ export function AspiranteRegistroForm({
               <Label>Sexo</Label>
               <select
                 name="sexo"
-                required
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
                 defaultValue={defaults.sexo}
               >
@@ -459,7 +461,6 @@ export function AspiranteRegistroForm({
               <Input
                 name="fechaNacimiento"
                 type="date"
-                required
                 defaultValue={defaults.fechaNacimiento}
               />
             </div>
@@ -467,7 +468,6 @@ export function AspiranteRegistroForm({
               <Label>Lugar de Nacimiento</Label>
               <Input
                 name="lugarNacimiento"
-                required
                 defaultValue={defaults.lugarNacimiento}
               />
             </div>
@@ -475,7 +475,6 @@ export function AspiranteRegistroForm({
               <Label>Unidad postulante</Label>
               <Input
                 name="unidadPostulante"
-                required
                 defaultValue={defaults.unidadPostulante}
                 placeholder="Ej.: 12 BRIGADA, COMANDO AV, CGEB..."
                 autoComplete="organization"
@@ -485,7 +484,6 @@ export function AspiranteRegistroForm({
               <Label>Calificación de admisión</Label>
               <select
                 name="calificacionAdmision"
-                required
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
                 defaultValue={defaults.calificacionAdmision}
               >
@@ -512,7 +510,6 @@ export function AspiranteRegistroForm({
               <Input
                 name="edad"
                 type="number"
-                required
                 defaultValue={defaults.edad}
               />
             </div>
@@ -718,7 +715,6 @@ export function AspiranteRegistroForm({
               <Label>Contacto de Emergencia</Label>
               <Input
                 name="contactoNombre"
-                required
                 defaultValue={defaults.contactoNombre}
               />
             </div>
@@ -726,7 +722,6 @@ export function AspiranteRegistroForm({
               <Label>Parentesco</Label>
               <Input
                 name="contactoParentesco"
-                required
                 defaultValue={defaults.contactoParentesco}
               />
             </div>
@@ -735,7 +730,6 @@ export function AspiranteRegistroForm({
               <Input
                 name="contactoTelefono"
                 type="tel"
-                required
                 defaultValue={defaults.contactoTelefono}
               />
             </div>
@@ -785,29 +779,29 @@ export function AspiranteRegistroForm({
             {!lastStep ? (
               <Button
                 type="button"
-                className="bg-slate-900 hover:bg-slate-800"
+                variant="outline"
+                className="border-slate-200"
                 onClick={goNext}
               >
                 Siguiente
               </Button>
-            ) : (
-              <Button
-                type="submit"
-                className="gap-2 bg-slate-900 hover:bg-slate-800"
-                disabled={!convocatoriaActiva || finalizeUiPending}
-              >
-                {finalizeUiPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                    {isEdit ? "Guardando..." : "Registrando..."}
-                  </>
-                ) : isEdit ? (
-                  "Guardar cambios"
-                ) : (
-                  "Guardar aspirante"
-                )}
-              </Button>
-            )}
+            ) : null}
+            <Button
+              type="submit"
+              className="gap-2 bg-slate-900 hover:bg-slate-800"
+              disabled={!convocatoriaActiva || finalizeUiPending}
+            >
+              {finalizeUiPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  {isEdit ? "Guardando..." : "Registrando..."}
+                </>
+              ) : isEdit ? (
+                "Guardar cambios"
+              ) : (
+                "Guardar aspirante"
+              )}
+            </Button>
           </div>
         </div>
       </form>

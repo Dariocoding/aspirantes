@@ -17,6 +17,11 @@ import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { toDateInputValue } from "@src/lib/date-input";
 import { prisma } from "@src/lib/prisma";
 
+function fechaNacimientoParaFormulario(d: Date): string {
+  const v = toDateInputValue(d);
+  return v === "1900-01-01" ? "" : v;
+}
+
 export default async function AspirantesGestionPage({
   searchParams,
 }: {
@@ -82,7 +87,7 @@ export default async function AspirantesGestionPage({
         cedula: a.cedula,
         edad: a.edad,
         sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
-        fechaNacimiento: toDateInputValue(a.fechaNacimiento),
+        fechaNacimiento: fechaNacimientoParaFormulario(a.fechaNacimiento),
         lugarNacimiento: a.lugarNacimiento,
         direccion: a.direccion,
         telefono: a.telefono,
@@ -119,7 +124,7 @@ export default async function AspirantesGestionPage({
   const tituloCard = modoEdicion ? "Editar aspirante" : "Registrar aspirante";
   const descCard = modoEdicion
     ? "Mismos pasos que el alta: revise cada sección y guarde los cambios."
-    : "Alta por pasos: identidad, contacto, salud y persona de emergencia.";
+    : "Puede registrar solo con nombres y cédula; el resto de datos es opcional y se puede completar después.";
 
   return (
     <div className="space-y-5">

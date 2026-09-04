@@ -307,35 +307,35 @@ export default async function AspirantesPage({
             </p>
           </div>
           <div className="-mx-4 min-w-0 overflow-x-auto border-y border-slate-200/90 bg-white sm:mx-0 sm:rounded-b-none sm:border-x sm:border-t-0">
-            <Table>
+            <Table className="min-w-[72rem] table-fixed">
               <TableHeader className="[&_tr]:border-slate-200 [&_tr]:hover:bg-transparent">
                 <TableRow className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90">
-                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-[16rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Nombre completo
                   </TableHead>
-                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-[14rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Unidad
                   </TableHead>
-                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-[12rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Carrera
                   </TableHead>
-                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-[7.5rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Admisión
                   </TableHead>
-                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-[7rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Cédula
                   </TableHead>
-                  <TableHead className="h-9 w-10 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-12 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Sexo
                   </TableHead>
                   <TableHead className="h-9 w-12 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Edad
                   </TableHead>
-                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-[8.5rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Ficha
                   </TableHead>
                   {write ? (
-                    <TableHead className="h-9 px-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                    <TableHead className="h-9 w-[11rem] px-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                       Acciones
                     </TableHead>
                   ) : null}
@@ -360,6 +360,9 @@ export default async function AspirantesPage({
                 ) : (
                   aspirantes.map((a) => {
                     const esFemenino = a.sexo === "FEMENINO";
+                    const unidad = (a.unidadPostulante ?? "").trim();
+                    const carrera = (a.tituloUniversidad ?? "").trim();
+                    const nombreCompleto = `${a.nombres} ${a.apellidos}`.trim();
                     return (
                       <TableRow key={a.id} className="border-slate-100 transition-colors">
                         <TableCell className="px-3 py-2 font-medium text-slate-900">
@@ -367,24 +370,28 @@ export default async function AspirantesPage({
                             <AspiranteFotoThumbnail
                               aspiranteId={a.id}
                               fotoKey={a.fotoKey}
-                              nombre={`${a.nombres} ${a.apellidos}`}
+                              nombre={nombreCompleto}
                               size="sm"
                             />
-                            <span className="min-w-0 truncate text-sm">
-                              {a.nombres} {a.apellidos}
+                            <span className="min-w-0 truncate text-sm" title={nombreCompleto}>
+                              {nombreCompleto}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-36 px-3 py-2 text-sm text-slate-800">
-                          {(a.unidadPostulante ?? "").trim() ? (
-                            <span className="font-medium">{a.unidadPostulante ?? ""}</span>
+                        <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
+                          {unidad ? (
+                            <span className="line-clamp-2 break-words font-medium" title={unidad}>
+                              {unidad}
+                            </span>
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="max-w-40 px-3 py-2 text-sm text-slate-800">
-                          {(a.tituloUniversidad ?? "").trim() ? (
-                            <span className="font-medium">{a.tituloUniversidad}</span>
+                        <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
+                          {carrera ? (
+                            <span className="line-clamp-2 break-words font-medium" title={carrera}>
+                              {carrera}
+                            </span>
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}
@@ -459,7 +466,7 @@ export default async function AspirantesPage({
                               </Link>
                               <AspiranteDeleteForm
                                 aspiranteId={a.id}
-                                nombreCompleto={`${a.nombres} ${a.apellidos}`}
+                                nombreCompleto={nombreCompleto}
                               />
                             </div>
                           </TableCell>

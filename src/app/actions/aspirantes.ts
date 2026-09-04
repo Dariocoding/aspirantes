@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@src/generated/prisma";
 import { prisma } from "@src/lib/prisma";
 import { CalificacionAdmision, Sexo } from "@src/generated/prisma";
-import { aspiranteCreateSchema, aspiranteUpdateSchema } from "@src/lib/validators/aspirante";
+import { aspiranteCreateSchema, aspiranteUpdateSchema, ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE } from "@src/lib/validators/aspirante";
 import { zodFieldErrors } from "@src/lib/zod-errors";
 import { requireWriter } from "@src/lib/auth/guards";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
@@ -101,6 +101,9 @@ export async function createAspirante(
     };
   }
 
+  const contactoNombre = d.contactoNombre.trim();
+  const hasContacto = Boolean(contactoNombre);
+
   try {
     const created = await prisma.aspirante.create({
       data: {
@@ -114,9 +117,9 @@ export async function createAspirante(
         nombres: d.nombres,
         apellidos: d.apellidos,
         cedula: d.cedula,
-        edad: d.edad,
+        edad: d.edad ?? 0,
         sexo: d.sexo === "FEMENINO" ? Sexo.FEMENINO : Sexo.MASCULINO,
-        fechaNacimiento: d.fechaNacimiento,
+        fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
         lugarNacimiento: d.lugarNacimiento,
         direccion: d.direccion ?? null,
         telefono: d.telefono ?? null,
@@ -143,14 +146,18 @@ export async function createAspirante(
             observaciones: d.observaciones ?? null,
           },
         },
-        contactos: {
-          create: {
-            nombre: d.contactoNombre,
-            parentesco: d.contactoParentesco,
-            telefono: d.contactoTelefono,
-            direccion: d.contactoDireccion ?? null,
-          },
-        },
+        ...(hasContacto
+          ? {
+              contactos: {
+                create: {
+                  nombre: contactoNombre,
+                  parentesco: d.contactoParentesco.trim() || "Por definir",
+                  telefono: d.contactoTelefono.trim() || "—",
+                  direccion: d.contactoDireccion ?? null,
+                },
+              },
+            }
+          : {}),
       },
     });
 
@@ -315,9 +322,9 @@ export async function updateAspirante(
           nombres: d.nombres,
           apellidos: d.apellidos,
           cedula: d.cedula,
-          edad: d.edad,
+          edad: d.edad ?? 0,
           sexo: d.sexo === "FEMENINO" ? Sexo.FEMENINO : Sexo.MASCULINO,
-          fechaNacimiento: d.fechaNacimiento,
+          fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
           lugarNacimiento: d.lugarNacimiento,
           direccion: d.direccion ?? null,
           telefono: d.telefono ?? null,
@@ -358,24 +365,30 @@ export async function updateAspirante(
         },
       });
 
+      const contactoNombre = d.contactoNombre.trim();
+      const hasContacto = Boolean(contactoNombre);
       const contacto = existing.contactos[0];
       if (contacto) {
-        await tx.contactoEmergencia.update({
-          where: { id: contacto.id },
-          data: {
-            nombre: d.contactoNombre,
-            parentesco: d.contactoParentesco,
-            telefono: d.contactoTelefono,
-            direccion: d.contactoDireccion ?? null,
-          },
-        });
-      } else {
+        if (hasContacto) {
+          await tx.contactoEmergencia.update({
+            where: { id: contacto.id },
+            data: {
+              nombre: contactoNombre,
+              parentesco: d.contactoParentesco.trim() || "Por definir",
+              telefono: d.contactoTelefono.trim() || "—",
+              direccion: d.contactoDireccion ?? null,
+            },
+          });
+        } else {
+          await tx.contactoEmergencia.delete({ where: { id: contacto.id } });
+        }
+      } else if (hasContacto) {
         await tx.contactoEmergencia.create({
           data: {
             aspiranteId,
-            nombre: d.contactoNombre,
-            parentesco: d.contactoParentesco,
-            telefono: d.contactoTelefono,
+            nombre: contactoNombre,
+            parentesco: d.contactoParentesco.trim() || "Por definir",
+            telefono: d.contactoTelefono.trim() || "—",
             direccion: d.contactoDireccion ?? null,
           },
         });
