@@ -8,6 +8,7 @@ export type AspiranteCensoPdfRow = {
   nombres: string;
   apellidos: string;
   unidadPostulante: string;
+  tituloUniversidad: string | null;
   calificacionAdmision: string;
   convocatoriaCodigo: string;
   convocatoriaNombre: string;
@@ -27,15 +28,16 @@ export type AspirantesCensoPdfProps = {
 };
 
 const COL = {
-  n: "22%",
-  u: "15%",
-  adm: "10%",
-  cc: "9%",
-  cn: "14%",
-  ced: "10%",
+  n: "18%",
+  u: "12%",
+  car: "14%",
+  adm: "9%",
+  cc: "8%",
+  cn: "12%",
+  ced: "9%",
   sx: "7%",
-  ed: "5%",
-  fn: "8%",
+  ed: "4%",
+  fn: "7%",
 } as const;
 
 const styles = StyleSheet.create({
@@ -170,6 +172,7 @@ function TableHead() {
     <View style={styles.thead} wrap={false}>
       <Text style={[styles.th, { width: COL.n }]}>Nombre</Text>
       <Text style={[styles.th, { width: COL.u }]}>Unidad</Text>
+      <Text style={[styles.th, { width: COL.car }]}>Carrera</Text>
       <Text style={[styles.th, { width: COL.adm }]}>Adm.</Text>
       <Text style={[styles.th, { width: COL.cc }]}>Cód.</Text>
       <Text style={[styles.th, { width: COL.cn }]}>Conv.</Text>
@@ -187,6 +190,7 @@ function DataRow({ r, zebra }: { r: AspiranteCensoPdfRow; zebra: boolean }) {
   const bg = zebra ? "#f8fafc" : "#ffffff";
   const nombre = `${r.nombres} ${r.apellidos}`.trim();
   const unidad = (r.unidadPostulante ?? "").trim() || "—";
+  const carrera = (r.tituloUniversidad ?? "").trim() || "—";
   const convCod = r.convocatoriaActiva
     ? `${r.convocatoriaCodigo}*`
     : r.convocatoriaCodigo;
@@ -196,6 +200,7 @@ function DataRow({ r, zebra }: { r: AspiranteCensoPdfRow; zebra: boolean }) {
         {nombre}
       </Text>
       <Text style={[styles.cell, { width: COL.u }]}>{unidad}</Text>
+      <Text style={[styles.cell, { width: COL.car }]}>{carrera}</Text>
       <Text
         style={[
           styles.cell,

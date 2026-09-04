@@ -89,6 +89,7 @@ export async function GET(request: Request) {
     nombres: a.nombres,
     apellidos: a.apellidos,
     unidadPostulante: a.unidadPostulante,
+    tituloUniversidad: a.tituloUniversidad,
     calificacionAdmision: a.calificacionAdmision,
     convocatoriaCodigo: a.convocatoria.codigo,
     convocatoriaNombre: a.convocatoria.nombre,

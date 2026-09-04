@@ -317,6 +317,9 @@ export default async function AspirantesPage({
                     Unidad
                   </TableHead>
                   <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                    Carrera
+                  </TableHead>
+                  <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Admisión
                   </TableHead>
                   <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
@@ -342,7 +345,7 @@ export default async function AspirantesPage({
                 {aspirantes.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={write ? 8 : 7}
+                      colSpan={write ? 9 : 8}
                       className="h-28 whitespace-normal px-3 text-center text-sm text-slate-500"
                     >
                       <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-3">
@@ -375,6 +378,13 @@ export default async function AspirantesPage({
                         <TableCell className="max-w-36 px-3 py-2 text-sm text-slate-800">
                           {(a.unidadPostulante ?? "").trim() ? (
                             <span className="font-medium">{a.unidadPostulante ?? ""}</span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-40 px-3 py-2 text-sm text-slate-800">
+                          {(a.tituloUniversidad ?? "").trim() ? (
+                            <span className="font-medium">{a.tituloUniversidad}</span>
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}

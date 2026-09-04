@@ -8,6 +8,7 @@ export type AspiranteCensoExportRow = {
   nombres: string;
   apellidos: string;
   unidadPostulante: string;
+  tituloUniversidad: string | null;
   calificacionAdmision: string;
   convocatoriaCodigo: string;
   convocatoriaNombre: string;
@@ -79,6 +80,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   ws.columns = [
     { width: 28 },
     { width: 20 },
+    { width: 22 },
     { width: 12 },
     { width: 12 },
     { width: 22 },
@@ -88,7 +90,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
     { width: 11 },
   ];
 
-  ws.mergeCells("A1:I1");
+  ws.mergeCells("A1:J1");
   const title = ws.getCell("A1");
   title.value = "CENSO DE ASPIRANTES";
   title.font = { name: "Calibri", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
@@ -97,7 +99,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   title.border = BORDER;
   ws.getRow(1).height = 26;
 
-  ws.mergeCells("A2:I2");
+  ws.mergeCells("A2:J2");
   const sub = ws.getCell("A2");
   sub.value = `${convocatoriaNombre}  ·  ${convocatoriaCodigo}  ·  ${anio}  ·  Total: ${rows.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
   sub.font = { name: "Calibri", size: 9, color: { argb: "FF334155" } };
@@ -106,7 +108,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   applyCellBorder(sub);
   ws.getRow(2).height = 20;
 
-  ws.mergeCells("A3:I3");
+  ws.mergeCells("A3:J3");
   const hint = ws.getCell("A3");
     hint.value = "Admisión y sexo con sombreado; filas alternadas para lectura rápida";
   hint.font = { name: "Calibri", size: 8, italic: true, color: { argb: "FF64748B" } };
@@ -118,6 +120,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   const headers = [
     "Nombre completo",
     "Unidad postulante",
+    "Carrera",
     "Admisión",
     "Conv. código",
     "Convocatoria",
@@ -159,6 +162,12 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
       },
       {
         value: (r.unidadPostulante ?? "").trim() || "—",
+        align: { horizontal: "left", vertical: "middle", wrapText: true },
+        fill: zebra,
+        font: { name: "Calibri", size: 9, color: { argb: "FF1E293B" } },
+      },
+      {
+        value: (r.tituloUniversidad ?? "").trim() || "—",
         align: { horizontal: "left", vertical: "middle", wrapText: true },
         fill: zebra,
         font: { name: "Calibri", size: 9, color: { argb: "FF1E293B" } },
@@ -210,7 +219,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
     cells.forEach((c, i) => {
       const cell = row.getCell(i + 1);
       cell.value = c.value;
-      cell.alignment = { ...c.align, shrinkToFit: i === 0 || i === 1 || i === 4 };
+      cell.alignment = { ...c.align, shrinkToFit: i === 0 || i === 1 || i === 2 || i === 5 };
       if (c.fill) cell.fill = c.fill;
       if (c.font) cell.font = { ...cell.font, ...c.font };
       applyCellBorder(cell);
