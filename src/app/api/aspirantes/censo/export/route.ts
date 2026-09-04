@@ -21,6 +21,7 @@ function parseSp(searchParams: URLSearchParams): Record<string, string | undefin
     "sort",
     "calificacion",
     "unidadPostulante",
+    "tituloUniversidad",
     "convocatoria",
   ];
   const out: Record<string, string | undefined> = {};

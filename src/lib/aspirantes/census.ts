@@ -42,6 +42,10 @@ export function buildAspiranteCensusWhere(
   if (unidad && unidad !== "TODOS") {
     filters.push({ unidadPostulante: unidad });
   }
+  const carrera = sp.tituloUniversidad?.trim();
+  if (carrera && carrera !== "TODOS") {
+    filters.push({ tituloUniversidad: carrera });
+  }
   const edad: { gte?: number; lte?: number } = {};
   const emin = sp.edadMin ? Number(sp.edadMin) : NaN;
   const emax = sp.edadMax ? Number(sp.edadMax) : NaN;

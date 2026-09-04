@@ -105,8 +105,12 @@ export default async function AspirantesPage({
     convocatoriaId: convocatoriaFiltroId,
     unidadPostulante: { not: "" },
   };
+  const carreraWhereLista: Prisma.AspiranteWhereInput = {
+    convocatoriaId: convocatoriaFiltroId,
+    AND: [{ tituloUniversidad: { not: null } }, { tituloUniversidad: { not: "" } }],
+  };
 
-  const [total, aspirantes, unidadGrupos] = await Promise.all([
+  const [total, aspirantes, unidadGrupos, carreraGrupos] = await Promise.all([
     prisma.aspirante.count({ where }),
     prisma.aspirante.findMany({
       where,
@@ -119,6 +123,11 @@ export default async function AspirantesPage({
       by: ["unidadPostulante"],
       where: unidadWhereLista,
       orderBy: { unidadPostulante: "asc" },
+    }),
+    prisma.aspirante.groupBy({
+      by: ["tituloUniversidad"],
+      where: carreraWhereLista,
+      orderBy: { tituloUniversidad: "asc" },
     }),
   ]);
 
@@ -133,6 +142,19 @@ export default async function AspirantesPage({
     ),
   ).sort((a, b) => a.localeCompare(b, "es"));
 
+  const carreraFiltro = sp.tituloUniversidad?.trim();
+  const carreraFiltroActivo = Boolean(carreraFiltro && carreraFiltro !== "TODOS");
+  const carrerasDesdeDb = carreraGrupos
+    .map((g) => g.tituloUniversidad)
+    .filter((c): c is string => Boolean(c?.trim()));
+  const carreras = Array.from(
+    new Set(
+      carreraFiltroActivo && carreraFiltro && !carrerasDesdeDb.includes(carreraFiltro)
+        ? [...carrerasDesdeDb, carreraFiltro]
+        : carrerasDesdeDb,
+    ),
+  ).sort((a, b) => a.localeCompare(b, "es"));
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const qsBase: Record<string, string | undefined> = {
     q: sp.q,
@@ -142,6 +164,7 @@ export default async function AspirantesPage({
     sort: sp.sort,
     calificacion: sp.calificacion,
     unidadPostulante: sp.unidadPostulante,
+    tituloUniversidad: sp.tituloUniversidad,
   };
   if (convocatoriaFiltroId) qsBase.convocatoria = convocatoriaFiltroId;
 
@@ -151,6 +174,7 @@ export default async function AspirantesPage({
   if (sp.edadMax?.trim()) activeAdvancedCount++;
   if (sp.sort === "nombres") activeAdvancedCount++;
   if (unidadFiltroActivo) activeAdvancedCount++;
+  if (carreraFiltroActivo) activeAdvancedCount++;
   if (
     sp.calificacion &&
     sp.calificacion !== "TODOS" &&
@@ -230,6 +254,8 @@ export default async function AspirantesPage({
                 calificacion={sp.calificacion}
                 unidadPostulante={sp.unidadPostulante}
                 unidadesPostulantes={unidadesPostulantes}
+                tituloUniversidad={sp.tituloUniversidad}
+                carreras={carreras}
                 convocatorias={convocatorias.map((c) => ({
                   id: c.id,
                   codigo: c.codigo,
@@ -256,6 +282,9 @@ export default async function AspirantesPage({
               ) : null}
               {unidadFiltroActivo && unidadFiltro ? (
                 <input type="hidden" name="unidadPostulante" value={unidadFiltro} />
+              ) : null}
+              {carreraFiltroActivo && carreraFiltro ? (
+                <input type="hidden" name="tituloUniversidad" value={carreraFiltro} />
               ) : null}
               <div className="relative min-w-0 flex-1">
                 <Label htmlFor="q" className="sr-only">

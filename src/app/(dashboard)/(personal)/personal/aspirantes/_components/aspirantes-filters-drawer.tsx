@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownWideNarrow, BookMarked, Landmark, SlidersHorizontal, Users } from "lucide-react";
+import {
+  ArrowDownWideNarrow,
+  BookMarked,
+  GraduationCap,
+  Landmark,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import { cn } from "@src/lib/utils";
 import { Input } from "@src/components/ui/input";
@@ -30,6 +37,8 @@ type Props = {
   calificacion: string | undefined;
   unidadPostulante: string | undefined;
   unidadesPostulantes: string[];
+  tituloUniversidad: string | undefined;
+  carreras: string[];
   convocatorias: ConvocatoriaOption[];
   convocatoriaId: string | undefined;
   clearAdvancedHref: string;
@@ -45,6 +54,8 @@ export function AspirantesFiltersDrawer({
   calificacion,
   unidadPostulante,
   unidadesPostulantes,
+  tituloUniversidad,
+  carreras,
   convocatorias,
   convocatoriaId,
   clearAdvancedHref,
@@ -73,8 +84,8 @@ export function AspirantesFiltersDrawer({
         <SheetHeader className="shrink-0 border-b border-border px-4 py-4 text-left">
           <SheetTitle>Criterios avanzados</SheetTitle>
           <SheetDescription>
-            Convocatoria, unidad postulante, admisión, sexo, rango de edad y orden del listado. La búsqueda por texto
-            permanece en la barra superior.
+            Convocatoria, unidad postulante, carrera, admisión, sexo, rango de edad y orden del listado. La búsqueda
+            por texto permanece en la barra superior.
           </SheetDescription>
         </SheetHeader>
         <form method="get" className="flex min-h-0 flex-1 flex-col">
@@ -126,6 +137,32 @@ export function AspirantesFiltersDrawer({
               </select>
               {unidadesPostulantes.length === 0 ? (
                 <p className="mt-1.5 text-xs text-slate-500">No hay unidades registradas en esta convocatoria.</p>
+              ) : null}
+            </div>
+            <div>
+              <Label htmlFor="drawer-carrera" className="mb-2 flex items-center gap-2 text-slate-700">
+                <GraduationCap className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+                Carrera
+              </Label>
+              <select
+                id="drawer-carrera"
+                name="tituloUniversidad"
+                defaultValue={
+                  tituloUniversidad?.trim() && tituloUniversidad.trim() !== "TODOS"
+                    ? tituloUniversidad.trim()
+                    : "TODOS"
+                }
+                className={selectClass}
+              >
+                <option value="TODOS">Todas</option>
+                {carreras.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {carreras.length === 0 ? (
+                <p className="mt-1.5 text-xs text-slate-500">No hay carreras registradas en esta convocatoria.</p>
               ) : null}
             </div>
             <div>
