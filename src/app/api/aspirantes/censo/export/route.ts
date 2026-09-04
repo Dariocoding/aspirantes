@@ -3,7 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
 import { writeAuditLog } from "@src/lib/audit/log";
-import { buildAspiranteCensusWhere } from "@src/lib/aspirantes/census";
+import { buildAspiranteCensusWhere, censusOrderBy } from "@src/lib/aspirantes/census";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
@@ -21,7 +21,6 @@ function parseSp(searchParams: URLSearchParams): Record<string, string | undefin
     "sort",
     "calificacion",
     "unidadPostulante",
-    "tituloUniversidad",
     "convocatoria",
   ];
   const out: Record<string, string | undefined> = {};
@@ -76,7 +75,7 @@ export async function GET(request: Request) {
     convocatorias.find((c) => c.id === convocatoriaFiltroId) ?? convocatorias[0]!;
 
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
-  const sort = sp.sort === "nombres" ? ({ nombres: "asc" } as const) : ({ createdAt: "desc" } as const);
+  const sort = censusOrderBy(sp.sort);
 
   const rows = await prisma.aspirante.findMany({
     where,

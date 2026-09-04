@@ -42,10 +42,6 @@ export function buildAspiranteCensusWhere(
   if (unidad && unidad !== "TODOS") {
     filters.push({ unidadPostulante: unidad });
   }
-  const carrera = sp.tituloUniversidad?.trim();
-  if (carrera && carrera !== "TODOS") {
-    filters.push({ tituloUniversidad: carrera });
-  }
   const edad: { gte?: number; lte?: number } = {};
   const emin = sp.edadMin ? Number(sp.edadMin) : NaN;
   const emax = sp.edadMax ? Number(sp.edadMax) : NaN;
@@ -54,6 +50,12 @@ export function buildAspiranteCensusWhere(
   if (Object.keys(edad).length) filters.push({ edad });
 
   return filters.length ? { AND: filters } : {};
+}
+
+export function censusOrderBy(sort: string | undefined): Prisma.AspiranteOrderByWithRelationInput {
+  if (sort === "nombres") return { nombres: "asc" };
+  if (sort === "titulo") return { tituloUniversidad: "asc" };
+  return { createdAt: "desc" };
 }
 
 export function censusQueryString(
