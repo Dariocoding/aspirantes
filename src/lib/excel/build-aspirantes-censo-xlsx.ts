@@ -123,7 +123,8 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
 
   ws.mergeCells("A3:J3");
   const hint = ws.getCell("A3");
-  hint.value = "Admisión y sexo con sombreado; filas alternadas para lectura rápida";
+  hint.value =
+    "Admisión y sexo con sombreado. Puede reeditar este archivo e importarlo: la clave es la cédula (no cree filas nuevas ni cambie cabeceras). Unidad, carrera, admisión, sexo y nacimiento se actualizan.";
   hint.font = { name: "Calibri", size: 9, italic: true, color: { argb: "FF64748B" } };
   hint.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
   hint.alignment = { vertical: "middle", horizontal: "left", indent: 1 };

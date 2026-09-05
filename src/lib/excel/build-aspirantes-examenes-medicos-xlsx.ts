@@ -96,7 +96,7 @@ export async function buildAspirantesExamenesMedicosXlsxBuffer(
   ws.mergeCells(3, 1, 3, lastCol);
   const hint = ws.getCell(3, 1);
   hint.value =
-    "Peso, estatura y tensión desde datos físicos. SI = examen marcado como realizado; celda vacía = no registrado o no aplica";
+    "Peso, estatura y tensión desde datos físicos. SI = examen realizado; vacío = no. Puede reeditar este archivo e importarlo: clave = cédula (sin filas nuevas ni cambiar cabeceras).";
   hint.font = { name: "Calibri", size: 9, italic: true, color: { argb: "FF64748B" } };
   hint.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
   hint.alignment = { vertical: "middle", horizontal: "left", indent: 1 };

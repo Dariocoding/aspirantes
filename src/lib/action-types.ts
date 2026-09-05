@@ -7,6 +7,26 @@ export type AspiranteActionState = {
 
 export const aspiranteInitialActionState: AspiranteActionState = { ok: false, errors: {} };
 
+export type AspirantesImportSummary = {
+  variant: "censo" | "examenes-medicos";
+  totalRows: number;
+  updated: number;
+  notFound: number;
+  rowErrors: string[];
+};
+
+export type AspirantesImportActionState = {
+  ok: boolean;
+  errors: Record<string, string>;
+  summary: AspirantesImportSummary | null;
+};
+
+export const aspirantesImportInitialActionState: AspirantesImportActionState = {
+  ok: false,
+  errors: {},
+  summary: null,
+};
+
 /** Estado del portal público de actualización por cédula. */
 export type AspiranteSelfServiceState = {
   ok: boolean;

@@ -14,6 +14,7 @@ import { AspiranteDeleteForm } from "@dashboard/aspirantes/_components/aspirante
 import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
 import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { AspirantesExportLinks } from "@dashboard/aspirantes/_components/aspirantes-export-links";
+import { AspirantesImportDialog } from "@dashboard/aspirantes/_components/aspirantes-import-dialog";
 import { AspirantesFiltersDrawer } from "@dashboard/aspirantes/_components/aspirantes-filters-drawer";
 import { SinConvocatoriasPanel } from "@dashboard/aspirantes/_components/sin-convocatorias-panel";
 import { Button, buttonVariants } from "@src/components/ui/button";
@@ -213,7 +214,8 @@ export default async function AspirantesPage({
                     {" "}
                     Excel y PDF exportan{" "}
                     <span className="font-medium text-slate-700">todos</span> los registros que cumplen los filtros
-                    actuales.
+                    actuales. Puede editar el Excel exportado y volver a{" "}
+                    <span className="font-medium text-slate-700">importarlo</span> (clave: cédula).
                   </>
                 ) : (
                   <> La exportación masiva (Excel/PDF) está reservada a operadores y administradores.</>
@@ -221,7 +223,15 @@ export default async function AspirantesPage({
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {write ? <AspirantesExportLinks exportQuery={censusQueryString(qsBase, {})} /> : null}
+              {write ? (
+                <>
+                  <AspirantesImportDialog
+                    convocatoriaId={convocatoriaFiltroId}
+                    convocatoriaLabel={`${convocatoriaActual.nombre} (${convocatoriaActual.codigo})`}
+                  />
+                  <AspirantesExportLinks exportQuery={censusQueryString(qsBase, {})} />
+                </>
+              ) : null}
               <AspirantesFiltersDrawer
                 q={sp.q ?? ""}
                 sexo={sp.sexo}
