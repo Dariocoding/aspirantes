@@ -98,6 +98,7 @@ export default async function AspirantePerfilPage({
           convocatoriaActiva: a.convocatoria.activa,
           estaturaCm: a.datosFisicos?.estaturaCm ?? null,
           pesoKg: a.datosFisicos?.pesoKg ?? null,
+          tensionArterial: a.datosFisicos?.tensionArterial ?? null,
           tipoSangre: a.datosFisicos?.tipoSangre ?? null,
           alergias: a.datosFisicos?.alergias ?? null,
           condicionesMedicas: a.datosFisicos?.condicionesMedicas ?? null,

@@ -96,6 +96,7 @@ export default async function AspirantesGestionPage({
         estadoCivil: isEstadoCivilValue(a.estadoCivil) ? a.estadoCivil : null,
         estaturaCm: a.datosFisicos?.estaturaCm ?? null,
         pesoKg: a.datosFisicos?.pesoKg ?? null,
+        tensionArterial: a.datosFisicos?.tensionArterial ?? null,
         tipoSangre: a.datosFisicos?.tipoSangre ?? null,
         alergias: a.datosFisicos?.alergias ?? null,
         condicionesMedicas: a.datosFisicos?.condicionesMedicas ?? null,

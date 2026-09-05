@@ -8,6 +8,9 @@ export type AspiranteExamenesMedicosExportRow = {
   nombres: string;
   apellidos: string;
   cedula: string;
+  estaturaCm: number | null;
+  pesoKg: number | null;
+  tensionArterial: string | null;
   fichaEvaluacion: unknown;
 };
 
@@ -31,8 +34,16 @@ const ZEBRA_A = { type: "pattern" as const, pattern: "solid" as const, fgColor: 
 const ZEBRA_B = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFFFFF" } };
 const SI_FILL = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFD1FAE5" } };
 
+const FISICO_HEADERS = ["Peso (kg)", "Estatura (cm)", "Tensión"] as const;
+const FISICO_COL_COUNT = FISICO_HEADERS.length;
+
 function applyCellBorder(cell: ExcelJS.Cell) {
   cell.border = BORDER;
+}
+
+function formatOptionalNumber(value: number | null | undefined): string | number {
+  if (value == null || Number.isNaN(value)) return "";
+  return value;
 }
 
 export async function buildAspirantesExamenesMedicosXlsxBuffer(
@@ -41,8 +52,9 @@ export async function buildAspirantesExamenesMedicosXlsxBuffer(
   const { convocatoriaNombre, convocatoriaCodigo, anio, rows, generatedAt } = params;
 
   const examenHeaders = EXAMEN_MEDICO_ITEMS.map((item) => item.texto);
-  const colCount = 2 + examenHeaders.length;
+  const colCount = 2 + FISICO_COL_COUNT + examenHeaders.length;
   const lastCol = colCount;
+  const examStartCol = 3 + FISICO_COL_COUNT;
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "FANB Aspirantes";
@@ -56,8 +68,11 @@ export async function buildAspirantesExamenesMedicosXlsxBuffer(
 
   ws.getColumn(1).width = 36;
   ws.getColumn(2).width = 14;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 14;
+  ws.getColumn(5).width = 12;
   for (let i = 0; i < examenHeaders.length; i++) {
-    ws.getColumn(3 + i).width = Math.min(22, Math.max(12, examenHeaders[i]!.length * 0.85));
+    ws.getColumn(examStartCol + i).width = Math.min(22, Math.max(12, examenHeaders[i]!.length * 0.85));
   }
 
   ws.mergeCells(1, 1, 1, lastCol);
@@ -80,14 +95,15 @@ export async function buildAspirantesExamenesMedicosXlsxBuffer(
 
   ws.mergeCells(3, 1, 3, lastCol);
   const hint = ws.getCell(3, 1);
-  hint.value = 'SI = examen marcado como realizado; celda vacía = no registrado o no aplica';
+  hint.value =
+    "Peso, estatura y tensión desde datos físicos. SI = examen marcado como realizado; celda vacía = no registrado o no aplica";
   hint.font = { name: "Calibri", size: 9, italic: true, color: { argb: "FF64748B" } };
   hint.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
   hint.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
   applyCellBorder(hint);
   ws.getRow(3).height = 18;
 
-  const headers = ["Nombre completo", "Cédula", ...examenHeaders];
+  const headers = ["Nombre completo", "Cédula", ...FISICO_HEADERS, ...examenHeaders];
   const headerRow = ws.getRow(4);
   headerRow.height = 36;
   headers.forEach((text, i) => {
@@ -122,8 +138,22 @@ export async function buildAspirantesExamenesMedicosXlsxBuffer(
     cedulaCell.font = { name: "Consolas", size: 11, color: { argb: "FF0F172A" } };
     applyCellBorder(cedulaCell);
 
+    const fisicoValues: Array<string | number> = [
+      formatOptionalNumber(r.pesoKg),
+      formatOptionalNumber(r.estaturaCm),
+      (r.tensionArterial ?? "").trim(),
+    ];
+    fisicoValues.forEach((value, i) => {
+      const cell = row.getCell(3 + i);
+      cell.value = value;
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.fill = zebra;
+      cell.font = { name: "Calibri", size: 11, color: { argb: "FF1E293B" } };
+      applyCellBorder(cell);
+    });
+
     EXAMEN_MEDICO_ITEMS.forEach((item, examIdx) => {
-      const cell = row.getCell(3 + examIdx);
+      const cell = row.getCell(examStartCol + examIdx);
       const marcado = ficha.examenMedico[item.id]?.si === true;
       cell.value = marcado ? "SI" : "";
       cell.alignment = { horizontal: "center", vertical: "middle" };

@@ -90,7 +90,7 @@ export async function GET(request: Request) {
 
   const rows = await prisma.aspirante.findMany({
     where,
-    include: { convocatoria: true },
+    include: { convocatoria: true, datosFisicos: true },
     orderBy: sort,
   });
 
@@ -143,6 +143,9 @@ export async function GET(request: Request) {
         nombres: a.nombres,
         apellidos: a.apellidos,
         cedula: a.cedula,
+        estaturaCm: a.datosFisicos?.estaturaCm ?? null,
+        pesoKg: a.datosFisicos?.pesoKg ?? null,
+        tensionArterial: a.datosFisicos?.tensionArterial ?? null,
         fichaEvaluacion: a.fichaEvaluacion,
       })),
       generatedAt,

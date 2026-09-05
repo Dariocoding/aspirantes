@@ -71,6 +71,7 @@ export type AspiranteRegistroInitial = {
   estadoCivil?: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
   estaturaCm: number | null;
   pesoKg: number | null;
+  tensionArterial: string | null;
   tipoSangre: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
@@ -177,6 +178,7 @@ export function AspiranteRegistroForm({
       direccion: initial?.direccion ?? "",
       estaturaCm: initial?.estaturaCm != null ? String(initial.estaturaCm) : "",
       pesoKg: initial?.pesoKg != null ? String(initial.pesoKg) : "",
+      tensionArterial: initial?.tensionArterial ?? "",
       tipoSangre: initial?.tipoSangre ?? "",
       alergias: initial?.alergias ?? "",
       condicionesMedicas: initial?.condicionesMedicas ?? "",
@@ -670,6 +672,14 @@ export function AspiranteRegistroForm({
                 type="number"
                 step="0.01"
                 defaultValue={defaults.pesoKg}
+              />
+            </div>
+            <div>
+              <Label>Tensión arterial</Label>
+              <Input
+                name="tensionArterial"
+                defaultValue={defaults.tensionArterial}
+                placeholder="Ej.: 120/80"
               />
             </div>
             <div>

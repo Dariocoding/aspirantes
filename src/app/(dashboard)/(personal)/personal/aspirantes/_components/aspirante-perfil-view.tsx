@@ -46,6 +46,7 @@ export type AspirantePerfilSerializado = {
   convocatoriaActiva: boolean;
   estaturaCm: number | null;
   pesoKg: number | null;
+  tensionArterial: string | null;
   tipoSangre: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
@@ -460,6 +461,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Campo label="Estatura (cm)" value={a.estaturaCm != null ? String(a.estaturaCm) : null} />
               <Campo label="Peso (kg)" value={a.pesoKg != null ? String(a.pesoKg) : null} />
+              <Campo label="Tensión arterial" value={a.tensionArterial} />
               <Campo label="Tipo de sangre" value={a.tipoSangre} />
               <Campo label="Alergias" value={a.alergias} />
               <Campo label="Discapacidad" value={a.discapacidad} />

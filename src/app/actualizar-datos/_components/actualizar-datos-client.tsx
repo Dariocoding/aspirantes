@@ -413,6 +413,14 @@ function EditForm({
               <Input name="pesoKg" type="number" step="0.1" defaultValue={defaults.pesoKg ?? ""} />
             </div>
             <div className="space-y-1.5">
+              <Label>Tensión arterial</Label>
+              <Input
+                name="tensionArterial"
+                placeholder="Ej.: 120/80"
+                defaultValue={defaults.tensionArterial ?? ""}
+              />
+            </div>
+            <div className="space-y-1.5">
               <Label>Tipo de sangre</Label>
               <Input name="tipoSangre" defaultValue={defaults.tipoSangre ?? ""} />
             </div>

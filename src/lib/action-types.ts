@@ -31,6 +31,7 @@ export type AspiranteSelfServiceRecord = {
   estadoCivil: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
   estaturaCm: number | null;
   pesoKg: number | null;
+  tensionArterial: string | null;
   tipoSangre: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;

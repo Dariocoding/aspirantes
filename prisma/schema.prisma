@@ -286,6 +286,8 @@ model DatosFisicosMedicos {
   id                String   @id @default(cuid())
   estaturaCm        Float?
   pesoKg            Float?
+  /** Tensión arterial, p. ej. "120/80". */
+  tensionArterial   String?
   tipoSangre        String?
   alergias          String?
   condicionesMedicas String?
