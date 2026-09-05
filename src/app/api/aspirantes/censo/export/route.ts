@@ -7,6 +7,7 @@ import { buildAspiranteCensusWhere, censusOrderBy } from "@src/lib/aspirantes/ce
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
+import { buildAspirantesExamenesMedicosXlsxBuffer } from "@src/lib/excel/build-aspirantes-examenes-medicos-xlsx";
 import { AspirantesCensoPdfDocument } from "@src/lib/pdf/aspirantes-censo-document";
 import { prisma } from "@src/lib/prisma";
 
@@ -52,6 +53,16 @@ export async function GET(request: Request) {
   if (format !== "xlsx" && format !== "pdf") {
     return NextResponse.json(
       { message: "Parámetro format inválido (use xlsx o pdf)" },
+      { status: 400 },
+    );
+  }
+
+  const variantRaw = url.searchParams.get("variant")?.toLowerCase().trim() ?? "";
+  const xlsxVariant =
+    format === "xlsx" && variantRaw === "examenes-medicos" ? "examenes-medicos" : "censo";
+  if (format === "xlsx" && variantRaw && xlsxVariant === "censo" && variantRaw !== "censo") {
+    return NextResponse.json(
+      { message: "Parámetro variant inválido (use censo o examenes-medicos)" },
       { status: 400 },
     );
   }
@@ -106,16 +117,47 @@ export async function GET(request: Request) {
   await writeAuditLog({
     userId: session.user.id,
     userEmail: session.user.email,
-    action: format === "xlsx" ? "CENSO_EXPORT_XLSX" : "CENSO_EXPORT_PDF",
+    action:
+      format === "xlsx"
+        ? xlsxVariant === "examenes-medicos"
+          ? "CENSO_EXPORT_XLSX_EXAMENES"
+          : "CENSO_EXPORT_XLSX"
+        : "CENSO_EXPORT_PDF",
     entityType: "CENSO",
     entityId: convocatoriaFiltroId,
     metadata: {
       format,
+      variant: format === "xlsx" ? xlsxVariant : undefined,
       rowCount: rows.length,
       convocatoriaCodigo: convocatoriaActual.codigo,
       convocatoriaNombre: convocatoriaActual.nombre,
     },
   });
+
+  if (format === "xlsx" && xlsxVariant === "examenes-medicos") {
+    const buffer = await buildAspirantesExamenesMedicosXlsxBuffer({
+      convocatoriaNombre: convocatoriaActual.nombre,
+      convocatoriaCodigo: convocatoriaActual.codigo,
+      anio: convocatoriaActual.anio,
+      rows: rows.map((a) => ({
+        nombres: a.nombres,
+        apellidos: a.apellidos,
+        cedula: a.cedula,
+        fichaEvaluacion: a.fichaEvaluacion,
+      })),
+      generatedAt,
+    });
+
+    return new NextResponse(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="examenes-medicos-${codigoSafe}-${dateSafe}.xlsx"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
 
   if (format === "xlsx") {
     const buffer = await buildAspirantesCensoXlsxBuffer({
