@@ -1,10 +1,15 @@
-﻿import { addDays } from "date-fns";
+﻿import { addDays, format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Badge } from "@src/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@src/components/ui/card";
 import { StatsCards } from "@dashboard/_components/home/stats-cards";
-import { formatDate, isBirthdayToday } from "@src/lib/date";
+import { formatDate, isBirthdayThisMonth, isBirthdayToday } from "@src/lib/date";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
 import { prisma } from "@src/lib/prisma";
+function tieneFechaNacimientoReal(fecha: Date) {
+  // Placeholder de alta mínima: 1900-01-01
+  return fecha.getFullYear() > 1900;
+}
 
 export default async function PersonalDashboardPage() {
   const convocatoriaActiva = await getConvocatoriaActiva();
@@ -17,8 +22,17 @@ export default async function PersonalDashboardPage() {
 
   const hoy = new Date();
   const proximos15 = addDays(hoy, 15);
+  const nombreMes = format(hoy, "MMMM", { locale: es });
 
-  const cumpleanosHoy = aspirantes.filter((a) => isBirthdayToday(a.fechaNacimiento));
+  const cumpleanosDelMes = aspirantes
+    .filter(
+      (a) => tieneFechaNacimientoReal(a.fechaNacimiento) && isBirthdayThisMonth(a.fechaNacimiento, hoy),
+    )
+    .sort((a, b) => {
+      const diaDiff = a.fechaNacimiento.getDate() - b.fechaNacimiento.getDate();
+      if (diaDiff !== 0) return diaDiff;
+      return `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, "es");
+    });
 
   const proximasEfemerides = efemerides
     .map((item) => {
@@ -62,21 +76,40 @@ export default async function PersonalDashboardPage() {
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Cumpleaños del día</CardTitle>
+            <CardTitle>Cumpleaños de {nombreMes}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {cumpleanosHoy.length === 0 ? (
-              <p className="text-sm text-slate-600">No hay cumpleaños registrados para hoy.</p>
+            {cumpleanosDelMes.length === 0 ? (
+              <p className="text-sm text-slate-600">Nadie cumple años este mes en la convocatoria activa.</p>
             ) : (
-              cumpleanosHoy.map((persona) => (
-                <div key={persona.id} className="rounded-md border border-blue-200 bg-blue-50 p-3">
-                  <p className="font-medium text-blue-900">
-                    {persona.nombres} {persona.apellidos}
-                  </p>
-                  <p className="text-sm text-blue-700">C.I: {persona.cedula}</p>
-                  <Badge className="mt-2 bg-blue-700">Cumpleaños hoy</Badge>
-                </div>
-              ))
+              cumpleanosDelMes.map((persona) => {
+                const esHoy = isBirthdayToday(persona.fechaNacimiento);
+                return (
+                  <div
+                    key={persona.id}
+                    className={
+                      esHoy
+                        ? "rounded-md border border-blue-200 bg-blue-50 p-3"
+                        : "rounded-md border border-slate-200 bg-slate-50 p-3"
+                    }
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className={`font-medium ${esHoy ? "text-blue-900" : "text-slate-900"}`}>
+                          {persona.nombres} {persona.apellidos}
+                        </p>
+                        <p className={`text-sm ${esHoy ? "text-blue-700" : "text-slate-600"}`}>
+                          C.I: {persona.cedula}
+                        </p>
+                      </div>
+                      <p className={`text-sm font-medium tabular-nums ${esHoy ? "text-blue-800" : "text-slate-700"}`}>
+                        {format(persona.fechaNacimiento, "d 'de' MMMM", { locale: es })}
+                      </p>
+                    </div>
+                    {esHoy ? <Badge className="mt-2 bg-blue-700">Cumpleaños hoy</Badge> : null}
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>

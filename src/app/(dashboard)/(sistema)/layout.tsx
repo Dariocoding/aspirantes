@@ -6,3 +6,5 @@ export default async function SistemaAppLayout({
   await requireAppAccess("sistema");
   return children;
 }
+
+

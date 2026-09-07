@@ -9,3 +9,7 @@ export function isBirthdayToday(date: Date) {
   const today = new Date();
   return date.getDate() === today.getDate() && date.getMonth() === today.getMonth();
 }
+
+export function isBirthdayThisMonth(date: Date, reference: Date = new Date()) {
+  return date.getMonth() === reference.getMonth();
+}
