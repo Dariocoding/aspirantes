@@ -67,6 +67,14 @@ export default async function AspirantesGestionPage({
     ? { codigo: convocatoriaActiva.codigo, nombre: convocatoriaActiva.nombre }
     : null;
 
+  const pelotones = convocatoriaActiva
+    ? await prisma.peloton.findMany({
+        where: { convocatoriaId: convocatoriaActiva.id },
+        orderBy: { numero: "asc" },
+        select: { id: true, numero: true, nombre: true },
+      })
+    : [];
+
   let registroInitial: AspiranteRegistroInitial | null = null;
   if (editId && convocatoriaActiva) {
     const a = await prisma.aspirante.findFirst({
@@ -94,6 +102,7 @@ export default async function AspirantesGestionPage({
         correo: a.correo,
         hijosCantidad: a.hijosCantidad,
         estadoCivil: isEstadoCivilValue(a.estadoCivil) ? a.estadoCivil : null,
+        pelotonId: a.pelotonId,
         estaturaCm: a.datosFisicos?.estaturaCm ?? null,
         pesoKg: a.datosFisicos?.pesoKg ?? null,
         tensionArterial: a.datosFisicos?.tensionArterial ?? null,
@@ -195,7 +204,12 @@ export default async function AspirantesGestionPage({
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
-          <AspiranteRegistroForm canWrite convocatoriaActiva={convocatoriaResumen} initial={registroInitial} />
+          <AspiranteRegistroForm
+            canWrite
+            convocatoriaActiva={convocatoriaResumen}
+            pelotones={pelotones}
+            initial={registroInitial}
+          />
         </CardContent>
       </Card>
     </div>

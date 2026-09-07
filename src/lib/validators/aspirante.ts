@@ -168,6 +168,10 @@ const aspiranteStaffBaseSchema = z.object({
     z.coerce.number().int().min(0).max(30),
   ),
   estadoCivil: estadoCivilField,
+  pelotonId: z.preprocess(
+    (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
+    z.string().min(1).nullable(),
+  ),
   estaturaCm: optionalFloat(300),
   pesoKg: optionalFloat(400),
   tensionArterial: z.string().trim().max(20).optional().nullable(),

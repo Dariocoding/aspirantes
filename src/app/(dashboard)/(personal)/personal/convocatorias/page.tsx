@@ -22,7 +22,7 @@ export default async function ConvocatoriasPage() {
       activa: true,
       comandanteNombre: true,
       comandanteTelefono: true,
-      _count: { select: { aspirantes: true } },
+      _count: { select: { aspirantes: true, pelotones: true } },
     },
   });
 
@@ -33,6 +33,7 @@ export default async function ConvocatoriasPage() {
     anio: r.anio,
     activa: r.activa,
     aspirantesCount: r._count.aspirantes,
+    pelotonesCount: r._count.pelotones,
     comandanteNombre: r.comandanteNombre,
     comandanteTelefono: r.comandanteTelefono,
   }));

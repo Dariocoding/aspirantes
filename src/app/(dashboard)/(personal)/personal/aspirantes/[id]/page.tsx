@@ -31,6 +31,7 @@ export default async function AspirantePerfilPage({
     where: { id },
     include: {
       convocatoria: true,
+      peloton: true,
       datosFisicos: true,
       contactos: { orderBy: { createdAt: "asc" }, take: 1 },
     },
@@ -86,6 +87,7 @@ export default async function AspirantePerfilPage({
           fechaNacimientoLabel: a.fechaNacimiento.toLocaleDateString("es-VE"),
           lugarNacimiento: a.lugarNacimiento,
           unidadPostulante: a.unidadPostulante,
+          pelotonLabel: a.peloton ? a.peloton.nombre : null,
           calificacionAdmision: a.calificacionAdmision,
           direccion: a.direccion,
           telefono: a.telefono,

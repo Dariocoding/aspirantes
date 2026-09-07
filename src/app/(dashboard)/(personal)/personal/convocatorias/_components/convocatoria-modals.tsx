@@ -43,8 +43,8 @@ export function ConvocatoriaCreateDialog() {
         <DialogHeader>
           <DialogTitle>Registrar convocatoria</DialogTitle>
           <DialogDescription>
-            Código único, año visible y nombre para el personal. Solo una convocatoria puede estar activa para recepción
-            de aspirantes.
+            Código único, año, cantidad de pelotones del curso y nombre para el personal. Solo una convocatoria puede
+            estar activa para recepción de aspirantes.
           </DialogDescription>
         </DialogHeader>
         <div className="px-5 pb-5">{open ? <ConvocatoriaCreateForm onSuccess={close} /> : null}</div>
@@ -72,7 +72,8 @@ export function ConvocatoriaEditDialog({ defaults }: { defaults: ConvocatoriaEdi
         <DialogHeader>
           <DialogTitle>Editar convocatoria</DialogTitle>
           <DialogDescription>
-            Actualice código, año o nombre. Para cambiar cuál recibe inscripciones use «Activar recepción» en el listado.
+            Actualice código, año, pelotones o nombre. Para cambiar cuál recibe inscripciones use «Activar recepción» en
+            el listado.
           </DialogDescription>
         </DialogHeader>
         <div className="px-5 pb-5">

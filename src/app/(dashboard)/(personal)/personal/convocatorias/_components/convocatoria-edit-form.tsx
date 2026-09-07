@@ -34,6 +34,7 @@ export type ConvocatoriaEditDefaults = {
   anio: number;
   comandanteNombre: string | null;
   comandanteTelefono: string | null;
+  cantidadPelotones: number;
 };
 
 type ConvocatoriaEditFormProps = {
@@ -122,6 +123,21 @@ export function ConvocatoriaEditForm({ defaults, onSuccess }: ConvocatoriaEditFo
           defaultValue={defaults.comandanteTelefono ?? ""}
           placeholder="Ej.: 0412-0000000"
         />
+      </div>
+      <div className="md:col-span-2">
+        <Label htmlFor={`conv-edit-pelotones-${defaults.id}`}>Cantidad de pelotones del curso</Label>
+        <Input
+          id={`conv-edit-pelotones-${defaults.id}`}
+          name="cantidadPelotones"
+          type="number"
+          required
+          min={0}
+          max={40}
+          defaultValue={defaults.cantidadPelotones}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Al aumentar se crean pelotones nuevos. Al reducir, solo si no tienen aspirantes asignados.
+        </p>
       </div>
       <div className="md:col-span-2">
         <Button type="submit" className="bg-slate-900 hover:bg-slate-800">

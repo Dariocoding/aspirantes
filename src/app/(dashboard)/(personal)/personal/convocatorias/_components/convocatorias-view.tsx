@@ -18,6 +18,7 @@ export type ConvocatoriaRow = {
   anio: number;
   activa: boolean;
   aspirantesCount: number;
+  pelotonesCount: number;
   comandanteNombre: string | null;
   comandanteTelefono: string | null;
 };
@@ -83,6 +84,9 @@ export function ConvocatoriasView({ convocatorias }: Props) {
                     Año
                   </TableHead>
                   <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    Pelotones
+                  </TableHead>
+                  <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
                     Comandante
                   </TableHead>
                   <TableHead className="h-11 px-4 text-xs font-semibold uppercase tracking-wider text-slate-600">
@@ -96,7 +100,7 @@ export function ConvocatoriasView({ convocatorias }: Props) {
               <TableBody>
                 {convocatorias.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={6} className="h-32 whitespace-normal px-4 text-center text-sm text-slate-500">
+                    <TableCell colSpan={7} className="h-32 whitespace-normal px-4 text-center text-sm text-slate-500">
                       <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                           <CalendarDays className="h-5 w-5" aria-hidden />
@@ -112,6 +116,13 @@ export function ConvocatoriasView({ convocatorias }: Props) {
                       <TableCell className="max-w-[220px] px-4 py-3 font-medium text-slate-900">{c.nombre}</TableCell>
                       <TableCell className="px-4 py-3 font-mono text-sm tabular-nums text-slate-700">{c.codigo}</TableCell>
                       <TableCell className="px-4 py-3 tabular-nums text-slate-700">{c.anio}</TableCell>
+                      <TableCell className="px-4 py-3 tabular-nums text-slate-700">
+                        {c.pelotonesCount > 0 ? (
+                          <span title="Pelotones del curso en esta convocatoria">{c.pelotonesCount}</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="max-w-[200px] px-4 py-3 text-sm text-slate-700">
                         {c.comandanteNombre?.trim() ? (
                           <div className="space-y-0.5">
@@ -153,6 +164,7 @@ export function ConvocatoriasView({ convocatorias }: Props) {
                               anio: c.anio,
                               comandanteNombre: c.comandanteNombre,
                               comandanteTelefono: c.comandanteTelefono,
+                              cantidadPelotones: c.pelotonesCount,
                             }}
                           />
                           {c.aspirantesCount === 0 ? (

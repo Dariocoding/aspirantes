@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PELOTON_CANTIDAD_MAX, PELOTON_CANTIDAD_MIN } from "@src/lib/pelotones";
 
 const convocatoriaFields = {
   codigo: z
@@ -17,6 +18,11 @@ const convocatoriaFields = {
     (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
     z.string().max(40).nullable(),
   ),
+  cantidadPelotones: z.coerce
+    .number()
+    .int("Indique un número entero de pelotones")
+    .min(PELOTON_CANTIDAD_MIN, `Mínimo ${PELOTON_CANTIDAD_MIN} pelotones`)
+    .max(PELOTON_CANTIDAD_MAX, `Máximo ${PELOTON_CANTIDAD_MAX} pelotones`),
 } as const;
 
 export const convocatoriaCreateSchema = z.object({

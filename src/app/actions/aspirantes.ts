@@ -17,6 +17,7 @@ import {
   applyAspiranteFotosFromForm,
   removeAllAspiranteFotos,
 } from "@src/lib/aspirantes/apply-fotos";
+import { resolvePelotonIdForConvocatoria } from "@src/lib/pelotones";
 
 function toPrismaFichaEvaluacion(
   payload: object | null | undefined,
@@ -65,6 +66,7 @@ export async function createAspirante(
     correo: emptyToNull(formData.get("correo")),
     hijosCantidad: formData.get("hijosCantidad") || "0",
     estadoCivil: emptyToNull(formData.get("estadoCivil")),
+    pelotonId: emptyToNull(formData.get("pelotonId")),
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
     tensionArterial: emptyToNull(formData.get("tensionArterial")),
@@ -102,6 +104,15 @@ export async function createAspirante(
     };
   }
 
+  const pelotonResolved = await resolvePelotonIdForConvocatoria(
+    prisma,
+    convocatoria.id,
+    d.pelotonId,
+  );
+  if (!pelotonResolved.ok) {
+    return { ok: false, errors: { pelotonId: pelotonResolved.error } };
+  }
+
   const contactoNombre = d.contactoNombre.trim();
   const hasContacto = Boolean(contactoNombre);
 
@@ -128,6 +139,7 @@ export async function createAspirante(
         hijosCantidad: d.hijosCantidad,
         estadoCivil: d.estadoCivil ?? null,
         convocatoriaId: convocatoria.id,
+        pelotonId: pelotonResolved.pelotonId,
         tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
         nombreUniversidad: d.nombreUniversidad ?? null,
         tituloUniversidad: d.tituloUniversidad ?? null,
@@ -258,6 +270,7 @@ export async function updateAspirante(
     correo: emptyToNull(formData.get("correo")),
     hijosCantidad: formData.get("hijosCantidad") || "0",
     estadoCivil: emptyToNull(formData.get("estadoCivil")),
+    pelotonId: emptyToNull(formData.get("pelotonId")),
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
     tensionArterial: emptyToNull(formData.get("tensionArterial")),
@@ -310,6 +323,15 @@ export async function updateAspirante(
     };
   }
 
+  const pelotonResolved = await resolvePelotonIdForConvocatoria(
+    prisma,
+    convocatoria.id,
+    d.pelotonId,
+  );
+  if (!pelotonResolved.ok) {
+    return { ok: false, errors: { pelotonId: pelotonResolved.error } };
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.aspirante.update({
@@ -334,6 +356,7 @@ export async function updateAspirante(
           correo: d.correo ?? null,
           hijosCantidad: d.hijosCantidad,
           estadoCivil: d.estadoCivil ?? null,
+          pelotonId: pelotonResolved.pelotonId,
           tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
           nombreUniversidad: d.nombreUniversidad ?? null,
           tituloUniversidad: d.tituloUniversidad ?? null,

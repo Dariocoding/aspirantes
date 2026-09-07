@@ -10,10 +10,16 @@ import { SuccessCelebrationDialog } from "@src/components/ui/success-celebration
 import { Textarea } from "@src/components/ui/textarea";
 import type { AspiranteActionState } from "@src/lib/action-types";
 import { aspiranteInitialActionState } from "@src/lib/action-types";
-import { ESTADO_CIVIL_LABELS, ESTADO_CIVIL_VALUES } from "@src/lib/aspirantes/estado-civil";
+import { ESTADO_CIVIL_LABELS, ESTADO_CIVIL_VALUES, isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import type { TipoEstudioValue } from "@src/lib/aspirantes/tipo-estudio";
-import { TIPO_ESTUDIO_LABELS, TIPO_ESTUDIO_VALUES } from "@src/lib/aspirantes/tipo-estudio";
+import {
+  normalizeTipoEstudio,
+  TIPO_ESTUDIO_LABELS,
+  TIPO_ESTUDIO_VALUES,
+} from "@src/lib/aspirantes/tipo-estudio";
 import { cn } from "@src/lib/utils";
+import type { PelotonResumen } from "@src/lib/pelotones";
+import { labelPeloton } from "@src/lib/pelotones";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -26,6 +32,78 @@ import {
 } from "react";
 
 type RegistroSubmitIntent = "finalize" | null;
+
+function formStr(fd: FormData, name: string) {
+  const v = fd.get(name);
+  return typeof v === "string" ? v.trim() : "";
+}
+
+function formNumOrNull(fd: FormData, name: string) {
+  const s = formStr(fd, name);
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * React 19 reinicia inputs no controlados tras un action exitoso, volviendo al
+ * defaultValue del primer montaje. Capturamos el seed enviado para remontar el
+ * formulario de edición con lo que sí se guardó (p. ej. grado educativo).
+ */
+function seedFromForm(
+  form: HTMLFormElement,
+  prev: AspiranteRegistroInitial,
+): AspiranteRegistroInitial {
+  const fd = new FormData(form);
+  const estadoCivilRaw = formStr(fd, "estadoCivil");
+  const calificacionRaw = formStr(fd, "calificacionAdmision");
+  const sexoRaw = formStr(fd, "sexo");
+  const edad = formNumOrNull(fd, "edad");
+  const hijos = formNumOrNull(fd, "hijosCantidad");
+
+  return {
+    ...prev,
+    unidadPostulante: formStr(fd, "unidadPostulante"),
+    calificacionAdmision:
+      calificacionRaw === "APTO" ||
+      calificacionRaw === "NO_APTO" ||
+      calificacionRaw === "EN_EVALUACION"
+        ? calificacionRaw
+        : prev.calificacionAdmision,
+    nombres: formStr(fd, "nombres") || prev.nombres,
+    apellidos: formStr(fd, "apellidos"),
+    cedula: formStr(fd, "cedula") || prev.cedula,
+    edad: edad != null && edad > 0 ? edad : 0,
+    sexo: sexoRaw === "FEMENINO" ? "FEMENINO" : "MASCULINO",
+    fechaNacimiento: formStr(fd, "fechaNacimiento"),
+    lugarNacimiento: formStr(fd, "lugarNacimiento"),
+    direccion: formStr(fd, "direccion") || null,
+    telefono: formStr(fd, "telefono") || null,
+    correo: formStr(fd, "correo") || null,
+    hijosCantidad: hijos != null ? hijos : 0,
+    estadoCivil: isEstadoCivilValue(estadoCivilRaw) ? estadoCivilRaw : null,
+    pelotonId: formStr(fd, "pelotonId") || null,
+    estaturaCm: formNumOrNull(fd, "estaturaCm"),
+    pesoKg: formNumOrNull(fd, "pesoKg"),
+    tensionArterial: formStr(fd, "tensionArterial") || null,
+    tipoSangre: formStr(fd, "tipoSangre") || null,
+    alergias: formStr(fd, "alergias") || null,
+    condicionesMedicas: formStr(fd, "condicionesMedicas") || null,
+    discapacidad: formStr(fd, "discapacidad") || null,
+    observaciones: formStr(fd, "observaciones") || null,
+    contactoNombre: formStr(fd, "contactoNombre"),
+    contactoParentesco: formStr(fd, "contactoParentesco"),
+    contactoTelefono: formStr(fd, "contactoTelefono"),
+    contactoDireccion: formStr(fd, "contactoDireccion") || null,
+    tipoEstudio: normalizeTipoEstudio(formStr(fd, "tipoEstudio")),
+    nombreUniversidad: formStr(fd, "nombreUniversidad") || null,
+    tituloUniversidad: formStr(fd, "tituloUniversidad") || null,
+    paisUniversidad: formStr(fd, "paisUniversidad") || null,
+    nucleoUniversidad: formStr(fd, "nucleoUniversidad") || null,
+    anioIngresoUniversidad: formNumOrNull(fd, "anioIngresoUniversidad"),
+    anioEgresoUniversidad: formNumOrNull(fd, "anioEgresoUniversidad"),
+  };
+}
 
 function ErrorList({ errors }: { errors: Record<string, string> }) {
   const formMsg = errors._form;
@@ -69,6 +147,7 @@ export type AspiranteRegistroInitial = {
   correo: string | null;
   hijosCantidad: number;
   estadoCivil?: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
+  pelotonId?: string | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tensionArterial: string | null;
@@ -113,15 +192,25 @@ const STEPS = [
 export function AspiranteRegistroForm({
   canWrite: write,
   convocatoriaActiva,
+  pelotones = [],
   initial,
 }: {
   canWrite: boolean;
   convocatoriaActiva: ConvocatoriaResumen | null;
+  pelotones?: PelotonResumen[];
   initial?: AspiranteRegistroInitial | null;
 }) {
   const isEdit = Boolean(initial?.id);
   const [step, setStep] = useState(0);
   const router = useRouter();
+  /** Seed de defaultValue; se actualiza tras guardar para sobrevivir el reset de React 19. */
+  const [seed, setSeed] = useState<AspiranteRegistroInitial | null | undefined>(initial);
+  const [formKey, setFormKey] = useState(0);
+  const pendingSeedRef = useRef<AspiranteRegistroInitial | null>(null);
+
+  useEffect(() => {
+    setSeed(initial);
+  }, [initial]);
 
   const serverAction = useMemo(
     () => (isEdit ? updateAspirante : createAspirante),
@@ -143,11 +232,18 @@ export function AspiranteRegistroForm({
       registroSubmitIntentRef.current = null;
       setFinalizeUiPending(false);
       if (state.ok && intent === "finalize") {
+        if (isEdit && pendingSeedRef.current) {
+          setSeed(pendingSeedRef.current);
+          setFormKey((k) => k + 1);
+        }
+        pendingSeedRef.current = null;
         setCelebrateOpen(true);
+      } else {
+        pendingSeedRef.current = null;
       }
     }
     prevIsPendingRef.current = isPending;
-  }, [isPending, state.ok]);
+  }, [isPending, state.ok, isEdit]);
 
   const onCelebrateOpenChange = useCallback(
     (open: boolean) => {
@@ -162,43 +258,44 @@ export function AspiranteRegistroForm({
 
   const defaults = useMemo(
     () => ({
-      unidadPostulante: initial?.unidadPostulante ?? "",
-      calificacionAdmision: initial?.calificacionAdmision ?? "EN_EVALUACION",
-      nombres: initial?.nombres ?? "",
-      apellidos: initial?.apellidos ?? "",
-      cedula: initial?.cedula ?? "",
-      edad: initial != null && initial.edad > 0 ? String(initial.edad) : "",
-      sexo: initial?.sexo ?? "MASCULINO",
-      fechaNacimiento: initial?.fechaNacimiento ?? "",
-      lugarNacimiento: initial?.lugarNacimiento ?? "",
-      hijosCantidad: initial != null ? String(initial.hijosCantidad) : "0",
-      estadoCivil: initial?.estadoCivil ?? "",
-      telefono: initial?.telefono ?? "",
-      correo: initial?.correo ?? "",
-      direccion: initial?.direccion ?? "",
-      estaturaCm: initial?.estaturaCm != null ? String(initial.estaturaCm) : "",
-      pesoKg: initial?.pesoKg != null ? String(initial.pesoKg) : "",
-      tensionArterial: initial?.tensionArterial ?? "",
-      tipoSangre: initial?.tipoSangre ?? "",
-      alergias: initial?.alergias ?? "",
-      condicionesMedicas: initial?.condicionesMedicas ?? "",
-      discapacidad: initial?.discapacidad ?? "",
-      observaciones: initial?.observaciones ?? "",
-      contactoNombre: initial?.contactoNombre ?? "",
-      contactoParentesco: initial?.contactoParentesco ?? "",
-      contactoTelefono: initial?.contactoTelefono ?? "",
-      contactoDireccion: initial?.contactoDireccion ?? "",
-      tipoEstudio: initial?.tipoEstudio ?? "",
-      nombreUniversidad: initial?.nombreUniversidad ?? "",
-      tituloUniversidad: initial?.tituloUniversidad ?? "",
-      paisUniversidad: initial?.paisUniversidad ?? "",
-      nucleoUniversidad: initial?.nucleoUniversidad ?? "",
+      unidadPostulante: seed?.unidadPostulante ?? "",
+      calificacionAdmision: seed?.calificacionAdmision ?? "EN_EVALUACION",
+      nombres: seed?.nombres ?? "",
+      apellidos: seed?.apellidos ?? "",
+      cedula: seed?.cedula ?? "",
+      edad: seed != null && seed.edad > 0 ? String(seed.edad) : "",
+      sexo: seed?.sexo ?? "MASCULINO",
+      fechaNacimiento: seed?.fechaNacimiento ?? "",
+      lugarNacimiento: seed?.lugarNacimiento ?? "",
+      hijosCantidad: seed != null ? String(seed.hijosCantidad) : "0",
+      estadoCivil: seed?.estadoCivil ?? "",
+      pelotonId: seed?.pelotonId ?? "",
+      telefono: seed?.telefono ?? "",
+      correo: seed?.correo ?? "",
+      direccion: seed?.direccion ?? "",
+      estaturaCm: seed?.estaturaCm != null ? String(seed.estaturaCm) : "",
+      pesoKg: seed?.pesoKg != null ? String(seed.pesoKg) : "",
+      tensionArterial: seed?.tensionArterial ?? "",
+      tipoSangre: seed?.tipoSangre ?? "",
+      alergias: seed?.alergias ?? "",
+      condicionesMedicas: seed?.condicionesMedicas ?? "",
+      discapacidad: seed?.discapacidad ?? "",
+      observaciones: seed?.observaciones ?? "",
+      contactoNombre: seed?.contactoNombre ?? "",
+      contactoParentesco: seed?.contactoParentesco ?? "",
+      contactoTelefono: seed?.contactoTelefono ?? "",
+      contactoDireccion: seed?.contactoDireccion ?? "",
+      tipoEstudio: seed?.tipoEstudio ?? "",
+      nombreUniversidad: seed?.nombreUniversidad ?? "",
+      tituloUniversidad: seed?.tituloUniversidad ?? "",
+      paisUniversidad: seed?.paisUniversidad ?? "",
+      nucleoUniversidad: seed?.nucleoUniversidad ?? "",
       anioIngresoUniversidad:
-        initial?.anioIngresoUniversidad != null ? String(initial.anioIngresoUniversidad) : "",
+        seed?.anioIngresoUniversidad != null ? String(seed.anioIngresoUniversidad) : "",
       anioEgresoUniversidad:
-        initial?.anioEgresoUniversidad != null ? String(initial.anioEgresoUniversidad) : "",
+        seed?.anioEgresoUniversidad != null ? String(seed.anioEgresoUniversidad) : "",
     }),
-    [initial],
+    [seed],
   );
 
   if (!write) {
@@ -252,6 +349,7 @@ export function AspiranteRegistroForm({
         }
       />
       <form
+        key={formKey}
         ref={formRef}
         action={formAction}
         encType="multipart/form-data"
@@ -276,6 +374,7 @@ export function AspiranteRegistroForm({
           if (firstInvalid !== null) {
             registroSubmitIntentRef.current = null;
             setFinalizeUiPending(false);
+            pendingSeedRef.current = null;
             for (let i = 0; i < STEPS.length; i++) {
               const fs = form.querySelector(
                 `fieldset[data-registro-step="${i}"]`,
@@ -283,19 +382,20 @@ export function AspiranteRegistroForm({
               if (fs) fs.hidden = firstInvalid !== i;
             }
           } else {
-            for (let i = 0; i < STEPS.length; i++) {
-              const fs = form.querySelector(
-                `fieldset[data-registro-step="${i}"]`,
-              ) as HTMLFieldSetElement | null;
-              if (fs) fs.hidden = step !== i;
+            // Dejar todos los pasos visibles en el DOM durante el envío (FormData).
+            // React volverá a aplicar hidden={step !== i} en el siguiente render.
+            if (isEdit && seed?.id) {
+              pendingSeedRef.current = seedFromForm(form, seed);
+            } else {
+              pendingSeedRef.current = null;
             }
             registroSubmitIntentRef.current = "finalize";
             setFinalizeUiPending(true);
           }
         }}
       >
-        {initial?.id ? (
-          <input type="hidden" name="aspiranteId" value={initial.id} />
+        {seed?.id ? (
+          <input type="hidden" name="aspiranteId" value={seed.id} />
         ) : null}
 
         <nav
@@ -398,22 +498,22 @@ export function AspiranteRegistroForm({
           <div className="grid gap-3 md:grid-cols-2">
             <AspiranteFotoField
               id="aspirante-foto"
-              aspiranteId={initial?.id}
-              fotoKey={initial?.fotoKey}
+              aspiranteId={seed?.id}
+              fotoKey={seed?.fotoKey ?? initial?.fotoKey}
               nombre={`${defaults.nombres} ${defaults.apellidos}`.trim() || "aspirante"}
               kind="perfil"
             />
             <AspiranteFotoField
               id="aspirante-foto-cedula"
-              aspiranteId={initial?.id}
-              fotoKey={initial?.fotoCedulaKey}
+              aspiranteId={seed?.id}
+              fotoKey={seed?.fotoCedulaKey ?? initial?.fotoCedulaKey}
               nombre="cédula"
               kind="cedula"
             />
             <AspiranteFotoField
               id="aspirante-foto-titulo"
-              aspiranteId={initial?.id}
-              fotoKey={initial?.fotoTituloKey}
+              aspiranteId={seed?.id}
+              fotoKey={seed?.fotoTituloKey ?? initial?.fotoTituloKey}
               nombre="título"
               kind="titulo"
             />
@@ -482,6 +582,26 @@ export function AspiranteRegistroForm({
                 autoComplete="organization"
               />
             </div>
+            {pelotones.length > 0 ? (
+              <div className="md:col-span-2">
+                <Label>Pelotón del curso</Label>
+                <select
+                  name="pelotonId"
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                  defaultValue={defaults.pelotonId}
+                >
+                  <option value="">Sin asignar</option>
+                  {pelotones.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {labelPeloton(p)}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-slate-500">
+                  Pelotones definidos en la convocatoria activa del curso.
+                </p>
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <Label>Calificación de admisión</Label>
               <select
@@ -768,7 +888,7 @@ export function AspiranteRegistroForm({
             migraciones de columnas.
           </p>
           <AspiranteFichaEvaluacionFields
-            initialJson={initial?.fichaEvaluacion ?? null}
+            initialJson={seed?.fichaEvaluacion ?? initial?.fichaEvaluacion ?? null}
           />
         </fieldset>
 

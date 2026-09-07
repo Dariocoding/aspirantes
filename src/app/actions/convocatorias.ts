@@ -8,6 +8,14 @@ import { requireAdmin } from "@src/lib/auth/guards";
 import type { ConvocatoriaActionState } from "@src/lib/convocatoria-action-state";
 import { routes } from "@src/lib/apps/routes";
 import { writeAuditLog } from "@src/lib/audit/log";
+import { syncPelotonesConvocatoria } from "@src/lib/pelotones";
+
+class PelotonSyncError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PelotonSyncError";
+  }
+}
 
 export async function createConvocatoria(
   _prev: ConvocatoriaActionState,
@@ -21,6 +29,7 @@ export async function createConvocatoria(
     anio: formData.get("anio"),
     comandanteNombre: formData.get("comandanteNombre"),
     comandanteTelefono: formData.get("comandanteTelefono"),
+    cantidadPelotones: formData.get("cantidadPelotones"),
     marcarActiva: formData.get("marcarActiva"),
   };
 
@@ -35,11 +44,11 @@ export async function createConvocatoria(
   let created!: { id: string; codigo: string; nombre: string; activa: boolean };
 
   try {
-    await prisma.$transaction(async (tx) => {
+    created = await prisma.$transaction(async (tx) => {
       if (marcar) {
         await tx.convocatoria.updateMany({ data: { activa: false } });
       }
-      created = await tx.convocatoria.create({
+      const row = await tx.convocatoria.create({
         data: {
           codigo: d.codigo,
           nombre: d.nombre,
@@ -50,8 +59,16 @@ export async function createConvocatoria(
         },
         select: { id: true, codigo: true, nombre: true, activa: true },
       });
+      const sync = await syncPelotonesConvocatoria(tx, row.id, d.cantidadPelotones);
+      if (!sync.ok) {
+        throw new PelotonSyncError(sync.error);
+      }
+      return row;
     });
   } catch (e: unknown) {
+    if (e instanceof PelotonSyncError) {
+      return { ok: false, errors: { cantidadPelotones: e.message } };
+    }
     const code = typeof e === "object" && e !== null && "code" in e ? String((e as { code?: string }).code) : "";
     if (code === "P2002") {
       return { ok: false, errors: { codigo: "Ese código ya existe. Use otro distintivo." } };
@@ -65,7 +82,13 @@ export async function createConvocatoria(
     action: marcar ? "CONVOCATORIA_CREATE_ACTIVA" : "CONVOCATORIA_CREATE",
     entityType: "CONVOCATORIA",
     entityId: created.id,
-    metadata: { codigo: created.codigo, nombre: created.nombre, anio: d.anio, activa: created.activa },
+    metadata: {
+      codigo: created.codigo,
+      nombre: created.nombre,
+      anio: d.anio,
+      activa: created.activa,
+      cantidadPelotones: d.cantidadPelotones,
+    },
   });
 
   revalidatePath(routes.personal.convocatorias);
@@ -89,6 +112,7 @@ export async function updateConvocatoria(
     anio: formData.get("anio"),
     comandanteNombre: formData.get("comandanteNombre"),
     comandanteTelefono: formData.get("comandanteTelefono"),
+    cantidadPelotones: formData.get("cantidadPelotones"),
   };
 
   const parsed = convocatoriaUpdateSchema.safeParse(raw);
@@ -99,17 +123,26 @@ export async function updateConvocatoria(
   const d = parsed.data;
 
   try {
-    await prisma.convocatoria.update({
-      where: { id: d.id },
-      data: {
-        codigo: d.codigo,
-        nombre: d.nombre,
-        anio: d.anio,
-        comandanteNombre: d.comandanteNombre ?? null,
-        comandanteTelefono: d.comandanteTelefono ?? null,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.convocatoria.update({
+        where: { id: d.id },
+        data: {
+          codigo: d.codigo,
+          nombre: d.nombre,
+          anio: d.anio,
+          comandanteNombre: d.comandanteNombre ?? null,
+          comandanteTelefono: d.comandanteTelefono ?? null,
+        },
+      });
+      const sync = await syncPelotonesConvocatoria(tx, d.id, d.cantidadPelotones);
+      if (!sync.ok) {
+        throw new PelotonSyncError(sync.error);
+      }
     });
   } catch (e: unknown) {
+    if (e instanceof PelotonSyncError) {
+      return { ok: false, errors: { cantidadPelotones: e.message } };
+    }
     const code = typeof e === "object" && e !== null && "code" in e ? String((e as { code?: string }).code) : "";
     if (code === "P2002") {
       return { ok: false, errors: { codigo: "Ese código ya existe. Use otro distintivo." } };
@@ -126,7 +159,12 @@ export async function updateConvocatoria(
     action: "CONVOCATORIA_UPDATE",
     entityType: "CONVOCATORIA",
     entityId: d.id,
-    metadata: { codigo: d.codigo, nombre: d.nombre, anio: d.anio },
+    metadata: {
+      codigo: d.codigo,
+      nombre: d.nombre,
+      anio: d.anio,
+      cantidadPelotones: d.cantidadPelotones,
+    },
   });
 
   revalidatePath(routes.personal.convocatorias);

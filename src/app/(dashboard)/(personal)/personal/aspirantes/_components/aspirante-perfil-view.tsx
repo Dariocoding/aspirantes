@@ -34,6 +34,7 @@ export type AspirantePerfilSerializado = {
   fechaNacimientoLabel: string;
   lugarNacimiento: string;
   unidadPostulante: string;
+  pelotonLabel: string | null;
   calificacionAdmision: string;
   direccion: string | null;
   telefono: string | null;
@@ -74,7 +75,9 @@ function Campo({ label, value }: { label: string; value: string | null | undefin
   return (
     <div className="space-y-0.5">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="text-sm text-slate-900">{v ? v : <span className="text-slate-400">â€”</span>}</p>
+      <p className="text-sm text-slate-900">
+        {v ? v : <span className="text-slate-400">Sin indicar</span>}
+      </p>
     </div>
   );
 }
@@ -421,6 +424,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             <Separator className="my-3" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Campo label="Unidad postulante" value={a.unidadPostulante} />
+              <Campo label="Pelotón" value={a.pelotonLabel} />
               <Campo label="Fecha de nacimiento" value={a.fechaNacimientoLabel} />
               <Campo label="Lugar de nacimiento" value={a.lugarNacimiento} />
               <Campo label="Teléfono" value={a.telefono} />

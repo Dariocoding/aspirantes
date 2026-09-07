@@ -91,6 +91,21 @@ export function ConvocatoriaCreateForm({ onSuccess }: ConvocatoriaCreateFormProp
           placeholder="Ej.: 0412-0000000"
         />
       </div>
+      <div className="md:col-span-2">
+        <Label htmlFor="conv-pelotones">Cantidad de pelotones del curso</Label>
+        <Input
+          id="conv-pelotones"
+          name="cantidadPelotones"
+          type="number"
+          required
+          min={0}
+          max={40}
+          defaultValue={4}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Se crearán pelotones numerados (Pelotón 1, 2…). Cada aspirante se asigna a uno de ellos.
+        </p>
+      </div>
       <div className="md:col-span-2 flex items-center gap-2">
         <input id="conv-marcar" type="checkbox" name="marcarActiva" className="h-4 w-4 rounded border-slate-300" />
         <Label htmlFor="conv-marcar" className="mb-0 font-normal text-slate-700">

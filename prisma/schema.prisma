@@ -214,9 +214,27 @@ model Convocatoria {
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
   aspirantes           Aspirante[]
+  pelotones            Peloton[]
 
   @@index([anio])
   @@index([activa])
+}
+
+/// Unidad orgánica del curso en una convocatoria. Los aspirantes se asignan a un pelotón.
+model Peloton {
+  id             String       @id @default(cuid())
+  convocatoriaId String
+  convocatoria   Convocatoria @relation(fields: [convocatoriaId], references: [id], onDelete: Cascade)
+  /// Orden dentro del curso (1, 2, 3…).
+  numero         Int
+  /// Etiqueta visible (p. ej. «Pelotón 1»).
+  nombre         String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  aspirantes     Aspirante[]
+
+  @@unique([convocatoriaId, numero])
+  @@index([convocatoriaId])
 }
 
 model Aspirante {
@@ -238,6 +256,9 @@ model Aspirante {
   estadoCivil           EstadoCivil?
   convocatoriaId        String
   convocatoria          Convocatoria         @relation(fields: [convocatoriaId], references: [id], onDelete: Restrict)
+  /// Pelotón del curso al que pertenece el aspirante (misma convocatoria).
+  pelotonId             String?
+  peloton               Peloton?             @relation(fields: [pelotonId], references: [id], onDelete: SetNull)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   datosFisicos          DatosFisicosMedicos?
@@ -269,6 +290,7 @@ model Aspirante {
   @@unique([cedula, convocatoriaId])
   @@index([calificacionAdmision])
   @@index([unidadPostulante])
+  @@index([pelotonId])
 }
 
 model ContactoEmergencia {
