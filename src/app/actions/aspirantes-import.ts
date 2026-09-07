@@ -10,10 +10,7 @@ import {
   normalizeFichaEvaluacionForDb,
   parseFichaEvaluacion,
 } from "@src/lib/aspirantes/ficha-evaluacion";
-import {
-  ageFromBirthDate,
-  parseAspirantesImportXlsx,
-} from "@src/lib/excel/parse-aspirantes-import-xlsx";
+import { parseAspirantesImportXlsx } from "@src/lib/excel/parse-aspirantes-import-xlsx";
 import { prisma } from "@src/lib/prisma";
 import { routes } from "@src/lib/apps/routes";
 import type { AspirantesImportActionState } from "@src/lib/action-types";
@@ -97,7 +94,6 @@ export async function importAspirantesFromXlsx(
             }
             if (row.fechaNacimiento) {
               data.fechaNacimiento = row.fechaNacimiento;
-              data.edad = ageFromBirthDate(row.fechaNacimiento);
             }
 
             if (Object.keys(data).length === 0) continue;

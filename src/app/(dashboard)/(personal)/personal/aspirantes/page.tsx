@@ -34,6 +34,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
+import { ageFromBirthDate } from "@src/lib/date";
 import { prisma } from "@src/lib/prisma";
 import type { Prisma } from "@src/generated/prisma";
 
@@ -438,7 +439,7 @@ export default async function AspirantesPage({
                           </span>
                         </TableCell>
                         <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
-                          {a.edad}
+                          {ageFromBirthDate(a.fechaNacimiento) ?? "—"}
                         </TableCell>
                         <TableCell className="px-3 py-2">
                           <div className="flex flex-wrap items-center gap-1">

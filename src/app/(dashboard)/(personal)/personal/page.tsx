@@ -3,13 +3,9 @@ import { es } from "date-fns/locale";
 import { Badge } from "@src/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@src/components/ui/card";
 import { StatsCards } from "@dashboard/_components/home/stats-cards";
-import { formatDate, isBirthdayThisMonth, isBirthdayToday } from "@src/lib/date";
+import { formatDate, ageFromBirthDate, ageTurningOnBirthday, hasRealBirthDate, isBirthdayThisMonth, isBirthdayToday } from "@src/lib/date";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
 import { prisma } from "@src/lib/prisma";
-function tieneFechaNacimientoReal(fecha: Date) {
-  // Placeholder de alta mínima: 1900-01-01
-  return fecha.getFullYear() > 1900;
-}
 
 export default async function PersonalDashboardPage() {
   const convocatoriaActiva = await getConvocatoriaActiva();
@@ -25,9 +21,7 @@ export default async function PersonalDashboardPage() {
   const nombreMes = format(hoy, "MMMM", { locale: es });
 
   const cumpleanosDelMes = aspirantes
-    .filter(
-      (a) => tieneFechaNacimientoReal(a.fechaNacimiento) && isBirthdayThisMonth(a.fechaNacimiento, hoy),
-    )
+    .filter((a) => hasRealBirthDate(a.fechaNacimiento) && isBirthdayThisMonth(a.fechaNacimiento, hoy))
     .sort((a, b) => {
       const diaDiff = a.fechaNacimiento.getDate() - b.fechaNacimiento.getDate();
       if (diaDiff !== 0) return diaDiff;
@@ -46,7 +40,10 @@ export default async function PersonalDashboardPage() {
   const total = aspirantes.length;
   const masculinos = aspirantes.filter((a) => a.sexo === "MASCULINO").length;
   const femeninos = aspirantes.filter((a) => a.sexo === "FEMENINO").length;
-  const edadPromedio = total ? aspirantes.reduce((acc, cur) => acc + cur.edad, 0) / total : 0;
+  const edades = aspirantes
+    .map((a) => ageFromBirthDate(a.fechaNacimiento))
+    .filter((n): n is number => n != null);
+  const edadPromedio = edades.length ? edades.reduce((acc, cur) => acc + cur, 0) / edades.length : 0;
 
   return (
     <div className="min-w-0 space-y-6">
@@ -84,6 +81,7 @@ export default async function PersonalDashboardPage() {
             ) : (
               cumpleanosDelMes.map((persona) => {
                 const esHoy = isBirthdayToday(persona.fechaNacimiento);
+                const edadQueCumple = ageTurningOnBirthday(persona.fechaNacimiento, hoy);
                 return (
                   <div
                     key={persona.id}
@@ -100,6 +98,12 @@ export default async function PersonalDashboardPage() {
                         </p>
                         <p className={`text-sm ${esHoy ? "text-blue-700" : "text-slate-600"}`}>
                           C.I: {persona.cedula}
+                          {edadQueCumple != null ? (
+                            <>
+                              {" · "}
+                              <span className="tabular-nums">{edadQueCumple}</span> años
+                            </>
+                          ) : null}
                         </p>
                       </div>
                       <p className={`text-sm font-medium tabular-nums ${esHoy ? "text-blue-800" : "text-slate-700"}`}>

@@ -42,7 +42,6 @@ export type AspiranteSelfServiceRecord = {
   apellidos: string;
   fechaNacimiento: string;
   lugarNacimiento: string;
-  edad: number;
   sexo: "MASCULINO" | "FEMENINO";
   direccion: string | null;
   telefono: string | null;

@@ -58,7 +58,6 @@ function seedFromForm(
   const estadoCivilRaw = formStr(fd, "estadoCivil");
   const calificacionRaw = formStr(fd, "calificacionAdmision");
   const sexoRaw = formStr(fd, "sexo");
-  const edad = formNumOrNull(fd, "edad");
   const hijos = formNumOrNull(fd, "hijosCantidad");
 
   return {
@@ -73,7 +72,6 @@ function seedFromForm(
     nombres: formStr(fd, "nombres") || prev.nombres,
     apellidos: formStr(fd, "apellidos"),
     cedula: formStr(fd, "cedula") || prev.cedula,
-    edad: edad != null && edad > 0 ? edad : 0,
     sexo: sexoRaw === "FEMENINO" ? "FEMENINO" : "MASCULINO",
     fechaNacimiento: formStr(fd, "fechaNacimiento"),
     lugarNacimiento: formStr(fd, "lugarNacimiento"),
@@ -138,7 +136,6 @@ export type AspiranteRegistroInitial = {
   nombres: string;
   apellidos: string;
   cedula: string;
-  edad: number;
   sexo: "MASCULINO" | "FEMENINO";
   fechaNacimiento: string;
   lugarNacimiento: string;
@@ -263,7 +260,6 @@ export function AspiranteRegistroForm({
       nombres: seed?.nombres ?? "",
       apellidos: seed?.apellidos ?? "",
       cedula: seed?.cedula ?? "",
-      edad: seed != null && seed.edad > 0 ? String(seed.edad) : "",
       sexo: seed?.sexo ?? "MASCULINO",
       fechaNacimiento: seed?.fechaNacimiento ?? "",
       lugarNacimiento: seed?.lugarNacimiento ?? "",
@@ -627,14 +623,6 @@ export function AspiranteRegistroForm({
             Paso 2: {STEPS[1].title}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <Label>Edad</Label>
-              <Input
-                name="edad"
-                type="number"
-                defaultValue={defaults.edad}
-              />
-            </div>
             <div>
               <Label>Hijos</Label>
               <Input

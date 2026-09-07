@@ -29,7 +29,8 @@ export type AspirantePerfilSerializado = {
   nombres: string;
   apellidos: string;
   cedula: string;
-  edad: number;
+  /** Edad en años cumplidos; null si la fecha de nacimiento aún no está cargada. */
+  edad: number | null;
   sexo: "MASCULINO" | "FEMENINO";
   fechaNacimientoLabel: string;
   lugarNacimiento: string;
@@ -360,8 +361,12 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
                   Cédula <span className="font-mono font-semibold text-slate-800">{a.cedula}</span>
                   {" · "}
                   {a.sexo === "FEMENINO" ? "Femenino" : "Masculino"}
-                  {" · "}
-                  <span className="tabular-nums">{a.edad}</span> años
+                  {a.edad != null ? (
+                    <>
+                      {" · "}
+                      <span className="tabular-nums">{a.edad}</span> años
+                    </>
+                  ) : null}
                 </CardDescription>
               </div>
             </div>

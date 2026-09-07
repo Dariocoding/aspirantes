@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { ESTADO_CIVIL_VALUES } from "@src/lib/aspirantes/estado-civil";
 import { TIPO_ESTUDIO_ALL_VALUES } from "@src/lib/aspirantes/tipo-estudio";
+import {
+  ageFromBirthDate,
+  FECHA_NACIMIENTO_PENDIENTE,
+  hasRealBirthDate,
+  parseDateInputLocal,
+} from "@src/lib/date";
 
 const sexoEnum = z.enum(["MASCULINO", "FEMENINO"]);
 const calificacionAdmisionEnum = z.enum(["APTO", "NO_APTO", "EN_EVALUACION"]);
@@ -34,8 +40,8 @@ const optionalTrimmedString = (max: number) =>
     z.string().max(max).nullable(),
   );
 
-/** Fecha placeholder cuando el nacimiento aún no se cargó (alta mínima). */
-export const ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE = new Date(1900, 0, 1);
+/** @deprecated Preferir `FECHA_NACIMIENTO_PENDIENTE` desde `@src/lib/date`. */
+export const ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE = FECHA_NACIMIENTO_PENDIENTE;
 
 const estudioFields = {
   tipoEstudio: z.preprocess(
@@ -109,18 +115,54 @@ const optionalSexo = z.preprocess(
   sexoEnum.optional(),
 );
 
-const optionalFechaNacimiento = z.preprocess((v) => {
+function coerceFechaNacimiento(v: unknown): Date | null | undefined {
   if (v === "" || v === null || v === undefined) return null;
-  const d = new Date(String(v));
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
+  const s = String(v).trim();
+  if (!s) return null;
+  const local = parseDateInputLocal(s);
+  if (local) return local;
+  const d = new Date(s);
   if (Number.isNaN(d.getTime())) return undefined;
   return d;
-}, z.date().nullable());
+}
 
-const optionalEdad = z.preprocess((val) => {
-  if (val === "" || val === null || val === undefined) return undefined;
-  const n = Number(val);
-  return Number.isFinite(n) ? n : undefined;
-}, z.number().int().min(0, "Edad inválida").max(80, "Edad máxima 80").optional());
+const optionalFechaNacimiento = z.preprocess(
+  coerceFechaNacimiento,
+  z.date().nullable(),
+);
+
+const requiredFechaNacimiento = z.preprocess((v) => {
+  const d = coerceFechaNacimiento(v);
+  return d === null ? undefined : d;
+}, z.date({ message: "Fecha de nacimiento obligatoria" }));
+
+function refineEdadDesdeNacimiento(
+  fecha: Date | null | undefined,
+  ctx: z.RefinementCtx,
+  opts: { required?: boolean; min?: number; max?: number } = {},
+) {
+  const min = opts.min ?? 16;
+  const max = opts.max ?? 80;
+  if (fecha == null || !hasRealBirthDate(fecha)) {
+    if (opts.required) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Fecha de nacimiento obligatoria",
+        path: ["fechaNacimiento"],
+      });
+    }
+    return;
+  }
+  const edad = ageFromBirthDate(fecha);
+  if (edad == null || edad < min || edad > max) {
+    ctx.addIssue({
+      code: "custom",
+      message: `La edad calculada debe estar entre ${min} y ${max} años (hoy tendría ${edad ?? "—"})`,
+      path: ["fechaNacimiento"],
+    });
+  }
+}
 
 const optionalContactoString = (max: number) =>
   z.preprocess(
@@ -150,7 +192,6 @@ const aspiranteStaffBaseSchema = z.object({
     .string()
     .trim()
     .regex(/^[0-9]{6,12}$/, "Cédula: solo dígitos, entre 6 y 12 caracteres"),
-  edad: optionalEdad,
   sexo: optionalSexo,
   fechaNacimiento: optionalFechaNacimiento,
   lugarNacimiento: z.preprocess(
@@ -187,13 +228,24 @@ const aspiranteStaffBaseSchema = z.object({
   ...estudioFields,
 });
 
-export const aspiranteCreateSchema = aspiranteStaffBaseSchema.superRefine(refineEstudioFields);
+function refineStaffFechaNacimiento(
+  data: { fechaNacimiento: Date | null } & EstudioShape,
+  ctx: z.RefinementCtx,
+) {
+  refineEstudioFields(data, ctx);
+  // Si cargaron fecha real, debe producir edad admisible; si queda vacía → placeholder.
+  if (data.fechaNacimiento != null && hasRealBirthDate(data.fechaNacimiento)) {
+    refineEdadDesdeNacimiento(data.fechaNacimiento, ctx);
+  }
+}
+
+export const aspiranteCreateSchema = aspiranteStaffBaseSchema.superRefine(refineStaffFechaNacimiento);
 
 export const aspiranteUpdateSchema = aspiranteStaffBaseSchema
   .extend({
     aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
   })
-  .superRefine(refineEstudioFields);
+  .superRefine(refineStaffFechaNacimiento);
 
 /** Verificación pública: cédula en la convocatoria activa. */
 export const aspiranteSelfServiceVerifySchema = z.object({
@@ -221,13 +273,8 @@ export const aspiranteSelfServiceUpdateSchema = z
       .max(200, "Unidad postulante demasiado larga"),
     nombres: z.string().trim().min(1, "Nombres obligatorios").max(120),
     apellidos: z.string().trim().min(1, "Apellidos obligatorios").max(120),
-    fechaNacimiento: z
-      .string()
-      .min(1, "Fecha de nacimiento obligatoria")
-      .transform((s) => new Date(s))
-      .refine((d) => !Number.isNaN(d.getTime()), "Fecha de nacimiento inválida"),
+    fechaNacimiento: requiredFechaNacimiento,
     lugarNacimiento: z.string().trim().min(1, "Lugar de nacimiento obligatorio").max(200),
-    edad: z.coerce.number().int().min(16, "Edad mínima 16").max(80, "Edad máxima 80"),
     direccion: z.string().trim().max(500).optional().nullable(),
     telefono: z.string().trim().max(40).optional().nullable(),
     correo: z.preprocess(
@@ -253,4 +300,7 @@ export const aspiranteSelfServiceUpdateSchema = z
     contactoDireccion: z.string().trim().max(500).optional().nullable(),
     ...estudioFields,
   })
-  .superRefine(refineEstudioFields);
+  .superRefine((data, ctx) => {
+    refineEstudioFields(data, ctx);
+    refineEdadDesdeNacimiento(data.fechaNacimiento, ctx, { required: true });
+  });

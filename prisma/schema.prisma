@@ -242,8 +242,8 @@ model Aspirante {
   nombres               String
   apellidos             String
   cedula                String
-  edad                  Int
   sexo                  Sexo
+  /// Edad se calcula en runtime desde esta fecha (no hay columna `edad`).
   fechaNacimiento       DateTime
   lugarNacimiento       String
   /// Brigada, comando u otra unidad desde la que postula el personal.

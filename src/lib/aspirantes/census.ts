@@ -1,4 +1,5 @@
 import type { Prisma } from "@src/generated/prisma";
+import { fechaNacimientoFilterForAgeRange } from "@src/lib/date";
 
 export function calificacionAdmisionEtiqueta(c: string) {
   if (c === "APTO") return "Apto";
@@ -42,12 +43,15 @@ export function buildAspiranteCensusWhere(
   if (unidad && unidad !== "TODOS") {
     filters.push({ unidadPostulante: unidad });
   }
-  const edad: { gte?: number; lte?: number } = {};
   const emin = sp.edadMin ? Number(sp.edadMin) : NaN;
   const emax = sp.edadMax ? Number(sp.edadMax) : NaN;
-  if (Number.isFinite(emin)) edad.gte = emin;
-  if (Number.isFinite(emax)) edad.lte = emax;
-  if (Object.keys(edad).length) filters.push({ edad });
+  const fechaFilter = fechaNacimientoFilterForAgeRange({
+    edadMin: Number.isFinite(emin) ? emin : undefined,
+    edadMax: Number.isFinite(emax) ? emax : undefined,
+  });
+  if (fechaFilter) {
+    filters.push({ fechaNacimiento: fechaFilter });
+  }
 
   return filters.length ? { AND: filters } : {};
 }

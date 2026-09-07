@@ -10,6 +10,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { AspiranteFichaTecnicaPdfDocument } from "@src/lib/pdf/aspirante-ficha-tecnica-document";
 import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
+import { ageFromBirthDate } from "@src/lib/date";
 import { prisma } from "@src/lib/prisma";
 import { getObjectBuffer } from "@src/lib/storage/s3";
 
@@ -65,7 +66,7 @@ export async function GET(
     nombres: a.nombres,
     apellidos: a.apellidos,
     cedula: a.cedula,
-    edad: a.edad,
+    edad: ageFromBirthDate(a.fechaNacimiento) ?? 0,
     sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
     telefono: a.telefono,
     hijosCantidad: a.hijosCantidad,

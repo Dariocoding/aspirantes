@@ -119,24 +119,6 @@ function parseFecha(v: unknown): Date | null {
   return null;
 }
 
-function parseEdad(v: unknown, fecha: Date | null): number {
-  if (typeof v === "number" && Number.isFinite(v)) {
-    const n = Math.round(v);
-    if (n >= 16 && n <= 80) return n;
-  }
-  if (typeof v === "string" && v.trim()) {
-    const n = Number(v.trim());
-    if (Number.isFinite(n) && n >= 16 && n <= 80) return Math.round(n);
-  }
-  if (fecha) {
-    const now = new Date();
-    let edad = now.getFullYear() - fecha.getFullYear();
-    const m = now.getMonth() - fecha.getMonth();
-    if (m < 0 || (m === 0 && now.getDate() < fecha.getDate())) edad--;
-    if (edad >= 16 && edad <= 80) return edad;
-  }
-  return DEFAULT_EDAD;
-}
 
 function parseSexo(v: unknown): Sexo {
   const s = String(v ?? "")
@@ -181,7 +163,6 @@ type ParsedRow = {
   nombreCompleto: string;
   cedula: string;
   fechaNacimiento: Date;
-  edad: number;
   sexo: Sexo;
   telefono: string | null;
   observaciones: string | null;
@@ -212,7 +193,6 @@ async function readExcel(path: string): Promise<ParsedRow[]> {
       const nombreCompleto = String(nombreRaw).trim();
       const cedula = onlyDigits(String(cellText(row.getCell(cols[3]!).value) ?? ""));
       let fecha = parseFecha(cellText(row.getCell(cols[4]!).value));
-      const edadRaw = cellText(row.getCell(cols[5]!).value);
       const sexoRaw = cellText(row.getCell(cols[6]!).value);
       const tel = telefonoStr(cellText(row.getCell(cols[7]!).value));
       const obsRaw = cellText(row.getCell(cols[8]!).value);
@@ -240,7 +220,6 @@ async function readExcel(path: string): Promise<ParsedRow[]> {
         nombreCompleto,
         cedula,
         fechaNacimiento: fecha,
-        edad: parseEdad(edadRaw, fecha),
         sexo: parseSexo(sexoRaw),
         telefono: tel,
         observaciones,
@@ -310,7 +289,6 @@ async function main() {
         nombres,
         apellidos,
         cedula: row.cedula,
-        edad: row.edad,
         sexo: row.sexo,
         fechaNacimiento: row.fechaNacimiento,
         lugarNacimiento: "Por definir",

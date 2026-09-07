@@ -167,7 +167,6 @@ async function main() {
         nombres,
         apellidos,
         cedula,
-        edad: DEFAULT_EDAD,
         sexo: row.sexo === "F" ? Sexo.FEMENINO : Sexo.MASCULINO,
         fechaNacimiento: fechaNac,
         lugarNacimiento: "Por definir",

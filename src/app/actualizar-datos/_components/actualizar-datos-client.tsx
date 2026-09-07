@@ -245,17 +245,6 @@ function EditForm({
               <Label>Lugar de nacimiento</Label>
               <Input name="lugarNacimiento" required defaultValue={defaults.lugarNacimiento} />
             </div>
-            <div className="space-y-1.5">
-              <Label>Edad</Label>
-              <Input
-                name="edad"
-                type="number"
-                required
-                min={16}
-                max={80}
-                defaultValue={defaults.edad}
-              />
-            </div>
           </CardContent>
         </Card>
 

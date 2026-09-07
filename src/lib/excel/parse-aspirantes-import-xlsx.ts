@@ -352,9 +352,4 @@ export async function parseAspirantesImportXlsx(buffer: ArrayBuffer | Buffer): P
   return { ok: true, variant: "examenes-medicos", rows };
 }
 
-export function ageFromBirthDate(d: Date, now = new Date()): number {
-  let age = now.getFullYear() - d.getFullYear();
-  const m = now.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
-  return Math.max(0, Math.min(120, age));
-}
+export { ageFromBirthDate } from "@src/lib/date";

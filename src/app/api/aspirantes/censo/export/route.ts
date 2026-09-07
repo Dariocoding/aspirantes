@@ -8,6 +8,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
 import { buildAspirantesExamenesMedicosXlsxBuffer } from "@src/lib/excel/build-aspirantes-examenes-medicos-xlsx";
+import { ageFromBirthDate } from "@src/lib/date";
 import { AspirantesCensoPdfDocument } from "@src/lib/pdf/aspirantes-censo-document";
 import { prisma } from "@src/lib/prisma";
 
@@ -107,7 +108,7 @@ export async function GET(request: Request) {
     convocatoriaActiva: a.convocatoria.activa,
     cedula: a.cedula,
     sexo: a.sexo,
-    edad: a.edad,
+    edad: ageFromBirthDate(a.fechaNacimiento) ?? 0,
     fechaNacimiento: a.fechaNacimiento,
   }));
 

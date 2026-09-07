@@ -11,6 +11,7 @@ import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
 import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
+import { ageFromBirthDate } from "@src/lib/date";
 import { prisma } from "@src/lib/prisma";
 import { cn } from "@src/lib/utils";
 
@@ -82,7 +83,7 @@ export default async function AspirantePerfilPage({
           nombres: a.nombres,
           apellidos: a.apellidos,
           cedula: a.cedula,
-          edad: a.edad,
+          edad: ageFromBirthDate(a.fechaNacimiento),
           sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
           fechaNacimientoLabel: a.fechaNacimiento.toLocaleDateString("es-VE"),
           lugarNacimiento: a.lugarNacimiento,

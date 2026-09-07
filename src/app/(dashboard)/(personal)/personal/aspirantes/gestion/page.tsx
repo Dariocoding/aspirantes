@@ -93,7 +93,6 @@ export default async function AspirantesGestionPage({
         nombres: a.nombres,
         apellidos: a.apellidos,
         cedula: a.cedula,
-        edad: a.edad,
         sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
         fechaNacimiento: fechaNacimientoParaFormulario(a.fechaNacimiento),
         lugarNacimiento: a.lugarNacimiento,
