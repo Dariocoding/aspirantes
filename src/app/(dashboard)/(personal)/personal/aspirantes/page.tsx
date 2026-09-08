@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,7 @@ import {
   calificacionAdmisionEtiqueta,
   censusOrderBy,
   censusQueryString,
+  isCensusCarreraGroupSort,
 } from "@src/lib/aspirantes/census";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
@@ -103,13 +105,14 @@ export default async function AspirantesPage({
 
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
   const sort = censusOrderBy(sp.sort);
+  const groupByCarrera = isCensusCarreraGroupSort(sp.sort);
 
   const unidadWhereLista: Prisma.AspiranteWhereInput = {
     convocatoriaId: convocatoriaFiltroId,
     unidadPostulante: { not: "" },
   };
 
-  const [total, aspirantes, unidadGrupos] = await Promise.all([
+  const [total, aspirantes, unidadGrupos, carreraGrupos] = await Promise.all([
     prisma.aspirante.count({ where }),
     prisma.aspirante.findMany({
       where,
@@ -123,7 +126,18 @@ export default async function AspirantesPage({
       where: unidadWhereLista,
       orderBy: { unidadPostulante: "asc" },
     }),
+    groupByCarrera
+      ? prisma.aspirante.groupBy({
+          by: ["tituloUniversidad"],
+          where,
+          _count: { _all: true },
+        })
+      : Promise.resolve([] as { tituloUniversidad: string | null; _count: { _all: number } }[]),
   ]);
+
+  const countByCarrera = new Map(
+    carreraGrupos.map((g) => [g.tituloUniversidad ?? "", g._count._all]),
+  );
 
   const unidadFiltro = sp.unidadPostulante?.trim();
   const unidadFiltroActivo = Boolean(unidadFiltro && unidadFiltro !== "TODOS");
@@ -152,7 +166,14 @@ export default async function AspirantesPage({
   if (sp.sexo && sp.sexo !== "TODOS") activeAdvancedCount++;
   if (sp.edadMin?.trim()) activeAdvancedCount++;
   if (sp.edadMax?.trim()) activeAdvancedCount++;
-  if (sp.sort === "nombres" || sp.sort === "titulo" || sp.sort === "reciente") activeAdvancedCount++;
+  if (
+    sp.sort === "nombres" ||
+    sp.sort === "titulo" ||
+    sp.sort === "carrera" ||
+    sp.sort === "reciente"
+  ) {
+    activeAdvancedCount++;
+  }
   if (unidadFiltroActivo) activeAdvancedCount++;
   if (
     sp.calificacion &&
@@ -262,7 +283,10 @@ export default async function AspirantesPage({
               <input type="hidden" name="sexo" value={sp.sexo ?? "TODOS"} />
               {sp.edadMin?.trim() ? <input type="hidden" name="edadMin" value={sp.edadMin} /> : null}
               {sp.edadMax?.trim() ? <input type="hidden" name="edadMax" value={sp.edadMax} /> : null}
-              {sp.sort === "nombres" || sp.sort === "titulo" || sp.sort === "reciente" ? (
+              {sp.sort === "nombres" ||
+              sp.sort === "titulo" ||
+              sp.sort === "carrera" ||
+              sp.sort === "reciente" ? (
                 <input type="hidden" name="sort" value={sp.sort} />
               ) : null}
               {sp.calificacion && sp.calificacion !== "TODOS" ? (
@@ -369,122 +393,155 @@ export default async function AspirantesPage({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  aspirantes.map((a) => {
-                    const esFemenino = a.sexo === "FEMENINO";
-                    const unidad = (a.unidadPostulante ?? "").trim();
-                    const carrera = (a.tituloUniversidad ?? "").trim();
-                    const nombreCompleto = `${a.nombres} ${a.apellidos}`.trim();
-                    return (
-                      <TableRow key={a.id} className="border-slate-100 transition-colors">
-                        <TableCell className="px-3 py-2 font-medium text-slate-900">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <AspiranteFotoThumbnail
-                              aspiranteId={a.id}
-                              fotoKey={a.fotoKey}
-                              nombre={nombreCompleto}
-                              size="sm"
-                            />
-                            <span className="min-w-0 truncate text-sm" title={nombreCompleto}>
-                              {nombreCompleto}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
-                          {unidad ? (
-                            <span className="line-clamp-2 break-words font-medium" title={unidad}>
-                              {unidad}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
-                          {carrera ? (
-                            <span className="line-clamp-2 break-words font-medium" title={carrera}>
-                              {carrera}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="px-3 py-2">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                              calificacionAdmisionBadgeClass(a.calificacionAdmision),
-                            )}
+                  (() => {
+                    const colSpan = write ? 9 : 8;
+                    const rows: ReactNode[] = [];
+                    let prevCarreraKey: string | null = null;
+
+                    for (const a of aspirantes) {
+                      const esFemenino = a.sexo === "FEMENINO";
+                      const unidad = (a.unidadPostulante ?? "").trim();
+                      const carrera = (a.tituloUniversidad ?? "").trim();
+                      const carreraKey = a.tituloUniversidad ?? "";
+                      const nombreCompleto = `${a.nombres} ${a.apellidos}`.trim();
+
+                      if (groupByCarrera && carreraKey !== prevCarreraKey) {
+                        prevCarreraKey = carreraKey;
+                        const grupoCount = countByCarrera.get(carreraKey) ?? 0;
+                        rows.push(
+                          <TableRow
+                            key={`grupo-carrera-${carreraKey || "_sin"}`}
+                            className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
                           >
-                            {calificacionAdmisionEtiqueta(a.calificacionAdmision)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-3 py-2 font-mono text-sm tabular-nums text-slate-700">
-                          {a.cedula}
-                        </TableCell>
-                        <TableCell className="px-2 py-2 text-center">
-                          <span
-                            title={esFemenino ? "Femenino" : "Masculino"}
-                            aria-label={esFemenino ? "Femenino" : "Masculino"}
-                            className={cn(
-                              "inline-flex h-7 w-7 items-center justify-center rounded-full border",
-                              esFemenino
-                                ? "border-rose-200 bg-rose-50 text-rose-600"
-                                : "border-sky-200 bg-sky-50 text-sky-700",
-                            )}
-                          >
-                            {esFemenino ? (
-                              <Venus className="h-3.5 w-3.5" aria-hidden />
+                            <TableCell
+                              colSpan={colSpan}
+                              className="px-3 py-2 text-sm font-semibold text-slate-800"
+                            >
+                              <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span>{carrera || "Sin carrera"}</span>
+                                <span className="text-xs font-medium tabular-nums text-slate-500">
+                                  ({grupoCount})
+                                </span>
+                              </span>
+                            </TableCell>
+                          </TableRow>,
+                        );
+                      }
+
+                      rows.push(
+                        <TableRow key={a.id} className="border-slate-100 transition-colors">
+                          <TableCell className="px-3 py-2 font-medium text-slate-900">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <AspiranteFotoThumbnail
+                                aspiranteId={a.id}
+                                fotoKey={a.fotoKey}
+                                nombre={nombreCompleto}
+                                size="sm"
+                              />
+                              <span className="min-w-0 truncate text-sm" title={nombreCompleto}>
+                                {nombreCompleto}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
+                            {unidad ? (
+                              <span className="line-clamp-2 break-words font-medium" title={unidad}>
+                                {unidad}
+                              </span>
                             ) : (
-                              <Mars className="h-3.5 w-3.5" aria-hidden />
+                              <span className="text-slate-400">—</span>
                             )}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
-                          {ageFromBirthDate(a.fechaNacimiento) ?? "—"}
-                        </TableCell>
-                        <TableCell className="px-3 py-2">
-                          <div className="flex flex-wrap items-center gap-1">
-                            <Link
-                              href={routes.personal.aspirante(a.id)}
-                              prefetch={false}
+                          </TableCell>
+                          <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
+                            {carrera ? (
+                              <span className="line-clamp-2 break-words font-medium" title={carrera}>
+                                {carrera}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="px-3 py-2">
+                            <span
                               className={cn(
-                                buttonVariants({ variant: "ghost", size: "sm" }),
-                                "h-7 gap-1 px-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900",
+                                "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                                calificacionAdmisionBadgeClass(a.calificacionAdmision),
                               )}
                             >
-                              <UserRound className="h-3.5 w-3.5" aria-hidden />
-                              Perfil
-                            </Link>
-                            <AspiranteFichaTecnicaPdfLink
-                              aspiranteId={a.id}
-                              className="h-7 px-1.5 text-xs"
-                              label="PDF"
-                            />
-                          </div>
-                        </TableCell>
-                        {write ? (
-                          <TableCell className="px-3 py-2 text-right">
-                            <div className="inline-flex flex-wrap justify-end gap-1.5">
+                              {calificacionAdmisionEtiqueta(a.calificacionAdmision)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-3 py-2 font-mono text-sm tabular-nums text-slate-700">
+                            {a.cedula}
+                          </TableCell>
+                          <TableCell className="px-2 py-2 text-center">
+                            <span
+                              title={esFemenino ? "Femenino" : "Masculino"}
+                              aria-label={esFemenino ? "Femenino" : "Masculino"}
+                              className={cn(
+                                "inline-flex h-7 w-7 items-center justify-center rounded-full border",
+                                esFemenino
+                                  ? "border-rose-200 bg-rose-50 text-rose-600"
+                                  : "border-sky-200 bg-sky-50 text-sky-700",
+                              )}
+                            >
+                              {esFemenino ? (
+                                <Venus className="h-3.5 w-3.5" aria-hidden />
+                              ) : (
+                                <Mars className="h-3.5 w-3.5" aria-hidden />
+                              )}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
+                            {ageFromBirthDate(a.fechaNacimiento) ?? "—"}
+                          </TableCell>
+                          <TableCell className="px-3 py-2">
+                            <div className="flex flex-wrap items-center gap-1">
                               <Link
-                                href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
+                                href={routes.personal.aspirante(a.id)}
                                 prefetch={false}
                                 className={cn(
-                                  buttonVariants({ variant: "outline", size: "sm" }),
-                                  "h-7 gap-1 border-slate-200 bg-white px-2 text-xs shadow-sm",
+                                  buttonVariants({ variant: "ghost", size: "sm" }),
+                                  "h-7 gap-1 px-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900",
                                 )}
                               >
-                                <Pencil className="h-3.5 w-3.5" aria-hidden />
-                                Editar
+                                <UserRound className="h-3.5 w-3.5" aria-hidden />
+                                Perfil
                               </Link>
-                              <AspiranteDeleteForm
+                              <AspiranteFichaTecnicaPdfLink
                                 aspiranteId={a.id}
-                                nombreCompleto={nombreCompleto}
+                                className="h-7 px-1.5 text-xs"
+                                label="PDF"
                               />
                             </div>
                           </TableCell>
-                        ) : null}
-                      </TableRow>
-                    );
-                  })
+                          {write ? (
+                            <TableCell className="px-3 py-2 text-right">
+                              <div className="inline-flex flex-wrap justify-end gap-1.5">
+                                <Link
+                                  href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
+                                  prefetch={false}
+                                  className={cn(
+                                    buttonVariants({ variant: "outline", size: "sm" }),
+                                    "h-7 gap-1 border-slate-200 bg-white px-2 text-xs shadow-sm",
+                                  )}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" aria-hidden />
+                                  Editar
+                                </Link>
+                                <AspiranteDeleteForm
+                                  aspiranteId={a.id}
+                                  nombreCompleto={nombreCompleto}
+                                />
+                              </div>
+                            </TableCell>
+                          ) : null}
+                        </TableRow>,
+                      );
+                    }
+
+                    return rows;
+                  })()
                 )}
               </TableBody>
             </Table>

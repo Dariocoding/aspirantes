@@ -73,8 +73,8 @@ export function AspirantesFiltersDrawer({
         <SheetHeader className="shrink-0 border-b border-border px-4 py-4 text-left">
           <SheetTitle>Criterios avanzados</SheetTitle>
           <SheetDescription>
-            Convocatoria, unidad postulante, admisión, sexo, rango de edad y orden del listado. La búsqueda por texto
-            permanece en la barra superior.
+            Convocatoria, unidad postulante, admisión, sexo, rango de edad y orden del listado. Puede agrupar por
+            carrera. La búsqueda por texto permanece en la barra superior.
           </SheetDescription>
         </SheetHeader>
         <form method="get" className="flex min-h-0 flex-1 flex-col">
@@ -193,6 +193,7 @@ export function AspirantesFiltersDrawer({
               <select id="drawer-sort" name="sort" defaultValue={sort ?? "cedula"} className={selectClass}>
                 <option value="cedula">Cédula (menor a mayor)</option>
                 <option value="nombres">Nombre (A-Z)</option>
+                <option value="carrera">Agrupar por carrera</option>
                 <option value="titulo">Título universitario (A-Z)</option>
                 <option value="reciente">Más recientes</option>
               </select>

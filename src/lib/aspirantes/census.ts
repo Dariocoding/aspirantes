@@ -56,12 +56,22 @@ export function buildAspiranteCensusWhere(
   return filters.length ? { AND: filters } : {};
 }
 
-export function censusOrderBy(sort: string | undefined): Prisma.AspiranteOrderByWithRelationInput {
+export function censusOrderBy(
+  sort: string | undefined,
+): Prisma.AspiranteOrderByWithRelationInput | Prisma.AspiranteOrderByWithRelationInput[] {
   if (sort === "nombres") return { nombres: "asc" };
   if (sort === "titulo") return { tituloUniversidad: "asc" };
+  if (sort === "carrera") {
+    // Agrupa por carrera y, dentro de cada una, ordena por cédula.
+    return [{ tituloUniversidad: "asc" }, { cedula: "asc" }];
+  }
   if (sort === "reciente") return { createdAt: "desc" };
   // Por defecto (y con sort=cedula): cédula ascendente.
   return { cedula: "asc" };
+}
+
+export function isCensusCarreraGroupSort(sort: string | undefined) {
+  return sort === "carrera";
 }
 
 export function censusQueryString(
