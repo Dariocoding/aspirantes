@@ -64,6 +64,15 @@ export function labelTipoEstudioShort(v: string | null | undefined): string | nu
   return n ? TIPO_ESTUDIO_SHORT_LABELS[n] : null;
 }
 
+/** Nivel agrupado para listados: TSU / Pregrado / Postgrado. */
+export function labelTipoEstudioNivel(v: string | null | undefined): string | null {
+  const n = normalizeTipoEstudio(v);
+  if (!n) return null;
+  if (n === "TSU") return "TSU";
+  if (n === "PREGRADO") return "Pregrado";
+  return "Postgrado";
+}
+
 export function labelTipoEstudioPdf(v: string | null | undefined): string | null {
   const n = normalizeTipoEstudio(v);
   return n ? TIPO_ESTUDIO_PDF_LABELS[n] : null;

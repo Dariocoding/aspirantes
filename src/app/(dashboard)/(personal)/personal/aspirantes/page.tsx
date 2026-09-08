@@ -32,6 +32,7 @@ import {
   censusQueryString,
   isCensusCarreraGroupSort,
 } from "@src/lib/aspirantes/census";
+import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
@@ -403,6 +404,7 @@ export default async function AspirantesPage({
                       const unidad = (a.unidadPostulante ?? "").trim();
                       const carrera = (a.tituloUniversidad ?? "").trim();
                       const carreraKey = a.tituloUniversidad ?? "";
+                      const nivelEstudio = labelTipoEstudioNivel(a.tipoEstudio);
                       const nombreCompleto = `${a.nombres} ${a.apellidos}`.trim();
 
                       if (groupByCarrera && carreraKey !== prevCarreraKey) {
@@ -454,9 +456,16 @@ export default async function AspirantesPage({
                           </TableCell>
                           <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
                             {carrera ? (
-                              <span className="line-clamp-2 break-words font-medium" title={carrera}>
-                                {carrera}
-                              </span>
+                              <div className="min-w-0">
+                                <span className="line-clamp-2 break-words font-medium" title={carrera}>
+                                  {carrera}
+                                </span>
+                                {nivelEstudio ? (
+                                  <span className="mt-0.5 block text-[11px] font-normal text-slate-400">
+                                    {nivelEstudio}
+                                  </span>
+                                ) : null}
+                              </div>
                             ) : (
                               <span className="text-slate-400">—</span>
                             )}

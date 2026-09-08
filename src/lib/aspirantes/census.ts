@@ -62,8 +62,8 @@ export function censusOrderBy(
   if (sort === "nombres") return { nombres: "asc" };
   if (sort === "titulo") return { tituloUniversidad: "asc" };
   if (sort === "carrera") {
-    // Agrupa por carrera y, dentro de cada una, ordena por cédula.
-    return [{ tituloUniversidad: "asc" }, { cedula: "asc" }];
+    // Agrupa por carrera (A-Z) y, dentro de cada una, orden alfabético por nombre.
+    return [{ tituloUniversidad: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
   }
   if (sort === "reciente") return { createdAt: "desc" };
   // Por defecto (y con sort=cedula): cédula ascendente.

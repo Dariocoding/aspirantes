@@ -193,7 +193,7 @@ export function AspirantesFiltersDrawer({
               <select id="drawer-sort" name="sort" defaultValue={sort ?? "cedula"} className={selectClass}>
                 <option value="cedula">Cédula (menor a mayor)</option>
                 <option value="nombres">Nombre (A-Z)</option>
-                <option value="carrera">Agrupar por carrera</option>
+                <option value="carrera">Agrupar por carrera (A-Z)</option>
                 <option value="titulo">Título universitario (A-Z)</option>
                 <option value="reciente">Más recientes</option>
               </select>
