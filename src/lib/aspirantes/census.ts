@@ -59,7 +59,9 @@ export function buildAspiranteCensusWhere(
 export function censusOrderBy(sort: string | undefined): Prisma.AspiranteOrderByWithRelationInput {
   if (sort === "nombres") return { nombres: "asc" };
   if (sort === "titulo") return { tituloUniversidad: "asc" };
-  return { createdAt: "desc" };
+  if (sort === "reciente") return { createdAt: "desc" };
+  // Por defecto (y con sort=cedula): cédula ascendente.
+  return { cedula: "asc" };
 }
 
 export function censusQueryString(

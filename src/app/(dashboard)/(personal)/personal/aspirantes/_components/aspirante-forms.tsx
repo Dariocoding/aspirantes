@@ -578,26 +578,43 @@ export function AspiranteRegistroForm({
                 autoComplete="organization"
               />
             </div>
-            {pelotones.length > 0 ? (
-              <div className="md:col-span-2">
-                <Label>Pelotón del curso</Label>
-                <select
-                  name="pelotonId"
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
-                  defaultValue={defaults.pelotonId}
-                >
-                  <option value="">Sin asignar</option>
-                  {pelotones.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {labelPeloton(p)}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-slate-500">
-                  Pelotones definidos en la convocatoria activa del curso.
-                </p>
-              </div>
-            ) : null}
+            <div className="md:col-span-2">
+              <Label>Pelotón del curso</Label>
+              {pelotones.length > 0 ? (
+                <>
+                  <select
+                    name="pelotonId"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                    defaultValue={defaults.pelotonId}
+                  >
+                    <option value="">Sin asignar</option>
+                    {pelotones.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {labelPeloton(p)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Elija a cuál pelotón del curso pertenece este aspirante.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <input type="hidden" name="pelotonId" value="" />
+                  <select
+                    disabled
+                    className="flex h-9 w-full rounded-md border border-input bg-slate-50 px-3 py-1 text-sm text-slate-500 shadow-xs outline-none"
+                    defaultValue=""
+                  >
+                    <option value="">Sin pelotones en la convocatoria activa</option>
+                  </select>
+                  <p className="mt-1 text-xs text-amber-700">
+                    Defina la cantidad de pelotones en Convocatorias (editar el período activo) para poder asignarlos
+                    aquí.
+                  </p>
+                </>
+              )}
+            </div>
             <div className="md:col-span-2">
               <Label>Calificación de admisión</Label>
               <select

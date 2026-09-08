@@ -152,7 +152,7 @@ export default async function AspirantesPage({
   if (sp.sexo && sp.sexo !== "TODOS") activeAdvancedCount++;
   if (sp.edadMin?.trim()) activeAdvancedCount++;
   if (sp.edadMax?.trim()) activeAdvancedCount++;
-  if (sp.sort === "nombres" || sp.sort === "titulo") activeAdvancedCount++;
+  if (sp.sort === "nombres" || sp.sort === "titulo" || sp.sort === "reciente") activeAdvancedCount++;
   if (unidadFiltroActivo) activeAdvancedCount++;
   if (
     sp.calificacion &&
@@ -262,7 +262,7 @@ export default async function AspirantesPage({
               <input type="hidden" name="sexo" value={sp.sexo ?? "TODOS"} />
               {sp.edadMin?.trim() ? <input type="hidden" name="edadMin" value={sp.edadMin} /> : null}
               {sp.edadMax?.trim() ? <input type="hidden" name="edadMax" value={sp.edadMax} /> : null}
-              {sp.sort === "nombres" || sp.sort === "titulo" ? (
+              {sp.sort === "nombres" || sp.sort === "titulo" || sp.sort === "reciente" ? (
                 <input type="hidden" name="sort" value={sp.sort} />
               ) : null}
               {sp.calificacion && sp.calificacion !== "TODOS" ? (

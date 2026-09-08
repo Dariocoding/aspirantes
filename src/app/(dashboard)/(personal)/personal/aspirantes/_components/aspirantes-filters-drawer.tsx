@@ -190,10 +190,11 @@ export function AspirantesFiltersDrawer({
                 <ArrowDownWideNarrow className="h-3.5 w-3.5 text-slate-500" aria-hidden />
                 Orden del listado
               </Label>
-              <select id="drawer-sort" name="sort" defaultValue={sort ?? "reciente"} className={selectClass}>
-                <option value="reciente">Más recientes</option>
+              <select id="drawer-sort" name="sort" defaultValue={sort ?? "cedula"} className={selectClass}>
+                <option value="cedula">Cédula (menor a mayor)</option>
                 <option value="nombres">Nombre (A-Z)</option>
                 <option value="titulo">Título universitario (A-Z)</option>
+                <option value="reciente">Más recientes</option>
               </select>
             </div>
           </div>
