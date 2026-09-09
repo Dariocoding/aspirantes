@@ -34,7 +34,7 @@ export function AspirantesExportLinks({ exportQuery }: Props) {
           <ChevronDown className="h-3.5 w-3.5 opacity-70 transition group-open:rotate-180" aria-hidden />
         </summary>
         <div
-          className="absolute right-0 z-30 mt-1.5 w-56 overflow-hidden rounded-lg border border-emerald-200/90 bg-white py-1 shadow-lg shadow-slate-900/10"
+          className="absolute right-0 z-30 mt-1.5 w-64 overflow-hidden rounded-lg border border-emerald-200/90 bg-white py-1 shadow-lg shadow-slate-900/10"
           role="menu"
         >
           <a
@@ -54,6 +54,17 @@ export function AspirantesExportLinks({ exportQuery }: Props) {
           >
             <span className="font-medium">Exámenes médicos</span>
             <span className="mt-0.5 block text-xs text-slate-500">Nombre, cédula y checklist médico</span>
+          </a>
+          <a
+            href={`${base}?format=xlsx&variant=lista-oficial${suffix}`}
+            role="menuitem"
+            className="block border-t border-slate-100 px-3 py-2 text-sm text-slate-800 hover:bg-emerald-50"
+            onClick={closeMenu}
+          >
+            <span className="font-medium">Lista oficial</span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              N°, JQUIA ASP OFICIAL, apellidos, nombres, cédula, sexo
+            </span>
           </a>
         </div>
       </details>
