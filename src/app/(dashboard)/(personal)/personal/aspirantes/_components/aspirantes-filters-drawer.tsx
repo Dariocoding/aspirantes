@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownWideNarrow, BookMarked, Landmark, SlidersHorizontal, Users } from "lucide-react";
+import { ArrowDownWideNarrow, BookMarked, Landmark, Shield, SlidersHorizontal, Users } from "lucide-react";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import { cn } from "@src/lib/utils";
 import { Input } from "@src/components/ui/input";
@@ -15,6 +15,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@src/components/ui/sheet";
+import { labelPeloton, type PelotonResumen } from "@src/lib/pelotones";
 
 const selectClass =
   "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
@@ -30,6 +31,8 @@ type Props = {
   calificacion: string | undefined;
   unidadPostulante: string | undefined;
   unidadesPostulantes: string[];
+  peloton: string | undefined;
+  pelotones: PelotonResumen[];
   convocatorias: ConvocatoriaOption[];
   convocatoriaId: string | undefined;
   clearAdvancedHref: string;
@@ -45,6 +48,8 @@ export function AspirantesFiltersDrawer({
   calificacion,
   unidadPostulante,
   unidadesPostulantes,
+  peloton,
+  pelotones,
   convocatorias,
   convocatoriaId,
   clearAdvancedHref,
@@ -73,8 +78,8 @@ export function AspirantesFiltersDrawer({
         <SheetHeader className="shrink-0 border-b border-border px-4 py-4 text-left">
           <SheetTitle>Criterios avanzados</SheetTitle>
           <SheetDescription>
-            Convocatoria, unidad postulante, admisión, sexo, rango de edad y orden del listado. Puede agrupar por
-            carrera. La búsqueda por texto permanece en la barra superior.
+            Convocatoria, pelotón, unidad postulante, admisión, sexo, rango de edad y orden del listado. Puede agrupar
+            por carrera. La búsqueda por texto permanece en la barra superior.
           </SheetDescription>
         </SheetHeader>
         <form method="get" className="flex min-h-0 flex-1 flex-col">
@@ -102,6 +107,33 @@ export function AspirantesFiltersDrawer({
                 </select>
               </div>
             ) : null}
+            <div>
+              <Label htmlFor="drawer-peloton" className="mb-2 flex items-center gap-2 text-slate-700">
+                <Shield className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+                Pelotón
+              </Label>
+              <select
+                id="drawer-peloton"
+                name="peloton"
+                defaultValue={
+                  peloton?.trim() && peloton.trim() !== "TODOS" ? peloton.trim() : "TODOS"
+                }
+                className={selectClass}
+              >
+                <option value="TODOS">Todos</option>
+                <option value="SIN_ASIGNAR">Sin asignar</option>
+                {pelotones.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {labelPeloton(p)}
+                  </option>
+                ))}
+              </select>
+              {pelotones.length === 0 ? (
+                <p className="mt-1.5 text-xs text-slate-500">
+                  No hay pelotones definidos en esta convocatoria.
+                </p>
+              ) : null}
+            </div>
             <div>
               <Label htmlFor="drawer-unidad" className="mb-2 flex items-center gap-2 text-slate-700">
                 <Landmark className="h-3.5 w-3.5 text-slate-500" aria-hidden />

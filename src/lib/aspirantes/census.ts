@@ -43,6 +43,14 @@ export function buildAspiranteCensusWhere(
   if (unidad && unidad !== "TODOS") {
     filters.push({ unidadPostulante: unidad });
   }
+  const peloton = sp.peloton?.trim();
+  if (peloton && peloton !== "TODOS") {
+    if (peloton === "SIN_ASIGNAR") {
+      filters.push({ pelotonId: null });
+    } else {
+      filters.push({ pelotonId: peloton });
+    }
+  }
   const emin = sp.edadMin ? Number(sp.edadMin) : NaN;
   const emax = sp.edadMax ? Number(sp.edadMax) : NaN;
   const fechaFilter = fechaNacimientoFilterForAgeRange({

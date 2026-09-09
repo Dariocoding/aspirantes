@@ -23,6 +23,7 @@ function parseSp(searchParams: URLSearchParams): Record<string, string | undefin
     "sort",
     "calificacion",
     "unidadPostulante",
+    "peloton",
     "convocatoria",
   ];
   const out: Record<string, string | undefined> = {};

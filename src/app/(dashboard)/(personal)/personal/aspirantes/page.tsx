@@ -113,7 +113,7 @@ export default async function AspirantesPage({
     unidadPostulante: { not: "" },
   };
 
-  const [total, aspirantes, unidadGrupos, carreraGrupos] = await Promise.all([
+  const [total, aspirantes, unidadGrupos, carreraGrupos, pelotones] = await Promise.all([
     prisma.aspirante.count({ where }),
     prisma.aspirante.findMany({
       where,
@@ -134,6 +134,11 @@ export default async function AspirantesPage({
           _count: { _all: true },
         })
       : Promise.resolve([] as { tituloUniversidad: string | null; _count: { _all: number } }[]),
+    prisma.peloton.findMany({
+      where: { convocatoriaId: convocatoriaFiltroId },
+      orderBy: { numero: "asc" },
+      select: { id: true, numero: true, nombre: true },
+    }),
   ]);
 
   const countByCarrera = new Map(
@@ -151,6 +156,13 @@ export default async function AspirantesPage({
     ),
   ).sort((a, b) => a.localeCompare(b, "es"));
 
+  const pelotonFiltro = sp.peloton?.trim();
+  const pelotonFiltroActivo = Boolean(
+    pelotonFiltro &&
+      pelotonFiltro !== "TODOS" &&
+      (pelotonFiltro === "SIN_ASIGNAR" || pelotones.some((p) => p.id === pelotonFiltro)),
+  );
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const qsBase: Record<string, string | undefined> = {
     q: sp.q,
@@ -160,6 +172,7 @@ export default async function AspirantesPage({
     sort: sp.sort,
     calificacion: sp.calificacion,
     unidadPostulante: sp.unidadPostulante,
+    peloton: pelotonFiltroActivo ? pelotonFiltro : undefined,
   };
   if (convocatoriaFiltroId) qsBase.convocatoria = convocatoriaFiltroId;
 
@@ -176,6 +189,7 @@ export default async function AspirantesPage({
     activeAdvancedCount++;
   }
   if (unidadFiltroActivo) activeAdvancedCount++;
+  if (pelotonFiltroActivo) activeAdvancedCount++;
   if (
     sp.calificacion &&
     sp.calificacion !== "TODOS" &&
@@ -264,6 +278,8 @@ export default async function AspirantesPage({
                 calificacion={sp.calificacion}
                 unidadPostulante={sp.unidadPostulante}
                 unidadesPostulantes={unidadesPostulantes}
+                peloton={pelotonFiltroActivo ? pelotonFiltro : undefined}
+                pelotones={pelotones}
                 convocatorias={convocatorias.map((c) => ({
                   id: c.id,
                   codigo: c.codigo,
@@ -295,6 +311,9 @@ export default async function AspirantesPage({
               ) : null}
               {unidadFiltroActivo && unidadFiltro ? (
                 <input type="hidden" name="unidadPostulante" value={unidadFiltro} />
+              ) : null}
+              {pelotonFiltroActivo && pelotonFiltro ? (
+                <input type="hidden" name="peloton" value={pelotonFiltro} />
               ) : null}
               <div className="relative min-w-0 flex-1">
                 <Label htmlFor="q" className="sr-only">
