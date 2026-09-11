@@ -227,6 +227,7 @@ export function AspirantesFiltersDrawer({
                 <option value="nombres">Nombre (A-Z)</option>
                 <option value="carrera">Agrupar por carrera (A-Z)</option>
                 <option value="titulo">Título universitario (A-Z)</option>
+                <option value="nacimiento">Fecha de nacimiento</option>
                 <option value="reciente">Más recientes</option>
               </select>
             </div>

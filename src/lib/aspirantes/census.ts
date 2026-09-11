@@ -74,6 +74,7 @@ export function censusOrderBy(
     return [{ tituloUniversidad: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
   }
   if (sort === "reciente") return { createdAt: "desc" };
+  if (sort === "nacimiento") return { fechaNacimiento: "asc" };
   // Por defecto (y con sort=cedula): cédula ascendente.
   return { cedula: "asc" };
 }

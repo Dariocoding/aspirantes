@@ -37,7 +37,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
-import { ageFromBirthDate } from "@src/lib/date";
+import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
 import { prisma } from "@src/lib/prisma";
 import type { Prisma } from "@src/generated/prisma";
 
@@ -184,6 +184,7 @@ export default async function AspirantesPage({
     sp.sort === "nombres" ||
     sp.sort === "titulo" ||
     sp.sort === "carrera" ||
+    sp.sort === "nacimiento" ||
     sp.sort === "reciente"
   ) {
     activeAdvancedCount++;
@@ -303,6 +304,7 @@ export default async function AspirantesPage({
               {sp.sort === "nombres" ||
               sp.sort === "titulo" ||
               sp.sort === "carrera" ||
+              sp.sort === "nacimiento" ||
               sp.sort === "reciente" ? (
                 <input type="hidden" name="sort" value={sp.sort} />
               ) : null}
@@ -386,6 +388,9 @@ export default async function AspirantesPage({
                   <TableHead className="h-9 w-12 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Edad
                   </TableHead>
+                  <TableHead className="h-9 w-[7.5rem] px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                    Nacimiento
+                  </TableHead>
                   <TableHead className="h-9 w-[8.5rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Ficha
                   </TableHead>
@@ -400,7 +405,7 @@ export default async function AspirantesPage({
                 {aspirantes.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={write ? 9 : 8}
+                      colSpan={write ? 10 : 9}
                       className="h-28 whitespace-normal px-3 text-center text-sm text-slate-500"
                     >
                       <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-3">
@@ -414,7 +419,7 @@ export default async function AspirantesPage({
                   </TableRow>
                 ) : (
                   (() => {
-                    const colSpan = write ? 9 : 8;
+                    const colSpan = write ? 10 : 9;
                     const rows: ReactNode[] = [];
                     let prevCarreraKey: string | null = null;
 
@@ -522,6 +527,11 @@ export default async function AspirantesPage({
                           </TableCell>
                           <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
                             {ageFromBirthDate(a.fechaNacimiento) ?? "—"}
+                          </TableCell>
+                          <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
+                            {hasRealBirthDate(a.fechaNacimiento)
+                              ? a.fechaNacimiento.toLocaleDateString("es-VE")
+                              : "—"}
                           </TableCell>
                           <TableCell className="px-3 py-2">
                             <div className="flex flex-wrap items-center gap-1">
