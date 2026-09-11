@@ -13,6 +13,8 @@ const ACTION_LABELS: Record<string, string> = {
   CENSO_EXPORT_PDF: "Exportación PDF del censo",
   CENSO_EXPORT_XLSX: "Exportación Excel del censo",
   CENSO_EXPORT_XLSX_EXAMENES: "Exportación Excel de exámenes médicos",
+  CENSO_EXPORT_XLSX_LISTA_OFICIAL: "Exportación Excel de lista oficial",
+  CENSO_EXPORT_XLSX_CUMPLEANOS: "Exportación Excel de cumpleaños",
 };
 
 const ENTITY_LABELS: Record<string, string> = {

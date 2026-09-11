@@ -7,6 +7,7 @@ import { buildAspiranteCensusWhere, censusOrderBy, isCensusNacimientoMesSort, so
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
+import { buildAspirantesCumpleanosXlsxBuffer } from "@src/lib/excel/build-aspirantes-cumpleanos-xlsx";
 import { buildAspirantesExamenesMedicosXlsxBuffer } from "@src/lib/excel/build-aspirantes-examenes-medicos-xlsx";
 import { buildAspirantesListaOficialXlsxBuffer } from "@src/lib/excel/build-aspirantes-lista-oficial-xlsx";
 import { ageFromBirthDate } from "@src/lib/date";
@@ -66,7 +67,9 @@ export async function GET(request: Request) {
       ? "examenes-medicos"
       : format === "xlsx" && variantRaw === "lista-oficial"
         ? "lista-oficial"
-        : "censo";
+        : format === "xlsx" && variantRaw === "cumpleanos"
+          ? "cumpleanos"
+          : "censo";
   if (
     format === "xlsx" &&
     variantRaw &&
@@ -76,7 +79,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         message:
-          "Parámetro variant inválido (use censo, examenes-medicos o lista-oficial)",
+          "Parámetro variant inválido (use censo, examenes-medicos, lista-oficial o cumpleanos)",
       },
       { status: 400 },
     );
@@ -140,7 +143,9 @@ export async function GET(request: Request) {
           ? "CENSO_EXPORT_XLSX_EXAMENES"
           : xlsxVariant === "lista-oficial"
             ? "CENSO_EXPORT_XLSX_LISTA_OFICIAL"
-            : "CENSO_EXPORT_XLSX"
+            : xlsxVariant === "cumpleanos"
+              ? "CENSO_EXPORT_XLSX_CUMPLEANOS"
+              : "CENSO_EXPORT_XLSX"
         : "CENSO_EXPORT_PDF",
     entityType: "CENSO",
     entityId: convocatoriaFiltroId,
@@ -173,6 +178,32 @@ export async function GET(request: Request) {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="lista-oficial-${codigoSafe}-${dateSafe}.xlsx"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
+
+  if (format === "xlsx" && xlsxVariant === "cumpleanos") {
+    const buffer = await buildAspirantesCumpleanosXlsxBuffer({
+      convocatoriaNombre: convocatoriaActual.nombre,
+      convocatoriaCodigo: convocatoriaActual.codigo,
+      anio: convocatoriaActual.anio,
+      rows: rows.map((a) => ({
+        nombres: a.nombres,
+        apellidos: a.apellidos,
+        cedula: a.cedula,
+        fechaNacimiento: a.fechaNacimiento,
+        edad: ageFromBirthDate(a.fechaNacimiento),
+      })),
+      generatedAt,
+    });
+
+    return new NextResponse(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="cumpleanos-aspirantes-${codigoSafe}-${dateSafe}.xlsx"`,
         "Cache-Control": "private, no-store",
       },
     });

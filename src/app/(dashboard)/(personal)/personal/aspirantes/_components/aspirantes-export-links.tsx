@@ -66,6 +66,17 @@ export function AspirantesExportLinks({ exportQuery }: Props) {
               N°, JQUIA ASP OFICIAL, apellidos, nombres, cédula, sexo
             </span>
           </a>
+          <a
+            href={`${base}?format=xlsx&variant=cumpleanos${suffix}`}
+            role="menuitem"
+            className="block border-t border-slate-100 px-3 py-2 text-sm text-slate-800 hover:bg-emerald-50"
+            onClick={closeMenu}
+          >
+            <span className="font-medium">Cumpleaños</span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              Nombre completo, cédula, fecha de cumpleaños y edad
+            </span>
+          </a>
         </div>
       </details>
       <Link
