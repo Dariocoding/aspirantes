@@ -74,7 +74,7 @@ export function AspirantesExportLinks({ exportQuery }: Props) {
           >
             <span className="font-medium">Cumpleaños</span>
             <span className="mt-0.5 block text-xs text-slate-500">
-              Nombre completo, cédula, fecha de cumpleaños y edad
+              Por mes: nombre, cédula, fecha de nacimiento y edad
             </span>
           </a>
         </div>
