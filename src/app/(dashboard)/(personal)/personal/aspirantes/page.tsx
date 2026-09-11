@@ -31,6 +31,10 @@ import {
   censusOrderBy,
   censusQueryString,
   isCensusCarreraGroupSort,
+  isCensusNacimientoMesSort,
+  nacimientoMesGroupKey,
+  nacimientoMesGroupLabel,
+  sortAspirantesByNacimientoMes,
 } from "@src/lib/aspirantes/census";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -107,21 +111,29 @@ export default async function AspirantesPage({
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
   const sort = censusOrderBy(sp.sort);
   const groupByCarrera = isCensusCarreraGroupSort(sp.sort);
+  const groupByNacimientoMes = isCensusNacimientoMesSort(sp.sort);
 
   const unidadWhereLista: Prisma.AspiranteWhereInput = {
     convocatoriaId: convocatoriaFiltroId,
     unidadPostulante: { not: "" },
   };
 
-  const [total, aspirantes, unidadGrupos, carreraGrupos, pelotones] = await Promise.all([
-    prisma.aspirante.count({ where }),
-    prisma.aspirante.findMany({
-      where,
-      include: { datosFisicos: true, contactos: true },
-      orderBy: sort,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
+  const [totalCount, aspirantesRaw, unidadGrupos, carreraGrupos, pelotones] = await Promise.all([
+    groupByNacimientoMes
+      ? Promise.resolve(0)
+      : prisma.aspirante.count({ where }),
+    groupByNacimientoMes
+      ? prisma.aspirante.findMany({
+          where,
+          include: { datosFisicos: true, contactos: true },
+        })
+      : prisma.aspirante.findMany({
+          where,
+          include: { datosFisicos: true, contactos: true },
+          orderBy: sort,
+          skip: (page - 1) * PAGE_SIZE,
+          take: PAGE_SIZE,
+        }),
     prisma.aspirante.groupBy({
       by: ["unidadPostulante"],
       where: unidadWhereLista,
@@ -141,9 +153,25 @@ export default async function AspirantesPage({
     }),
   ]);
 
+  const aspirantesOrdenados = groupByNacimientoMes
+    ? sortAspirantesByNacimientoMes(aspirantesRaw)
+    : aspirantesRaw;
+  const total = groupByNacimientoMes ? aspirantesOrdenados.length : totalCount;
+  const aspirantes = groupByNacimientoMes
+    ? aspirantesOrdenados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    : aspirantesOrdenados;
+
   const countByCarrera = new Map(
     carreraGrupos.map((g) => [g.tituloUniversidad ?? "", g._count._all]),
   );
+
+  const countByNacimientoMes = new Map<number, number>();
+  if (groupByNacimientoMes) {
+    for (const a of aspirantesOrdenados) {
+      const key = nacimientoMesGroupKey(a.fechaNacimiento);
+      countByNacimientoMes.set(key, (countByNacimientoMes.get(key) ?? 0) + 1);
+    }
+  }
 
   const unidadFiltro = sp.unidadPostulante?.trim();
   const unidadFiltroActivo = Boolean(unidadFiltro && unidadFiltro !== "TODOS");
@@ -185,6 +213,7 @@ export default async function AspirantesPage({
     sp.sort === "titulo" ||
     sp.sort === "carrera" ||
     sp.sort === "nacimiento" ||
+    sp.sort === "nacimiento-mes" ||
     sp.sort === "reciente"
   ) {
     activeAdvancedCount++;
@@ -305,6 +334,7 @@ export default async function AspirantesPage({
               sp.sort === "titulo" ||
               sp.sort === "carrera" ||
               sp.sort === "nacimiento" ||
+              sp.sort === "nacimiento-mes" ||
               sp.sort === "reciente" ? (
                 <input type="hidden" name="sort" value={sp.sort} />
               ) : null}
@@ -422,6 +452,7 @@ export default async function AspirantesPage({
                     const colSpan = write ? 10 : 9;
                     const rows: ReactNode[] = [];
                     let prevCarreraKey: string | null = null;
+                    let prevNacimientoMesKey: number | null = null;
 
                     for (const a of aspirantes) {
                       const esFemenino = a.sexo === "FEMENINO";
@@ -430,6 +461,7 @@ export default async function AspirantesPage({
                       const carreraKey = a.tituloUniversidad ?? "";
                       const nivelEstudio = labelTipoEstudioNivel(a.tipoEstudio);
                       const nombreCompleto = `${a.nombres} ${a.apellidos}`.trim();
+                      const nacimientoMesKey = nacimientoMesGroupKey(a.fechaNacimiento);
 
                       if (groupByCarrera && carreraKey !== prevCarreraKey) {
                         prevCarreraKey = carreraKey;
@@ -445,6 +477,29 @@ export default async function AspirantesPage({
                             >
                               <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                                 <span>{carrera || "Sin carrera"}</span>
+                                <span className="text-xs font-medium tabular-nums text-slate-500">
+                                  ({grupoCount})
+                                </span>
+                              </span>
+                            </TableCell>
+                          </TableRow>,
+                        );
+                      }
+
+                      if (groupByNacimientoMes && nacimientoMesKey !== prevNacimientoMesKey) {
+                        prevNacimientoMesKey = nacimientoMesKey;
+                        const grupoCount = countByNacimientoMes.get(nacimientoMesKey) ?? 0;
+                        rows.push(
+                          <TableRow
+                            key={`grupo-mes-${nacimientoMesKey}`}
+                            className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
+                          >
+                            <TableCell
+                              colSpan={colSpan}
+                              className="px-3 py-2 text-sm font-semibold text-slate-800"
+                            >
+                              <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span>{nacimientoMesGroupLabel(nacimientoMesKey)}</span>
                                 <span className="text-xs font-medium tabular-nums text-slate-500">
                                   ({grupoCount})
                                 </span>

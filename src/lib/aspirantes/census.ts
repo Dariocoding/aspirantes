@@ -1,5 +1,6 @@
 import type { Prisma } from "@src/generated/prisma";
-import { fechaNacimientoFilterForAgeRange } from "@src/lib/date";
+import { fechaNacimientoFilterForAgeRange, hasRealBirthDate } from "@src/lib/date";
+import { MESES_TITULO } from "@src/lib/meses";
 
 export function calificacionAdmisionEtiqueta(c: string) {
   if (c === "APTO") return "Apto";
@@ -75,12 +76,47 @@ export function censusOrderBy(
   }
   if (sort === "reciente") return { createdAt: "desc" };
   if (sort === "nacimiento") return { fechaNacimiento: "asc" };
+  // `nacimiento-mes` se ordena en memoria por mes/día (ver sortAspirantesByNacimientoMes).
   // Por defecto (y con sort=cedula): cédula ascendente.
   return { cedula: "asc" };
 }
 
 export function isCensusCarreraGroupSort(sort: string | undefined) {
   return sort === "carrera";
+}
+
+/** Orden por mes del calendario (ene→dic), no por año. */
+export function isCensusNacimientoMesSort(sort: string | undefined) {
+  return sort === "nacimiento-mes";
+}
+
+/** Clave de grupo: 0–11 (mes) o -1 si la fecha aún no está cargada. */
+export function nacimientoMesGroupKey(fecha: Date): number {
+  return hasRealBirthDate(fecha) ? fecha.getMonth() : -1;
+}
+
+export function nacimientoMesGroupLabel(mesKey: number): string {
+  if (mesKey < 0) return "Sin fecha de nacimiento";
+  return MESES_TITULO[mesKey] ?? `Mes ${mesKey + 1}`;
+}
+
+/**
+ * Orden de cumpleaños en el calendario: enero → diciembre, luego día.
+ * Sin fecha real al final; empate por cédula.
+ */
+export function sortAspirantesByNacimientoMes<
+  T extends { fechaNacimiento: Date; cedula: string },
+>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const aReal = hasRealBirthDate(a.fechaNacimiento);
+    const bReal = hasRealBirthDate(b.fechaNacimiento);
+    if (aReal !== bReal) return aReal ? -1 : 1;
+    const monthDiff = a.fechaNacimiento.getMonth() - b.fechaNacimiento.getMonth();
+    if (monthDiff !== 0) return monthDiff;
+    const dayDiff = a.fechaNacimiento.getDate() - b.fechaNacimiento.getDate();
+    if (dayDiff !== 0) return dayDiff;
+    return a.cedula.localeCompare(b.cedula, "es", { numeric: true });
+  });
 }
 
 export function censusQueryString(
