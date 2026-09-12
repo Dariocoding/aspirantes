@@ -1,18 +1,13 @@
 import ExcelJS from "exceljs";
-import {
-  calificacionAdmisionEtiqueta,
-  sexoEtiqueta,
-} from "@src/lib/aspirantes/census";
+import { sexoEtiqueta } from "@src/lib/aspirantes/census";
+import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 
 export type AspiranteCensoExportRow = {
   nombres: string;
   apellidos: string;
   unidadPostulante: string;
   tituloUniversidad: string | null;
-  calificacionAdmision: string;
-  convocatoriaCodigo: string;
-  convocatoriaNombre: string;
-  convocatoriaActiva: boolean;
+  tipoEstudio: string | null;
   cedula: string;
   sexo: string;
   edad: number;
@@ -21,7 +16,6 @@ export type AspiranteCensoExportRow = {
 
 export type BuildAspirantesCensoXlsxParams = {
   convocatoriaNombre: string;
-  convocatoriaCodigo: string;
   anio: number;
   rows: AspiranteCensoExportRow[];
   generatedAt: Date;
@@ -38,23 +32,7 @@ const HEADER_FILL = { type: "pattern" as const, pattern: "solid" as const, fgCol
 const ZEBRA_A = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF8FAFC" } };
 const ZEBRA_B = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFFFFF" } };
 
-const COL_WIDTHS = [34, 28, 28, 14, 14, 26, 14, 12, 8, 13] as const;
-
-function calificacionFill(code: string): ExcelJS.Fill {
-  if (code === "APTO") {
-    return { type: "pattern", pattern: "solid", fgColor: { argb: "FFD1FAE5" } };
-  }
-  if (code === "NO_APTO") {
-    return { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEE2E2" } };
-  }
-  return { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF3C7" } };
-}
-
-function calificacionFontColor(code: string): ExcelJS.Font["color"] {
-  if (code === "APTO") return { argb: "FF065F46" };
-  if (code === "NO_APTO") return { argb: "FF991B1B" };
-  return { argb: "FF92400E" };
-}
+const COL_WIDTHS = [34, 28, 34, 14, 12, 8, 13] as const;
 
 function sexoFill(sexo: string): ExcelJS.Fill {
   if (sexo === "FEMENINO") {
@@ -65,6 +43,13 @@ function sexoFill(sexo: string): ExcelJS.Fill {
 
 function applyCellBorder(cell: ExcelJS.Cell) {
   cell.border = { ...BORDER };
+}
+
+function formatCarreraConNivel(titulo: string | null, tipoEstudio: string | null): string {
+  const carrera = (titulo ?? "").trim() || "—";
+  if (carrera === "—") return carrera;
+  const nivel = labelTipoEstudioNivel(tipoEstudio);
+  return nivel ? `${carrera} (${nivel})` : carrera;
 }
 
 /** Approx. wrapped lines for ExcelJS (no native autofit). */
@@ -89,7 +74,7 @@ function estimateRowHeight(values: string[], colWidths: readonly number[]): numb
 }
 
 export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCensoXlsxParams): Promise<Buffer> {
-  const { convocatoriaNombre, convocatoriaCodigo, anio, rows, generatedAt } = params;
+  const { convocatoriaNombre, anio, rows, generatedAt } = params;
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "FANB Aspirantes";
@@ -103,7 +88,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
 
   ws.columns = COL_WIDTHS.map((width) => ({ width }));
 
-  ws.mergeCells("A1:J1");
+  ws.mergeCells("A1:G1");
   const title = ws.getCell("A1");
   title.value = "CENSO DE ASPIRANTES";
   title.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
@@ -112,19 +97,19 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   title.border = BORDER;
   ws.getRow(1).height = 30;
 
-  ws.mergeCells("A2:J2");
+  ws.mergeCells("A2:G2");
   const sub = ws.getCell("A2");
-  sub.value = `${convocatoriaNombre}  ·  ${convocatoriaCodigo}  ·  ${anio}  ·  Total: ${rows.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
+  sub.value = `${convocatoriaNombre}  ·  ${anio}  ·  Total: ${rows.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
   sub.font = { name: "Calibri", size: 11, color: { argb: "FF334155" } };
   sub.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
   sub.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
   applyCellBorder(sub);
   ws.getRow(2).height = 22;
 
-  ws.mergeCells("A3:J3");
+  ws.mergeCells("A3:G3");
   const hint = ws.getCell("A3");
   hint.value =
-    "Admisión y sexo con sombreado. Puede reeditar este archivo e importarlo: la clave es la cédula (no cree filas nuevas ni cambie cabeceras). Unidad, carrera, admisión, sexo y nacimiento se actualizan.";
+    "Sexo con sombreado. Puede reeditar este archivo e importarlo: la clave es la cédula (no cree filas nuevas ni cambie cabeceras). Unidad, carrera, sexo y nacimiento se actualizan.";
   hint.font = { name: "Calibri", size: 9, italic: true, color: { argb: "FF64748B" } };
   hint.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
   hint.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
@@ -135,9 +120,6 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
     "Nombre completo",
     "Unidad postulante",
     "Carrera",
-    "Admisión",
-    "Conv. código",
-    "Convocatoria",
     "Cédula",
     "Sexo",
     "Edad",
@@ -160,14 +142,10 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
     const zebra = idx % 2 === 0 ? ZEBRA_A : ZEBRA_B;
     const nombre = `${r.nombres} ${r.apellidos}`.trim();
     const unidad = (r.unidadPostulante ?? "").trim() || "—";
-    const carrera = (r.tituloUniversidad ?? "").trim() || "—";
-    const convLabel = r.convocatoriaActiva ? `${r.convocatoriaCodigo} (activa)` : r.convocatoriaCodigo;
+    const carrera = formatCarreraConNivel(r.tituloUniversidad, r.tipoEstudio);
     const nacimiento = r.fechaNacimiento.toLocaleDateString("es-VE");
 
-    row.height = estimateRowHeight(
-      [nombre, unidad, carrera, "", "", r.convocatoriaNombre, "", "", "", ""],
-      COL_WIDTHS,
-    );
+    row.height = estimateRowHeight([nombre, unidad, carrera, "", "", "", ""], COL_WIDTHS);
 
     const cells: {
       value: string | number;
@@ -192,24 +170,6 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
         align: { horizontal: "left", vertical: "middle", wrapText: true },
         fill: zebra,
         font: { name: "Calibri", size: 11, color: { argb: "FF1E293B" } },
-      },
-      {
-        value: calificacionAdmisionEtiqueta(r.calificacionAdmision),
-        align: { horizontal: "center", vertical: "middle" },
-        fill: calificacionFill(r.calificacionAdmision),
-        font: { name: "Calibri", size: 11, bold: true, color: calificacionFontColor(r.calificacionAdmision) },
-      },
-      {
-        value: convLabel,
-        align: { horizontal: "center", vertical: "middle", wrapText: true },
-        fill: zebra,
-        font: { name: "Consolas", size: 10, color: { argb: "FF475569" } },
-      },
-      {
-        value: r.convocatoriaNombre,
-        align: { horizontal: "left", vertical: "middle", wrapText: true },
-        fill: zebra,
-        font: { name: "Calibri", size: 10, color: { argb: "FF475569" } },
       },
       {
         value: r.cedula,

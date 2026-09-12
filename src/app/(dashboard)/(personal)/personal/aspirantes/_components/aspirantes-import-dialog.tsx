@@ -88,7 +88,7 @@ export function AspirantesImportDialog({ convocatoriaId, convocatoriaLabel }: Pr
               className="cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-sky-100 file:px-2.5 file:py-1 file:text-sm file:font-medium file:text-sky-950"
             />
             <p className="text-xs text-slate-500">
-              Censo: unidad, carrera, admisión, sexo y nacimiento. Exámenes: peso, estatura, tensión y
+              Censo: unidad, carrera, sexo y nacimiento. Exámenes: peso, estatura, tensión y
               checklist SI. No cambie las cabeceras ni la columna de cédula.
             </p>
           </div>

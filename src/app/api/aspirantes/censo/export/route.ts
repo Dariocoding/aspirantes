@@ -127,10 +127,7 @@ export async function GET(request: Request) {
     apellidos: a.apellidos,
     unidadPostulante: a.unidadPostulante,
     tituloUniversidad: a.tituloUniversidad,
-    calificacionAdmision: a.calificacionAdmision,
-    convocatoriaCodigo: a.convocatoria.codigo,
-    convocatoriaNombre: a.convocatoria.nombre,
-    convocatoriaActiva: a.convocatoria.activa,
+    tipoEstudio: a.tipoEstudio,
     cedula: a.cedula,
     sexo: a.sexo,
     edad: ageFromBirthDate(a.fechaNacimiento) ?? 0,
@@ -246,7 +243,6 @@ export async function GET(request: Request) {
   if (format === "xlsx") {
     const buffer = await buildAspirantesCensoXlsxBuffer({
       convocatoriaNombre: convocatoriaActual.nombre,
-      convocatoriaCodigo: convocatoriaActual.codigo,
       anio: convocatoriaActual.anio,
       rows: exportRows,
       generatedAt,
@@ -270,7 +266,6 @@ export async function GET(request: Request) {
 
   const doc = createElement(AspirantesCensoPdfDocument, {
     convocatoriaNombre: convocatoriaActual.nombre,
-    convocatoriaCodigo: convocatoriaActual.codigo,
     anio: convocatoriaActual.anio,
     generatedAt: generatedAtStr,
     rows: exportRows,

@@ -1,18 +1,13 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import {
-  calificacionAdmisionEtiqueta,
-  sexoEtiqueta,
-} from "@src/lib/aspirantes/census";
+import { sexoEtiqueta } from "@src/lib/aspirantes/census";
+import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 
 export type AspiranteCensoPdfRow = {
   nombres: string;
   apellidos: string;
   unidadPostulante: string;
   tituloUniversidad: string | null;
-  calificacionAdmision: string;
-  convocatoriaCodigo: string;
-  convocatoriaNombre: string;
-  convocatoriaActiva: boolean;
+  tipoEstudio: string | null;
   cedula: string;
   sexo: string;
   edad: number;
@@ -21,23 +16,19 @@ export type AspiranteCensoPdfRow = {
 
 export type AspirantesCensoPdfProps = {
   convocatoriaNombre: string;
-  convocatoriaCodigo: string;
   anio: number;
   generatedAt: string;
   rows: AspiranteCensoPdfRow[];
 };
 
 const COL = {
-  n: "18%",
-  u: "12%",
-  car: "14%",
-  adm: "9%",
-  cc: "8%",
-  cn: "12%",
-  ced: "9%",
-  sx: "7%",
-  ed: "4%",
-  fn: "7%",
+  n: "22%",
+  u: "16%",
+  car: "22%",
+  ced: "12%",
+  sx: "10%",
+  ed: "6%",
+  fn: "12%",
 } as const;
 
 const styles = StyleSheet.create({
@@ -135,20 +126,15 @@ const styles = StyleSheet.create({
   },
 });
 
-function calificacionBg(code: string) {
-  if (code === "APTO") return "#d1fae5";
-  if (code === "NO_APTO") return "#fee2e2";
-  return "#fef3c7";
-}
-
-function calificacionFg(code: string) {
-  if (code === "APTO") return "#065f46";
-  if (code === "NO_APTO") return "#991b1b";
-  return "#92400e";
-}
-
 function sexoBg(sexo: string) {
   return sexo === "FEMENINO" ? "#fff1f2" : "#f0f9ff";
+}
+
+function formatCarreraConNivel(titulo: string | null, tipoEstudio: string | null): string {
+  const carrera = (titulo ?? "").trim() || "—";
+  if (carrera === "—") return carrera;
+  const nivel = labelTipoEstudioNivel(tipoEstudio);
+  return nivel ? `${carrera} (${nivel})` : carrera;
 }
 
 function chunkRows<T>(arr: T[], first: number, rest: number): T[][] {
@@ -173,15 +159,10 @@ function TableHead() {
       <Text style={[styles.th, { width: COL.n }]}>Nombre</Text>
       <Text style={[styles.th, { width: COL.u }]}>Unidad</Text>
       <Text style={[styles.th, { width: COL.car }]}>Carrera</Text>
-      <Text style={[styles.th, { width: COL.adm }]}>Adm.</Text>
-      <Text style={[styles.th, { width: COL.cc }]}>Cód.</Text>
-      <Text style={[styles.th, { width: COL.cn }]}>Conv.</Text>
       <Text style={[styles.th, { width: COL.ced }]}>Cédula</Text>
       <Text style={[styles.th, { width: COL.sx }]}>Sexo</Text>
       <Text style={[styles.th, { width: COL.ed }]}>Ed.</Text>
-      <Text style={[styles.th, { width: COL.fn, borderRightWidth: 0 }]}>
-        Nac.
-      </Text>
+      <Text style={[styles.th, { width: COL.fn, borderRightWidth: 0 }]}>Nac.</Text>
     </View>
   );
 }
@@ -190,40 +171,13 @@ function DataRow({ r, zebra }: { r: AspiranteCensoPdfRow; zebra: boolean }) {
   const bg = zebra ? "#f8fafc" : "#ffffff";
   const nombre = `${r.nombres} ${r.apellidos}`.trim();
   const unidad = (r.unidadPostulante ?? "").trim() || "—";
-  const carrera = (r.tituloUniversidad ?? "").trim() || "—";
-  const convCod = r.convocatoriaActiva
-    ? `${r.convocatoriaCodigo}*`
-    : r.convocatoriaCodigo;
+  const carrera = formatCarreraConNivel(r.tituloUniversidad, r.tipoEstudio);
   return (
     <View style={[styles.row, { backgroundColor: bg }]} wrap={false}>
-      <Text style={[styles.cell, { width: COL.n, fontWeight: "bold" }]}>
-        {nombre}
-      </Text>
+      <Text style={[styles.cell, { width: COL.n, fontWeight: "bold" }]}>{nombre}</Text>
       <Text style={[styles.cell, { width: COL.u }]}>{unidad}</Text>
       <Text style={[styles.cell, { width: COL.car }]}>{carrera}</Text>
-      <Text
-        style={[
-          styles.cell,
-          {
-            width: COL.adm,
-            backgroundColor: calificacionBg(r.calificacionAdmision),
-            color: calificacionFg(r.calificacionAdmision),
-            fontWeight: "bold",
-            textAlign: "center",
-          },
-        ]}
-      >
-        {calificacionAdmisionEtiqueta(r.calificacionAdmision)}
-      </Text>
-      <Text style={[styles.cellMono, { width: COL.cc, textAlign: "center" }]}>
-        {convCod}
-      </Text>
-      <Text style={[styles.cell, { width: COL.cn, fontSize: 6 }]}>
-        {r.convocatoriaNombre}
-      </Text>
-      <Text style={[styles.cellMono, { width: COL.ced, textAlign: "center" }]}>
-        {r.cedula}
-      </Text>
+      <Text style={[styles.cellMono, { width: COL.ced, textAlign: "center" }]}>{r.cedula}</Text>
       <Text
         style={[
           styles.cell,
@@ -237,15 +191,8 @@ function DataRow({ r, zebra }: { r: AspiranteCensoPdfRow; zebra: boolean }) {
       >
         {sexoEtiqueta(r.sexo)}
       </Text>
-      <Text style={[styles.cell, { width: COL.ed, textAlign: "center" }]}>
-        {r.edad}
-      </Text>
-      <Text
-        style={[
-          styles.cell,
-          { width: COL.fn, textAlign: "center", borderRightWidth: 0 },
-        ]}
-      >
+      <Text style={[styles.cell, { width: COL.ed, textAlign: "center" }]}>{r.edad}</Text>
+      <Text style={[styles.cell, { width: COL.fn, textAlign: "center", borderRightWidth: 0 }]}>
         {r.fechaNacimiento.toLocaleDateString("es-VE")}
       </Text>
     </View>
@@ -254,7 +201,6 @@ function DataRow({ r, zebra }: { r: AspiranteCensoPdfRow; zebra: boolean }) {
 
 export function AspirantesCensoPdfDocument({
   convocatoriaNombre,
-  convocatoriaCodigo,
   anio,
   generatedAt,
   rows,
@@ -262,35 +208,27 @@ export function AspirantesCensoPdfDocument({
   const chunks = chunkRows(rows, ROWS_FIRST, ROWS_REST);
 
   return (
-    <Document title={`Censo ${convocatoriaCodigo}`} author="FANB Aspirantes">
+    <Document title={`Censo ${convocatoriaNombre}`} author="FANB Aspirantes">
       {chunks.map((pageRows, pageIdx) => (
-        <Page
-          key={pageIdx}
-          size="A4"
-          orientation="landscape"
-          style={styles.page}
-        >
+        <Page key={pageIdx} size="A4" orientation="landscape" style={styles.page}>
           {pageIdx === 0 ? (
             <>
               <View style={styles.band} fixed />
               <View style={styles.titleBlock}>
                 <Text style={styles.title}>Censo de aspirantes</Text>
                 <Text style={styles.subtitle}>
-                  {convocatoriaNombre} · {convocatoriaCodigo} · {anio}
+                  {convocatoriaNombre} · {anio}
                 </Text>
                 <Text style={styles.meta}>
                   Total registros: {rows.length} · Generado: {generatedAt}
-                  {chunks.length > 1
-                    ? ` · Pág. ${pageIdx + 1} de ${chunks.length}`
-                    : ""}
+                  {chunks.length > 1 ? ` · Pág. ${pageIdx + 1} de ${chunks.length}` : ""}
                 </Text>
               </View>
             </>
           ) : (
             <View style={styles.miniHead} fixed>
               <Text style={styles.miniTitle}>
-                Censo (continuación) · {convocatoriaCodigo} · Pág. {pageIdx + 1}
-                /{chunks.length}
+                Censo (continuación) · {convocatoriaNombre} · Pág. {pageIdx + 1}/{chunks.length}
               </Text>
             </View>
           )}
@@ -310,19 +248,13 @@ export function AspirantesCensoPdfDocument({
             </Text>
           ) : (
             pageRows.map((r, i) => (
-              <DataRow
-                key={`p${pageIdx}-r${i}-${r.cedula}`}
-                r={r}
-                zebra={i % 2 === 0}
-              />
+              <DataRow key={`p${pageIdx}-r${i}-${r.cedula}`} r={r} zebra={i % 2 === 0} />
             ))
           )}
 
           <Text style={styles.foot} fixed>
             FANB · Documento interno · Uso oficial
-            {chunks.length > 1
-              ? ` · Página ${pageIdx + 1} de ${chunks.length}`
-              : ""}
+            {chunks.length > 1 ? ` · Página ${pageIdx + 1} de ${chunks.length}` : ""}
           </Text>
         </Page>
       ))}

@@ -34,7 +34,19 @@ export type ParseImportErr = {
 
 export type ParseImportResult = ParseImportOk | ParseImportErr;
 
+/** Formato vigente (sin admisión ni convocatoria). */
 const CENSO_HEADERS = [
+  "Nombre completo",
+  "Unidad postulante",
+  "Carrera",
+  "Cédula",
+  "Sexo",
+  "Edad",
+  "Nacimiento",
+] as const;
+
+/** Formato legacy (con Admisión / Conv. código / Convocatoria). */
+const CENSO_HEADERS_LEGACY = [
   "Nombre completo",
   "Unidad postulante",
   "Carrera",
@@ -99,6 +111,11 @@ function dashToEmpty(s: string): string {
   const t = s.trim();
   if (!t || t === "—" || t === "-" || t === "–") return "";
   return t;
+}
+
+/** Quita el sufijo de nivel exportado: "Carrera (Pregrado|TSU|Postgrado)". */
+function stripNivelFromCarrera(raw: string): string {
+  return raw.replace(/\s*\((?:Pregrado|TSU|Postgrado)\)\s*$/i, "").trim();
 }
 
 function parseCalificacion(label: string): "APTO" | "NO_APTO" | "EN_EVALUACION" | null {
@@ -174,10 +191,11 @@ function readHeaderRow(ws: ExcelJS.Worksheet, rowNumber: number): string[] {
   return values.map((v) => v ?? "");
 }
 
-function detectVariant(headers: string[]): ImportVariant | null {
+function detectVariant(headers: string[]): ImportVariant | "censo-legacy" | null {
   const examHeaders = [...EXAM_BASE_HEADERS, ...EXAMEN_MEDICO_ITEMS.map((i) => i.texto)];
   if (headersMatch(headers, examHeaders)) return "examenes-medicos";
   if (headersMatch(headers, CENSO_HEADERS)) return "censo";
+  if (headersMatch(headers, CENSO_HEADERS_LEGACY)) return "censo-legacy";
   // Tolerar exámenes si al menos base + mismos textos de examen (orden)
   if (headersMatch(headers, EXAM_BASE_HEADERS)) {
     const examOk = EXAMEN_MEDICO_ITEMS.every((item, i) => {
@@ -223,13 +241,18 @@ export async function parseAspirantesImportXlsx(buffer: ArrayBuffer | Buffer): P
     };
   }
 
-  if (variant === "censo") {
+  if (variant === "censo" || variant === "censo-legacy") {
+    const legacy = variant === "censo-legacy";
+    const col = legacy
+      ? { cedula: 7, unidad: 2, carrera: 3, admision: 4, sexo: 8, nacimiento: 10 }
+      : { cedula: 4, unidad: 2, carrera: 3, admision: 0, sexo: 5, nacimiento: 7 };
+
     const rows: CensoImportRow[] = [];
     const seen = new Set<string>();
 
     for (let r = 5; r <= ws.rowCount; r++) {
       const row = ws.getRow(r);
-      const cedula = normalizeCedulaDigits(row.getCell(7).value);
+      const cedula = normalizeCedulaDigits(row.getCell(col.cedula).value);
       if (!cedula) {
         // Fila vacía (sin cédula): ignorar si toda la fila está vacía
         const nombre = cellText(row.getCell(1).value);
@@ -247,26 +270,28 @@ export async function parseAspirantesImportXlsx(buffer: ArrayBuffer | Buffer): P
       }
       seen.add(cedula);
 
-      const unidadRaw = dashToEmpty(cellText(row.getCell(2).value));
-      const carreraRaw = dashToEmpty(cellText(row.getCell(3).value));
-      const admLabel = cellText(row.getCell(4).value);
-      const sexoLabel = cellText(row.getCell(8).value);
-      const fechaCell = row.getCell(10).value;
+      const unidadRaw = dashToEmpty(cellText(row.getCell(col.unidad).value));
+      const carreraRaw = stripNivelFromCarrera(dashToEmpty(cellText(row.getCell(col.carrera).value)));
+      const sexoLabel = cellText(row.getCell(col.sexo).value);
+      const fechaCell = row.getCell(col.nacimiento).value;
 
       const parsed: CensoImportRow = { rowNumber: r, cedula };
 
       parsed.unidadPostulante = unidadRaw;
       parsed.tituloUniversidad = carreraRaw ? carreraRaw.slice(0, 200) : null;
 
-      if (admLabel) {
-        const cal = parseCalificacion(admLabel);
-        if (!cal) {
-          return {
-            ok: false,
-            error: `Fila ${r}: admisión no válida "${admLabel}" (use Apto, No apto o En evaluación).`,
-          };
+      if (legacy && col.admision) {
+        const admLabel = cellText(row.getCell(col.admision).value);
+        if (admLabel) {
+          const cal = parseCalificacion(admLabel);
+          if (!cal) {
+            return {
+              ok: false,
+              error: `Fila ${r}: admisión no válida "${admLabel}" (use Apto, No apto o En evaluación).`,
+            };
+          }
+          parsed.calificacionAdmision = cal;
         }
-        parsed.calificacionAdmision = cal;
       }
 
       if (sexoLabel) {
