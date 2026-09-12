@@ -3,7 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
 import { writeAuditLog } from "@src/lib/audit/log";
-import { buildAspiranteCensusWhere, censusOrderBy, isCensusNacimientoMesSort, sortAspirantesByNacimientoMes } from "@src/lib/aspirantes/census";
+import { buildAspiranteCensusWhere, censusOrderBy, isCensusGradoGroupSort, isCensusNacimientoMesSort, sortAspirantesByGradoEducativo, sortAspirantesByNacimientoMes } from "@src/lib/aspirantes/census";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
@@ -106,13 +106,19 @@ export async function GET(request: Request) {
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
   const sort = censusOrderBy(sp.sort);
   const nacimientoMesSort = isCensusNacimientoMesSort(sp.sort);
+  const gradoSort = isCensusGradoGroupSort(sp.sort);
+  const sortInMemory = nacimientoMesSort || gradoSort;
 
   const rowsRaw = await prisma.aspirante.findMany({
     where,
     include: { convocatoria: true, datosFisicos: true },
-    orderBy: nacimientoMesSort ? undefined : sort,
+    orderBy: sortInMemory ? undefined : sort,
   });
-  const rows = nacimientoMesSort ? sortAspirantesByNacimientoMes(rowsRaw) : rowsRaw;
+  const rows = nacimientoMesSort
+    ? sortAspirantesByNacimientoMes(rowsRaw)
+    : gradoSort
+      ? sortAspirantesByGradoEducativo(rowsRaw)
+      : rowsRaw;
 
   const generatedAt = new Date();
 

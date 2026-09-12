@@ -79,7 +79,7 @@ export function AspirantesFiltersDrawer({
           <SheetTitle>Criterios avanzados</SheetTitle>
           <SheetDescription>
             Convocatoria, pelotón, unidad postulante, admisión, sexo, rango de edad y orden del listado. Puede agrupar
-            por carrera. La búsqueda por texto permanece en la barra superior.
+            por carrera o por grado educativo. La búsqueda por texto permanece en la barra superior.
           </SheetDescription>
         </SheetHeader>
         <form method="get" className="flex min-h-0 flex-1 flex-col">
@@ -226,6 +226,7 @@ export function AspirantesFiltersDrawer({
                 <option value="cedula">Cédula (menor a mayor)</option>
                 <option value="nombres">Nombre (A-Z)</option>
                 <option value="carrera">Agrupar por carrera (A-Z)</option>
+                <option value="grado">Agrupar por grado educativo (mayor → menor)</option>
                 <option value="titulo">Título universitario (A-Z)</option>
                 <option value="nacimiento">Fecha de nacimiento (año completo)</option>
                 <option value="nacimiento-mes">Mes de nacimiento (enero → diciembre)</option>

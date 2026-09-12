@@ -1,4 +1,5 @@
 import type { Prisma } from "@src/generated/prisma";
+import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { fechaNacimientoFilterForAgeRange, hasRealBirthDate } from "@src/lib/date";
 import { MESES_TITULO } from "@src/lib/meses";
 
@@ -77,6 +78,7 @@ export function censusOrderBy(
   if (sort === "reciente") return { createdAt: "desc" };
   if (sort === "nacimiento") return { fechaNacimiento: "asc" };
   // `nacimiento-mes` se ordena en memoria por mes/día (ver sortAspirantesByNacimientoMes).
+  // `grado` se ordena en memoria por nivel educativo (ver sortAspirantesByGradoEducativo).
   // Por defecto (y con sort=cedula): cédula ascendente.
   return { cedula: "asc" };
 }
@@ -88,6 +90,53 @@ export function isCensusCarreraGroupSort(sort: string | undefined) {
 /** Orden por mes del calendario (ene→dic), no por año. */
 export function isCensusNacimientoMesSort(sort: string | undefined) {
   return sort === "nacimiento-mes";
+}
+
+/** Agrupa por nivel educativo: Postgrado → TSU → Pregrado. */
+export function isCensusGradoGroupSort(sort: string | undefined) {
+  return sort === "grado";
+}
+
+/**
+ * Clave de grupo por grado (menor = más alto):
+ * 0 Postgrado, 1 TSU, 2 Pregrado, 3 sin nivel.
+ */
+export function gradoEducativoGroupKey(tipoEstudio: string | null | undefined): number {
+  const nivel = labelTipoEstudioNivel(tipoEstudio);
+  if (nivel === "Postgrado") return 0;
+  if (nivel === "TSU") return 1;
+  if (nivel === "Pregrado") return 2;
+  return 3;
+}
+
+export function gradoEducativoGroupLabel(key: number): string {
+  if (key === 0) return "Postgrado";
+  if (key === 1) return "TSU";
+  if (key === 2) return "Pregrado";
+  return "Sin grado educativo";
+}
+
+/**
+ * Orden por grado educativo: Postgrado → TSU → Pregrado → sin nivel.
+ * Dentro de cada grupo: nombre, apellido, cédula.
+ */
+export function sortAspirantesByGradoEducativo<
+  T extends {
+    tipoEstudio: string | null;
+    nombres: string;
+    apellidos: string;
+    cedula: string;
+  },
+>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const rankDiff = gradoEducativoGroupKey(a.tipoEstudio) - gradoEducativoGroupKey(b.tipoEstudio);
+    if (rankDiff !== 0) return rankDiff;
+    const nameDiff = a.nombres.localeCompare(b.nombres, "es");
+    if (nameDiff !== 0) return nameDiff;
+    const apDiff = a.apellidos.localeCompare(b.apellidos, "es");
+    if (apDiff !== 0) return apDiff;
+    return a.cedula.localeCompare(b.cedula, "es", { numeric: true });
+  });
 }
 
 /** Clave de grupo: 0–11 (mes) o -1 si la fecha aún no está cargada. */

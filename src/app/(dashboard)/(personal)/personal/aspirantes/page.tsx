@@ -27,13 +27,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { auth } from "@src/auth";
 import {
   buildAspiranteCensusWhere,
-  calificacionAdmisionEtiqueta,
   censusOrderBy,
   censusQueryString,
+  gradoEducativoGroupKey,
+  gradoEducativoGroupLabel,
   isCensusCarreraGroupSort,
+  isCensusGradoGroupSort,
   isCensusNacimientoMesSort,
   nacimientoMesGroupKey,
   nacimientoMesGroupLabel,
+  sortAspirantesByGradoEducativo,
   sortAspirantesByNacimientoMes,
 } from "@src/lib/aspirantes/census";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
@@ -46,12 +49,6 @@ import { prisma } from "@src/lib/prisma";
 import type { Prisma } from "@src/generated/prisma";
 
 const PAGE_SIZE = 10;
-
-function calificacionAdmisionBadgeClass(c: string) {
-  if (c === "APTO") return "border-emerald-200 bg-emerald-50 text-emerald-900";
-  if (c === "NO_APTO") return "border-red-200 bg-red-50 text-red-900";
-  return "border-amber-200 bg-amber-50 text-amber-900";
-}
 
 function hrefClearAdvanced(q: string | undefined, convocatoriaId?: string) {
   const p = new URLSearchParams();
@@ -112,6 +109,8 @@ export default async function AspirantesPage({
   const sort = censusOrderBy(sp.sort);
   const groupByCarrera = isCensusCarreraGroupSort(sp.sort);
   const groupByNacimientoMes = isCensusNacimientoMesSort(sp.sort);
+  const groupByGrado = isCensusGradoGroupSort(sp.sort);
+  const sortInMemory = groupByNacimientoMes || groupByGrado;
 
   const unidadWhereLista: Prisma.AspiranteWhereInput = {
     convocatoriaId: convocatoriaFiltroId,
@@ -119,10 +118,10 @@ export default async function AspirantesPage({
   };
 
   const [totalCount, aspirantesRaw, unidadGrupos, carreraGrupos, pelotones] = await Promise.all([
-    groupByNacimientoMes
+    sortInMemory
       ? Promise.resolve(0)
       : prisma.aspirante.count({ where }),
-    groupByNacimientoMes
+    sortInMemory
       ? prisma.aspirante.findMany({
           where,
           include: { datosFisicos: true, contactos: true },
@@ -155,9 +154,11 @@ export default async function AspirantesPage({
 
   const aspirantesOrdenados = groupByNacimientoMes
     ? sortAspirantesByNacimientoMes(aspirantesRaw)
-    : aspirantesRaw;
-  const total = groupByNacimientoMes ? aspirantesOrdenados.length : totalCount;
-  const aspirantes = groupByNacimientoMes
+    : groupByGrado
+      ? sortAspirantesByGradoEducativo(aspirantesRaw)
+      : aspirantesRaw;
+  const total = sortInMemory ? aspirantesOrdenados.length : totalCount;
+  const aspirantes = sortInMemory
     ? aspirantesOrdenados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
     : aspirantesOrdenados;
 
@@ -170,6 +171,14 @@ export default async function AspirantesPage({
     for (const a of aspirantesOrdenados) {
       const key = nacimientoMesGroupKey(a.fechaNacimiento);
       countByNacimientoMes.set(key, (countByNacimientoMes.get(key) ?? 0) + 1);
+    }
+  }
+
+  const countByGrado = new Map<number, number>();
+  if (groupByGrado) {
+    for (const a of aspirantesOrdenados) {
+      const key = gradoEducativoGroupKey(a.tipoEstudio);
+      countByGrado.set(key, (countByGrado.get(key) ?? 0) + 1);
     }
   }
 
@@ -212,6 +221,7 @@ export default async function AspirantesPage({
     sp.sort === "nombres" ||
     sp.sort === "titulo" ||
     sp.sort === "carrera" ||
+    sp.sort === "grado" ||
     sp.sort === "nacimiento" ||
     sp.sort === "nacimiento-mes" ||
     sp.sort === "reciente"
@@ -247,9 +257,8 @@ export default async function AspirantesPage({
           <p className="min-w-0 pl-7 text-sm text-slate-600">
             Convocatoria:{" "}
             <strong className="font-bold text-slate-900">
-              {convocatoriaActual.nombre}{" "}
-              <span className="font-mono font-bold tracking-tight text-slate-800">({convocatoriaActual.codigo})</span>
-              {" Â· "}
+              {convocatoriaActual.nombre}
+              {" · "}
               {convocatoriaActual.anio}
             </strong>
           </p>
@@ -333,6 +342,7 @@ export default async function AspirantesPage({
               {sp.sort === "nombres" ||
               sp.sort === "titulo" ||
               sp.sort === "carrera" ||
+              sp.sort === "grado" ||
               sp.sort === "nacimiento" ||
               sp.sort === "nacimiento-mes" ||
               sp.sort === "reciente" ? (
@@ -394,7 +404,7 @@ export default async function AspirantesPage({
             </p>
           </div>
           <div className="-mx-4 min-w-0 overflow-x-auto border-y border-slate-200/90 bg-white sm:mx-0 sm:rounded-b-none sm:border-x sm:border-t-0">
-            <Table className="min-w-[72rem] table-fixed">
+            <Table className="min-w-[64rem] table-fixed">
               <TableHeader className="[&_tr]:border-slate-200 [&_tr]:hover:bg-transparent">
                 <TableRow className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90">
                   <TableHead className="h-9 w-[16rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
@@ -403,11 +413,8 @@ export default async function AspirantesPage({
                   <TableHead className="h-9 w-[14rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Unidad
                   </TableHead>
-                  <TableHead className="h-9 w-[12rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+                  <TableHead className="h-9 w-[14rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Carrera
-                  </TableHead>
-                  <TableHead className="h-9 w-[7.5rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Admisión
                   </TableHead>
                   <TableHead className="h-9 w-[7rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                     Cédula
@@ -435,7 +442,7 @@ export default async function AspirantesPage({
                 {aspirantes.length === 0 ? (
                   <TableRow className="hover:bg-transparent">
                     <TableCell
-                      colSpan={write ? 10 : 9}
+                      colSpan={write ? 9 : 8}
                       className="h-28 whitespace-normal px-3 text-center text-sm text-slate-500"
                     >
                       <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-3">
@@ -449,10 +456,11 @@ export default async function AspirantesPage({
                   </TableRow>
                 ) : (
                   (() => {
-                    const colSpan = write ? 10 : 9;
+                    const colSpan = write ? 9 : 8;
                     const rows: ReactNode[] = [];
                     let prevCarreraKey: string | null = null;
                     let prevNacimientoMesKey: number | null = null;
+                    let prevGradoKey: number | null = null;
 
                     for (const a of aspirantes) {
                       const esFemenino = a.sexo === "FEMENINO";
@@ -462,6 +470,7 @@ export default async function AspirantesPage({
                       const nivelEstudio = labelTipoEstudioNivel(a.tipoEstudio);
                       const nombreCompleto = `${a.nombres} ${a.apellidos}`.trim();
                       const nacimientoMesKey = nacimientoMesGroupKey(a.fechaNacimiento);
+                      const gradoKey = gradoEducativoGroupKey(a.tipoEstudio);
 
                       if (groupByCarrera && carreraKey !== prevCarreraKey) {
                         prevCarreraKey = carreraKey;
@@ -477,6 +486,29 @@ export default async function AspirantesPage({
                             >
                               <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                                 <span>{carrera || "Sin carrera"}</span>
+                                <span className="text-xs font-medium tabular-nums text-slate-500">
+                                  ({grupoCount})
+                                </span>
+                              </span>
+                            </TableCell>
+                          </TableRow>,
+                        );
+                      }
+
+                      if (groupByGrado && gradoKey !== prevGradoKey) {
+                        prevGradoKey = gradoKey;
+                        const grupoCount = countByGrado.get(gradoKey) ?? 0;
+                        rows.push(
+                          <TableRow
+                            key={`grupo-grado-${gradoKey}`}
+                            className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
+                          >
+                            <TableCell
+                              colSpan={colSpan}
+                              className="px-3 py-2 text-sm font-semibold text-slate-800"
+                            >
+                              <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span>{gradoEducativoGroupLabel(gradoKey)}</span>
                                 <span className="text-xs font-medium tabular-nums text-slate-500">
                                   ({grupoCount})
                                 </span>
@@ -535,29 +567,18 @@ export default async function AspirantesPage({
                           </TableCell>
                           <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
                             {carrera ? (
-                              <div className="min-w-0">
-                                <span className="line-clamp-2 break-words font-medium" title={carrera}>
-                                  {carrera}
-                                </span>
+                              <span
+                                className="line-clamp-2 break-words font-medium"
+                                title={nivelEstudio ? `${carrera} (${nivelEstudio})` : carrera}
+                              >
+                                {carrera}
                                 {nivelEstudio ? (
-                                  <span className="mt-0.5 block text-[11px] font-normal text-slate-400">
-                                    {nivelEstudio}
-                                  </span>
+                                  <span className="font-normal text-slate-500"> ({nivelEstudio})</span>
                                 ) : null}
-                              </div>
+                              </span>
                             ) : (
                               <span className="text-slate-400">—</span>
                             )}
-                          </TableCell>
-                          <TableCell className="px-3 py-2">
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                                calificacionAdmisionBadgeClass(a.calificacionAdmision),
-                              )}
-                            >
-                              {calificacionAdmisionEtiqueta(a.calificacionAdmision)}
-                            </span>
                           </TableCell>
                           <TableCell className="px-3 py-2 font-mono text-sm tabular-nums text-slate-700">
                             {a.cedula}
