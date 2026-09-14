@@ -12,9 +12,19 @@ import { buildAspirantesExamenesMedicosXlsxBuffer } from "@src/lib/excel/build-a
 import { buildAspirantesListaOficialXlsxBuffer } from "@src/lib/excel/build-aspirantes-lista-oficial-xlsx";
 import { ageFromBirthDate } from "@src/lib/date";
 import { AspirantesCensoPdfDocument } from "@src/lib/pdf/aspirantes-censo-document";
+import { AspiranteFichasTecnicasBulkPdfDocument } from "@src/lib/pdf/aspirante-ficha-tecnica-document";
+import {
+  fichaTecnicaPdfPropsFromAspirante,
+  loadFotoForFichaTecnicaPdf,
+  mapWithConcurrency,
+} from "@src/lib/pdf/ficha-tecnica-from-aspirante";
+import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 import { prisma } from "@src/lib/prisma";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
+
+registerFichaTecnicaPdfFonts();
 
 function parseSp(searchParams: URLSearchParams): Record<string, string | undefined> {
   const keys = [
@@ -62,6 +72,7 @@ export async function GET(request: Request) {
   }
 
   const variantRaw = url.searchParams.get("variant")?.toLowerCase().trim() ?? "";
+  const pdfVariant = format === "pdf" && variantRaw === "fichas-tecnicas" ? "fichas-tecnicas" : "censo";
   const xlsxVariant =
     format === "xlsx" && variantRaw === "examenes-medicos"
       ? "examenes-medicos"
@@ -84,8 +95,29 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+  if (
+    format === "pdf" &&
+    variantRaw &&
+    pdfVariant === "censo" &&
+    variantRaw !== "censo"
+  ) {
+    return NextResponse.json(
+      {
+        message: "Parámetro variant inválido (use censo o fichas-tecnicas)",
+      },
+      { status: 400 },
+    );
+  }
 
+  const scopeConvocatoria = url.searchParams.get("scope")?.toLowerCase().trim() === "convocatoria";
   const sp = parseSp(url.searchParams);
+  if (scopeConvocatoria) {
+    const convocatoria = sp.convocatoria;
+    for (const key of Object.keys(sp)) {
+      delete sp[key];
+    }
+    if (convocatoria) sp.convocatoria = convocatoria;
+  }
 
   const convocatorias = await prisma.convocatoria.findMany({
     orderBy: [{ anio: "desc" }, { createdAt: "desc" }],
@@ -149,15 +181,18 @@ export async function GET(request: Request) {
             : xlsxVariant === "cumpleanos"
               ? "CENSO_EXPORT_XLSX_CUMPLEANOS"
               : "CENSO_EXPORT_XLSX"
-        : "CENSO_EXPORT_PDF",
+        : pdfVariant === "fichas-tecnicas"
+          ? "CENSO_EXPORT_PDF_FICHAS_TECNICAS"
+          : "CENSO_EXPORT_PDF",
     entityType: "CENSO",
     entityId: convocatoriaFiltroId,
     metadata: {
       format,
-      variant: format === "xlsx" ? xlsxVariant : undefined,
+      variant: format === "xlsx" ? xlsxVariant : pdfVariant,
       rowCount: rows.length,
       convocatoriaCodigo: convocatoriaActual.codigo,
       convocatoriaNombre: convocatoriaActual.nombre,
+      ...(scopeConvocatoria ? { scope: "convocatoria" } : {}),
     },
   });
 
@@ -254,6 +289,45 @@ export async function GET(request: Request) {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="censo-aspirantes-${codigoSafe}-${dateSafe}.xlsx"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
+
+  if (pdfVariant === "fichas-tecnicas") {
+    if (!rows.length) {
+      return NextResponse.json(
+        { message: "No hay aspirantes que coincidan con los filtros actuales." },
+        { status: 404 },
+      );
+    }
+
+    const items = await mapWithConcurrency(rows, 6, async (a) => {
+      const foto = await loadFotoForFichaTecnicaPdf(a.fotoKey);
+      return fichaTecnicaPdfPropsFromAspirante(a, foto);
+    });
+
+    const title = `Fichas técnicas — ${convocatoriaActual.nombre}`;
+    const doc = createElement(AspiranteFichasTecnicasBulkPdfDocument, {
+      items,
+      title,
+    });
+    let buffer: Awaited<ReturnType<typeof renderToBuffer>>;
+    try {
+      buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
+    } catch (err) {
+      console.error("CENSO_EXPORT_PDF_FICHAS_TECNICAS", err);
+      return NextResponse.json(
+        { message: "No se pudo generar el PDF masivo de fichas técnicas. Intente de nuevo o reduzca el conjunto." },
+        { status: 500 },
+      );
+    }
+
+    return new NextResponse(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="fichas-tecnicas-${codigoSafe}-${dateSafe}.pdf"`,
         "Cache-Control": "private, no-store",
       },
     });

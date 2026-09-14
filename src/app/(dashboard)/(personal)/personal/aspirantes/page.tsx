@@ -117,10 +117,12 @@ export default async function AspirantesPage({
     unidadPostulante: { not: "" },
   };
 
-  const [totalCount, aspirantesRaw, unidadGrupos, carreraGrupos, pelotones] = await Promise.all([
+  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, unidadGrupos, carreraGrupos, pelotones] =
+    await Promise.all([
     sortInMemory
       ? Promise.resolve(0)
       : prisma.aspirante.count({ where }),
+    prisma.aspirante.count({ where: { convocatoriaId: convocatoriaFiltroId } }),
     sortInMemory
       ? prisma.aspirante.findMany({
           where,
@@ -290,8 +292,9 @@ export default async function AspirantesPage({
                     {" "}
                     Excel y PDF exportan{" "}
                     <span className="font-medium text-slate-700">todos</span> los registros que cumplen los filtros
-                    actuales. Puede editar el Excel exportado y volver a{" "}
-                    <span className="font-medium text-slate-700">importarlo</span> (clave: cédula).
+                    actuales. <span className="font-medium text-slate-700">Todas las fichas</span> genera un PDF con
+                    la ficha técnica de cada aspirante de esta convocatoria. Puede editar el Excel exportado y volver
+                    a <span className="font-medium text-slate-700">importarlo</span> (clave: cédula).
                   </>
                 ) : (
                   <> La exportación masiva (Excel/PDF) está reservada a operadores y administradores.</>
@@ -305,7 +308,11 @@ export default async function AspirantesPage({
                     convocatoriaId={convocatoriaFiltroId}
                     convocatoriaLabel={`${convocatoriaActual.nombre} (${convocatoriaActual.codigo})`}
                   />
-                  <AspirantesExportLinks exportQuery={censusQueryString(qsBase, {})} />
+                  <AspirantesExportLinks
+                    exportQuery={censusQueryString(qsBase, {})}
+                    convocatoriaId={convocatoriaFiltroId}
+                    convocatoriaCount={convocatoriaAspiranteCount}
+                  />
                 </>
               ) : null}
               <AspirantesFiltersDrawer

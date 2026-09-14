@@ -295,7 +295,7 @@ const G = {
   aprH: 37,
 } as const;
 
-export function AspiranteFichaTecnicaPdfDocument(props: AspiranteFichaTecnicaPdfProps) {
+function AspiranteFichaTecnicaPdfPage(props: AspiranteFichaTecnicaPdfProps) {
   const nombreCompleto = `${props.nombres} ${props.apellidos}`.trim().toUpperCase();
   const estudios = props.estudios?.length
     ? props.estudios.slice(0, 1)
@@ -406,11 +406,6 @@ export function AspiranteFichaTecnicaPdfDocument(props: AspiranteFichaTecnicaPdf
   );
 
   return (
-    <Document
-      title={`Ficha técnica — ${nombreCompleto}`}
-      author="Ejército Bolivariano"
-      subject="Ficha técnica de aspirante"
-    >
       <Page size={{ width: PAGE_W, height: PAGE_H }} wrap={false} style={styles.page}>
         <View style={styles.root}>
           <View
@@ -857,6 +852,38 @@ export function AspiranteFichaTecnicaPdfDocument(props: AspiranteFichaTecnicaPdf
           ) : null}
         </View>
       </Page>
+  );
+}
+
+export function AspiranteFichaTecnicaPdfDocument(props: AspiranteFichaTecnicaPdfProps) {
+  const nombreCompleto = `${props.nombres} ${props.apellidos}`.trim().toUpperCase();
+  return (
+    <Document
+      title={`Ficha técnica — ${nombreCompleto}`}
+      author="Ejército Bolivariano"
+      subject="Ficha técnica de aspirante"
+    >
+      <AspiranteFichaTecnicaPdfPage {...props} />
+    </Document>
+  );
+}
+
+export function AspiranteFichasTecnicasBulkPdfDocument({
+  items,
+  title,
+}: {
+  items: AspiranteFichaTecnicaPdfProps[];
+  title: string;
+}) {
+  return (
+    <Document
+      title={title}
+      author="Ejército Bolivariano"
+      subject="Fichas técnicas de aspirantes"
+    >
+      {items.map((item, index) => (
+        <AspiranteFichaTecnicaPdfPage key={`${item.cedula}-${index}`} {...item} />
+      ))}
     </Document>
   );
 }

@@ -11,6 +11,7 @@ const ACTION_LABELS: Record<string, string> = {
   CONVOCATORIA_DELETE: "Eliminación de convocatoria",
   CONVOCATORIA_ACTIVAR: "Activación de convocatoria",
   CENSO_EXPORT_PDF: "Exportación PDF del censo",
+  CENSO_EXPORT_PDF_FICHAS_TECNICAS: "Exportación masiva de fichas técnicas",
   CENSO_EXPORT_XLSX: "Exportación Excel del censo",
   CENSO_EXPORT_XLSX_EXAMENES: "Exportación Excel de exámenes médicos",
   CENSO_EXPORT_XLSX_LISTA_OFICIAL: "Exportación Excel de lista oficial",

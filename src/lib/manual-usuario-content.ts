@@ -41,6 +41,7 @@ export const manualUsuarioSections: ManualUsuarioSection[] = [
       "Actualización de aspirante — ASPIRANTE_UPDATE.",
       "Eliminación de aspirante — ASPIRANTE_DELETE.",
       "Exportación de censo XLSX o PDF — CENSO_EXPORT_XLSX o CENSO_EXPORT_PDF (convocatoria, formato y cantidad de filas).",
+      "Exportación masiva de fichas técnicas PDF — CENSO_EXPORT_PDF_FICHAS_TECNICAS (un PDF con una página por aspirante: todas las de la convocatoria, o las que coincidan con los filtros del censo).",
     ],
   },
   {
