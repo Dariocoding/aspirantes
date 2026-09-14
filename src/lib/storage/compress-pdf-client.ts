@@ -23,6 +23,12 @@ function scaleToMax(width: number, height: number, maxEdge: number): number {
   return maxEdge / longest;
 }
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(copy).set(bytes);
+  return copy;
+}
+
 function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -101,7 +107,7 @@ export async function compressAspirantePdf(file: File, _kind: AspiranteFotoKind)
     if (bytes.byteLength >= file.size * 0.95) return file;
 
     const base = file.name.replace(/\.[^.]+$/, "").trim() || "notas";
-    return new File([bytes], `${base}.pdf`, {
+    return new File([toArrayBuffer(bytes)], `${base}.pdf`, {
       type: "application/pdf",
       lastModified: Date.now(),
     });
