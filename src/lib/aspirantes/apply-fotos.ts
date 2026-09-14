@@ -2,7 +2,9 @@ import type { AspiranteActionState } from "@src/lib/action-types";
 import { prisma } from "@src/lib/prisma";
 import {
   ASPIRANTE_FOTO_FORM,
+  ASPIRANTE_FOTO_KINDS,
   AspiranteFotoError,
+  type AspiranteFotoDbField,
   type AspiranteFotoKind,
   parseAspiranteFotoFile,
   removeAspiranteFoto,
@@ -11,16 +13,10 @@ import {
 } from "@src/lib/storage/aspirante-foto";
 
 function fotoFieldError(kind: AspiranteFotoKind, message: string): AspiranteActionState {
-  const key =
-    kind === "perfil" ? "imagen" : kind === "cedula" ? "imagenCedula" : "imagenTitulo";
-  return { ok: false, errors: { [key]: message } };
+  return { ok: false, errors: { [ASPIRANTE_FOTO_FORM[kind].file]: message } };
 }
 
-export type AspiranteFotoKeys = {
-  fotoKey: string | null;
-  fotoCedulaKey: string | null;
-  fotoTituloKey: string | null;
-};
+export type AspiranteFotoKeys = Record<AspiranteFotoDbField, string | null>;
 
 async function applyOneFoto(
   formData: FormData,
@@ -67,30 +63,30 @@ async function applyOneFoto(
   }
 }
 
-/** Aplica perfil, cédula y título desde el FormData. */
+/** Aplica un solo tipo de imagen (perfil, cédula, título o autenticación). */
+export async function applyAspiranteFotoKind(
+  formData: FormData,
+  aspiranteId: string,
+  kind: AspiranteFotoKind,
+  previousKey: string | null,
+): Promise<AspiranteActionState | { key: string | null }> {
+  return applyOneFoto(formData, aspiranteId, kind, previousKey);
+}
 export async function applyAspiranteFotosFromForm(
   formData: FormData,
   aspiranteId: string,
   previous: AspiranteFotoKeys,
 ): Promise<AspiranteActionState | AspiranteFotoKeys> {
-  const kinds: AspiranteFotoKind[] = ["perfil", "cedula", "titulo"];
   const next: AspiranteFotoKeys = { ...previous };
 
-  for (const kind of kinds) {
-    const prevKey =
-      kind === "perfil"
-        ? previous.fotoKey
-        : kind === "cedula"
-          ? previous.fotoCedulaKey
-          : previous.fotoTituloKey;
-    const result = await applyOneFoto(formData, aspiranteId, kind, prevKey);
+  for (const kind of ASPIRANTE_FOTO_KINDS) {
+    const dbField = ASPIRANTE_FOTO_FORM[kind].dbField;
+    const result = await applyOneFoto(formData, aspiranteId, kind, previous[dbField]);
     if ("ok" in result && result.ok === false) {
       return result;
     }
     if ("key" in result) {
-      if (kind === "perfil") next.fotoKey = result.key;
-      else if (kind === "cedula") next.fotoCedulaKey = result.key;
-      else next.fotoTituloKey = result.key;
+      next[dbField] = result.key;
     }
   }
 
@@ -98,9 +94,5 @@ export async function applyAspiranteFotosFromForm(
 }
 
 export async function removeAllAspiranteFotos(keys: AspiranteFotoKeys): Promise<void> {
-  await Promise.all([
-    removeAspiranteFoto(keys.fotoKey),
-    removeAspiranteFoto(keys.fotoCedulaKey),
-    removeAspiranteFoto(keys.fotoTituloKey),
-  ]);
+  await Promise.all(Object.values(keys).map((key) => removeAspiranteFoto(key)));
 }

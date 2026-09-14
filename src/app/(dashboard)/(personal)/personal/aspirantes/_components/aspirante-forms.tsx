@@ -162,6 +162,7 @@ export type AspiranteRegistroInitial = {
   fotoKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
+  fotoTituloAutenticacionKey?: string | null;
   tipoEstudio?: TipoEstudioValue | null;
   nombreUniversidad?: string | null;
   tituloUniversidad?: string | null;
@@ -512,6 +513,13 @@ export function AspiranteRegistroForm({
               fotoKey={seed?.fotoTituloKey ?? initial?.fotoTituloKey}
               nombre="título"
               kind="titulo"
+            />
+            <AspiranteFotoField
+              id="aspirante-foto-titulo-auth"
+              aspiranteId={seed?.id}
+              fotoKey={seed?.fotoTituloAutenticacionKey ?? initial?.fotoTituloAutenticacionKey}
+              nombre="autenticación del título"
+              kind="tituloAuth"
             />
             <div>
               <Label>

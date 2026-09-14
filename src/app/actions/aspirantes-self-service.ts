@@ -103,6 +103,7 @@ async function toSelfServiceRecord(
     fotoPerfilUrl,
     fotoCedulaKey: a.fotoCedulaKey,
     fotoTituloKey: a.fotoTituloKey,
+    fotoTituloAutenticacionKey: a.fotoTituloAutenticacionKey,
     tipoEstudio: normalizeTipoEstudio(a.tipoEstudio),
     nombreUniversidad: a.nombreUniversidad,
     tituloUniversidad: a.tituloUniversidad,
@@ -310,6 +311,7 @@ export async function updateAspiranteSelfService(
     fotoKey: aspirante.fotoKey,
     fotoCedulaKey: aspirante.fotoCedulaKey,
     fotoTituloKey: aspirante.fotoTituloKey,
+    fotoTituloAutenticacionKey: aspirante.fotoTituloAutenticacionKey,
   });
   if ("ok" in fotoResult && fotoResult.ok === false) {
     return { ...fotoResult, record: await toSelfServiceRecord(aspirante) };

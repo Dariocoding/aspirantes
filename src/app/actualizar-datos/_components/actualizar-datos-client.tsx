@@ -171,7 +171,7 @@ function EditForm({
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Documentos fotográficos</CardTitle>
             <CardDescription>
-              Suba o actualice la foto personal, la cédula y el título (fondo negro).
+              Suba o actualice la foto personal, la cédula, el título (fondo negro) y su autenticación o certificado.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -199,6 +199,15 @@ function EditForm({
               fotoKey={defaults.fotoTituloKey}
               nombre="título"
               kind="titulo"
+              previewOnlyLocal
+              hideStoredImage
+            />
+            <AspiranteFotoField
+              id="self-foto-titulo-auth"
+              aspiranteId={defaults.aspiranteId}
+              fotoKey={defaults.fotoTituloAutenticacionKey}
+              nombre="autenticación del título"
+              kind="tituloAuth"
               previewOnlyLocal
               hideStoredImage
             />

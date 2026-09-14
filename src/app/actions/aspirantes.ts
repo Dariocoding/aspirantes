@@ -15,6 +15,7 @@ import { isFichaEvaluacionVacia, normalizeFichaEvaluacionForDb } from "@src/lib/
 import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import {
   applyAspiranteFotosFromForm,
+  applyAspiranteFotoKind,
   removeAllAspiranteFotos,
 } from "@src/lib/aspirantes/apply-fotos";
 import { resolvePelotonIdForConvocatoria } from "@src/lib/pelotones";
@@ -177,6 +178,7 @@ export async function createAspirante(
       fotoKey: null,
       fotoCedulaKey: null,
       fotoTituloKey: null,
+      fotoTituloAutenticacionKey: null,
     });
     if ("ok" in fotoResult && fotoResult.ok === false) {
       return fotoResult;
@@ -223,6 +225,7 @@ export async function deleteAspirante(formData: FormData) {
       fotoKey: true,
       fotoCedulaKey: true,
       fotoTituloKey: true,
+      fotoTituloAutenticacionKey: true,
     },
   });
   if (!row) return;
@@ -231,6 +234,7 @@ export async function deleteAspirante(formData: FormData) {
     fotoKey: row.fotoKey,
     fotoCedulaKey: row.fotoCedulaKey,
     fotoTituloKey: row.fotoTituloKey,
+    fotoTituloAutenticacionKey: row.fotoTituloAutenticacionKey,
   });
   await writeAuditLog({
     userId: session.user.id,
@@ -423,6 +427,7 @@ export async function updateAspirante(
       fotoKey: existing.fotoKey,
       fotoCedulaKey: existing.fotoCedulaKey,
       fotoTituloKey: existing.fotoTituloKey,
+      fotoTituloAutenticacionKey: existing.fotoTituloAutenticacionKey,
     });
     if ("ok" in fotoResult && fotoResult.ok === false) {
       return fotoResult;
@@ -451,4 +456,64 @@ export async function updateAspirante(
   revalidatePath(routes.personal.aspirantesGestion);
   revalidatePath(routes.personal.aspirante(aspiranteId));
   return { ok: true, errors: {} };
+}
+
+const DOCUMENTO_KINDS = ["cedula", "titulo", "tituloAuth"] as const;
+
+function isDocumentoFotoKind(v: string): v is (typeof DOCUMENTO_KINDS)[number] {
+  return (DOCUMENTO_KINDS as readonly string[]).includes(v);
+}
+
+export async function updateAspiranteDocumentoFoto(
+  formData: FormData,
+): Promise<AspiranteActionState & { hasFoto?: boolean }> {
+  const session = await requireWriter();
+  const aspiranteId = String(formData.get("aspiranteId") ?? "").trim();
+  const kindRaw = String(formData.get("kind") ?? "").trim();
+  if (!aspiranteId) {
+    return { ok: false, errors: { _form: "Falta el aspirante." } };
+  }
+  if (!isDocumentoFotoKind(kindRaw)) {
+    return { ok: false, errors: { _form: "Tipo de documento no válido." } };
+  }
+
+  const existing = await prisma.aspirante.findUnique({
+    where: { id: aspiranteId },
+    select: {
+      id: true,
+      cedula: true,
+      fotoCedulaKey: true,
+      fotoTituloKey: true,
+      fotoTituloAutenticacionKey: true,
+    },
+  });
+  if (!existing) {
+    return { ok: false, errors: { _form: "No se encontró el aspirante." } };
+  }
+
+  const previousKey =
+    kindRaw === "cedula"
+      ? existing.fotoCedulaKey
+      : kindRaw === "titulo"
+        ? existing.fotoTituloKey
+        : existing.fotoTituloAutenticacionKey;
+
+  const result = await applyAspiranteFotoKind(formData, aspiranteId, kindRaw, previousKey);
+  if ("ok" in result && result.ok === false) {
+    return result;
+  }
+
+  const hasFoto = "key" in result ? Boolean(result.key) : Boolean(previousKey);
+  await writeAuditLog({
+    userId: session.user.id,
+    userEmail: session.user.email,
+    action: "ASPIRANTE_UPDATE",
+    entityType: "ASPIRANTE",
+    entityId: aspiranteId,
+    metadata: { cedula: existing.cedula, documento: kindRaw, hasFoto },
+  });
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.personal.aspirante(aspiranteId));
+  return { ok: true, errors: {}, hasFoto };
 }

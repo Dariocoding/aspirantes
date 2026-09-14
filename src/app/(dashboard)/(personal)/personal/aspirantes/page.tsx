@@ -1,19 +1,12 @@
 ﻿import Link from "next/link";
-import type { ReactNode } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  Mars,
-  Pencil,
   Search,
-  UserRound,
   UserPlus,
-  Venus,
 } from "lucide-react";
-import { AspiranteDeleteForm } from "@dashboard/aspirantes/_components/aspirante-delete-form";
-import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
-import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
+import { AspirantesCensusTable, type AspirantesCensusRow } from "@dashboard/aspirantes/_components/aspirantes-census-table";
 import { AspirantesExportLinks } from "@dashboard/aspirantes/_components/aspirantes-export-links";
 import { AspirantesImportDialog } from "@dashboard/aspirantes/_components/aspirantes-import-dialog";
 import { AspirantesFiltersDrawer } from "@dashboard/aspirantes/_components/aspirantes-filters-drawer";
@@ -23,32 +16,71 @@ import { cn } from "@src/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { Input } from "@src/components/ui/input";
 import { Label } from "@src/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@src/components/ui/table";
 import { auth } from "@src/auth";
 import {
   buildAspiranteCensusWhere,
   censusOrderBy,
   censusQueryString,
   gradoEducativoGroupKey,
-  gradoEducativoGroupLabel,
   isCensusCarreraGroupSort,
   isCensusGradoGroupSort,
   isCensusNacimientoMesSort,
   nacimientoMesGroupKey,
-  nacimientoMesGroupLabel,
   sortAspirantesByGradoEducativo,
   sortAspirantesByNacimientoMes,
 } from "@src/lib/aspirantes/census";
-import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
-import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
 import { prisma } from "@src/lib/prisma";
 import type { Prisma } from "@src/generated/prisma";
+import { labelPeloton } from "@src/lib/pelotones";
 
 const PAGE_SIZE = 10;
+
+function toCensusRow(
+  a: Prisma.AspiranteGetPayload<{
+    include: {
+      datosFisicos: true;
+      contactos: true;
+      peloton: { select: { numero: true; nombre: true } };
+    };
+  }>,
+): AspirantesCensusRow {
+  const contacto = a.contactos[0];
+  return {
+    id: a.id,
+    fotoKey: a.fotoKey,
+    nombres: a.nombres,
+    apellidos: a.apellidos,
+    cedula: a.cedula,
+    hasFotoCedula: Boolean(a.fotoCedulaKey),
+    hasFotoTitulo: Boolean(a.fotoTituloKey),
+    hasFotoTituloAuth: Boolean(a.fotoTituloAutenticacionKey),
+    unidadPostulante: a.unidadPostulante ?? "",
+    tituloUniversidad: a.tituloUniversidad,
+    tipoEstudio: a.tipoEstudio,
+    sexo: a.sexo,
+    fechaNacimientoIso: a.fechaNacimiento.toISOString(),
+    lugarNacimiento: a.lugarNacimiento ?? "",
+    calificacionAdmision: a.calificacionAdmision,
+    pelotonLabel: a.peloton ? labelPeloton(a.peloton) : null,
+    telefono: a.telefono,
+    correo: a.correo,
+    direccion: a.direccion,
+    estadoCivil: a.estadoCivil,
+    hijosCantidad: a.hijosCantidad,
+    nombreUniversidad: a.nombreUniversidad,
+    paisUniversidad: a.paisUniversidad,
+    contactoNombre: contacto?.nombre ?? null,
+    contactoTelefono: contacto?.telefono ?? null,
+    estaturaCm: a.datosFisicos?.estaturaCm ?? null,
+    pesoKg: a.datosFisicos?.pesoKg ?? null,
+    tipoSangre: a.datosFisicos?.tipoSangre ?? null,
+    tensionArterial: a.datosFisicos?.tensionArterial ?? null,
+  };
+}
 
 function hrefClearAdvanced(q: string | undefined, convocatoriaId?: string) {
   const p = new URLSearchParams();
@@ -126,11 +158,19 @@ export default async function AspirantesPage({
     sortInMemory
       ? prisma.aspirante.findMany({
           where,
-          include: { datosFisicos: true, contactos: true },
+          include: {
+            datosFisicos: true,
+            contactos: { take: 1, orderBy: { createdAt: "asc" } },
+            peloton: { select: { numero: true, nombre: true } },
+          },
         })
       : prisma.aspirante.findMany({
           where,
-          include: { datosFisicos: true, contactos: true },
+          include: {
+            datosFisicos: true,
+            contactos: { take: 1, orderBy: { createdAt: "asc" } },
+            peloton: { select: { numero: true, nombre: true } },
+          },
           orderBy: sort,
           skip: (page - 1) * PAGE_SIZE,
           take: PAGE_SIZE,
@@ -183,6 +223,18 @@ export default async function AspirantesPage({
       countByGrado.set(key, (countByGrado.get(key) ?? 0) + 1);
     }
   }
+
+  const censusRows = aspirantes.map(toCensusRow);
+  const censusGrouping = {
+    groupByCarrera,
+    groupByNacimientoMes,
+    groupByGrado,
+    countByCarrera: Object.fromEntries(countByCarrera),
+    countByNacimientoMes: Object.fromEntries(
+      [...countByNacimientoMes.entries()].map(([k, v]) => [String(k), v]),
+    ),
+    countByGrado: Object.fromEntries([...countByGrado.entries()].map(([k, v]) => [String(k), v])),
+  };
 
   const unidadFiltro = sp.unidadPostulante?.trim();
   const unidadFiltroActivo = Boolean(unidadFiltro && unidadFiltro !== "TODOS");
@@ -410,263 +462,7 @@ export default async function AspirantesPage({
               </span>
             </p>
           </div>
-          <div className="-mx-4 min-w-0 overflow-x-auto border-y border-slate-200/90 bg-white sm:mx-0 sm:rounded-b-none sm:border-x sm:border-t-0">
-            <Table className="min-w-[64rem] table-fixed">
-              <TableHeader className="[&_tr]:border-slate-200 [&_tr]:hover:bg-transparent">
-                <TableRow className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90">
-                  <TableHead className="h-9 w-[16rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Nombre completo
-                  </TableHead>
-                  <TableHead className="h-9 w-[14rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Unidad
-                  </TableHead>
-                  <TableHead className="h-9 w-[14rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Carrera
-                  </TableHead>
-                  <TableHead className="h-9 w-[7rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Cédula
-                  </TableHead>
-                  <TableHead className="h-9 w-12 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Sexo
-                  </TableHead>
-                  <TableHead className="h-9 w-12 px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Edad
-                  </TableHead>
-                  <TableHead className="h-9 w-[7.5rem] px-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Nacimiento
-                  </TableHead>
-                  <TableHead className="h-9 w-[8.5rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                    Ficha
-                  </TableHead>
-                  {write ? (
-                    <TableHead className="h-9 w-[11rem] px-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                      Acciones
-                    </TableHead>
-                  ) : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {aspirantes.length === 0 ? (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell
-                      colSpan={write ? 9 : 8}
-                      className="h-28 whitespace-normal px-3 text-center text-sm text-slate-500"
-                    >
-                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2 py-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                          <Search className="h-4 w-4" aria-hidden />
-                        </div>
-                        <p className="font-medium text-slate-700">No hay resultados con estos criterios</p>
-                        <p className="text-xs text-slate-500">Ajuste la búsqueda o limpie los filtros para ver el censo.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  (() => {
-                    const colSpan = write ? 9 : 8;
-                    const rows: ReactNode[] = [];
-                    let prevCarreraKey: string | null = null;
-                    let prevNacimientoMesKey: number | null = null;
-                    let prevGradoKey: number | null = null;
-
-                    for (const a of aspirantes) {
-                      const esFemenino = a.sexo === "FEMENINO";
-                      const unidad = (a.unidadPostulante ?? "").trim();
-                      const carrera = (a.tituloUniversidad ?? "").trim();
-                      const carreraKey = a.tituloUniversidad ?? "";
-                      const nivelEstudio = labelTipoEstudioNivel(a.tipoEstudio);
-                      const nombreCompleto = `${a.nombres} ${a.apellidos}`.trim();
-                      const nacimientoMesKey = nacimientoMesGroupKey(a.fechaNacimiento);
-                      const gradoKey = gradoEducativoGroupKey(a.tipoEstudio);
-
-                      if (groupByCarrera && carreraKey !== prevCarreraKey) {
-                        prevCarreraKey = carreraKey;
-                        const grupoCount = countByCarrera.get(carreraKey) ?? 0;
-                        rows.push(
-                          <TableRow
-                            key={`grupo-carrera-${carreraKey || "_sin"}`}
-                            className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
-                          >
-                            <TableCell
-                              colSpan={colSpan}
-                              className="px-3 py-2 text-sm font-semibold text-slate-800"
-                            >
-                              <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                <span>{carrera || "Sin carrera"}</span>
-                                <span className="text-xs font-medium tabular-nums text-slate-500">
-                                  ({grupoCount})
-                                </span>
-                              </span>
-                            </TableCell>
-                          </TableRow>,
-                        );
-                      }
-
-                      if (groupByGrado && gradoKey !== prevGradoKey) {
-                        prevGradoKey = gradoKey;
-                        const grupoCount = countByGrado.get(gradoKey) ?? 0;
-                        rows.push(
-                          <TableRow
-                            key={`grupo-grado-${gradoKey}`}
-                            className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
-                          >
-                            <TableCell
-                              colSpan={colSpan}
-                              className="px-3 py-2 text-sm font-semibold text-slate-800"
-                            >
-                              <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                <span>{gradoEducativoGroupLabel(gradoKey)}</span>
-                                <span className="text-xs font-medium tabular-nums text-slate-500">
-                                  ({grupoCount})
-                                </span>
-                              </span>
-                            </TableCell>
-                          </TableRow>,
-                        );
-                      }
-
-                      if (groupByNacimientoMes && nacimientoMesKey !== prevNacimientoMesKey) {
-                        prevNacimientoMesKey = nacimientoMesKey;
-                        const grupoCount = countByNacimientoMes.get(nacimientoMesKey) ?? 0;
-                        rows.push(
-                          <TableRow
-                            key={`grupo-mes-${nacimientoMesKey}`}
-                            className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
-                          >
-                            <TableCell
-                              colSpan={colSpan}
-                              className="px-3 py-2 text-sm font-semibold text-slate-800"
-                            >
-                              <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                                <span>{nacimientoMesGroupLabel(nacimientoMesKey)}</span>
-                                <span className="text-xs font-medium tabular-nums text-slate-500">
-                                  ({grupoCount})
-                                </span>
-                              </span>
-                            </TableCell>
-                          </TableRow>,
-                        );
-                      }
-
-                      rows.push(
-                        <TableRow key={a.id} className="border-slate-100 transition-colors">
-                          <TableCell className="px-3 py-2 font-medium text-slate-900">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <AspiranteFotoThumbnail
-                                aspiranteId={a.id}
-                                fotoKey={a.fotoKey}
-                                nombre={nombreCompleto}
-                                size="sm"
-                              />
-                              <span className="min-w-0 truncate text-sm" title={nombreCompleto}>
-                                {nombreCompleto}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
-                            {unidad ? (
-                              <span className="line-clamp-2 break-words font-medium" title={unidad}>
-                                {unidad}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="overflow-hidden px-3 py-2 whitespace-normal text-sm text-slate-800">
-                            {carrera ? (
-                              <span
-                                className="line-clamp-2 break-words font-medium"
-                                title={nivelEstudio ? `${carrera} (${nivelEstudio})` : carrera}
-                              >
-                                {carrera}
-                                {nivelEstudio ? (
-                                  <span className="font-normal text-slate-500"> ({nivelEstudio})</span>
-                                ) : null}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="px-3 py-2 font-mono text-sm tabular-nums text-slate-700">
-                            {a.cedula}
-                          </TableCell>
-                          <TableCell className="px-2 py-2 text-center">
-                            <span
-                              title={esFemenino ? "Femenino" : "Masculino"}
-                              aria-label={esFemenino ? "Femenino" : "Masculino"}
-                              className={cn(
-                                "inline-flex h-7 w-7 items-center justify-center rounded-full border",
-                                esFemenino
-                                  ? "border-rose-200 bg-rose-50 text-rose-600"
-                                  : "border-sky-200 bg-sky-50 text-sky-700",
-                              )}
-                            >
-                              {esFemenino ? (
-                                <Venus className="h-3.5 w-3.5" aria-hidden />
-                              ) : (
-                                <Mars className="h-3.5 w-3.5" aria-hidden />
-                              )}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
-                            {ageFromBirthDate(a.fechaNacimiento) ?? "—"}
-                          </TableCell>
-                          <TableCell className="px-2 py-2 text-center tabular-nums text-sm text-slate-700">
-                            {hasRealBirthDate(a.fechaNacimiento)
-                              ? a.fechaNacimiento.toLocaleDateString("es-VE")
-                              : "—"}
-                          </TableCell>
-                          <TableCell className="px-3 py-2">
-                            <div className="flex flex-wrap items-center gap-1">
-                              <Link
-                                href={routes.personal.aspirante(a.id)}
-                                prefetch={false}
-                                className={cn(
-                                  buttonVariants({ variant: "ghost", size: "sm" }),
-                                  "h-7 gap-1 px-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900",
-                                )}
-                              >
-                                <UserRound className="h-3.5 w-3.5" aria-hidden />
-                                Perfil
-                              </Link>
-                              <AspiranteFichaTecnicaPdfLink
-                                aspiranteId={a.id}
-                                className="h-7 px-1.5 text-xs"
-                                label="PDF"
-                              />
-                            </div>
-                          </TableCell>
-                          {write ? (
-                            <TableCell className="px-3 py-2 text-right">
-                              <div className="inline-flex flex-wrap justify-end gap-1.5">
-                                <Link
-                                  href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
-                                  prefetch={false}
-                                  className={cn(
-                                    buttonVariants({ variant: "outline", size: "sm" }),
-                                    "h-7 gap-1 border-slate-200 bg-white px-2 text-xs shadow-sm",
-                                  )}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" aria-hidden />
-                                  Editar
-                                </Link>
-                                <AspiranteDeleteForm
-                                  aspiranteId={a.id}
-                                  nombreCompleto={nombreCompleto}
-                                />
-                              </div>
-                            </TableCell>
-                          ) : null}
-                        </TableRow>,
-                      );
-                    }
-
-                    return rows;
-                  })()
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <AspirantesCensusTable rows={censusRows} grouping={censusGrouping} canWrite={write} />
 
           <div className="flex flex-col gap-3 border-t border-slate-200/90 bg-slate-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-500">

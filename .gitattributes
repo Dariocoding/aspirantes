@@ -1,3 +1,6 @@
 # Shell scripts must use LF so Linux containers can execute them
 *.sh text eol=lf
 docker-entrypoint.sh text eol=lf
+
+# Prisma checksums the exact bytes of migration.sql (LF).
+prisma/migrations/**/migration.sql text eol=lf

@@ -68,6 +68,7 @@ export type AspiranteSelfServiceRecord = {
   fotoPerfilUrl: string | null;
   fotoCedulaKey: string | null;
   fotoTituloKey: string | null;
+  fotoTituloAutenticacionKey: string | null;
   tipoEstudio: TipoEstudioValue | null;
   nombreUniversidad: string | null;
   tituloUniversidad: string | null;

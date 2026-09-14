@@ -62,6 +62,7 @@ export type AspirantePerfilSerializado = {
   fotoKey: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
+  fotoTituloAutenticacionKey?: string | null;
   tipoEstudio: TipoEstudioValue | null;
   nombreUniversidad: string | null;
   tituloUniversidad: string | null;
@@ -382,7 +383,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
           <div className="mt-3 flex flex-wrap gap-2">
             <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica PDF" />
           </div>
-          {(a.fotoCedulaKey || a.fotoTituloKey) ? (
+          {(a.fotoCedulaKey || a.fotoTituloKey || a.fotoTituloAutenticacionKey) ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {a.fotoCedulaKey ? (
                 <div className="space-y-1">
@@ -406,6 +407,19 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
                   <img
                     src={`/api/aspirantes/foto/${a.id}?tipo=titulo`}
                     alt="Título"
+                    className="h-36 w-full max-w-xs rounded-md border border-slate-200 object-cover"
+                  />
+                </div>
+              ) : null}
+              {a.fotoTituloAutenticacionKey ? (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Autenticación del título
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/aspirantes/foto/${a.id}?tipo=tituloAuth`}
+                    alt="Autenticación del título"
                     className="h-36 w-full max-w-xs rounded-md border border-slate-200 object-cover"
                   />
                 </div>

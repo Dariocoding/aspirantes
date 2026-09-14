@@ -115,6 +115,7 @@ export default async function AspirantePerfilPage({
           fotoKey: a.fotoKey,
           fotoCedulaKey: a.fotoCedulaKey,
           fotoTituloKey: a.fotoTituloKey,
+          fotoTituloAutenticacionKey: a.fotoTituloAutenticacionKey,
           tipoEstudio: normalizeTipoEstudio(a.tipoEstudio),
           nombreUniversidad: a.nombreUniversidad,
           tituloUniversidad: a.tituloUniversidad,

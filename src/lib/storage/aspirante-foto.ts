@@ -7,22 +7,36 @@ const ALLOWED_TYPES = new Map<string, string>([
   ["image/gif", "gif"],
 ]);
 
-export type AspiranteFotoKind = "perfil" | "cedula" | "titulo";
+export type AspiranteFotoKind = "perfil" | "cedula" | "titulo" | "tituloAuth";
+
+export const ASPIRANTE_FOTO_KINDS: readonly AspiranteFotoKind[] = ["perfil", "cedula", "titulo", "tituloAuth"];
+
+export type AspiranteFotoDbField =
+  | "fotoKey"
+  | "fotoCedulaKey"
+  | "fotoTituloKey"
+  | "fotoTituloAutenticacionKey";
 
 const KIND_FILE: Record<AspiranteFotoKind, string> = {
   perfil: "foto",
   cedula: "cedula",
   titulo: "titulo",
+  tituloAuth: "titulo-auth",
 };
 
 /** Campos FormData por tipo de imagen. */
 export const ASPIRANTE_FOTO_FORM: Record<
   AspiranteFotoKind,
-  { file: string; quitar: string; dbField: "fotoKey" | "fotoCedulaKey" | "fotoTituloKey" }
+  { file: string; quitar: string; dbField: AspiranteFotoDbField }
 > = {
   perfil: { file: "imagen", quitar: "quitarImagen", dbField: "fotoKey" },
   cedula: { file: "imagenCedula", quitar: "quitarImagenCedula", dbField: "fotoCedulaKey" },
   titulo: { file: "imagenTitulo", quitar: "quitarImagenTitulo", dbField: "fotoTituloKey" },
+  tituloAuth: {
+    file: "imagenTituloAuth",
+    quitar: "quitarImagenTituloAuth",
+    dbField: "fotoTituloAutenticacionKey",
+  },
 };
 
 export function aspiranteFotoObjectKey(aspiranteId: string, kind: AspiranteFotoKind, ext: string): string {

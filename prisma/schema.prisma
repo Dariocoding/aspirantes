@@ -272,6 +272,8 @@ model Aspirante {
   fotoCedulaKey         String?
   /// Foto del título universitario / fondo negro (S3/R2).
   fotoTituloKey         String?
+  /// Certificado del fondo negro / autenticación del título (S3/R2). Mismo requisito documental.
+  fotoTituloAutenticacionKey String?
   /// Universidad egresado o TSU.
   tipoEstudio              TipoEstudioAspirante?
   /// Nombre de la universidad o instituto.

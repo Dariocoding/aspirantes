@@ -138,6 +138,11 @@ const KIND_COPY: Record<
     help: "Fondo negro / título universitario. JPEG, PNG, WebP o GIF.",
     aria: "foto del título",
   },
+  tituloAuth: {
+    title: "Autenticación del título",
+    help: "Certificado del fondo negro o autenticación del título (mismo requisito). JPEG, PNG, WebP o GIF.",
+    aria: "autenticación del título",
+  },
 };
 
 export function AspiranteFotoField({
