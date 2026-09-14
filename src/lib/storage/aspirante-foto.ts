@@ -119,7 +119,8 @@ function extHintFromFile(file: File): AspiranteArchivoExt | null {
 }
 
 function sniffExt(buffer: Buffer): AspiranteArchivoExt | null {
-  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "jpg";
+  // SOI JPEG: FF D8. El tercer byte suele ser FF (marcador), pero algunos escáneres no lo cumplen.
+  if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xd8) return "jpg";
   if (
     buffer.length >= 8 &&
     buffer[0] === 0x89 &&
@@ -175,8 +176,12 @@ export async function uploadAspiranteFoto(
   kind: AspiranteFotoKind = "perfil",
 ): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = sniffExt(buffer);
-  if (!ext || !allowedExtsForKind(kind).has(ext)) {
+  const sniffed = sniffExt(buffer);
+  const hinted = extHintFromFile(file);
+  const allowed = allowedExtsForKind(kind);
+  const ext =
+    sniffed && allowed.has(sniffed) ? sniffed : hinted && allowed.has(hinted) ? hinted : null;
+  if (!ext) {
     throw new AspiranteFotoError(formatErrorForKind(kind));
   }
 

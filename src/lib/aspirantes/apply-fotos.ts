@@ -16,6 +16,25 @@ function fotoFieldError(kind: AspiranteFotoKind, message: string): AspiranteActi
   return { ok: false, errors: { [ASPIRANTE_FOTO_FORM[kind].file]: message } };
 }
 
+export function unknownFotoSaveError(e: unknown): string {
+  const code =
+    e && typeof e === "object" && "code" in e ? String((e as { code: unknown }).code) : "";
+  const msg = e instanceof Error ? e.message : String(e);
+  if (
+    code === "P2022" ||
+    /fotoNotasKey|column .* does not exist|The column/i.test(msg)
+  ) {
+    return "La base de datos no está al día. Reinicie el contenedor para aplicar las migraciones (prisma migrate deploy).";
+  }
+  if (/Body exceeded|body exceeded|too large/i.test(msg)) {
+    return "El archivo es demasiado grande para el servidor. Use un JPEG o PNG más liviano.";
+  }
+  if (/ECONNRESET|ETIMEDOUT|AccessDenied|NoSuchBucket|credentials|S3|fetch failed/i.test(msg)) {
+    return "No se pudo guardar el archivo en el almacenamiento. Intente de nuevo.";
+  }
+  return "No se pudo guardar el documento. Si el archivo es JPEG o PNG válido, intente de nuevo.";
+}
+
 export type AspiranteFotoKeys = Record<AspiranteFotoDbField, string | null>;
 
 async function applyOneFoto(
@@ -33,12 +52,17 @@ async function applyOneFoto(
   }
 
   if (quitar) {
-    await removeAspiranteFoto(previousKey);
-    await prisma.aspirante.update({
-      where: { id: aspiranteId },
-      data: { [dbField]: null },
-    });
-    return { key: null };
+    try {
+      await removeAspiranteFoto(previousKey);
+      await prisma.aspirante.update({
+        where: { id: aspiranteId },
+        data: { [dbField]: null },
+      });
+      return { key: null };
+    } catch (e) {
+      console.error("[aspirante-foto] quitar", kind, e);
+      return fotoFieldError(kind, unknownFotoSaveError(e));
+    }
   }
 
   if (!file) {
@@ -59,7 +83,8 @@ async function applyOneFoto(
     if (e instanceof AspiranteFotoError) {
       return fotoFieldError(kind, e.message);
     }
-    throw e;
+    console.error("[aspirante-foto] subir", kind, e);
+    return fotoFieldError(kind, unknownFotoSaveError(e));
   }
 }
 

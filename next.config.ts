@@ -17,6 +17,32 @@ const legacyRedirects = [
   { source: "/auditoria/:path*", destination: "/sistema/auditoria/:path*" },
 ] as const;
 
+function serverActionAllowedOrigins(): string[] | undefined {
+  const hosts = new Set<string>();
+  for (const raw of [
+    process.env.AUTH_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.APP_URL,
+    process.env.SERVER_ACTIONS_ALLOWED_ORIGINS,
+  ]) {
+    if (!raw?.trim()) continue;
+    for (const part of raw.split(",")) {
+      const value = part.trim();
+      if (!value) continue;
+      try {
+        hosts.add(new URL(value).host);
+      } catch {
+        hosts.add(value.replace(/^https?:\/\//, "").replace(/\/.*$/, ""));
+      }
+    }
+  }
+  const origins = [...hosts].filter((host) => {
+    const name = host.split(":")[0]?.toLowerCase() ?? "";
+    return Boolean(name) && name !== "localhost" && name !== "127.0.0.1";
+  });
+  return origins.length ? origins : undefined;
+}
+
 const nextConfig: NextConfig = {
   // Imagen Docker mínima: solo archivos trazados (no todo node_modules).
   output: "standalone",
@@ -31,6 +57,7 @@ const nextConfig: NextConfig = {
     // Fotos de cédula/título pueden ser pesadas; sin tope práctico de app.
     serverActions: {
       bodySizeLimit: "100mb",
+      allowedOrigins: serverActionAllowedOrigins(),
     },
   },
 

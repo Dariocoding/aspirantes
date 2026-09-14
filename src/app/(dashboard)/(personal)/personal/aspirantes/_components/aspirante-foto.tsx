@@ -13,6 +13,11 @@ import {
   isPdfObjectKey,
   type AspiranteFotoKind,
 } from "@src/lib/storage/aspirante-foto";
+import {
+  assignFileToInput,
+  compressAspiranteImage,
+  formatFileSize,
+} from "@src/lib/storage/compress-image-client";
 import { cn } from "@src/lib/utils";
 
 export function aspiranteFotoUrl(
@@ -177,11 +182,13 @@ export function AspiranteFotoField({
   hideStoredImage?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const compressGenRef = useRef(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewIsPdf, setPreviewIsPdf] = useState(false);
   const [fileLabel, setFileLabel] = useState<string | null>(null);
   const [quitar, setQuitar] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
 
   const formNames = ASPIRANTE_FOTO_FORM[kind];
   const copy = KIND_COPY[kind];
@@ -208,21 +215,25 @@ export function AspiranteFotoField({
     };
   }, [previewUrl]);
 
-  const openPicker = () => inputRef.current?.click();
+  useEffect(() => {
+    if (!compressing) return;
+    const form = inputRef.current?.form;
+    if (!form) return;
+    const onSubmit = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    form.addEventListener("submit", onSubmit, true);
+    return () => form.removeEventListener("submit", onSubmit, true);
+  }, [compressing]);
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const openPicker = () => {
+    if (compressing) return;
+    inputRef.current?.click();
+  };
 
-    if (!fileLooksAllowed(file, kind)) {
-      setLocalError(formatErrorForKind(kind));
-      e.target.value = "";
-      return;
-    }
-
-    setLocalError(null);
-    setQuitar(false);
-    setFileLabel(file.name);
+  const applyPreview = (file: File) => {
+    setFileLabel(`${file.name} · ${formatFileSize(file.size)}`);
     setPreviewIsPdf(fileLooksPdf(file));
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -230,7 +241,41 @@ export function AspiranteFotoField({
     });
   };
 
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!fileLooksAllowed(file, kind)) {
+      setLocalError(formatErrorForKind(kind));
+      input.value = "";
+      return;
+    }
+
+    const gen = ++compressGenRef.current;
+    setLocalError(null);
+    setQuitar(false);
+    applyPreview(file);
+
+    setCompressing(true);
+    try {
+      const compressed = await compressAspiranteImage(file, kind);
+      if (gen !== compressGenRef.current) return;
+      if (input.isConnected) assignFileToInput(input, compressed);
+      applyPreview(compressed);
+    } catch {
+      if (gen !== compressGenRef.current) return;
+      // El original sigue en el input si la optimización falla.
+    } finally {
+      if (gen === compressGenRef.current) {
+        setCompressing(false);
+      }
+    }
+  };
+
   const onQuitar = () => {
+    compressGenRef.current += 1;
+    setCompressing(false);
     setQuitar(true);
     setFileLabel(null);
     setPreviewIsPdf(false);
@@ -255,6 +300,7 @@ export function AspiranteFotoField({
         <button
           type="button"
           onClick={openPicker}
+          disabled={compressing}
           className={cn(
             "group relative flex shrink-0 items-center justify-center",
             isDoc ? "rounded-md" : "rounded-full",
@@ -340,6 +386,11 @@ export function AspiranteFotoField({
         <div>
           <p className="text-sm font-medium text-slate-800">{copy.title}</p>
           <p className="mt-0.5 text-xs leading-snug text-slate-500">{copy.help}</p>
+          {kind !== "notas" || !previewIsPdf ? (
+            <p className="mt-1 text-[11px] text-slate-400">
+              Las imágenes se optimizan en el navegador antes de enviarse.
+            </p>
+          ) : null}
         </div>
 
         {fileLabel ? (
@@ -381,9 +432,21 @@ export function AspiranteFotoField({
         ) : null}
 
         {localError ? <p className="text-xs text-red-600">{localError}</p> : null}
+        {compressing ? (
+          <p className="text-xs text-slate-500" aria-live="polite">
+            Optimizando imagen…
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" className="gap-1.5 shadow-xs" onClick={openPicker}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 shadow-xs"
+            disabled={compressing}
+            onClick={openPicker}
+          >
             <Upload className="h-3.5 w-3.5" aria-hidden />
             {canChange ? "Cambiar" : kind === "notas" ? "Elegir archivo" : "Elegir imagen"}
           </Button>
@@ -394,6 +457,7 @@ export function AspiranteFotoField({
               variant="ghost"
               size="sm"
               className="gap-1.5 text-slate-600 hover:text-red-700"
+              disabled={compressing}
               onClick={onQuitar}
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -409,6 +473,7 @@ export function AspiranteFotoField({
           type="file"
           accept={acceptAttrForKind(kind)}
           className="sr-only"
+          disabled={compressing}
           onChange={onFileChange}
         />
 

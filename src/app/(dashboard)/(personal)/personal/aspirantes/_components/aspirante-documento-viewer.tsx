@@ -22,6 +22,7 @@ import {
   formatHelpForKind,
   type AspiranteDocumentoKind,
 } from "@src/lib/storage/aspirante-foto";
+import { compressAspiranteImage } from "@src/lib/storage/compress-image-client";
 import { aspiranteFotoUrl } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { cn } from "@src/lib/utils";
 
@@ -78,7 +79,9 @@ export function AspiranteDocumentoViewer({
 }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const compressGenRef = useRef(0);
   const [isPending, startTransition] = useTransition();
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [localIsPdf, setLocalIsPdf] = useState(false);
@@ -108,42 +111,70 @@ export function AspiranteDocumentoViewer({
       fd.set("kind", kind);
       setError(null);
       startTransition(async () => {
-        const result = await updateAspiranteDocumentoFoto(fd);
-        if (!result.ok) {
-          const msg = result.errors._form ?? Object.values(result.errors)[0] ?? "No se pudo guardar el documento.";
-          setError(msg);
-          return;
+        try {
+          const result = await updateAspiranteDocumentoFoto(fd);
+          if (!result.ok) {
+            const msg =
+              result.errors._form ?? Object.values(result.errors)[0] ?? "No se pudo guardar el documento.";
+            setError(msg);
+            return;
+          }
+          onHasFotoChange(Boolean(result.hasFoto), Boolean(result.isPdf));
+          setBust(Date.now());
+          setLocalIsPdf(false);
+          setLocalPreview((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+          if (inputRef.current) inputRef.current.value = "";
+          router.refresh();
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "No se pudo guardar el documento.";
+          setError(
+            /load|fetch|network|failed/i.test(msg)
+              ? "El servidor no respondió al guardar. El archivo puede ser válido: recargue e intente de nuevo."
+              : msg,
+          );
         }
-        onHasFotoChange(Boolean(result.hasFoto), Boolean(result.isPdf));
-        setBust(Date.now());
-        setLocalIsPdf(false);
-        setLocalPreview((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return null;
-        });
-        if (inputRef.current) inputRef.current.value = "";
-        router.refresh();
       });
     },
     [aspiranteId, kind, onHasFotoChange, router],
   );
 
   const onFile = useCallback(
-    (file: File | undefined) => {
+    async (file: File | undefined) => {
       if (!file || !canWrite) return;
       if (!fileLooksAllowed(file, kind)) {
         setError(formatErrorForKind(kind));
         return;
       }
       const asPdf = fileLooksPdf(file);
+      const gen = ++compressGenRef.current;
       setLocalIsPdf(asPdf);
       setLocalPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(file);
       });
-      const fd = new FormData();
-      fd.set(ASPIRANTE_FOTO_FORM[kind].file, file);
-      submit(fd);
+      setCompressing(true);
+      try {
+        const compressed = asPdf ? file : await compressAspiranteImage(file, kind);
+        if (gen !== compressGenRef.current) return;
+        if (!asPdf) {
+          setLocalPreview((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return URL.createObjectURL(compressed);
+          });
+        }
+        const fd = new FormData();
+        fd.set(ASPIRANTE_FOTO_FORM[kind].file, compressed);
+        submit(fd);
+      } catch (e) {
+        if (gen !== compressGenRef.current) return;
+        const msg = e instanceof Error ? e.message : "No se pudo optimizar la imagen.";
+        setError(msg);
+      } finally {
+        if (gen === compressGenRef.current) setCompressing(false);
+      }
     },
     [canWrite, kind, submit],
   );
@@ -178,7 +209,7 @@ export function AspiranteDocumentoViewer({
             type="file"
             accept={acceptAttrForKind(kind)}
             className="sr-only"
-            disabled={!canWrite || isPending}
+            disabled={!canWrite || isPending || compressing}
             onChange={(e) => {
               onFile(e.target.files?.[0]);
               e.target.value = "";
@@ -242,10 +273,12 @@ export function AspiranteDocumentoViewer({
                 {canWrite ? <span className="text-xs text-slate-500">{formatHelpForKind(kind)}</span> : null}
               </span>
             )}
-            {isPending ? (
+            {isPending || compressing ? (
               <span className="absolute inset-0 flex items-center justify-center bg-white/70">
                 <LoaderCircle className="h-8 w-8 animate-spin text-slate-700" aria-hidden />
-                <span className="sr-only">Guardando documento</span>
+                <span className="sr-only">
+                  {compressing ? "Optimizando imagen" : "Guardando documento"}
+                </span>
               </span>
             ) : null}
           </div>
@@ -273,7 +306,13 @@ export function AspiranteDocumentoViewer({
           {canWrite ? (
             <div className="flex flex-wrap justify-end gap-2">
               {hasFoto ? (
-                <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={onQuitar}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending || compressing}
+                  onClick={onQuitar}
+                >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden />
                   Quitar
                 </Button>
@@ -281,7 +320,7 @@ export function AspiranteDocumentoViewer({
               <Button
                 type="button"
                 size="sm"
-                disabled={isPending}
+                disabled={isPending || compressing}
                 className="bg-slate-900 hover:bg-slate-800"
                 onClick={() => inputRef.current?.click()}
               >
