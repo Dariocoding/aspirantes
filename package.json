@@ -6,12 +6,12 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/copy-pdfjs-worker.mjs && next dev",
     "build": "next build",
     "vercel-build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate && node scripts/copy-pdfjs-worker.mjs",
+    "postinstall": "prisma generate",
     "prebuild": "node scripts/copy-pdfjs-worker.mjs",
     "seed": "tsx prisma/seed.ts",
     "seed:cefoa46": "tsx prisma/seed-cefoa46-aspirantes.ts"
