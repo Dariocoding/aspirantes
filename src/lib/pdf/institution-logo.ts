@@ -8,8 +8,8 @@ import path from "node:path";
 export function readInstitutionLogoPngBuffer(): Buffer | null {
   // Rutas literales bajo `public/images` para que Turbopack no tracee todo el repo.
   const candidates = [
-    path.join(process.cwd(), "public", "images", "ejercito_logo_print.png"),
-    path.join(process.cwd(), "public", "images", "ejercito_logo.png"),
+    path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "images", "ejercito_logo_print.png"),
+    path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "images", "ejercito_logo.png"),
   ];
   for (const filePath of candidates) {
     if (fs.existsSync(filePath)) return fs.readFileSync(filePath);

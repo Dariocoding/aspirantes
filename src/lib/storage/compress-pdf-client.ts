@@ -54,10 +54,16 @@ export async function compressAspirantePdf(file: File, _kind: AspiranteFotoKind)
   ensureWorker();
 
   const data = new Uint8Array(await file.arrayBuffer());
+  const loadingTask = getDocument({
+    data: data.slice(),
+    disableRange: true,
+    disableStream: true,
+  });
   let pdf;
   try {
-    pdf = await getDocument({ data: data.slice(), disableRange: true, disableStream: true }).promise;
+    pdf = await loadingTask.promise;
   } catch (e) {
+    await loadingTask.destroy().catch(() => undefined);
     const msg = e instanceof Error ? e.message : String(e);
     if (/password/i.test(msg)) {
       throw new Error("Este PDF está protegido con contraseña. Guárdelo sin clave o suba JPEG/PNG.");
@@ -112,6 +118,7 @@ export async function compressAspirantePdf(file: File, _kind: AspiranteFotoKind)
       lastModified: Date.now(),
     });
   } finally {
-    await pdf.destroy();
+    await pdf.cleanup();
+    await loadingTask.destroy();
   }
 }
