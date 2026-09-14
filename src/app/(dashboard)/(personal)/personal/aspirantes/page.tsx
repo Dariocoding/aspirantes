@@ -58,6 +58,8 @@ function toCensusRow(
     hasFotoCedula: Boolean(a.fotoCedulaKey),
     hasFotoTitulo: Boolean(a.fotoTituloKey),
     hasFotoTituloAuth: Boolean(a.fotoTituloAutenticacionKey),
+    hasFotoNotas: Boolean(a.fotoNotasKey),
+    notasIsPdf: Boolean(a.fotoNotasKey?.toLowerCase().endsWith(".pdf")),
     unidadPostulante: a.unidadPostulante ?? "",
     tituloUniversidad: a.tituloUniversidad,
     tipoEstudio: a.tipoEstudio,

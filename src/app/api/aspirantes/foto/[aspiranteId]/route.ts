@@ -9,7 +9,7 @@ import { getPresignedGetUrl } from "@src/lib/storage/s3";
 export const runtime = "nodejs";
 
 function parseKind(raw: string | null): AspiranteFotoKind {
-  if (raw === "cedula" || raw === "titulo" || raw === "tituloAuth") return raw;
+  if (raw === "cedula" || raw === "titulo" || raw === "tituloAuth" || raw === "notas") return raw;
   return "perfil";
 }
 
@@ -36,6 +36,7 @@ export async function GET(
       fotoCedulaKey: true,
       fotoTituloKey: true,
       fotoTituloAutenticacionKey: true,
+      fotoNotasKey: true,
     },
   });
 

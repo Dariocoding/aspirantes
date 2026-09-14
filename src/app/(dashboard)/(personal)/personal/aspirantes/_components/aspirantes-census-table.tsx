@@ -40,6 +40,7 @@ import {
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
+import { ASPIRANTE_DOCUMENTO_KINDS } from "@src/lib/storage/aspirante-foto";
 import { cn } from "@src/lib/utils";
 
 export type AspirantesCensusRow = {
@@ -51,6 +52,8 @@ export type AspirantesCensusRow = {
   hasFotoCedula: boolean;
   hasFotoTitulo: boolean;
   hasFotoTituloAuth: boolean;
+  hasFotoNotas: boolean;
+  notasIsPdf: boolean;
   unidadPostulante: string;
   tituloUniversidad: string | null;
   tipoEstudio: string | null;
@@ -113,10 +116,13 @@ function calificacionBadgeClass(c: string) {
   return "border-amber-200 bg-amber-50 text-amber-900";
 }
 
-function hasFotoFlag(kind: CensusDocumentoKind): "hasFotoCedula" | "hasFotoTitulo" | "hasFotoTituloAuth" {
+type CensusDocFlag = "hasFotoCedula" | "hasFotoTitulo" | "hasFotoTituloAuth" | "hasFotoNotas";
+
+function hasFotoFlag(kind: CensusDocumentoKind): CensusDocFlag {
   if (kind === "cedula") return "hasFotoCedula";
   if (kind === "titulo") return "hasFotoTitulo";
-  return "hasFotoTituloAuth";
+  if (kind === "tituloAuth") return "hasFotoTituloAuth";
+  return "hasFotoNotas";
 }
 
 function DocUploadCheck({
@@ -279,7 +285,10 @@ export function AspirantesCensusTable({ rows, grouping, canWrite }: Props) {
   const { visibleIds, setVisibleIds, toggleColumn } = useCensusColumnVisibility();
   const [columnQuery, setColumnQuery] = useState("");
   const [docFlags, setDocFlags] = useState<
-    Record<string, Pick<AspirantesCensusRow, "hasFotoCedula" | "hasFotoTitulo" | "hasFotoTituloAuth">>
+    Record<
+      string,
+      Pick<AspirantesCensusRow, "hasFotoCedula" | "hasFotoTitulo" | "hasFotoTituloAuth" | "hasFotoNotas" | "notasIsPdf">
+    >
   >({});
   const [viewer, setViewer] = useState<{
     aspiranteId: string;
@@ -552,7 +561,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite }: Props) {
                         >
                           {col.id === "documentos" ? (
                             <div className="flex items-start justify-center gap-1.5">
-                              {(["cedula", "titulo", "tituloAuth"] as const).map((kind) => (
+                              {ASPIRANTE_DOCUMENTO_KINDS.map((kind) => (
                                 <DocUploadCheck
                                   key={kind}
                                   kind={kind}
@@ -607,19 +616,30 @@ export function AspirantesCensusTable({ rows, grouping, canWrite }: Props) {
               return Boolean(merged[hasFotoFlag(viewer.kind)]);
             })()
           }
-          onHasFotoChange={(hasFoto) => {
+          storedIsPdf={
+            (() => {
+              if (viewer.kind !== "notas") return false;
+              const row = rows.find((r) => r.id === viewer.aspiranteId);
+              const flags = docFlags[viewer.aspiranteId];
+              return Boolean(flags?.notasIsPdf ?? row?.notasIsPdf);
+            })()
+          }
+          onHasFotoChange={(hasFoto, isPdf) => {
             const row = rows.find((r) => r.id === viewer.aspiranteId);
             const prevFlags = docFlags[viewer.aspiranteId];
             const current = {
               hasFotoCedula: prevFlags?.hasFotoCedula ?? row?.hasFotoCedula ?? false,
               hasFotoTitulo: prevFlags?.hasFotoTitulo ?? row?.hasFotoTitulo ?? false,
               hasFotoTituloAuth: prevFlags?.hasFotoTituloAuth ?? row?.hasFotoTituloAuth ?? false,
+              hasFotoNotas: prevFlags?.hasFotoNotas ?? row?.hasFotoNotas ?? false,
+              notasIsPdf: prevFlags?.notasIsPdf ?? row?.notasIsPdf ?? false,
             };
             setDocFlags((prev) => ({
               ...prev,
               [viewer.aspiranteId]: {
                 ...current,
                 [hasFotoFlag(viewer.kind)]: hasFoto,
+                notasIsPdf: viewer.kind === "notas" ? Boolean(hasFoto && isPdf) : current.notasIsPdf,
               },
             }));
           }}

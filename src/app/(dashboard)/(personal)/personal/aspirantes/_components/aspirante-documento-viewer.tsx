@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileImage, LoaderCircle, Replace, Trash2, Upload } from "lucide-react";
+import { FileImage, FileText, LoaderCircle, Replace, Trash2, Upload } from "lucide-react";
 import { updateAspiranteDocumentoFoto } from "@src/app/actions/aspirantes";
 import { Button } from "@src/components/ui/button";
 import {
@@ -13,11 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@src/components/ui/dialog";
-import { ASPIRANTE_FOTO_FORM, type AspiranteFotoKind } from "@src/lib/storage/aspirante-foto";
+import {
+  ASPIRANTE_FOTO_FORM,
+  acceptAttrForKind,
+  fileLooksAllowed,
+  fileLooksPdf,
+  formatErrorForKind,
+  formatHelpForKind,
+  type AspiranteDocumentoKind,
+} from "@src/lib/storage/aspirante-foto";
 import { aspiranteFotoUrl } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { cn } from "@src/lib/utils";
 
-export type CensusDocumentoKind = Exclude<AspiranteFotoKind, "perfil">;
+export type CensusDocumentoKind = AspiranteDocumentoKind;
 
 export const CENSUS_DOCUMENTO_META: Record<
   CensusDocumentoKind,
@@ -26,21 +34,24 @@ export const CENSUS_DOCUMENTO_META: Record<
   cedula: {
     short: "Cédula",
     title: "Cédula de identidad",
-    help: "Imagen legible de la cédula. JPEG, PNG, WebP o GIF.",
+    help: `Imagen legible de la cédula. ${formatHelpForKind("cedula")}`,
   },
   titulo: {
     short: "Fondo negro",
     title: "Título (fondo negro)",
-    help: "Copia del título universitario en fondo negro.",
+    help: `Copia del título universitario en fondo negro. ${formatHelpForKind("titulo")}`,
   },
   tituloAuth: {
     short: "Autenticación",
     title: "Autenticación del título",
-    help: "Certificado del fondo negro o autenticación del título.",
+    help: `Certificado del fondo negro o autenticación del título. ${formatHelpForKind("tituloAuth")}`,
+  },
+  notas: {
+    short: "Notas",
+    title: "Notas certificadas",
+    help: `Notas originales certificadas. ${formatHelpForKind("notas")}`,
   },
 };
-
-const ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
 type Props = {
   open: boolean;
@@ -49,8 +60,9 @@ type Props = {
   nombreCompleto: string;
   kind: CensusDocumentoKind;
   hasFoto: boolean;
+  storedIsPdf?: boolean;
   canWrite: boolean;
-  onHasFotoChange: (hasFoto: boolean) => void;
+  onHasFotoChange: (hasFoto: boolean, isPdf: boolean) => void;
 };
 
 export function AspiranteDocumentoViewer({
@@ -60,6 +72,7 @@ export function AspiranteDocumentoViewer({
   nombreCompleto,
   kind,
   hasFoto,
+  storedIsPdf = false,
   canWrite,
   onHasFotoChange,
 }: Props) {
@@ -68,12 +81,14 @@ export function AspiranteDocumentoViewer({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [localIsPdf, setLocalIsPdf] = useState(false);
   const [bust, setBust] = useState(0);
   const meta = CENSUS_DOCUMENTO_META[kind];
 
   useEffect(() => {
     if (!open) {
       setError(null);
+      setLocalIsPdf(false);
       setLocalPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
@@ -99,8 +114,9 @@ export function AspiranteDocumentoViewer({
           setError(msg);
           return;
         }
-        onHasFotoChange(Boolean(result.hasFoto));
+        onHasFotoChange(Boolean(result.hasFoto), Boolean(result.isPdf));
         setBust(Date.now());
+        setLocalIsPdf(false);
         setLocalPreview((prev) => {
           if (prev) URL.revokeObjectURL(prev);
           return null;
@@ -115,6 +131,12 @@ export function AspiranteDocumentoViewer({
   const onFile = useCallback(
     (file: File | undefined) => {
       if (!file || !canWrite) return;
+      if (!fileLooksAllowed(file, kind)) {
+        setError(formatErrorForKind(kind));
+        return;
+      }
+      const asPdf = fileLooksPdf(file);
+      setLocalIsPdf(asPdf);
       setLocalPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(file);
@@ -135,6 +157,7 @@ export function AspiranteDocumentoViewer({
 
   const storedUrl = hasFoto ? `${aspiranteFotoUrl(aspiranteId, kind)}&t=${bust}` : null;
   const displayUrl = localPreview ?? storedUrl;
+  const showPdf = Boolean(displayUrl && (localPreview ? localIsPdf : storedIsPdf));
   const showViewer = Boolean(displayUrl);
 
   return (
@@ -153,7 +176,7 @@ export function AspiranteDocumentoViewer({
           <input
             ref={inputRef}
             type="file"
-            accept={ACCEPT}
+            accept={acceptAttrForKind(kind)}
             className="sr-only"
             disabled={!canWrite || isPending}
             onChange={(e) => {
@@ -161,9 +184,7 @@ export function AspiranteDocumentoViewer({
               e.target.value = "";
             }}
           />
-          <button
-            type="button"
-            disabled={isPending || (!canWrite && !showViewer)}
+          <div
             onClick={() => {
               if (canWrite && !showViewer) inputRef.current?.click();
             }}
@@ -176,13 +197,29 @@ export function AspiranteDocumentoViewer({
               e.preventDefault();
               onFile(e.dataTransfer.files?.[0]);
             }}
+            onKeyDown={(e) => {
+              if (!canWrite || showViewer) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                inputRef.current?.click();
+              }
+            }}
+            role={canWrite && !showViewer ? "button" : undefined}
+            tabIndex={canWrite && !showViewer ? 0 : undefined}
             className={cn(
               "relative flex min-h-[min(58vh,28rem)] w-full items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white",
               canWrite && !showViewer ? "cursor-pointer hover:border-slate-300 hover:bg-slate-50" : "cursor-default",
               !showViewer && "border-dashed border-slate-300 bg-slate-50",
             )}
           >
-            {showViewer ? (
+            {showViewer && showPdf ? (
+              <iframe
+                key={displayUrl}
+                src={displayUrl ?? undefined}
+                title={meta.title}
+                className="h-[min(58vh,28rem)] w-full bg-white"
+              />
+            ) : showViewer ? (
               // eslint-disable-next-line @next/next/no-img-element -- visor de documento vía API propia
               <img
                 key={displayUrl}
@@ -193,14 +230,16 @@ export function AspiranteDocumentoViewer({
             ) : (
               <span className="flex max-w-sm flex-col items-center gap-2 px-6 py-8 text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
-                  <FileImage className="h-7 w-7" aria-hidden />
+                  {kind === "notas" ? (
+                    <FileText className="h-7 w-7" aria-hidden />
+                  ) : (
+                    <FileImage className="h-7 w-7" aria-hidden />
+                  )}
                 </span>
                 <span className="text-sm font-medium text-slate-800">
                   {canWrite ? "Aún no hay documento. Haga clic o suelte el archivo aquí." : "No hay documento cargado."}
                 </span>
-                {canWrite ? (
-                  <span className="text-xs text-slate-500">JPEG, PNG, WebP o GIF</span>
-                ) : null}
+                {canWrite ? <span className="text-xs text-slate-500">{formatHelpForKind(kind)}</span> : null}
               </span>
             )}
             {isPending ? (
@@ -209,7 +248,7 @@ export function AspiranteDocumentoViewer({
                 <span className="sr-only">Guardando documento</span>
               </span>
             ) : null}
-          </button>
+          </div>
         </div>
 
         {error ? <p className="px-5 pt-3 text-sm text-red-600">{error}</p> : null}
@@ -217,6 +256,19 @@ export function AspiranteDocumentoViewer({
         <DialogFooter className="sm:justify-between">
           <p className="text-xs text-muted-foreground">
             {hasFoto ? "Documento cargado." : "Pendiente de carga."}
+            {showViewer && showPdf && displayUrl ? (
+              <>
+                {" "}
+                <a
+                  href={displayUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-slate-800 underline-offset-2 hover:underline"
+                >
+                  Abrir PDF
+                </a>
+              </>
+            ) : null}
           </p>
           {canWrite ? (
             <div className="flex flex-wrap justify-end gap-2">

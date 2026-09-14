@@ -18,6 +18,7 @@ import {
   applyAspiranteFotoKind,
   removeAllAspiranteFotos,
 } from "@src/lib/aspirantes/apply-fotos";
+import { isPdfObjectKey } from "@src/lib/storage/aspirante-foto";
 import { resolvePelotonIdForConvocatoria } from "@src/lib/pelotones";
 
 function toPrismaFichaEvaluacion(
@@ -179,6 +180,7 @@ export async function createAspirante(
       fotoCedulaKey: null,
       fotoTituloKey: null,
       fotoTituloAutenticacionKey: null,
+      fotoNotasKey: null,
     });
     if ("ok" in fotoResult && fotoResult.ok === false) {
       return fotoResult;
@@ -226,6 +228,7 @@ export async function deleteAspirante(formData: FormData) {
       fotoCedulaKey: true,
       fotoTituloKey: true,
       fotoTituloAutenticacionKey: true,
+      fotoNotasKey: true,
     },
   });
   if (!row) return;
@@ -235,6 +238,7 @@ export async function deleteAspirante(formData: FormData) {
     fotoCedulaKey: row.fotoCedulaKey,
     fotoTituloKey: row.fotoTituloKey,
     fotoTituloAutenticacionKey: row.fotoTituloAutenticacionKey,
+    fotoNotasKey: row.fotoNotasKey,
   });
   await writeAuditLog({
     userId: session.user.id,
@@ -428,6 +432,7 @@ export async function updateAspirante(
       fotoCedulaKey: existing.fotoCedulaKey,
       fotoTituloKey: existing.fotoTituloKey,
       fotoTituloAutenticacionKey: existing.fotoTituloAutenticacionKey,
+      fotoNotasKey: existing.fotoNotasKey,
     });
     if ("ok" in fotoResult && fotoResult.ok === false) {
       return fotoResult;
@@ -458,7 +463,7 @@ export async function updateAspirante(
   return { ok: true, errors: {} };
 }
 
-const DOCUMENTO_KINDS = ["cedula", "titulo", "tituloAuth"] as const;
+const DOCUMENTO_KINDS = ["cedula", "titulo", "tituloAuth", "notas"] as const;
 
 function isDocumentoFotoKind(v: string): v is (typeof DOCUMENTO_KINDS)[number] {
   return (DOCUMENTO_KINDS as readonly string[]).includes(v);
@@ -466,7 +471,7 @@ function isDocumentoFotoKind(v: string): v is (typeof DOCUMENTO_KINDS)[number] {
 
 export async function updateAspiranteDocumentoFoto(
   formData: FormData,
-): Promise<AspiranteActionState & { hasFoto?: boolean }> {
+): Promise<AspiranteActionState & { hasFoto?: boolean; isPdf?: boolean }> {
   const session = await requireWriter();
   const aspiranteId = String(formData.get("aspiranteId") ?? "").trim();
   const kindRaw = String(formData.get("kind") ?? "").trim();
@@ -485,6 +490,7 @@ export async function updateAspiranteDocumentoFoto(
       fotoCedulaKey: true,
       fotoTituloKey: true,
       fotoTituloAutenticacionKey: true,
+      fotoNotasKey: true,
     },
   });
   if (!existing) {
@@ -496,14 +502,17 @@ export async function updateAspiranteDocumentoFoto(
       ? existing.fotoCedulaKey
       : kindRaw === "titulo"
         ? existing.fotoTituloKey
-        : existing.fotoTituloAutenticacionKey;
+        : kindRaw === "tituloAuth"
+          ? existing.fotoTituloAutenticacionKey
+          : existing.fotoNotasKey;
 
   const result = await applyAspiranteFotoKind(formData, aspiranteId, kindRaw, previousKey);
   if ("ok" in result && result.ok === false) {
     return result;
   }
 
-  const hasFoto = "key" in result ? Boolean(result.key) : Boolean(previousKey);
+  const nextKey = "key" in result ? result.key : previousKey;
+  const hasFoto = Boolean(nextKey);
   await writeAuditLog({
     userId: session.user.id,
     userEmail: session.user.email,
@@ -515,5 +524,5 @@ export async function updateAspiranteDocumentoFoto(
   revalidatePath(routes.personal.aspirantes);
   revalidatePath(routes.personal.aspirantesGestion);
   revalidatePath(routes.personal.aspirante(aspiranteId));
-  return { ok: true, errors: {}, hasFoto };
+  return { ok: true, errors: {}, hasFoto, isPdf: isPdfObjectKey(nextKey) };
 }

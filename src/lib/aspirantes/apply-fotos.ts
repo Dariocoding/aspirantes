@@ -29,7 +29,7 @@ async function applyOneFoto(
   const dbField = ASPIRANTE_FOTO_FORM[kind].dbField;
 
   if (file && quitar) {
-    return fotoFieldError(kind, "No puede subir una imagen nueva y quitar la actual a la vez.");
+    return fotoFieldError(kind, "No puede subir un archivo nuevo y quitar el actual a la vez.");
   }
 
   if (quitar) {
@@ -63,7 +63,7 @@ async function applyOneFoto(
   }
 }
 
-/** Aplica un solo tipo de imagen (perfil, cédula, título o autenticación). */
+/** Aplica un solo tipo de archivo (perfil, cédula, título, autenticación o notas). */
 export async function applyAspiranteFotoKind(
   formData: FormData,
   aspiranteId: string,

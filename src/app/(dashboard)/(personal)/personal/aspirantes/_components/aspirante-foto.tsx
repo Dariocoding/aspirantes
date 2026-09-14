@@ -1,10 +1,16 @@
 "use client";
 
-import { Camera, CheckCircle2, FileImage, Trash2, Upload, UserRound } from "lucide-react";
+import { Camera, CheckCircle2, FileImage, FileText, Trash2, Upload, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@src/components/ui/button";
 import {
   ASPIRANTE_FOTO_FORM,
+  acceptAttrForKind,
+  fileLooksAllowed,
+  fileLooksPdf,
+  formatErrorForKind,
+  formatHelpForKind,
+  isPdfObjectKey,
   type AspiranteFotoKind,
 } from "@src/lib/storage/aspirante-foto";
 import { cn } from "@src/lib/utils";
@@ -117,31 +123,34 @@ export function AspiranteFotoThumbnail({
   );
 }
 
-const ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
-
 const KIND_COPY: Record<
   AspiranteFotoKind,
   { title: string; help: string; aria: string }
 > = {
   perfil: {
     title: "Foto del aspirante",
-    help: "Opcional. JPEG, PNG, WebP o GIF.",
+    help: `Opcional. ${formatHelpForKind("perfil")}`,
     aria: "foto del aspirante",
   },
   cedula: {
     title: "Foto de la cédula",
-    help: "Imagen legible de la cédula de identidad. JPEG, PNG, WebP o GIF.",
+    help: `Imagen legible de la cédula de identidad. ${formatHelpForKind("cedula")}`,
     aria: "foto de la cédula",
   },
   titulo: {
     title: "Foto del título",
-    help: "Fondo negro / título universitario. JPEG, PNG, WebP o GIF.",
+    help: `Fondo negro / título universitario. ${formatHelpForKind("titulo")}`,
     aria: "foto del título",
   },
   tituloAuth: {
     title: "Autenticación del título",
-    help: "Certificado del fondo negro o autenticación del título (mismo requisito). JPEG, PNG, WebP o GIF.",
+    help: `Certificado del fondo negro o autenticación del título. ${formatHelpForKind("tituloAuth")}`,
     aria: "autenticación del título",
+  },
+  notas: {
+    title: "Notas certificadas",
+    help: `Notas originales certificadas. ${formatHelpForKind("notas")}`,
+    aria: "notas certificadas",
   },
 };
 
@@ -169,8 +178,10 @@ export function AspiranteFotoField({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewIsPdf, setPreviewIsPdf] = useState(false);
   const [fileLabel, setFileLabel] = useState<string | null>(null);
   const [quitar, setQuitar] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const formNames = ASPIRANTE_FOTO_FORM[kind];
   const copy = KIND_COPY[kind];
@@ -186,7 +197,8 @@ export function AspiranteFotoField({
         : storedPreviewUrl
       : null;
   // Documentos sensibles (cédula/título): nunca mostrar imagen; solo estado / nombre de archivo.
-  const displayUrl = hideStoredImage ? null : previewUrl ?? remoteStoredUrl;
+  const displayIsPdf = Boolean(previewUrl ? previewIsPdf : hasStoredFoto && isPdfObjectKey(fotoKey));
+  const displayUrl = hideStoredImage || displayIsPdf ? null : previewUrl ?? remoteStoredUrl;
   const showUploadedStatus = Boolean(hideStoredImage && hasStoredFoto && !previewUrl);
   const showPendingReplace = Boolean(hideStoredImage && previewUrl);
 
@@ -202,8 +214,16 @@ export function AspiranteFotoField({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!fileLooksAllowed(file, kind)) {
+      setLocalError(formatErrorForKind(kind));
+      e.target.value = "";
+      return;
+    }
+
+    setLocalError(null);
     setQuitar(false);
     setFileLabel(file.name);
+    setPreviewIsPdf(fileLooksPdf(file));
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
@@ -213,6 +233,8 @@ export function AspiranteFotoField({
   const onQuitar = () => {
     setQuitar(true);
     setFileLabel(null);
+    setPreviewIsPdf(false);
+    setLocalError(null);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
@@ -252,6 +274,17 @@ export function AspiranteFotoField({
               iconSize="lg"
               rounded={rounded}
             />
+          ) : displayIsPdf && !hideStoredImage ? (
+            <div
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 border border-slate-200 bg-linear-to-br from-slate-50 via-white to-slate-100 text-slate-600",
+                isDoc ? "rounded-md" : "rounded-full",
+                thumbClass,
+              )}
+            >
+              <FileText className="h-8 w-8 text-slate-500" aria-hidden />
+              <span className="text-[10px] font-semibold tracking-wide uppercase">PDF</span>
+            </div>
           ) : showUploadedStatus || showPendingReplace ? (
             <div
               className={cn(
@@ -347,10 +380,12 @@ export function AspiranteFotoField({
           <p className="text-xs text-slate-600">Imagen actual en el sistema. Suba otra para reemplazarla.</p>
         ) : null}
 
+        {localError ? <p className="text-xs text-red-600">{localError}</p> : null}
+
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" className="gap-1.5 shadow-xs" onClick={openPicker}>
             <Upload className="h-3.5 w-3.5" aria-hidden />
-            {canChange ? "Cambiar" : "Elegir imagen"}
+            {canChange ? "Cambiar" : kind === "notas" ? "Elegir archivo" : "Elegir imagen"}
           </Button>
 
           {(hasStoredFoto || previewUrl) && !showStoredRemoved ? (
@@ -372,7 +407,7 @@ export function AspiranteFotoField({
           id={id}
           name={formNames.file}
           type="file"
-          accept={ACCEPT}
+          accept={acceptAttrForKind(kind)}
           className="sr-only"
           onChange={onFileChange}
         />

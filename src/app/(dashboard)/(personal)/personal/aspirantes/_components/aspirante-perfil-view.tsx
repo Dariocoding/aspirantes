@@ -63,6 +63,7 @@ export type AspirantePerfilSerializado = {
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
   fotoTituloAutenticacionKey?: string | null;
+  fotoNotasKey?: string | null;
   tipoEstudio: TipoEstudioValue | null;
   nombreUniversidad: string | null;
   tituloUniversidad: string | null;
@@ -383,7 +384,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
           <div className="mt-3 flex flex-wrap gap-2">
             <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica PDF" />
           </div>
-          {(a.fotoCedulaKey || a.fotoTituloKey || a.fotoTituloAutenticacionKey) ? (
+          {(a.fotoCedulaKey || a.fotoTituloKey || a.fotoTituloAutenticacionKey || a.fotoNotasKey) ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {a.fotoCedulaKey ? (
                 <div className="space-y-1">
@@ -401,7 +402,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               {a.fotoTituloKey ? (
                 <div className="space-y-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Foto del título
+                    Título (fondo negro)
                   </p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -422,6 +423,30 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
                     alt="Autenticación del título"
                     className="h-36 w-full max-w-xs rounded-md border border-slate-200 object-cover"
                   />
+                </div>
+              ) : null}
+              {a.fotoNotasKey ? (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Notas certificadas
+                  </p>
+                  {a.fotoNotasKey.toLowerCase().endsWith(".pdf") ? (
+                    <a
+                      href={`/api/aspirantes/foto/${a.id}?tipo=notas`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-36 w-full max-w-xs items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 hover:bg-slate-100"
+                    >
+                      Abrir PDF
+                    </a>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`/api/aspirantes/foto/${a.id}?tipo=notas`}
+                      alt="Notas certificadas"
+                      className="h-36 w-full max-w-xs rounded-md border border-slate-200 object-cover"
+                    />
+                  )}
                 </div>
               ) : null}
             </div>

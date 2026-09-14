@@ -1,30 +1,54 @@
 import { deleteObject, putObject } from "@src/lib/storage/s3";
 
-const ALLOWED_TYPES = new Map<string, string>([
-  ["image/jpeg", "jpg"],
-  ["image/png", "png"],
-  ["image/webp", "webp"],
-  ["image/gif", "gif"],
-]);
+export type AspiranteArchivoExt = "jpg" | "png" | "webp" | "gif" | "pdf";
 
-export type AspiranteFotoKind = "perfil" | "cedula" | "titulo" | "tituloAuth";
+const CONTENT_TYPE: Record<AspiranteArchivoExt, string> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  pdf: "application/pdf",
+};
 
-export const ASPIRANTE_FOTO_KINDS: readonly AspiranteFotoKind[] = ["perfil", "cedula", "titulo", "tituloAuth"];
+const EXTS_JPEG_PNG = new Set<AspiranteArchivoExt>(["jpg", "png"]);
+const EXTS_IMAGEN = new Set<AspiranteArchivoExt>(["jpg", "png", "webp", "gif"]);
+const EXTS_NOTAS = new Set<AspiranteArchivoExt>(["jpg", "png", "pdf"]);
+
+export type AspiranteFotoKind = "perfil" | "cedula" | "titulo" | "tituloAuth" | "notas";
+
+export type AspiranteDocumentoKind = Exclude<AspiranteFotoKind, "perfil">;
+
+export const ASPIRANTE_FOTO_KINDS: readonly AspiranteFotoKind[] = [
+  "perfil",
+  "cedula",
+  "titulo",
+  "tituloAuth",
+  "notas",
+];
+
+export const ASPIRANTE_DOCUMENTO_KINDS: readonly AspiranteDocumentoKind[] = [
+  "cedula",
+  "titulo",
+  "tituloAuth",
+  "notas",
+];
 
 export type AspiranteFotoDbField =
   | "fotoKey"
   | "fotoCedulaKey"
   | "fotoTituloKey"
-  | "fotoTituloAutenticacionKey";
+  | "fotoTituloAutenticacionKey"
+  | "fotoNotasKey";
 
 const KIND_FILE: Record<AspiranteFotoKind, string> = {
   perfil: "foto",
   cedula: "cedula",
   titulo: "titulo",
   tituloAuth: "titulo-auth",
+  notas: "notas",
 };
 
-/** Campos FormData por tipo de imagen. */
+/** Campos FormData por tipo de archivo. */
 export const ASPIRANTE_FOTO_FORM: Record<
   AspiranteFotoKind,
   { file: string; quitar: string; dbField: AspiranteFotoDbField }
@@ -37,7 +61,88 @@ export const ASPIRANTE_FOTO_FORM: Record<
     quitar: "quitarImagenTituloAuth",
     dbField: "fotoTituloAutenticacionKey",
   },
+  notas: { file: "imagenNotas", quitar: "quitarImagenNotas", dbField: "fotoNotasKey" },
 };
+
+export function allowedExtsForKind(kind: AspiranteFotoKind): Set<AspiranteArchivoExt> {
+  if (kind === "titulo" || kind === "tituloAuth") return EXTS_JPEG_PNG;
+  if (kind === "notas") return EXTS_NOTAS;
+  return EXTS_IMAGEN;
+}
+
+export function acceptAttrForKind(kind: AspiranteFotoKind): string {
+  if (kind === "titulo" || kind === "tituloAuth") return "image/jpeg,image/png,.jpg,.jpeg,.png";
+  if (kind === "notas") return "image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf";
+  return "image/jpeg,image/png,image/webp,image/gif";
+}
+
+export function formatHelpForKind(kind: AspiranteFotoKind): string {
+  if (kind === "titulo" || kind === "tituloAuth") return "Solo JPEG o PNG.";
+  if (kind === "notas") return "JPEG, PNG o PDF.";
+  return "JPEG, PNG, WebP o GIF.";
+}
+
+export function formatErrorForKind(kind: AspiranteFotoKind): string {
+  if (kind === "titulo" || kind === "tituloAuth") {
+    return "Formato no permitido. El fondo negro y la autenticación solo aceptan JPEG o PNG.";
+  }
+  if (kind === "notas") {
+    return "Formato no permitido. Las notas certificadas aceptan JPEG, PNG o PDF.";
+  }
+  return "Formato no permitido. Use JPEG, PNG, WebP o GIF.";
+}
+
+export function isPdfObjectKey(key: string | null | undefined): boolean {
+  if (!key) return false;
+  const path = key.split("?")[0]?.toLowerCase() ?? "";
+  return path.endsWith(".pdf");
+}
+
+export function fileLooksAllowed(file: File, kind: AspiranteFotoKind): boolean {
+  const ext = extHintFromFile(file);
+  return ext != null && allowedExtsForKind(kind).has(ext);
+}
+
+export function fileLooksPdf(file: File): boolean {
+  return extHintFromFile(file) === "pdf";
+}
+
+function extHintFromFile(file: File): AspiranteArchivoExt | null {
+  const t = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  if (t === "image/jpeg" || t === "image/jpg" || name.endsWith(".jpg") || name.endsWith(".jpeg")) return "jpg";
+  if (t === "image/png" || name.endsWith(".png")) return "png";
+  if (t === "image/webp" || name.endsWith(".webp")) return "webp";
+  if (t === "image/gif" || name.endsWith(".gif")) return "gif";
+  if (t === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+  return null;
+}
+
+function sniffExt(buffer: Buffer): AspiranteArchivoExt | null {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "jpg";
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    return "png";
+  }
+  if (
+    buffer.length >= 12 &&
+    buffer.toString("ascii", 0, 4) === "RIFF" &&
+    buffer.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    return "webp";
+  }
+  if (buffer.length >= 6) {
+    const header = buffer.toString("ascii", 0, 6);
+    if (header === "GIF87a" || header === "GIF89a") return "gif";
+  }
+  if (buffer.length >= 4 && buffer.toString("ascii", 0, 4) === "%PDF") return "pdf";
+  return null;
+}
 
 export function aspiranteFotoObjectKey(aspiranteId: string, kind: AspiranteFotoKind, ext: string): string {
   return `aspirantes/${aspiranteId}/${KIND_FILE[kind]}.${ext}`;
@@ -69,14 +174,14 @@ export async function uploadAspiranteFoto(
   aspiranteId: string,
   kind: AspiranteFotoKind = "perfil",
 ): Promise<string> {
-  const ext = ALLOWED_TYPES.get(file.type);
-  if (!ext) {
-    throw new AspiranteFotoError("Formato no permitido. Use JPEG, PNG, WebP o GIF.");
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const ext = sniffExt(buffer);
+  if (!ext || !allowedExtsForKind(kind).has(ext)) {
+    throw new AspiranteFotoError(formatErrorForKind(kind));
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   const key = aspiranteFotoObjectKey(aspiranteId, kind, ext);
-  await putObject(key, buffer, file.type);
+  await putObject(key, buffer, CONTENT_TYPE[ext]);
   return key;
 }
 
