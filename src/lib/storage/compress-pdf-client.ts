@@ -51,6 +51,8 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Uint8
  */
 export async function compressAspirantePdf(file: File, _kind: AspiranteFotoKind): Promise<File> {
   if (typeof window === "undefined") return file;
+  // Ya es liviano: no rasterizar (evita fallos del worker y no aporta).
+  if (file.size > 0 && file.size < 1_200_000) return file;
   ensureWorker();
 
   const data = new Uint8Array(await file.arrayBuffer());

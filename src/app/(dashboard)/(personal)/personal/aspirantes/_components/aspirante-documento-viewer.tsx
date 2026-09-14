@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FileImage, FileText, LoaderCircle, Replace, Trash2, Upload } from "lucide-react";
-import { updateAspiranteDocumentoFoto } from "@src/app/actions/aspirantes";
 import { Button } from "@src/components/ui/button";
 import {
   Dialog,
@@ -107,15 +106,36 @@ export function AspiranteDocumentoViewer({
 
   const submit = useCallback(
     (fd: FormData) => {
-      fd.set("aspiranteId", aspiranteId);
       fd.set("kind", kind);
       setError(null);
       startTransition(async () => {
         try {
-          const result = await updateAspiranteDocumentoFoto(fd);
+          const res = await fetch(
+            `/api/aspirantes/foto/${encodeURIComponent(aspiranteId)}?tipo=${encodeURIComponent(kind)}`,
+            { method: "POST", body: fd },
+          );
+          if (res.status === 413) {
+            setError("El archivo es demasiado pesado para el servidor. Comprima el PDF o suba JPEG/PNG.");
+            return;
+          }
+          const contentType = res.headers.get("content-type") ?? "";
+          if (!contentType.includes("application/json")) {
+            setError(
+              `No se pudo guardar el documento (error ${res.status}). Recargue e intente de nuevo.`,
+            );
+            return;
+          }
+          const result = (await res.json()) as {
+            ok?: boolean;
+            errors?: Record<string, string>;
+            hasFoto?: boolean;
+            isPdf?: boolean;
+          };
           if (!result.ok) {
             const msg =
-              result.errors._form ?? Object.values(result.errors)[0] ?? "No se pudo guardar el documento.";
+              result.errors?._form ??
+              Object.values(result.errors ?? {})[0] ??
+              "No se pudo guardar el documento.";
             setError(msg);
             return;
           }
@@ -131,10 +151,10 @@ export function AspiranteDocumentoViewer({
         } catch (e) {
           const msg = e instanceof Error ? e.message : "No se pudo guardar el documento.";
           setError(
-            /unexpected response|body exceeded|too large|413/i.test(msg)
-              ? "El archivo es demasiado pesado para el servidor (suele pasar con PDF escaneados). Comprima el PDF o suba JPEG/PNG."
+            /body exceeded|payload too large|413/i.test(msg)
+              ? "El archivo es demasiado pesado para el servidor. Comprima el PDF o suba JPEG/PNG."
               : /load|fetch|network|failed/i.test(msg)
-                ? "El servidor no respondió al guardar. El archivo puede ser válido: recargue e intente de nuevo."
+                ? "El servidor no respondió al guardar. Recargue e intente de nuevo."
                 : msg,
           );
         }
