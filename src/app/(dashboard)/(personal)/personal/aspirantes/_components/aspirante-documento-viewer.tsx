@@ -21,7 +21,7 @@ import {
   formatHelpForKind,
   type AspiranteDocumentoKind,
 } from "@src/lib/storage/aspirante-foto";
-import { compressAspiranteUpload } from "@src/lib/storage/compress-image-client";
+import { prepareAspiranteUpload } from "@src/lib/storage/compress-image-client";
 import { aspiranteFotoUrl } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { cn } from "@src/lib/utils";
 
@@ -164,27 +164,29 @@ export function AspiranteDocumentoViewer({
   );
 
   const onFile = useCallback(
-    async (file: File | undefined) => {
-      if (!file || !canWrite) return;
-      if (!fileLooksAllowed(file, kind)) {
+    async (picked: FileList | File[] | undefined) => {
+      if (!picked || !canWrite) return;
+      const files = Array.from(picked).filter((f) => f.size > 0);
+      if (files.length === 0) return;
+      if (files.some((file) => !fileLooksAllowed(file, kind))) {
         setError(formatErrorForKind(kind));
         return;
       }
-      if (file.size > 90 * 1024 * 1024) {
+      if (files.some((file) => file.size > 90 * 1024 * 1024)) {
         setError("El archivo supera 90 MB. Comprima el PDF o use una imagen JPEG/PNG.");
         return;
       }
-      const asPdf = fileLooksPdf(file);
       const gen = ++compressGenRef.current;
-      setLocalIsPdf(asPdf);
+      setLocalIsPdf(fileLooksPdf(files[0]!));
       setLocalPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(file);
+        return URL.createObjectURL(files[0]!);
       });
       setCompressing(true);
       try {
-        const compressed = await compressAspiranteUpload(file, kind);
+        const compressed = await prepareAspiranteUpload(files, kind);
         if (gen !== compressGenRef.current) return;
+        setLocalIsPdf(fileLooksPdf(compressed));
         setLocalPreview((prev) => {
           if (prev) URL.revokeObjectURL(prev);
           return URL.createObjectURL(compressed);
@@ -232,10 +234,11 @@ export function AspiranteDocumentoViewer({
             ref={inputRef}
             type="file"
             accept={acceptAttrForKind(kind)}
+            multiple={kind === "notas"}
             className="sr-only"
             disabled={!canWrite || isPending || compressing}
             onChange={(e) => {
-              onFile(e.target.files?.[0]);
+              onFile(e.target.files ?? undefined);
               e.target.value = "";
             }}
           />
@@ -250,7 +253,7 @@ export function AspiranteDocumentoViewer({
             onDrop={(e) => {
               if (!canWrite) return;
               e.preventDefault();
-              onFile(e.dataTransfer.files?.[0]);
+              onFile(e.dataTransfer.files);
             }}
             onKeyDown={(e) => {
               if (!canWrite || showViewer) return;
@@ -292,7 +295,11 @@ export function AspiranteDocumentoViewer({
                   )}
                 </span>
                 <span className="text-sm font-medium text-slate-800">
-                  {canWrite ? "Aún no hay documento. Haga clic o suelte el archivo aquí." : "No hay documento cargado."}
+                  {canWrite
+                    ? kind === "notas"
+                      ? "Aún no hay documento. Puede soltar varias fotos; se unirán en un PDF."
+                      : "Aún no hay documento. Haga clic o suelte el archivo aquí."
+                    : "No hay documento cargado."}
                 </span>
                 {canWrite ? <span className="text-xs text-slate-500">{formatHelpForKind(kind)}</span> : null}
               </span>

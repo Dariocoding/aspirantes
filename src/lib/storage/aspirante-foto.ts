@@ -78,7 +78,9 @@ export function acceptAttrForKind(kind: AspiranteFotoKind): string {
 
 export function formatHelpForKind(kind: AspiranteFotoKind): string {
   if (kind === "titulo" || kind === "tituloAuth") return "Solo JPEG o PNG.";
-  if (kind === "notas") return "JPEG, PNG o PDF. Los PDF se comprimen hoja por hoja en el navegador.";
+  if (kind === "notas") {
+    return "JPEG, PNG o PDF. Varias imágenes se unen en un PDF; una sola se queda como imagen.";
+  }
   return "JPEG, PNG, WebP o GIF.";
 }
 

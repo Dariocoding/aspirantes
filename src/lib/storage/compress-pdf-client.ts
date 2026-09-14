@@ -124,3 +124,34 @@ export async function compressAspirantePdf(file: File, _kind: AspiranteFotoKind)
     await loadingTask.destroy();
   }
 }
+
+/** Una hoja JPEG por página. El orden del array es el orden del PDF. */
+export async function pdfFromJpegPages(pages: Uint8Array[], fileName: string): Promise<File> {
+  if (pages.length < 1) {
+    throw new Error("No hay imágenes para armar el PDF.");
+  }
+  if (pages.length > MAX_PAGES) {
+    throw new Error(`Use como máximo ${MAX_PAGES} imágenes.`);
+  }
+
+  const out = await PDFDocument.create();
+  const title = fileName.replace(/\.[^.]+$/, "").trim() || "notas";
+  out.setTitle(title);
+
+  for (const jpeg of pages) {
+    const image = await out.embedJpg(jpeg);
+    const pdfPage = out.addPage([image.width, image.height]);
+    pdfPage.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: image.width,
+      height: image.height,
+    });
+  }
+
+  const bytes = await out.save({ useObjectStreams: true });
+  return new File([toArrayBuffer(bytes)], `${title}.pdf`, {
+    type: "application/pdf",
+    lastModified: Date.now(),
+  });
+}

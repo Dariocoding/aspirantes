@@ -131,6 +131,28 @@ export async function compressAspiranteImage(file: File, kind: AspiranteFotoKind
   }
 }
 
+async function encodeImageAsJpegBytes(file: File, maxEdge: number, quality: number): Promise<Uint8Array> {
+  const bitmap = await decodeBitmap(file);
+  try {
+    const { w, h } = scaleToMax(bitmap.width, bitmap.height, maxEdge);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("No se pudo leer una de las imágenes.");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    if (!blob) throw new Error("No se pudo comprimir una de las imágenes.");
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    bitmap.close();
+  }
+}
+
 /** Imagen o PDF (hoja por hoja). Si no hay ganancia, deja el original. */
 export async function compressAspiranteUpload(file: File, kind: AspiranteFotoKind): Promise<File> {
   if (fileLooksPdf(file)) {
@@ -138,6 +160,38 @@ export async function compressAspiranteUpload(file: File, kind: AspiranteFotoKin
     return compressAspirantePdf(file, kind);
   }
   return compressAspiranteImage(file, kind);
+}
+
+/**
+ * Notas: una imagen se queda imagen; varias imágenes se unen en un PDF (orden de selección).
+ */
+export async function prepareAspiranteUpload(files: File[], kind: AspiranteFotoKind): Promise<File> {
+  const list = files.filter((f) => f.size > 0);
+  if (list.length === 0) {
+    throw new Error("No se seleccionó ningún archivo.");
+  }
+  if (kind !== "notas" || list.length === 1) {
+    return compressAspiranteUpload(list[0]!, kind);
+  }
+
+  if (list.length > 40) {
+    throw new Error("Use como máximo 40 imágenes para armar el PDF.");
+  }
+
+  if (list.some((f) => fileLooksPdf(f))) {
+    throw new Error(
+      "Para unir varias hojas elija solo imágenes (JPEG o PNG). Un PDF se sube como un solo archivo.",
+    );
+  }
+
+  const preset = PRESET.notas;
+  const jpegs: Uint8Array[] = [];
+  for (const file of list) {
+    jpegs.push(await encodeImageAsJpegBytes(file, preset.maxEdge, preset.quality));
+  }
+  const { pdfFromJpegPages } = await import("@src/lib/storage/compress-pdf-client");
+  const base = list[0]?.name.replace(/\.[^.]+$/, "").trim() || "notas";
+  return pdfFromJpegPages(jpegs, `${base}-notas`);
 }
 
 /** Sustituye el File del input para que el FormData nativo envíe la versión comprimida. */

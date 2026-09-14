@@ -15,7 +15,7 @@ import {
 } from "@src/lib/storage/aspirante-foto";
 import {
   assignFileToInput,
-  compressAspiranteUpload,
+  prepareAspiranteUpload,
   formatFileSize,
 } from "@src/lib/storage/compress-image-client";
 import { cn } from "@src/lib/utils";
@@ -243,10 +243,10 @@ export function AspiranteFotoField({
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
-    const file = input.files?.[0];
-    if (!file) return;
+    const picked = Array.from(input.files ?? []);
+    if (picked.length === 0) return;
 
-    if (!fileLooksAllowed(file, kind)) {
+    if (picked.some((file) => !fileLooksAllowed(file, kind))) {
       setLocalError(formatErrorForKind(kind));
       input.value = "";
       return;
@@ -255,17 +255,18 @@ export function AspiranteFotoField({
     const gen = ++compressGenRef.current;
     setLocalError(null);
     setQuitar(false);
-    applyPreview(file);
+    applyPreview(picked[0]!);
 
     setCompressing(true);
     try {
-      const compressed = await compressAspiranteUpload(file, kind);
+      const compressed = await prepareAspiranteUpload(picked, kind);
       if (gen !== compressGenRef.current) return;
       if (input.isConnected) assignFileToInput(input, compressed);
       applyPreview(compressed);
-    } catch {
+    } catch (err) {
       if (gen !== compressGenRef.current) return;
-      // El original sigue en el input si la optimización falla.
+      setLocalError(err instanceof Error ? err.message : formatErrorForKind(kind));
+      input.value = "";
     } finally {
       if (gen === compressGenRef.current) {
         setCompressing(false);
@@ -388,7 +389,7 @@ export function AspiranteFotoField({
           <p className="mt-0.5 text-xs leading-snug text-slate-500">{copy.help}</p>
           {kind === "notas" ? (
             <p className="mt-1 text-[11px] text-slate-400">
-              Imágenes y PDF se optimizan en el navegador (cada hoja del PDF) antes de enviarse.
+              Puede elegir varias fotos: se unen en un PDF. Una sola se queda como imagen.
             </p>
           ) : (
             <p className="mt-1 text-[11px] text-slate-400">
@@ -452,7 +453,7 @@ export function AspiranteFotoField({
             onClick={openPicker}
           >
             <Upload className="h-3.5 w-3.5" aria-hidden />
-            {canChange ? "Cambiar" : kind === "notas" ? "Elegir archivo" : "Elegir imagen"}
+            {canChange ? "Cambiar" : kind === "notas" ? "Elegir archivo(s)" : "Elegir imagen"}
           </Button>
 
           {(hasStoredFoto || previewUrl) && !showStoredRemoved ? (
@@ -476,6 +477,7 @@ export function AspiranteFotoField({
           name={formNames.file}
           type="file"
           accept={acceptAttrForKind(kind)}
+          multiple={kind === "notas"}
           className="sr-only"
           disabled={compressing}
           onChange={onFileChange}
