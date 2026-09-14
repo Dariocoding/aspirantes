@@ -63,7 +63,6 @@ const nextConfig: NextConfig = {
       allowedOrigins: serverActionAllowedOrigins(),
     },
     proxyClientMaxBodySize: "100mb",
-    middlewareClientMaxBodySize: "100mb",
   },
 
   async redirects() {
