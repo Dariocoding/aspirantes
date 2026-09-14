@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,19 +23,45 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@src/*": ["./src/*"],
-      "@dashboard/sistema/*": ["./src/app/(dashboard)/(sistema)/sistema/*"],
-      "@dashboard/inventario/*": ["./src/app/(dashboard)/(inventario)/inventario/*"],
-      "@dashboard/usuarios/*": ["./src/app/(dashboard)/(sistema)/sistema/usuarios/*"],
-      "@dashboard/aspirantes/*": ["./src/app/(dashboard)/(personal)/personal/aspirantes/*"],
-      "@dashboard/efemerides/*": ["./src/app/(dashboard)/(personal)/personal/efemerides/*"],
-      "@dashboard/esquelas/*": ["./src/app/(dashboard)/(personal)/personal/esquelas/*"],
-      "@dashboard/convocatorias/*": ["./src/app/(dashboard)/(personal)/personal/convocatorias/*"],
-      "@dashboard/manual/*": ["./src/app/(dashboard)/(personal)/personal/manual/*"],
-      "@dashboard/_components/*": ["./src/app/(dashboard)/_components/*"],
-      "@dashboard/*": ["./src/app/(dashboard)/*"],
-      "@/generated/prisma": ["./src/generated/prisma"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@src/*": [
+        "./src/*"
+      ],
+      "@dashboard/sistema/*": [
+        "./src/app/(dashboard)/(sistema)/sistema/*"
+      ],
+      "@dashboard/inventario/*": [
+        "./src/app/(dashboard)/(inventario)/inventario/*"
+      ],
+      "@dashboard/usuarios/*": [
+        "./src/app/(dashboard)/(sistema)/sistema/usuarios/*"
+      ],
+      "@dashboard/aspirantes/*": [
+        "./src/app/(dashboard)/(personal)/personal/aspirantes/*"
+      ],
+      "@dashboard/efemerides/*": [
+        "./src/app/(dashboard)/(personal)/personal/efemerides/*"
+      ],
+      "@dashboard/esquelas/*": [
+        "./src/app/(dashboard)/(personal)/personal/esquelas/*"
+      ],
+      "@dashboard/convocatorias/*": [
+        "./src/app/(dashboard)/(personal)/personal/convocatorias/*"
+      ],
+      "@dashboard/manual/*": [
+        "./src/app/(dashboard)/(personal)/personal/manual/*"
+      ],
+      "@dashboard/_components/*": [
+        "./src/app/(dashboard)/_components/*"
+      ],
+      "@dashboard/*": [
+        "./src/app/(dashboard)/*"
+      ],
+      "@/generated/prisma": [
+        "./src/generated/prisma"
+      ]
     }
   },
   "include": [
@@ -39,8 +69,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "prisma.config.ts"]
+  "exclude": [
+    "node_modules",
+    "prisma.config.ts",
+    ".next/dev"
+  ]
 }
