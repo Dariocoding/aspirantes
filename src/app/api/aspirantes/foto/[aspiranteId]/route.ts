@@ -9,7 +9,7 @@ import {
   saveAspiranteDocumentoFoto,
 } from "@src/lib/aspirantes/save-documento-foto";
 import { ASPIRANTE_FOTO_FORM, type AspiranteFotoKind } from "@src/lib/storage/aspirante-foto";
-import { getPresignedGetUrl } from "@src/lib/storage/s3";
+import { getObjectBuffer, getPresignedGetUrl } from "@src/lib/storage/s3";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,7 +32,9 @@ export async function GET(
   }
 
   const { aspiranteId } = await context.params;
-  const kind = parseKind(new URL(request.url).searchParams.get("tipo"));
+  const search = new URL(request.url).searchParams;
+  const kind = parseKind(search.get("tipo"));
+  const proxy = search.get("proxy") === "1";
   const dbField = ASPIRANTE_FOTO_FORM[kind].dbField;
 
   const aspirante = await prisma.aspirante.findUnique({
@@ -49,6 +51,17 @@ export async function GET(
   const key = aspirante?.[dbField];
   if (!key) {
     return NextResponse.json({ message: "Sin imagen" }, { status: 404 });
+  }
+
+  if (proxy) {
+    const { body, contentType } = await getObjectBuffer(key);
+    return new NextResponse(new Uint8Array(body), {
+      status: 200,
+      headers: {
+        "Content-Type": contentType ?? "application/octet-stream",
+        "Cache-Control": "private, no-store",
+      },
+    });
   }
 
   const url = await getPresignedGetUrl(key);

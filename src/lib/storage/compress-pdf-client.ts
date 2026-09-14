@@ -125,6 +125,112 @@ export async function compressAspirantePdf(file: File, _kind: AspiranteFotoKind)
   }
 }
 
+export type PdfPageThumb = {
+  sourceIndex: number;
+  dataUrl: string;
+};
+
+/** Miniaturas de cada hoja para reordenar en el navegador. */
+export async function renderPdfPageThumbs(bytes: Uint8Array, maxEdge = 160): Promise<PdfPageThumb[]> {
+  if (typeof window === "undefined") return [];
+  ensureWorker();
+
+  const loadingTask = getDocument({
+    data: bytes.slice(),
+    disableRange: true,
+    disableStream: true,
+  });
+  let pdf;
+  try {
+    pdf = await loadingTask.promise;
+  } catch (e) {
+    await loadingTask.destroy().catch(() => undefined);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/password/i.test(msg)) {
+      throw new Error("Este PDF está protegido con contraseña. Guárdelo sin clave o suba JPEG/PNG.");
+    }
+    throw new Error("No se pudieron leer las páginas del PDF.");
+  }
+
+  try {
+    if (pdf.numPages < 1) {
+      throw new Error("El PDF no tiene páginas.");
+    }
+    const thumbs: PdfPageThumb[] = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const base = page.getViewport({ scale: 1 });
+      const scale = scaleToMax(base.width, base.height, maxEdge);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(viewport.width));
+      canvas.height = Math.max(1, Math.round(viewport.height));
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) throw new Error("No se pudieron generar las miniaturas.");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+      page.cleanup();
+      thumbs.push({
+        sourceIndex: i - 1,
+        dataUrl: canvas.toDataURL("image/jpeg", 0.72),
+      });
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+    return thumbs;
+  } finally {
+    await pdf.cleanup();
+    await loadingTask.destroy();
+  }
+}
+
+/**
+ * Copia las páginas en el orden indicado (índices 0). No rasteriza: conserva el PDF original.
+ */
+export async function reorderPdfFile(file: File, order: number[]): Promise<File> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const count = src.getPageCount();
+  if (order.length !== count) {
+    throw new Error("El orden no coincide con el número de páginas.");
+  }
+  const seen = new Set(order);
+  if (seen.size !== count || order.some((i) => i < 0 || i >= count)) {
+    throw new Error("El orden de páginas no es válido.");
+  }
+
+  const dest = await PDFDocument.create();
+  const title = src.getTitle();
+  if (title) dest.setTitle(title);
+  else dest.setTitle(file.name.replace(/\.[^.]+$/, "") || "notas");
+
+  const copied = await dest.copyPages(src, order);
+  for (const page of copied) dest.addPage(page);
+
+  const out = await dest.save({ useObjectStreams: true });
+  const base = file.name.replace(/\.[^.]+$/, "").trim() || "notas";
+  return new File([toArrayBuffer(out)], `${base}.pdf`, {
+    type: "application/pdf",
+    lastModified: Date.now(),
+  });
+}
+
+export async function fetchPdfAsFile(url: string, fileName = "notas.pdf"): Promise<File> {
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) {
+    throw new Error("No se pudo leer el PDF.");
+  }
+  const blob = await res.blob();
+  if (blob.size === 0) {
+    throw new Error("El PDF está vacío.");
+  }
+  return new File([blob], fileName, {
+    type: "application/pdf",
+    lastModified: Date.now(),
+  });
+}
+
 /** Una hoja JPEG por página. El orden del array es el orden del PDF. */
 export async function pdfFromJpegPages(pages: Uint8Array[], fileName: string): Promise<File> {
   if (pages.length < 1) {

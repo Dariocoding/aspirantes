@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, CheckCircle2, FileImage, FileText, Trash2, Upload, UserRound } from "lucide-react";
+import { Camera, CheckCircle2, FileImage, FileText, ListOrdered, Trash2, Upload, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@src/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
   formatFileSize,
 } from "@src/lib/storage/compress-image-client";
 import { cn } from "@src/lib/utils";
+import { NotasPdfPageOrder } from "@dashboard/aspirantes/_components/notas-pdf-page-order";
 
 export function aspiranteFotoUrl(
   aspiranteId: string,
@@ -189,6 +190,7 @@ export function AspiranteFotoField({
   const [quitar, setQuitar] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
+  const [ordering, setOrdering] = useState(false);
 
   const formNames = ASPIRANTE_FOTO_FORM[kind];
   const copy = KIND_COPY[kind];
@@ -216,7 +218,7 @@ export function AspiranteFotoField({
   }, [previewUrl]);
 
   useEffect(() => {
-    if (!compressing) return;
+    if (!compressing && !ordering) return;
     const form = inputRef.current?.form;
     if (!form) return;
     const onSubmit = (e: Event) => {
@@ -225,10 +227,10 @@ export function AspiranteFotoField({
     };
     form.addEventListener("submit", onSubmit, true);
     return () => form.removeEventListener("submit", onSubmit, true);
-  }, [compressing]);
+  }, [compressing, ordering]);
 
   const openPicker = () => {
-    if (compressing) return;
+    if (compressing || ordering) return;
     inputRef.current?.click();
   };
 
@@ -280,6 +282,7 @@ export function AspiranteFotoField({
     setQuitar(true);
     setFileLabel(null);
     setPreviewIsPdf(false);
+    setOrdering(false);
     setLocalError(null);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -294,6 +297,11 @@ export function AspiranteFotoField({
 
   const showStoredRemoved = Boolean(fotoKey && quitar && !previewUrl);
   const canChange = Boolean(displayUrl || hasStoredFoto || previewUrl);
+  const canOrderPdf =
+    kind === "notas" &&
+    !compressing &&
+    (previewIsPdf ||
+      (hasStoredFoto && isPdfObjectKey(fotoKey) && Boolean(aspiranteId) && !previewOnlyLocal));
 
   return (
     <div className="flex flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-start">
@@ -301,7 +309,7 @@ export function AspiranteFotoField({
         <button
           type="button"
           onClick={openPicker}
-          disabled={compressing}
+          disabled={compressing || ordering}
           className={cn(
             "group relative flex shrink-0 items-center justify-center",
             isDoc ? "rounded-md" : "rounded-full",
@@ -389,7 +397,8 @@ export function AspiranteFotoField({
           <p className="mt-0.5 text-xs leading-snug text-slate-500">{copy.help}</p>
           {kind === "notas" ? (
             <p className="mt-1 text-[11px] text-slate-400">
-              Puede elegir varias fotos: se unen en un PDF. Una sola se queda como imagen.
+              Puede elegir varias fotos: se unen en un PDF. Una sola se queda como imagen. Si ya es
+              PDF, puede cambiar el orden de las páginas.
             </p>
           ) : (
             <p className="mt-1 text-[11px] text-slate-400">
@@ -449,7 +458,7 @@ export function AspiranteFotoField({
             variant="outline"
             size="sm"
             className="gap-1.5 shadow-xs"
-            disabled={compressing}
+            disabled={compressing || ordering}
             onClick={openPicker}
           >
             <Upload className="h-3.5 w-3.5" aria-hidden />
@@ -462,14 +471,48 @@ export function AspiranteFotoField({
               variant="ghost"
               size="sm"
               className="gap-1.5 text-slate-600 hover:text-red-700"
-              disabled={compressing}
+              disabled={compressing || ordering}
               onClick={onQuitar}
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Quitar
             </Button>
           ) : null}
+
+          {canOrderPdf && !ordering ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 shadow-xs"
+              onClick={() => setOrdering(true)}
+            >
+              <ListOrdered className="h-3.5 w-3.5" aria-hidden />
+              Ordenar páginas
+            </Button>
+          ) : null}
         </div>
+
+        {ordering && canOrderPdf ? (
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+            <NotasPdfPageOrder
+              sourceUrl={
+                previewIsPdf && previewUrl
+                  ? previewUrl
+                  : aspiranteId
+                    ? `${aspiranteFotoUrl(aspiranteId, kind)}&proxy=1`
+                    : null
+              }
+              onCancel={() => setOrdering(false)}
+              confirmLabel="Aplicar orden"
+              onConfirm={(file) => {
+                if (inputRef.current) assignFileToInput(inputRef.current, file);
+                applyPreview(file);
+                setOrdering(false);
+              }}
+            />
+          </div>
+        ) : null}
 
         <input
           ref={inputRef}

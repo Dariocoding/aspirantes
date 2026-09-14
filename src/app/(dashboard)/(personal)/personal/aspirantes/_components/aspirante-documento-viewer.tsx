@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileImage, FileText, LoaderCircle, Replace, Trash2, Upload } from "lucide-react";
+import { FileImage, FileText, ListOrdered, LoaderCircle, Replace, Trash2, Upload } from "lucide-react";
+import { NotasPdfPageOrder } from "@dashboard/aspirantes/_components/notas-pdf-page-order";
 import { Button } from "@src/components/ui/button";
 import {
   Dialog,
@@ -85,11 +86,13 @@ export function AspiranteDocumentoViewer({
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [localIsPdf, setLocalIsPdf] = useState(false);
   const [bust, setBust] = useState(0);
+  const [ordering, setOrdering] = useState(false);
   const meta = CENSUS_DOCUMENTO_META[kind];
 
   useEffect(() => {
     if (!open) {
       setError(null);
+      setOrdering(false);
       setLocalIsPdf(false);
       setLocalPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
@@ -216,6 +219,12 @@ export function AspiranteDocumentoViewer({
   const displayUrl = localPreview ?? storedUrl;
   const showPdf = Boolean(displayUrl && (localPreview ? localIsPdf : storedIsPdf));
   const showViewer = Boolean(displayUrl);
+  const canOrderPdf = Boolean(canWrite && kind === "notas" && showPdf);
+  const pdfOrderSourceUrl = localPreview
+    ? localPreview
+    : storedUrl
+      ? `${aspiranteFotoUrl(aspiranteId, kind)}&t=${bust}&proxy=1`
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -251,7 +260,7 @@ export function AspiranteDocumentoViewer({
               e.preventDefault();
             }}
             onDrop={(e) => {
-              if (!canWrite) return;
+              if (!canWrite || ordering) return;
               e.preventDefault();
               onFile(e.dataTransfer.files);
             }}
@@ -265,12 +274,27 @@ export function AspiranteDocumentoViewer({
             role={canWrite && !showViewer ? "button" : undefined}
             tabIndex={canWrite && !showViewer ? 0 : undefined}
             className={cn(
-              "relative flex min-h-[min(58vh,28rem)] w-full items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white",
+              "relative flex min-h-[min(58vh,28rem)] w-full items-center justify-center rounded-lg border border-slate-200 bg-white",
+              ordering ? "items-start overflow-auto p-2" : "overflow-hidden",
               canWrite && !showViewer ? "cursor-pointer hover:border-slate-300 hover:bg-slate-50" : "cursor-default",
               !showViewer && "border-dashed border-slate-300 bg-slate-50",
             )}
           >
-            {showViewer && showPdf ? (
+            {ordering && canOrderPdf ? (
+              <div className="w-full px-1 py-1">
+                <NotasPdfPageOrder
+                  sourceUrl={pdfOrderSourceUrl}
+                  disabled={isPending || compressing}
+                  onCancel={() => setOrdering(false)}
+                  onConfirm={(file) => {
+                    const fd = new FormData();
+                    fd.set(ASPIRANTE_FOTO_FORM[kind].file, file);
+                    setOrdering(false);
+                    submit(fd);
+                  }}
+                />
+              </div>
+            ) : showViewer && showPdf ? (
               <iframe
                 key={displayUrl}
                 src={displayUrl ?? undefined}
@@ -336,12 +360,24 @@ export function AspiranteDocumentoViewer({
           </p>
           {canWrite ? (
             <div className="flex flex-wrap justify-end gap-2">
-              {hasFoto ? (
+              {canOrderPdf && !ordering ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled={isPending || compressing}
+                  onClick={() => setOrdering(true)}
+                >
+                  <ListOrdered className="h-3.5 w-3.5" aria-hidden />
+                  Ordenar páginas
+                </Button>
+              ) : null}
+              {hasFoto ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending || compressing || ordering}
                   onClick={onQuitar}
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -351,7 +387,7 @@ export function AspiranteDocumentoViewer({
               <Button
                 type="button"
                 size="sm"
-                disabled={isPending || compressing}
+                disabled={isPending || compressing || ordering}
                 className="bg-slate-900 hover:bg-slate-800"
                 onClick={() => inputRef.current?.click()}
               >
