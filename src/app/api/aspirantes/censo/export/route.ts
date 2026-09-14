@@ -13,6 +13,7 @@ import { buildAspirantesListaOficialXlsxBuffer } from "@src/lib/excel/build-aspi
 import { ageFromBirthDate } from "@src/lib/date";
 import { AspirantesCensoPdfDocument } from "@src/lib/pdf/aspirantes-censo-document";
 import { AspiranteFichasTecnicasBulkPdfDocument } from "@src/lib/pdf/aspirante-ficha-tecnica-document";
+import { buildDocumentosAcademicosBulkPdf } from "@src/lib/pdf/build-documentos-academicos-bulk-pdf";
 import {
   fichaTecnicaPdfPropsFromAspirante,
   loadFotoForFichaTecnicaPdf,
@@ -72,7 +73,12 @@ export async function GET(request: Request) {
   }
 
   const variantRaw = url.searchParams.get("variant")?.toLowerCase().trim() ?? "";
-  const pdfVariant = format === "pdf" && variantRaw === "fichas-tecnicas" ? "fichas-tecnicas" : "censo";
+  const pdfVariant =
+    format === "pdf" && variantRaw === "fichas-tecnicas"
+      ? "fichas-tecnicas"
+      : format === "pdf" && variantRaw === "documentos-academicos"
+        ? "documentos-academicos"
+        : "censo";
   const xlsxVariant =
     format === "xlsx" && variantRaw === "examenes-medicos"
       ? "examenes-medicos"
@@ -103,7 +109,7 @@ export async function GET(request: Request) {
   ) {
     return NextResponse.json(
       {
-        message: "Parámetro variant inválido (use censo o fichas-tecnicas)",
+        message: "Parámetro variant inválido (use censo, fichas-tecnicas o documentos-academicos)",
       },
       { status: 400 },
     );
@@ -183,7 +189,9 @@ export async function GET(request: Request) {
               : "CENSO_EXPORT_XLSX"
         : pdfVariant === "fichas-tecnicas"
           ? "CENSO_EXPORT_PDF_FICHAS_TECNICAS"
-          : "CENSO_EXPORT_PDF",
+          : pdfVariant === "documentos-academicos"
+            ? "CENSO_EXPORT_PDF_DOCUMENTOS_ACADEMICOS"
+            : "CENSO_EXPORT_PDF",
     entityType: "CENSO",
     entityId: convocatoriaFiltroId,
     metadata: {
@@ -331,6 +339,61 @@ export async function GET(request: Request) {
         "Cache-Control": "private, no-store",
       },
     });
+  }
+
+  if (pdfVariant === "documentos-academicos") {
+    if (!rows.length) {
+      return NextResponse.json(
+        { message: "No hay aspirantes que coincidan con los filtros actuales." },
+        { status: 404 },
+      );
+    }
+
+    try {
+      const buffer = await buildDocumentosAcademicosBulkPdf(
+        rows.map((a) => ({
+          nombres: a.nombres,
+          apellidos: a.apellidos,
+          cedula: a.cedula,
+          tituloUniversidad: a.tituloUniversidad,
+          unidadPostulante: a.unidadPostulante,
+          fotoTituloKey: a.fotoTituloKey,
+          fotoTituloAutenticacionKey: a.fotoTituloAutenticacionKey,
+          fotoNotasKey: a.fotoNotasKey,
+        })),
+        {
+          convocatoriaNombre: convocatoriaActual.nombre,
+          convocatoriaCodigo: convocatoriaActual.codigo,
+          generatedAt,
+        },
+      );
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="documentos-academicos-${codigoSafe}-${dateSafe}.pdf"`,
+          "Cache-Control": "private, no-store",
+        },
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message === "NONE") {
+        return NextResponse.json(
+          {
+            message:
+              "Ningún aspirante del conjunto tiene fondo negro, autenticación o notas certificadas.",
+          },
+          { status: 404 },
+        );
+      }
+      console.error("CENSO_EXPORT_PDF_DOCUMENTOS_ACADEMICOS", err);
+      return NextResponse.json(
+        {
+          message:
+            "No se pudo generar el PDF masivo de documentos académicos. Intente de nuevo o reduzca el conjunto.",
+        },
+        { status: 500 },
+      );
+    }
   }
 
   const generatedAtStr = generatedAt.toLocaleString("es-VE", {

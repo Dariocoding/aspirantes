@@ -88,6 +88,8 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
 
   const fichasTodasUrl = `${base}?format=pdf&variant=fichas-tecnicas&scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
   const fichasFiltrosUrl = `${base}?format=pdf&variant=fichas-tecnicas${suffix}`;
+  const docsTodasUrl = `${base}?format=pdf&variant=documentos-academicos&scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
+  const docsFiltrosUrl = `${base}?format=pdf&variant=documentos-academicos${suffix}`;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -160,7 +162,7 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
           <ChevronDown className="h-3.5 w-3.5 opacity-70 transition group-open:rotate-180" aria-hidden />
         </summary>
         <div
-          className="absolute right-0 z-30 mt-1.5 w-72 overflow-hidden rounded-lg border border-rose-200/90 bg-white py-1 shadow-lg shadow-slate-900/10"
+          className="absolute right-0 z-30 mt-1.5 w-80 overflow-hidden rounded-lg border border-rose-200/90 bg-white py-1 shadow-lg shadow-slate-900/10"
           role="menu"
         >
           <a
@@ -185,6 +187,40 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
             <span className="font-medium">Fichas técnicas (filtros)</span>
             <span className="mt-0.5 block text-xs text-slate-500">
               Un PDF con una ficha por aspirante visible con los filtros
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-800 hover:bg-rose-50"
+            onClick={() =>
+              void runDownload(
+                docsFiltrosUrl,
+                "documentos-academicos.pdf",
+                "documentos académicos con los filtros actuales",
+              )
+            }
+          >
+            <span className="font-medium">Documentos académicos (filtros)</span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              Un PDF: fondo negro, autenticación y notas, con nombre y cédula en cada hoja
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="block w-full border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-800 hover:bg-rose-50"
+            onClick={() =>
+              void runDownload(
+                docsTodasUrl,
+                "documentos-academicos.pdf",
+                "documentos académicos de toda la convocatoria",
+              )
+            }
+          >
+            <span className="font-medium">Documentos académicos (convocatoria)</span>
+            <span className="mt-0.5 block text-xs text-slate-500">
+              El mismo formato, todos los aspirantes de la convocatoria
             </span>
           </button>
         </div>
