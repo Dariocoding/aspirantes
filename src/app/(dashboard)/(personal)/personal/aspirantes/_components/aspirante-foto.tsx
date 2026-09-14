@@ -15,7 +15,7 @@ import {
 } from "@src/lib/storage/aspirante-foto";
 import {
   assignFileToInput,
-  compressAspiranteImage,
+  compressAspiranteUpload,
   formatFileSize,
 } from "@src/lib/storage/compress-image-client";
 import { cn } from "@src/lib/utils";
@@ -259,7 +259,7 @@ export function AspiranteFotoField({
 
     setCompressing(true);
     try {
-      const compressed = await compressAspiranteImage(file, kind);
+      const compressed = await compressAspiranteUpload(file, kind);
       if (gen !== compressGenRef.current) return;
       if (input.isConnected) assignFileToInput(input, compressed);
       applyPreview(compressed);
@@ -386,11 +386,15 @@ export function AspiranteFotoField({
         <div>
           <p className="text-sm font-medium text-slate-800">{copy.title}</p>
           <p className="mt-0.5 text-xs leading-snug text-slate-500">{copy.help}</p>
-          {kind !== "notas" || !previewIsPdf ? (
+          {kind === "notas" ? (
+            <p className="mt-1 text-[11px] text-slate-400">
+              Imágenes y PDF se optimizan en el navegador (cada hoja del PDF) antes de enviarse.
+            </p>
+          ) : (
             <p className="mt-1 text-[11px] text-slate-400">
               Las imágenes se optimizan en el navegador antes de enviarse.
             </p>
-          ) : null}
+          )}
         </div>
 
         {fileLabel ? (
@@ -434,7 +438,7 @@ export function AspiranteFotoField({
         {localError ? <p className="text-xs text-red-600">{localError}</p> : null}
         {compressing ? (
           <p className="text-xs text-slate-500" aria-live="polite">
-            Optimizando imagen…
+            Optimizando archivo…
           </p>
         ) : null}
 

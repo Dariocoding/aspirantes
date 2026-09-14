@@ -22,7 +22,7 @@ import {
   formatHelpForKind,
   type AspiranteDocumentoKind,
 } from "@src/lib/storage/aspirante-foto";
-import { compressAspiranteImage } from "@src/lib/storage/compress-image-client";
+import { compressAspiranteUpload } from "@src/lib/storage/compress-image-client";
 import { aspiranteFotoUrl } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { cn } from "@src/lib/utils";
 
@@ -131,9 +131,11 @@ export function AspiranteDocumentoViewer({
         } catch (e) {
           const msg = e instanceof Error ? e.message : "No se pudo guardar el documento.";
           setError(
-            /load|fetch|network|failed/i.test(msg)
-              ? "El servidor no respondió al guardar. El archivo puede ser válido: recargue e intente de nuevo."
-              : msg,
+            /unexpected response|body exceeded|too large|413/i.test(msg)
+              ? "El archivo es demasiado pesado para el servidor (suele pasar con PDF escaneados). Comprima el PDF o suba JPEG/PNG."
+              : /load|fetch|network|failed/i.test(msg)
+                ? "El servidor no respondió al guardar. El archivo puede ser válido: recargue e intente de nuevo."
+                : msg,
           );
         }
       });
@@ -148,6 +150,10 @@ export function AspiranteDocumentoViewer({
         setError(formatErrorForKind(kind));
         return;
       }
+      if (file.size > 90 * 1024 * 1024) {
+        setError("El archivo supera 90 MB. Comprima el PDF o use una imagen JPEG/PNG.");
+        return;
+      }
       const asPdf = fileLooksPdf(file);
       const gen = ++compressGenRef.current;
       setLocalIsPdf(asPdf);
@@ -157,20 +163,18 @@ export function AspiranteDocumentoViewer({
       });
       setCompressing(true);
       try {
-        const compressed = asPdf ? file : await compressAspiranteImage(file, kind);
+        const compressed = await compressAspiranteUpload(file, kind);
         if (gen !== compressGenRef.current) return;
-        if (!asPdf) {
-          setLocalPreview((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return URL.createObjectURL(compressed);
-          });
-        }
+        setLocalPreview((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return URL.createObjectURL(compressed);
+        });
         const fd = new FormData();
         fd.set(ASPIRANTE_FOTO_FORM[kind].file, compressed);
         submit(fd);
       } catch (e) {
         if (gen !== compressGenRef.current) return;
-        const msg = e instanceof Error ? e.message : "No se pudo optimizar la imagen.";
+        const msg = e instanceof Error ? e.message : "No se pudo optimizar el archivo.";
         setError(msg);
       } finally {
         if (gen === compressGenRef.current) setCompressing(false);
@@ -277,7 +281,7 @@ export function AspiranteDocumentoViewer({
               <span className="absolute inset-0 flex items-center justify-center bg-white/70">
                 <LoaderCircle className="h-8 w-8 animate-spin text-slate-700" aria-hidden />
                 <span className="sr-only">
-                  {compressing ? "Optimizando imagen" : "Guardando documento"}
+                  {compressing ? "Optimizando documento" : "Guardando documento"}
                 </span>
               </span>
             ) : null}

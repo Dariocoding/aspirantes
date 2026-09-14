@@ -82,7 +82,7 @@ async function encodeCandidate(
 
 /**
  * Reduce peso en el navegador. Si falla o el resultado no es más liviano, devuelve el original.
- * No toca PDF ni GIF. WebP solo si el tipo de documento lo admite en servidor.
+ * No toca GIF. WebP solo si el tipo de documento lo admite en servidor.
  */
 export async function compressAspiranteImage(file: File, kind: AspiranteFotoKind): Promise<File> {
   if (!isCompressibleImage(file) || typeof createImageBitmap !== "function") return file;
@@ -129,6 +129,15 @@ export async function compressAspiranteImage(file: File, kind: AspiranteFotoKind
   } finally {
     bitmap.close();
   }
+}
+
+/** Imagen o PDF (hoja por hoja). Si no hay ganancia, deja el original. */
+export async function compressAspiranteUpload(file: File, kind: AspiranteFotoKind): Promise<File> {
+  if (fileLooksPdf(file)) {
+    const { compressAspirantePdf } = await import("@src/lib/storage/compress-pdf-client");
+    return compressAspirantePdf(file, kind);
+  }
+  return compressAspiranteImage(file, kind);
 }
 
 /** Sustituye el File del input para que el FormData nativo envíe la versión comprimida. */

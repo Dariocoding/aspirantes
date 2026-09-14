@@ -53,12 +53,17 @@ const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
     "/**": ["./prisma.config.ts"],
   },
+  transpilePackages: ["pdfjs-dist"],
   experimental: {
-    // Fotos de cédula/título pueden ser pesadas; sin tope práctico de app.
+    // Fotos/PDF de cédula, título y notas. El middleware clona el body (tope 10mb
+    // por defecto) y si se trunca, la Server Action responde HTML →
+    // "An unexpected response was received from the server."
     serverActions: {
       bodySizeLimit: "100mb",
       allowedOrigins: serverActionAllowedOrigins(),
     },
+    proxyClientMaxBodySize: "100mb",
+    middlewareClientMaxBodySize: "100mb",
   },
 
   async redirects() {

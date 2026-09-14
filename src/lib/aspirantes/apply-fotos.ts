@@ -26,8 +26,8 @@ export function unknownFotoSaveError(e: unknown): string {
   ) {
     return "La base de datos no está al día. Reinicie el contenedor para aplicar las migraciones (prisma migrate deploy).";
   }
-  if (/Body exceeded|body exceeded|too large/i.test(msg)) {
-    return "El archivo es demasiado grande para el servidor. Use un JPEG o PNG más liviano.";
+  if (/Body exceeded|body exceeded|too large|unexpected response/i.test(msg)) {
+    return "El archivo es demasiado grande para el servidor. Comprima el PDF o use un JPEG/PNG más liviano.";
   }
   if (/ECONNRESET|ETIMEDOUT|AccessDenied|NoSuchBucket|credentials|S3|fetch failed/i.test(msg)) {
     return "No se pudo guardar el archivo en el almacenamiento. Intente de nuevo.";

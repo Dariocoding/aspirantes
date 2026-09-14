@@ -40,6 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# PDF.js worker copiado en postinstall / prebuild
+/public/pdfjs/
+
 /src/generated/prisma
 
 # ficha técnica PDF visual QA artifacts

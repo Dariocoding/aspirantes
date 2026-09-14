@@ -78,7 +78,7 @@ export function acceptAttrForKind(kind: AspiranteFotoKind): string {
 
 export function formatHelpForKind(kind: AspiranteFotoKind): string {
   if (kind === "titulo" || kind === "tituloAuth") return "Solo JPEG o PNG.";
-  if (kind === "notas") return "JPEG, PNG o PDF.";
+  if (kind === "notas") return "JPEG, PNG o PDF. Los PDF se comprimen hoja por hoja en el navegador.";
   return "JPEG, PNG, WebP o GIF.";
 }
 
@@ -114,7 +114,14 @@ function extHintFromFile(file: File): AspiranteArchivoExt | null {
   if (t === "image/png" || name.endsWith(".png")) return "png";
   if (t === "image/webp" || name.endsWith(".webp")) return "webp";
   if (t === "image/gif" || name.endsWith(".gif")) return "gif";
-  if (t === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+  if (
+    t === "application/pdf" ||
+    t === "application/x-pdf" ||
+    t === "application/acrobat" ||
+    name.endsWith(".pdf")
+  ) {
+    return "pdf";
+  }
   return null;
 }
 
