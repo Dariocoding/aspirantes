@@ -9,6 +9,7 @@ import {
   type CensusDocumentoKind,
 } from "@dashboard/aspirantes/_components/aspirante-documento-viewer";
 import { AspiranteRowActions } from "@dashboard/aspirantes/_components/aspirante-row-actions";
+import { AspiranteQuickDialog } from "@dashboard/aspirantes/_components/aspirante-quick-dialog";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import {
   DropdownMenu,
@@ -41,11 +42,16 @@ import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
 import { ASPIRANTE_DOCUMENTO_KINDS } from "@src/lib/storage/aspirante-foto";
+import type { PelotonResumen } from "@src/lib/pelotones";
 import { cn } from "@src/lib/utils";
 
 export type AspirantesCensusRow = {
   id: string;
   fotoKey: string | null;
+  fotoCedulaKey: string | null;
+  fotoTituloKey: string | null;
+  fotoTituloAutenticacionKey: string | null;
+  fotoNotasKey: string | null;
   nombres: string;
   apellidos: string;
   cedula: string;
@@ -61,6 +67,7 @@ export type AspirantesCensusRow = {
   fechaNacimientoIso: string;
   lugarNacimiento: string;
   calificacionAdmision: string;
+  pelotonId: string | null;
   pelotonLabel: string | null;
   telefono: string | null;
   correo: string | null;
@@ -70,11 +77,17 @@ export type AspirantesCensusRow = {
   nombreUniversidad: string | null;
   paisUniversidad: string | null;
   contactoNombre: string | null;
+  contactoParentesco: string | null;
   contactoTelefono: string | null;
+  contactoDireccion: string | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
   tensionArterial: string | null;
+  alergias: string | null;
+  condicionesMedicas: string | null;
+  discapacidad: string | null;
+  observaciones: string | null;
 };
 
 export type AspirantesCensusGrouping = {
@@ -90,6 +103,7 @@ type Props = {
   rows: AspirantesCensusRow[];
   grouping: AspirantesCensusGrouping;
   canWrite: boolean;
+  pelotones: PelotonResumen[];
 };
 
 function EmptyDash() {
@@ -281,9 +295,10 @@ function cellAlignClass(id: CensusOptionalColumnId): string {
   return "";
 }
 
-export function AspirantesCensusTable({ rows, grouping, canWrite }: Props) {
+export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: Props) {
   const { visibleIds, setVisibleIds, toggleColumn } = useCensusColumnVisibility();
   const [columnQuery, setColumnQuery] = useState("");
+  const [quickEdit, setQuickEdit] = useState<AspirantesCensusRow | null>(null);
   const [docFlags, setDocFlags] = useState<
     Record<
       string,
@@ -586,6 +601,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite }: Props) {
                           aspiranteId={a.id}
                           nombreCompleto={nombreCompleto}
                           canWrite={canWrite}
+                          onQuickEdit={canWrite ? () => setQuickEdit(a) : undefined}
                         />
                       </TableCell>
                     </TableRow>,
@@ -643,6 +659,17 @@ export function AspirantesCensusTable({ rows, grouping, canWrite }: Props) {
               },
             }));
           }}
+        />
+      ) : null}
+      {canWrite ? (
+        <AspiranteQuickDialog
+          open={Boolean(quickEdit)}
+          onOpenChange={(open) => {
+            if (!open) setQuickEdit(null);
+          }}
+          mode="edit"
+          pelotones={pelotones}
+          initial={quickEdit}
         />
       ) : null}
     </>

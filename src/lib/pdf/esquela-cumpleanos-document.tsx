@@ -1,0 +1,219 @@
+import {
+  Defs,
+  Document,
+  Ellipse,
+  Image,
+  Page,
+  RadialGradient,
+  Stop,
+  StyleSheet,
+  Svg,
+  Text,
+  View,
+} from "@react-pdf/renderer";
+import {
+  CUMPLEANOS_GOLD,
+  CUMPLEANOS_LAYOUT,
+  CUMPLEANOS_PAGE_H,
+  CUMPLEANOS_PAGE_W,
+  layoutHonoreeName,
+} from "@src/lib/pdf/esquela-cumpleanos-layout";
+import {
+  ESQUELA_SCRIPT_FONT_FAMILY,
+  registerEsquelaPdfFonts,
+} from "@src/lib/pdf/register-esquela-pdf-fonts";
+
+registerEsquelaPdfFonts();
+
+const photoW = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.photoWidthPct;
+const photoH = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.photoHeightPct;
+const photoLeft = (CUMPLEANOS_PAGE_W - photoW) / 2;
+const photoTop = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.photoCenterYPct - photoH / 2;
+const nameWidth = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.nameWidthPct;
+const nameLeft = (CUMPLEANOS_PAGE_W - nameWidth) / 2;
+const nameTop = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.nameTopPct;
+
+const OUTLINE: Array<[number, number]> = [
+  [-0.8, 0],
+  [0.8, 0],
+  [0, -0.8],
+  [0, 0.8],
+  [-0.6, -0.6],
+  [0.6, -0.6],
+  [-0.6, 0.6],
+  [0.6, 0.6],
+];
+
+/** jpeg-js exige Buffer de Node (`readUInt16BE`); Uint8Array deja la página en blanco. */
+function jpegSrc(data: Buffer) {
+  return { data: Buffer.from(data), format: "jpg" as const };
+}
+
+function pngSrc(data: Buffer) {
+  return { data: Buffer.from(data), format: "png" as const };
+}
+
+const styles = StyleSheet.create({
+  page: {
+    padding: 0,
+    margin: 0,
+  },
+  canvas: {
+    width: CUMPLEANOS_PAGE_W,
+    height: CUMPLEANOS_PAGE_H,
+    position: "relative",
+  },
+  bg: {
+    width: CUMPLEANOS_PAGE_W,
+    height: CUMPLEANOS_PAGE_H,
+  },
+  photoGlow: {
+    position: "absolute",
+    left: photoLeft,
+    top: photoTop,
+    width: photoW,
+    height: photoH,
+  },
+  photo: {
+    position: "absolute",
+    left: photoLeft,
+    top: photoTop,
+    width: photoW,
+    height: photoH,
+    objectFit: "cover",
+  },
+  laurel: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: CUMPLEANOS_PAGE_W,
+    height: CUMPLEANOS_PAGE_H,
+  },
+  nameWrap: {
+    position: "absolute",
+    left: nameLeft,
+    top: nameTop,
+    width: nameWidth,
+    alignItems: "center",
+  },
+  lineBox: {
+    width: nameWidth,
+    alignItems: "center",
+    marginBottom: 1,
+  },
+});
+
+function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
+  const base = {
+    fontFamily: ESQUELA_SCRIPT_FONT_FAMILY,
+    fontSize,
+    textAlign: "center" as const,
+    width: nameWidth,
+    letterSpacing: CUMPLEANOS_LAYOUT.nameLetterSpacingPt,
+  };
+  return (
+    <View style={styles.lineBox}>
+      {OUTLINE.map(([x, y]) => (
+        <Text
+          key={`${x},${y}`}
+          style={{
+            ...base,
+            color: CUMPLEANOS_GOLD.stroke,
+            position: "absolute",
+            left: x,
+            top: y,
+          }}
+        >
+          {text}
+        </Text>
+      ))}
+      <Text
+        style={{
+          ...base,
+          color: CUMPLEANOS_GOLD.dark,
+          position: "absolute",
+          left: 0,
+          top: 0.7,
+        }}
+      >
+        {text}
+      </Text>
+      <Text style={{ ...base, color: CUMPLEANOS_GOLD.fill }}>{text}</Text>
+      <Text
+        style={{
+          ...base,
+          color: CUMPLEANOS_GOLD.light,
+          position: "absolute",
+          left: 0,
+          top: -0.55,
+        }}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+function HonoreeName({ nombre }: { nombre: string }) {
+  const { rank, lines, fontSize } = layoutHonoreeName(nombre);
+  return (
+    <View style={styles.nameWrap}>
+      <ScriptLine text={rank} fontSize={fontSize} />
+      {lines.map((line) => (
+        <ScriptLine key={line} text={line} fontSize={fontSize} />
+      ))}
+    </View>
+  );
+}
+
+export type EsquelaCumpleanosPdfProps = {
+  nombre: string;
+  plantillaJpeg: Buffer;
+  fotoPng: Buffer | null;
+  laurelPng: Buffer | null;
+};
+
+export function EsquelaCumpleanosPdfDocument({
+  nombre,
+  plantillaJpeg,
+  fotoPng,
+  laurelPng,
+}: EsquelaCumpleanosPdfProps) {
+  return (
+    <Document>
+      <Page size={{ width: CUMPLEANOS_PAGE_W, height: CUMPLEANOS_PAGE_H }} style={styles.page} wrap={false}>
+        <View style={styles.canvas}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image */}
+          <Image src={jpegSrc(plantillaJpeg)} style={styles.bg} />
+          {fotoPng ? (
+            <>
+              <Svg width={photoW} height={photoH} style={styles.photoGlow}>
+                <Defs>
+                  <RadialGradient id="goldUnder" cx="50%" cy="38%" rx="58%" ry="58%">
+                    <Stop offset="0%" stopColor={CUMPLEANOS_GOLD.light} />
+                    <Stop offset="55%" stopColor={CUMPLEANOS_GOLD.fill} />
+                    <Stop offset="100%" stopColor={CUMPLEANOS_GOLD.dark} />
+                  </RadialGradient>
+                </Defs>
+                <Ellipse
+                  cx={photoW / 2}
+                  cy={photoH / 2}
+                  rx={photoW / 2}
+                  ry={photoH / 2}
+                  fill="url(#goldUnder)"
+                />
+              </Svg>
+              {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image */}
+              <Image src={pngSrc(fotoPng)} style={styles.photo} />
+            </>
+          ) : null}
+          {laurelPng ? (
+            // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
+            <Image src={pngSrc(laurelPng)} style={styles.laurel} />
+          ) : null}
+          <HonoreeName nombre={nombre} />
+        </View>
+      </Page>
+    </Document>
+  );
+}

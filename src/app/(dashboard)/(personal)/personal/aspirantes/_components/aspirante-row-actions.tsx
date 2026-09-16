@@ -3,7 +3,7 @@
 import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { EllipsisVertical, FileDown, Pencil, Trash2, UserRound } from "lucide-react";
+import { EllipsisVertical, FileDown, Pencil, Sparkles, Trash2, UserRound } from "lucide-react";
 import { deleteAspirante } from "@src/app/actions/aspirantes";
 import { aspiranteFichaTecnicaPdfUrl } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
 import { Button } from "@src/components/ui/button";
@@ -22,9 +22,10 @@ type Props = {
   aspiranteId: string;
   nombreCompleto: string;
   canWrite: boolean;
+  onQuickEdit?: () => void;
 };
 
-export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite }: Props) {
+export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQuickEdit }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [celebrateOpen, setCelebrateOpen] = useState(false);
@@ -74,13 +75,19 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite }: P
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-52">
           <DropdownMenuGroup>
+            {canWrite && onQuickEdit ? (
+              <DropdownMenuItem onClick={onQuickEdit}>
+                <Sparkles />
+                Edición rápida
+              </DropdownMenuItem>
+            ) : null}
             {canWrite ? (
               <DropdownMenuItem
                 nativeButton={false}
                 render={<Link href={editarHref} prefetch={false} />}
               >
                 <Pencil />
-                Editar
+                Ficha completa
               </DropdownMenuItem>
             ) : null}
             {canWrite ? (

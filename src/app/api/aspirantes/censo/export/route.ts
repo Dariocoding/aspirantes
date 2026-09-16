@@ -31,11 +31,7 @@ function parseSp(searchParams: URLSearchParams): Record<string, string | undefin
   const keys = [
     "q",
     "sexo",
-    "edadMin",
-    "edadMax",
     "sort",
-    "calificacion",
-    "unidadPostulante",
     "peloton",
     "convocatoria",
   ];
@@ -379,8 +375,7 @@ export async function GET(request: Request) {
       if (err instanceof Error && err.message === "NONE") {
         return NextResponse.json(
           {
-            message:
-              "Ningún aspirante del conjunto tiene fondo negro, autenticación o notas certificadas.",
+            message: "No hay aspirantes que coincidan con los filtros actuales.",
           },
           { status: 404 },
         );

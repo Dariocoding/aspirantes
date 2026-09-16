@@ -103,7 +103,7 @@ export function LoginForm() {
               Acceso al sistema
             </CardTitle>
             <CardDescription className="text-xs leading-snug text-emerald-950/70">
-              Ingrese credenciales institucionales.
+              Credenciales institucionales del C.E.F.O.A.
             </CardDescription>
           </div>
         </div>

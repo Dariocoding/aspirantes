@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronDown, FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
-import { useRef, useState } from "react";
-import { Button, buttonVariants } from "@src/components/ui/button";
+import { useState } from "react";
+import { Button } from "@src/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@src/components/ui/dialog";
-import { cn } from "@src/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuGroupLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@src/components/ui/dropdown-menu";
 
 type Props = {
   /** Cadena de consulta sin `format` (mismos filtros que el listado). */
@@ -59,22 +67,17 @@ async function downloadExport(url: string, fallbackName: string) {
   }
 }
 
+const triggerClass =
+  "h-8 gap-1.5 rounded-md px-2.5 text-slate-800 shadow-none hover:bg-slate-100";
+
 export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatoriaCount }: Props) {
   const suffix = exportQuery ? `&${exportQuery}` : "";
   const base = "/api/aspirantes/censo/export";
-  const excelRef = useRef<HTMLDetailsElement>(null);
-  const pdfRef = useRef<HTMLDetailsElement>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function closeMenus() {
-    if (excelRef.current) excelRef.current.open = false;
-    if (pdfRef.current) pdfRef.current.open = false;
-  }
-
   async function runDownload(url: string, fallbackName: string, label: string) {
     if (busyLabel) return;
-    closeMenus();
     setError(null);
     setBusyLabel(label);
     try {
@@ -92,161 +95,149 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
   const docsFiltrosUrl = `${base}?format=pdf&variant=documentos-academicos${suffix}`;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <details ref={excelRef} className="group relative">
-        <summary
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "h-9 cursor-pointer list-none gap-1.5 border-emerald-200/90 bg-emerald-50/80 px-2.5 text-emerald-950 shadow-sm hover:bg-emerald-100/90 [&::-webkit-details-marker]:hidden",
-          )}
-        >
-          <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden />
-          Excel
-          <ChevronDown className="h-3.5 w-3.5 opacity-70 transition group-open:rotate-180" aria-hidden />
-        </summary>
-        <div
-          className="absolute right-0 z-30 mt-1.5 w-64 overflow-hidden rounded-lg border border-emerald-200/90 bg-white py-1 shadow-lg shadow-slate-900/10"
-          role="menu"
-        >
-          <a
-            href={`${base}?format=xlsx${suffix}`}
-            role="menuitem"
-            className="block px-3 py-2 text-sm text-slate-800 hover:bg-emerald-50"
-            onClick={closeMenus}
+    <>
+      <div className="flex items-center rounded-lg border border-slate-200/90 bg-white p-0.5 shadow-sm">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={Boolean(busyLabel)}
+            render={<Button variant="ghost" size="sm" className={triggerClass} />}
           >
-            <span className="font-medium">Censo completo</span>
-            <span className="mt-0.5 block text-xs text-slate-500">Exportación habitual del directorio</span>
-          </a>
-          <a
-            href={`${base}?format=xlsx&variant=examenes-medicos${suffix}`}
-            role="menuitem"
-            className="block border-t border-slate-100 px-3 py-2 text-sm text-slate-800 hover:bg-emerald-50"
-            onClick={closeMenus}
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-700" aria-hidden />
+            Excel
+            <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-64">
+            <DropdownMenuGroup>
+              <DropdownMenuGroupLabel>Hojas de cálculo</DropdownMenuGroupLabel>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<a href={`${base}?format=xlsx${suffix}`} />}
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Censo completo</span>
+                  <span className="text-xs text-muted-foreground">Directorio según los filtros actuales</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<a href={`${base}?format=xlsx&variant=examenes-medicos${suffix}`} />}
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Exámenes médicos</span>
+                  <span className="text-xs text-muted-foreground">Nombre, cédula y checklist médico</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<a href={`${base}?format=xlsx&variant=lista-oficial${suffix}`} />}
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Lista oficial</span>
+                  <span className="text-xs text-muted-foreground">N°, JQUIA, apellidos, nombres, cédula, sexo</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<a href={`${base}?format=xlsx&variant=cumpleanos${suffix}`} />}
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Cumpleaños</span>
+                  <span className="text-xs text-muted-foreground">Por mes: nombre, cédula, nacimiento y edad</span>
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={Boolean(busyLabel)}
+            render={<Button variant="ghost" size="sm" className={triggerClass} />}
           >
-            <span className="font-medium">Exámenes médicos</span>
-            <span className="mt-0.5 block text-xs text-slate-500">Nombre, cédula y checklist médico</span>
-          </a>
-          <a
-            href={`${base}?format=xlsx&variant=lista-oficial${suffix}`}
-            role="menuitem"
-            className="block border-t border-slate-100 px-3 py-2 text-sm text-slate-800 hover:bg-emerald-50"
-            onClick={closeMenus}
-          >
-            <span className="font-medium">Lista oficial</span>
-            <span className="mt-0.5 block text-xs text-slate-500">
-              N°, JQUIA ASP OFICIAL, apellidos, nombres, cédula, sexo
-            </span>
-          </a>
-          <a
-            href={`${base}?format=xlsx&variant=cumpleanos${suffix}`}
-            role="menuitem"
-            className="block border-t border-slate-100 px-3 py-2 text-sm text-slate-800 hover:bg-emerald-50"
-            onClick={closeMenus}
-          >
-            <span className="font-medium">Cumpleaños</span>
-            <span className="mt-0.5 block text-xs text-slate-500">
-              Por mes: nombre, cédula, fecha de nacimiento y edad
-            </span>
-          </a>
-        </div>
-      </details>
-      <details ref={pdfRef} className="group relative">
-        <summary
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "h-9 cursor-pointer list-none gap-1.5 border-rose-200/90 bg-rose-50/80 px-2.5 text-rose-950 shadow-sm hover:bg-rose-100/90 [&::-webkit-details-marker]:hidden",
-          )}
-        >
-          <FileDown className="h-3.5 w-3.5" aria-hidden />
-          PDF
-          <ChevronDown className="h-3.5 w-3.5 opacity-70 transition group-open:rotate-180" aria-hidden />
-        </summary>
-        <div
-          className="absolute right-0 z-30 mt-1.5 w-80 overflow-hidden rounded-lg border border-rose-200/90 bg-white py-1 shadow-lg shadow-slate-900/10"
-          role="menu"
-        >
-          <a
-            href={`${base}?format=pdf${suffix}`}
-            role="menuitem"
-            className="block px-3 py-2 text-sm text-slate-800 hover:bg-rose-50"
-            onClick={closeMenus}
-          >
-            <span className="font-medium">Listado del censo</span>
-            <span className="mt-0.5 block text-xs text-slate-500">
-              Directorio en PDF según los filtros actuales
-            </span>
-          </a>
-          <button
-            type="button"
-            role="menuitem"
-            className="block w-full border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-800 hover:bg-rose-50"
-            onClick={() =>
-              void runDownload(fichasFiltrosUrl, "fichas-tecnicas.pdf", "fichas con los filtros actuales")
-            }
-          >
-            <span className="font-medium">Fichas técnicas (filtros)</span>
-            <span className="mt-0.5 block text-xs text-slate-500">
-              Un PDF con una ficha por aspirante visible con los filtros
-            </span>
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="block w-full border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-800 hover:bg-rose-50"
-            onClick={() =>
-              void runDownload(
-                docsFiltrosUrl,
-                "documentos-academicos.pdf",
-                "documentos académicos con los filtros actuales",
-              )
-            }
-          >
-            <span className="font-medium">Documentos académicos (filtros)</span>
-            <span className="mt-0.5 block text-xs text-slate-500">
-              Un PDF: fondo negro, autenticación y notas, con nombre y cédula en cada hoja
-            </span>
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="block w-full border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-800 hover:bg-rose-50"
-            onClick={() =>
-              void runDownload(
-                docsTodasUrl,
-                "documentos-academicos.pdf",
-                "documentos académicos de toda la convocatoria",
-              )
-            }
-          >
-            <span className="font-medium">Documentos académicos (convocatoria)</span>
-            <span className="mt-0.5 block text-xs text-slate-500">
-              El mismo formato, todos los aspirantes de la convocatoria
-            </span>
-          </button>
-        </div>
-      </details>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={convocatoriaCount < 1 || Boolean(busyLabel)}
-        className="h-9 gap-1.5 border-indigo-200/90 bg-indigo-50/80 px-2.5 text-indigo-950 shadow-sm hover:bg-indigo-100/90"
-        onClick={() =>
-          void runDownload(fichasTodasUrl, "fichas-tecnicas.pdf", "todas las fichas técnicas")
-        }
-      >
-        {busyLabel ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-        ) : (
-          <FileDown className="h-3.5 w-3.5" aria-hidden />
-        )}
-        Todas las fichas
-        {convocatoriaCount > 0 ? (
-          <span className="rounded-md bg-indigo-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-indigo-900">
-            {convocatoriaCount}
-          </span>
-        ) : null}
-      </Button>
+            <FileDown className="h-3.5 w-3.5 text-rose-700" aria-hidden />
+            PDF
+            <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-72">
+            <DropdownMenuGroup>
+              <DropdownMenuGroupLabel>Según filtros</DropdownMenuGroupLabel>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<a href={`${base}?format=pdf${suffix}`} />}
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Listado del censo</span>
+                  <span className="text-xs text-muted-foreground">Directorio en PDF</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(fichasFiltrosUrl, "fichas-tecnicas.pdf", "fichas con los filtros actuales")
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Fichas técnicas</span>
+                  <span className="text-xs text-muted-foreground">Una ficha por aspirante visible</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(
+                    docsFiltrosUrl,
+                    "documentos-academicos.pdf",
+                    "documentos académicos con los filtros actuales",
+                  )
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Documentos académicos</span>
+                  <span className="text-xs text-muted-foreground">Fondo, autenticación y notas</span>
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuGroupLabel>Toda la convocatoria</DropdownMenuGroupLabel>
+              <DropdownMenuItem
+                disabled={convocatoriaCount < 1 || Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(fichasTodasUrl, "fichas-tecnicas.pdf", "todas las fichas técnicas")
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">
+                    Fichas técnicas
+                    {convocatoriaCount > 0 ? (
+                      <span className="ml-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                        {convocatoriaCount}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Todas las fichas de la convocatoria</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={convocatoriaCount < 1 || Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(
+                    docsTodasUrl,
+                    "documentos-academicos.pdf",
+                    "documentos académicos de toda la convocatoria",
+                  )
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Documentos académicos</span>
+                  <span className="text-xs text-muted-foreground">El mismo formato, todos los registros</span>
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {error ? (
         <p className="basis-full text-xs text-rose-700" role="alert">
           {error}
@@ -267,6 +258,6 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
           </DialogHeader>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

@@ -60,7 +60,7 @@ export const APPS: Record<AppId, AppDefinition> = {
     name: "Gestión de personal",
     shortName: "Personal",
     description:
-      "Censo y administración de aspirantes, efemérides, esquelas y convocatorias del Ejército Bolivariano.",
+      "Censo y administración de aspirantes, efemérides, esquelas y convocatorias del C.E.F.O.A.",
     homeHref: routes.personal.home,
     pathPrefixes: personalPathPrefixes,
     accessPermissions: [Permission.DASHBOARD_READ, Permission.ASPIRANTES_READ],
@@ -224,8 +224,8 @@ export function getAppHeader(appId: AppId | "hub"): {
 } {
   if (appId === "hub") {
     return {
-      title: "Portal de aplicaciones",
-      subtitle: "Seleccione una aplicación para continuar",
+      title: "Portal institucional",
+      subtitle: "Seleccione un módulo para continuar",
     };
   }
 

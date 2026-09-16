@@ -1,21 +1,13 @@
 ﻿import Link from "next/link";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  Search,
-  UserPlus,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
 import { AspirantesCensusTable, type AspirantesCensusRow } from "@dashboard/aspirantes/_components/aspirantes-census-table";
 import { AspirantesExportLinks } from "@dashboard/aspirantes/_components/aspirantes-export-links";
-import { AspirantesImportDialog } from "@dashboard/aspirantes/_components/aspirantes-import-dialog";
-import { AspirantesFiltersDrawer } from "@dashboard/aspirantes/_components/aspirantes-filters-drawer";
+import { AspiranteQuickRegisterButton } from "@dashboard/aspirantes/_components/aspirante-quick-dialog";
+import { AspirantesFilterBar } from "@dashboard/aspirantes/_components/aspirantes-filter-bar";
 import { SinConvocatoriasPanel } from "@dashboard/aspirantes/_components/sin-convocatorias-panel";
-import { Button, buttonVariants } from "@src/components/ui/button";
+import { buttonVariants } from "@src/components/ui/button";
 import { cn } from "@src/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
-import { Input } from "@src/components/ui/input";
-import { Label } from "@src/components/ui/label";
 import { auth } from "@src/auth";
 import {
   buildAspiranteCensusWhere,
@@ -55,6 +47,10 @@ function toCensusRow(
     nombres: a.nombres,
     apellidos: a.apellidos,
     cedula: a.cedula,
+    fotoCedulaKey: a.fotoCedulaKey,
+    fotoTituloKey: a.fotoTituloKey,
+    fotoTituloAutenticacionKey: a.fotoTituloAutenticacionKey,
+    fotoNotasKey: a.fotoNotasKey,
     hasFotoCedula: Boolean(a.fotoCedulaKey),
     hasFotoTitulo: Boolean(a.fotoTituloKey),
     hasFotoTituloAuth: Boolean(a.fotoTituloAutenticacionKey),
@@ -67,6 +63,7 @@ function toCensusRow(
     fechaNacimientoIso: a.fechaNacimiento.toISOString(),
     lugarNacimiento: a.lugarNacimiento ?? "",
     calificacionAdmision: a.calificacionAdmision,
+    pelotonId: a.pelotonId,
     pelotonLabel: a.peloton ? labelPeloton(a.peloton) : null,
     telefono: a.telefono,
     correo: a.correo,
@@ -76,21 +73,18 @@ function toCensusRow(
     nombreUniversidad: a.nombreUniversidad,
     paisUniversidad: a.paisUniversidad,
     contactoNombre: contacto?.nombre ?? null,
+    contactoParentesco: contacto?.parentesco ?? null,
     contactoTelefono: contacto?.telefono ?? null,
+    contactoDireccion: contacto?.direccion ?? null,
     estaturaCm: a.datosFisicos?.estaturaCm ?? null,
     pesoKg: a.datosFisicos?.pesoKg ?? null,
     tipoSangre: a.datosFisicos?.tipoSangre ?? null,
     tensionArterial: a.datosFisicos?.tensionArterial ?? null,
+    alergias: a.datosFisicos?.alergias ?? null,
+    condicionesMedicas: a.datosFisicos?.condicionesMedicas ?? null,
+    discapacidad: a.datosFisicos?.discapacidad ?? null,
+    observaciones: a.datosFisicos?.observaciones ?? null,
   };
-}
-
-function hrefClearAdvanced(q: string | undefined, convocatoriaId?: string) {
-  const p = new URLSearchParams();
-  const t = q?.trim();
-  if (t) p.set("q", t);
-  if (convocatoriaId) p.set("convocatoria", convocatoriaId);
-  const s = p.toString();
-  return s ? `${routes.personal.aspirantes}?${s}` : routes.personal.aspirantes;
 }
 
 export default async function AspirantesPage({
@@ -146,12 +140,7 @@ export default async function AspirantesPage({
   const groupByGrado = isCensusGradoGroupSort(sp.sort);
   const sortInMemory = groupByNacimientoMes || groupByGrado;
 
-  const unidadWhereLista: Prisma.AspiranteWhereInput = {
-    convocatoriaId: convocatoriaFiltroId,
-    unidadPostulante: { not: "" },
-  };
-
-  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, unidadGrupos, carreraGrupos, pelotones] =
+  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, pelotones] =
     await Promise.all([
     sortInMemory
       ? Promise.resolve(0)
@@ -177,11 +166,6 @@ export default async function AspirantesPage({
           skip: (page - 1) * PAGE_SIZE,
           take: PAGE_SIZE,
         }),
-    prisma.aspirante.groupBy({
-      by: ["unidadPostulante"],
-      where: unidadWhereLista,
-      orderBy: { unidadPostulante: "asc" },
-    }),
     groupByCarrera
       ? prisma.aspirante.groupBy({
           by: ["tituloUniversidad"],
@@ -238,17 +222,6 @@ export default async function AspirantesPage({
     countByGrado: Object.fromEntries([...countByGrado.entries()].map(([k, v]) => [String(k), v])),
   };
 
-  const unidadFiltro = sp.unidadPostulante?.trim();
-  const unidadFiltroActivo = Boolean(unidadFiltro && unidadFiltro !== "TODOS");
-  const unidadesDesdeDb = unidadGrupos.map((g) => g.unidadPostulante);
-  const unidadesPostulantes = Array.from(
-    new Set(
-      unidadFiltroActivo && unidadFiltro && !unidadesDesdeDb.includes(unidadFiltro)
-        ? [...unidadesDesdeDb, unidadFiltro]
-        : unidadesDesdeDb,
-    ),
-  ).sort((a, b) => a.localeCompare(b, "es"));
-
   const pelotonFiltro = sp.peloton?.trim();
   const pelotonFiltroActivo = Boolean(
     pelotonFiltro &&
@@ -260,201 +233,70 @@ export default async function AspirantesPage({
   const qsBase: Record<string, string | undefined> = {
     q: sp.q,
     sexo: sp.sexo,
-    edadMin: sp.edadMin,
-    edadMax: sp.edadMax,
     sort: sp.sort,
-    calificacion: sp.calificacion,
-    unidadPostulante: sp.unidadPostulante,
     peloton: pelotonFiltroActivo ? pelotonFiltro : undefined,
   };
   if (convocatoriaFiltroId) qsBase.convocatoria = convocatoriaFiltroId;
 
-  let activeAdvancedCount = 0;
-  if (sp.sexo && sp.sexo !== "TODOS") activeAdvancedCount++;
-  if (sp.edadMin?.trim()) activeAdvancedCount++;
-  if (sp.edadMax?.trim()) activeAdvancedCount++;
-  if (
-    sp.sort === "nombres" ||
-    sp.sort === "titulo" ||
-    sp.sort === "carrera" ||
-    sp.sort === "grado" ||
-    sp.sort === "nacimiento" ||
-    sp.sort === "nacimiento-mes" ||
-    sp.sort === "reciente"
-  ) {
-    activeAdvancedCount++;
-  }
-  if (unidadFiltroActivo) activeAdvancedCount++;
-  if (pelotonFiltroActivo) activeAdvancedCount++;
-  if (
-    sp.calificacion &&
-    sp.calificacion !== "TODOS" &&
-    (sp.calificacion === "APTO" || sp.calificacion === "NO_APTO" || sp.calificacion === "EN_EVALUACION")
-  ) {
-    activeAdvancedCount++;
-  }
-  if (
-    paramC &&
-    defaultConvocatoriaId &&
-    paramC !== defaultConvocatoriaId &&
-    convocatorias.some((c) => c.id === paramC)
-  ) {
-    activeAdvancedCount++;
-  }
-
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <ClipboardList className="h-5 w-5 shrink-0 text-slate-800" aria-hidden />
-            <h1 className="min-w-0 text-xl font-semibold tracking-tight text-slate-900">Censo de aspirantes</h1>
-          </div>
-          <p className="min-w-0 pl-7 text-sm text-slate-600">
-            Convocatoria:{" "}
-            <strong className="font-bold text-slate-900">
-              {convocatoriaActual.nombre}
-              {" · "}
-              {convocatoriaActual.anio}
-            </strong>
-          </p>
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <ClipboardList className="h-5 w-5 shrink-0 text-slate-800" aria-hidden />
+          <h1 className="min-w-0 text-xl font-semibold tracking-tight text-slate-900">Censo de aspirantes</h1>
         </div>
-        {write ? (
-          <Link
-            href={routes.personal.aspirantesGestion}
-            prefetch={false}
-            className={cn(
-              buttonVariants({ variant: "default", size: "sm" }),
-              "h-9 w-full justify-center gap-2 bg-slate-900 px-3 shadow-sm hover:bg-slate-800 sm:w-auto sm:shrink-0",
-            )}
-          >
-            <UserPlus className="h-4 w-4" aria-hidden />
-            Registro
-          </Link>
-        ) : null}
+        <p className="min-w-0 pl-7 text-sm text-slate-600">
+          Convocatoria:{" "}
+          <strong className="font-bold text-slate-900">
+            {convocatoriaActual.nombre}
+            {" · "}
+            {convocatoriaActual.anio}
+          </strong>
+        </p>
       </div>
 
       <Card className="shadow-sm shadow-slate-900/5 ring-slate-200/80">
         <CardHeader className="border-b border-slate-200/80 bg-linear-to-br from-slate-50 to-white py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <CardTitle className="text-base font-semibold text-slate-900">Directorio del censo</CardTitle>
               <CardDescription className="text-xs text-slate-600">
                 Listado paginado e identificación básica.
-                {write ? (
-                  <>
-                    {" "}
-                    Excel y PDF exportan{" "}
-                    <span className="font-medium text-slate-700">todos</span> los registros que cumplen los filtros
-                    actuales. <span className="font-medium text-slate-700">Todas las fichas</span> genera un PDF con
-                    la ficha técnica de cada aspirante de esta convocatoria. Puede editar el Excel exportado y volver
-                    a <span className="font-medium text-slate-700">importarlo</span> (clave: cédula).
-                  </>
-                ) : (
-                  <> La exportación masiva (Excel/PDF) está reservada a operadores y administradores.</>
-                )}
+                {write
+                  ? " Excel y PDF exportan todos los registros que cumplen los filtros actuales."
+                  : " La exportación masiva (Excel/PDF) está reservada a operadores y administradores."}
               </CardDescription>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
               {write ? (
-                <>
-                  <AspirantesImportDialog
-                    convocatoriaId={convocatoriaFiltroId}
-                    convocatoriaLabel={`${convocatoriaActual.nombre} (${convocatoriaActual.codigo})`}
-                  />
-                  <AspirantesExportLinks
-                    exportQuery={censusQueryString(qsBase, {})}
-                    convocatoriaId={convocatoriaFiltroId}
-                    convocatoriaCount={convocatoriaAspiranteCount}
-                  />
-                </>
+                <AspirantesExportLinks
+                  exportQuery={censusQueryString(qsBase, {})}
+                  convocatoriaId={convocatoriaFiltroId}
+                  convocatoriaCount={convocatoriaAspiranteCount}
+                />
               ) : null}
-              <AspirantesFiltersDrawer
-                q={sp.q ?? ""}
-                sexo={sp.sexo}
-                edadMin={sp.edadMin}
-                edadMax={sp.edadMax}
-                sort={sp.sort}
-                calificacion={sp.calificacion}
-                unidadPostulante={sp.unidadPostulante}
-                unidadesPostulantes={unidadesPostulantes}
-                peloton={pelotonFiltroActivo ? pelotonFiltro : undefined}
-                pelotones={pelotones}
-                convocatorias={convocatorias.map((c) => ({
-                  id: c.id,
-                  codigo: c.codigo,
-                  nombre: c.nombre,
-                  activa: c.activa,
-                }))}
-                convocatoriaId={convocatoriaFiltroId}
-                clearAdvancedHref={hrefClearAdvanced(sp.q, convocatoriaFiltroId)}
-                activeAdvancedCount={activeAdvancedCount}
-              />
+              {write ? <AspiranteQuickRegisterButton pelotones={pelotones} /> : null}
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-0 p-0">
           <div className="border-b border-slate-200/90 bg-slate-50/60 px-4 py-3">
-            <form method="get" className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-              {convocatoriaFiltroId ? <input type="hidden" name="convocatoria" value={convocatoriaFiltroId} /> : null}
-              <input type="hidden" name="sexo" value={sp.sexo ?? "TODOS"} />
-              {sp.edadMin?.trim() ? <input type="hidden" name="edadMin" value={sp.edadMin} /> : null}
-              {sp.edadMax?.trim() ? <input type="hidden" name="edadMax" value={sp.edadMax} /> : null}
-              {sp.sort === "nombres" ||
-              sp.sort === "titulo" ||
-              sp.sort === "carrera" ||
-              sp.sort === "grado" ||
-              sp.sort === "nacimiento" ||
-              sp.sort === "nacimiento-mes" ||
-              sp.sort === "reciente" ? (
-                <input type="hidden" name="sort" value={sp.sort} />
-              ) : null}
-              {sp.calificacion && sp.calificacion !== "TODOS" ? (
-                <input type="hidden" name="calificacion" value={sp.calificacion} />
-              ) : null}
-              {unidadFiltroActivo && unidadFiltro ? (
-                <input type="hidden" name="unidadPostulante" value={unidadFiltro} />
-              ) : null}
-              {pelotonFiltroActivo && pelotonFiltro ? (
-                <input type="hidden" name="peloton" value={pelotonFiltro} />
-              ) : null}
-              <div className="relative min-w-0 flex-1">
-                <Label htmlFor="q" className="sr-only">
-                  Buscar por nombre, apellido o cédula
-                </Label>
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                  aria-hidden
-                />
-                <Input
-                  id="q"
-                  name="q"
-                  defaultValue={sp.q ?? ""}
-                  placeholder="Buscar por nombre, apellido o cédula…"
-                  className="h-10 border-slate-200 bg-white pl-9 shadow-sm"
-                />
-              </div>
-              <div className="flex gap-2 sm:w-auto">
-                <Button
-                  type="submit"
-                  className="h-10 flex-1 gap-2 bg-slate-900 shadow-sm hover:bg-slate-800 sm:flex-initial sm:px-5"
-                >
-                  <Search className="h-4 w-4" aria-hidden />
-                  Buscar
-                </Button>
-                <Link
-                  href={routes.personal.aspirantes}
-                  prefetch={false}
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "default" }),
-                    "h-10 border-slate-200 bg-white px-3 shadow-sm sm:px-4",
-                  )}
-                >
-                  Limpiar
-                </Link>
-              </div>
-            </form>
-            <p className="mt-2 text-xs text-slate-600">
+            <AspirantesFilterBar
+              q={sp.q ?? ""}
+              sexo={sp.sexo}
+              sort={sp.sort}
+              peloton={pelotonFiltroActivo ? pelotonFiltro : undefined}
+              pelotones={pelotones}
+              convocatorias={convocatorias.map((c) => ({
+                id: c.id,
+                codigo: c.codigo,
+                nombre: c.nombre,
+                activa: c.activa,
+              }))}
+              convocatoriaId={convocatoriaFiltroId}
+              defaultConvocatoriaId={defaultConvocatoriaId}
+            />
+            <p className="mt-3 text-xs text-slate-600">
               <span className="font-medium tabular-nums text-slate-800">{aspirantes.length}</span>
               {" de "}
               <span className="font-medium tabular-nums text-slate-800">{total}</span>
@@ -464,7 +306,12 @@ export default async function AspirantesPage({
               </span>
             </p>
           </div>
-          <AspirantesCensusTable rows={censusRows} grouping={censusGrouping} canWrite={write} />
+          <AspirantesCensusTable
+            rows={censusRows}
+            grouping={censusGrouping}
+            canWrite={write}
+            pelotones={pelotones}
+          />
 
           <div className="flex flex-col gap-3 border-t border-slate-200/90 bg-slate-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-500">

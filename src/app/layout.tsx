@@ -10,20 +10,22 @@ const urbanist = Urbanist({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema FANB - Gestión de Personal",
-  description: "Censo de aspirantes, efemérides y esquelas institucionales.",
+  title: "C.E.F.O.A. — Gestión de personal",
+  description:
+    "Sistema de gestión de personal del Curso de Especialización para la Formación de Oficiales de Armas.",
   icons: {
-    icon: "/images/ejercito_logo.webp",
+    icon: "/images/cefoa-logo.png",
   },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={cn(urbanist.className, "h-full antialiased")}>
+    <html
+      lang="es"
+      className={cn(urbanist.className, urbanist.variable, "h-full antialiased")}
+    >
       <body className="min-h-full bg-slate-100 text-slate-900">
         <Providers>{children}</Providers>
       </body>

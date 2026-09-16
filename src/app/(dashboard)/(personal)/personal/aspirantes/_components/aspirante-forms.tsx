@@ -176,7 +176,7 @@ export type AspiranteRegistroInitial = {
 const STEPS = [
   {
     title: "Identidad",
-    description: "Nombres y cédula bastan para el alta; el resto es opcional",
+    description: "Nombres, apellidos y cédula son obligatorios; el resto es opcional",
   },
   { title: "Contacto", description: "Ubicación y comunicación" },
   { title: "Estudios", description: "Universidad, título, país y núcleo" },
@@ -541,9 +541,12 @@ export function AspiranteRegistroForm({
               />
             </div>
             <div>
-              <Label>Apellidos</Label>
+              <Label>
+                Apellidos <span className="text-red-600">*</span>
+              </Label>
               <Input
                 name="apellidos"
+                required
                 defaultValue={defaults.apellidos}
                 autoComplete="family-name"
               />

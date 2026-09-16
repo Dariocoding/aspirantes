@@ -135,7 +135,7 @@ export default async function AspirantesGestionPage({
   const tituloCard = modoEdicion ? "Editar aspirante" : "Registrar aspirante";
   const descCard = modoEdicion
     ? "Mismos pasos que el alta: revise cada sección y guarde los cambios."
-    : "Puede registrar solo con nombres y cédula; el resto de datos es opcional y se puede completar después.";
+    : "Puede registrar con nombres, apellidos y cédula; el resto de datos es opcional y se puede completar después.";
 
   return (
     <div className="space-y-5">

@@ -163,6 +163,19 @@ export function aspiranteFotoKey(aspiranteId: string, ext: string): string {
   return aspiranteFotoObjectKey(aspiranteId, "perfil", ext);
 }
 
+/** Ruta de la API de foto (usable en servidor y cliente). */
+export function aspiranteFotoUrl(
+  aspiranteId: string,
+  kind: AspiranteFotoKind = "perfil",
+  extra?: { cutout?: boolean },
+): string {
+  const params = new URLSearchParams();
+  if (kind !== "perfil") params.set("tipo", kind);
+  if (extra?.cutout) params.set("cutout", "1");
+  const q = params.toString();
+  return `/api/aspirantes/foto/${aspiranteId}${q ? `?${q}` : ""}`;
+}
+
 export function parseAspiranteFotoFile(
   formData: FormData,
   kind: AspiranteFotoKind = "perfil",

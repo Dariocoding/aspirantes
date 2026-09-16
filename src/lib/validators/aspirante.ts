@@ -171,7 +171,7 @@ const optionalContactoString = (max: number) =>
   );
 
 /**
- * Alta / edición desde personal: basta con nombres y cédula.
+ * Alta / edición desde personal: nombres, apellidos y cédula son obligatorios.
  * El resto se completa después (defaults seguros en BD).
  */
 const aspiranteStaffBaseSchema = z.object({
@@ -184,10 +184,7 @@ const aspiranteStaffBaseSchema = z.object({
     calificacionAdmisionEnum,
   ),
   nombres: z.string().trim().min(1, "Nombres obligatorios").max(120),
-  apellidos: z.preprocess(
-    (v) => (v === null || v === undefined ? "" : String(v).trim()),
-    z.string().max(120),
-  ),
+  apellidos: z.string().trim().min(1, "Apellidos obligatorios").max(120),
   cedula: z
     .string()
     .trim()
@@ -246,6 +243,51 @@ export const aspiranteUpdateSchema = aspiranteStaffBaseSchema
     aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
   })
   .superRefine(refineStaffFechaNacimiento);
+
+/** Identidad, contacto, emergencia y datos médicos desde el censo. */
+export const aspiranteQuickUpdateSchema = z
+  .object({
+    aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
+    nombres: z.string().trim().min(1, "Nombres obligatorios").max(120),
+    apellidos: z.string().trim().min(1, "Apellidos obligatorios").max(120),
+    cedula: z
+      .string()
+      .trim()
+      .regex(/^[0-9]{6,12}$/, "Cédula: solo dígitos, entre 6 y 12 caracteres"),
+    sexo: optionalSexo,
+    fechaNacimiento: optionalFechaNacimiento,
+    lugarNacimiento: z.preprocess(
+      (v) => (v === null || v === undefined ? "" : String(v).trim()),
+      z.string().max(200),
+    ),
+    telefono: z.string().trim().max(40).optional().nullable(),
+    correo: z.preprocess(
+      (v) => (v === null || v === undefined || v === "" ? undefined : String(v).trim()),
+      z.string().email("Correo inválido").optional(),
+    ),
+    direccion: z.string().trim().max(500).optional().nullable(),
+    pelotonId: z.preprocess(
+      (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
+      z.string().min(1).nullable(),
+    ),
+    estaturaCm: optionalFloat(300),
+    pesoKg: optionalFloat(400),
+    tensionArterial: z.string().trim().max(20).optional().nullable(),
+    tipoSangre: z.string().trim().max(10).optional().nullable(),
+    alergias: z.string().trim().max(500).optional().nullable(),
+    condicionesMedicas: z.string().trim().max(2000).optional().nullable(),
+    discapacidad: z.string().trim().max(500).optional().nullable(),
+    observaciones: z.string().trim().max(2000).optional().nullable(),
+    contactoNombre: optionalContactoString(120),
+    contactoParentesco: optionalContactoString(80),
+    contactoTelefono: optionalContactoString(40),
+    contactoDireccion: z.string().trim().max(500).optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.fechaNacimiento != null && hasRealBirthDate(data.fechaNacimiento)) {
+      refineEdadDesdeNacimiento(data.fechaNacimiento, ctx);
+    }
+  });
 
 /** Verificación pública: cédula en la convocatoria activa. */
 export const aspiranteSelfServiceVerifySchema = z.object({

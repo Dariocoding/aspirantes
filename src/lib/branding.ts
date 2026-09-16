@@ -1,7 +1,16 @@
-/** Logo institucional en `public/images/` (WebP para Next/Image). Para PDF ver `readInstitutionLogoPngBuffer` → `ejercito_logo_print.png`. */
-export const INSTITUTION_LOGO_SRC = "/images/ejercito_logo.webp";
+/** Escudo heráldico del C.E.F.O.A. (PNG sobre campo negro). Para PDF ver `readInstitutionLogoPngBuffer`. */
+export const INSTITUTION_LOGO_SRC = "/images/cefoa-logo.png";
 
-/** Tricolor institucional (misma referencia en sidebar, login y demás cromo FANB). */
+export const INSTITUTION_SHORT_NAME = "C.E.F.O.A.";
+
+export const INSTITUTION_NAME =
+  "Curso de Especialización para la Formación de Oficiales de Armas";
+
+export const INSTITUTION_BRANCH = "Ejército Bolivariano";
+
+export const INSTITUTION_PRODUCT = "Gestión de personal";
+
+/** Tricolor institucional (misma referencia en sidebar, login y demás cromo). */
 export const FANB_FLAG_HEX = {
   yellow: "#ffcf00",
   blue: "#00247e",
@@ -9,16 +18,16 @@ export const FANB_FLAG_HEX = {
 } as const;
 
 /**
- * Degradado del shell de la aplicación (sidebar, drawer móvil, tarjeta de acceso).
- * Mantener alineado con el login: misma familia cromática.
+ * Campo del shell: negro de gala alineado al fondo del escudo,
+ * con un velo azul militar hacia la base.
  */
 export const FANB_APP_SHELL_GRADIENT =
-  "bg-gradient-to-b from-[#0a1812] via-[#0b1520] to-[#080f16]";
+  "bg-linear-to-b from-[#050505] via-[#0a1018] to-[#0c1424]";
 
-/** Superposición oscura sobre la fotografía de fondo del login (contraste con UI clara alrededor). */
+/** Superposición oscura sobre la fotografía de fondo del login. */
 export const FANB_LOGIN_PHOTO_OVERLAY =
-  "bg-gradient-to-b from-[#0a1812]/80 via-slate-950/65 to-[#080f16]/88";
+  "bg-linear-to-b from-[#050505]/82 via-[#0a1018]/70 to-[#0c1424]/90";
 
-/** Tarjeta / panel oscuro con acentos ámbar (formulario de acceso; página de login puede ir clara alrededor). */
+/** Tarjeta / panel claro con acentos oro (formulario de acceso). */
 export const FANB_INSTITUTION_PANEL =
   "border border-amber-900/35 bg-white text-slate-950 ring-1 ring-amber-500/15 backdrop-blur-md";

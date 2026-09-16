@@ -1,6 +1,10 @@
 import Image from "next/image";
+import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
-import { FANB_LOGIN_PHOTO_OVERLAY, INSTITUTION_LOGO_SRC } from "@src/lib/branding";
+import {
+  FANB_LOGIN_PHOTO_OVERLAY,
+  INSTITUTION_SHORT_NAME,
+} from "@src/lib/branding";
 import { cn } from "@src/lib/utils";
 import { ActualizarDatosClient } from "./_components/actualizar-datos-client";
 
@@ -27,17 +31,13 @@ export default function ActualizarDatosPage() {
         <div className={cn("absolute inset-0", FANB_LOGIN_PHOTO_OVERLAY)} aria-hidden />
       </div>
 
-      <div className="relative z-10 flex w-full max-w-2xl flex-col items-center gap-4 pt-2 sm:gap-6 sm:pt-3">
-        <Image
-          src={INSTITUTION_LOGO_SRC}
-          alt="Fuerza Armada Nacional Bolivariano — Gestión de Personal"
-          width={280}
-          height={72}
-          priority
-          className="h-20 w-auto object-contain drop-shadow-[0_2px_14px_rgba(0,0,0,0.5)] sm:h-28"
-        />
+      <div className="relative z-10 flex w-full max-w-2xl flex-col items-center gap-4 pt-6 sm:gap-5 sm:pt-8">
+        <CefoaCrest size="lg" priority />
         <div className="text-center">
-          <h1 className="text-xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-2xl">
+          <p className="font-display text-lg font-semibold tracking-[0.28em] text-amber-100">
+            {INSTITUTION_SHORT_NAME}
+          </p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-2xl">
             Actualización de datos del aspirante
           </h1>
           <p className="mt-1 text-sm text-amber-100/90">

@@ -1,11 +1,13 @@
 "use client";
 
-import { Camera, CheckCircle2, FileImage, FileText, ListOrdered, Trash2, Upload, UserRound } from "lucide-react";
+import { Camera, CheckCircle2, Eye, FileImage, FileText, ListOrdered, Trash2, Upload, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@src/components/ui/button";
 import {
   ASPIRANTE_FOTO_FORM,
   acceptAttrForKind,
+  aspiranteFotoUrl,
   fileLooksAllowed,
   fileLooksPdf,
   formatErrorForKind,
@@ -13,6 +15,8 @@ import {
   isPdfObjectKey,
   type AspiranteFotoKind,
 } from "@src/lib/storage/aspirante-foto";
+
+export { aspiranteFotoUrl };
 import {
   assignFileToInput,
   prepareAspiranteUpload,
@@ -20,14 +24,6 @@ import {
 } from "@src/lib/storage/compress-image-client";
 import { cn } from "@src/lib/utils";
 import { NotasPdfPageOrder } from "@dashboard/aspirantes/_components/notas-pdf-page-order";
-
-export function aspiranteFotoUrl(
-  aspiranteId: string,
-  kind: AspiranteFotoKind = "perfil",
-): string {
-  const q = kind === "perfil" ? "" : `?tipo=${kind}`;
-  return `/api/aspirantes/foto/${aspiranteId}${q}`;
-}
 
 const THUMB_SIZE = {
   sm: "h-9 w-9",
@@ -160,6 +156,62 @@ const KIND_COPY: Record<
   },
 };
 
+function FotoPreviewOverlay({
+  title,
+  url,
+  isPdf,
+  onClose,
+}: {
+  title: string;
+  url: string;
+  isPdf: boolean;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-[min(92dvh,52rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5">
+          <p className="truncate text-sm font-medium text-slate-800">{title}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex size-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            aria-label="Cerrar vista"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+        </div>
+        <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-100">
+          {isPdf ? (
+            <iframe title={title} src={url} className="h-[min(80dvh,44rem)] w-full bg-white" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element -- vista previa local o API propia
+            <img src={url} alt={title} className="max-h-[min(80dvh,44rem)] max-w-full object-contain" />
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function AspiranteFotoField({
   id,
   aspiranteId,
@@ -172,6 +224,8 @@ export function AspiranteFotoField({
   storedPreviewUrl = null,
   /** Si true, no muestra la imagen guardada (solo estado “cargado” y preview local al elegir archivo). */
   hideStoredImage = false,
+  layout = "default",
+  serverError,
 }: {
   id: string;
   aspiranteId?: string;
@@ -181,6 +235,8 @@ export function AspiranteFotoField({
   previewOnlyLocal?: boolean;
   storedPreviewUrl?: string | null;
   hideStoredImage?: boolean;
+  layout?: "default" | "compact";
+  serverError?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const compressGenRef = useRef(0);
@@ -191,6 +247,8 @@ export function AspiranteFotoField({
   const [localError, setLocalError] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
   const [ordering, setOrdering] = useState(false);
+  const [viewing, setViewing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const formNames = ASPIRANTE_FOTO_FORM[kind];
   const copy = KIND_COPY[kind];
@@ -243,14 +301,13 @@ export function AspiranteFotoField({
     });
   };
 
-  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target;
-    const picked = Array.from(input.files ?? []);
+  const ingestFiles = async (picked: File[]) => {
+    const input = inputRef.current;
     if (picked.length === 0) return;
 
     if (picked.some((file) => !fileLooksAllowed(file, kind))) {
       setLocalError(formatErrorForKind(kind));
-      input.value = "";
+      if (input) input.value = "";
       return;
     }
 
@@ -263,17 +320,21 @@ export function AspiranteFotoField({
     try {
       const compressed = await prepareAspiranteUpload(picked, kind);
       if (gen !== compressGenRef.current) return;
-      if (input.isConnected) assignFileToInput(input, compressed);
+      if (input?.isConnected) assignFileToInput(input, compressed);
       applyPreview(compressed);
     } catch (err) {
       if (gen !== compressGenRef.current) return;
       setLocalError(err instanceof Error ? err.message : formatErrorForKind(kind));
-      input.value = "";
+      if (input) input.value = "";
     } finally {
       if (gen === compressGenRef.current) {
         setCompressing(false);
       }
     }
+  };
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await ingestFiles(Array.from(e.target.files ?? []));
   };
 
   const onQuitar = () => {
@@ -283,6 +344,7 @@ export function AspiranteFotoField({
     setFileLabel(null);
     setPreviewIsPdf(false);
     setOrdering(false);
+    setViewing(false);
     setLocalError(null);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -302,6 +364,162 @@ export function AspiranteFotoField({
     !compressing &&
     (previewIsPdf ||
       (hasStoredFoto && isPdfObjectKey(fotoKey) && Boolean(aspiranteId) && !previewOnlyLocal));
+
+  const viewerUrl = previewUrl
+    ? previewUrl
+    : displayIsPdf && aspiranteId && hasStoredFoto
+      ? `${aspiranteFotoUrl(aspiranteId, kind)}&proxy=1`
+      : displayUrl;
+  const canView = Boolean(viewerUrl);
+
+  const fileInput = (
+    <input
+      ref={inputRef}
+      id={id}
+      name={formNames.file}
+      type="file"
+      accept={acceptAttrForKind(kind)}
+      multiple={kind === "notas"}
+      className="sr-only"
+      disabled={compressing}
+      onChange={onFileChange}
+    />
+  );
+
+  if (layout === "compact") {
+    const compactThumb = isDoc ? "h-16 w-24" : "h-16 w-16";
+    return (
+      <div
+        className={cn(
+          "rounded-lg border bg-white p-2.5 transition-colors",
+          dragOver ? "border-slate-400 bg-slate-50" : "border-slate-200",
+          localError || serverError ? "border-red-300" : null,
+        )}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (compressing || ordering) return;
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (compressing || ordering) return;
+          void ingestFiles(Array.from(e.dataTransfer.files ?? []));
+        }}
+      >
+        <div className="flex items-start gap-2.5">
+          <button
+            type="button"
+            disabled={compressing || ordering}
+            onClick={() => {
+              if (canView) setViewing(true);
+              else openPicker();
+            }}
+            className={cn(
+              "group relative flex shrink-0 items-center justify-center overflow-hidden",
+              isDoc ? "rounded-md" : "rounded-full",
+              compactThumb,
+              "border border-slate-200 bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400",
+            )}
+            aria-label={canView ? `Ver ${copy.aria}` : `Subir ${copy.aria}`}
+          >
+            {displayUrl ? (
+              <AspiranteFotoImage
+                src={displayUrl}
+                alt={`Vista previa de ${nombre}`}
+                className={compactThumb}
+                iconSize="sm"
+                rounded={rounded}
+              />
+            ) : displayIsPdf ? (
+              <div className={cn("flex h-full w-full flex-col items-center justify-center gap-0.5 text-slate-600", compactThumb)}>
+                <FileText className="h-5 w-5" aria-hidden />
+                <span className="text-[9px] font-semibold uppercase">PDF</span>
+              </div>
+            ) : (
+              <div className={cn("flex h-full w-full items-center justify-center text-slate-400", compactThumb)}>
+                {isDoc ? <FileImage className="h-6 w-6" aria-hidden /> : <UserRound className="h-6 w-6" aria-hidden />}
+              </div>
+            )}
+            <span
+              className={cn(
+                "absolute inset-0 flex items-center justify-center bg-slate-900/50 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100",
+                isDoc ? "rounded-md" : "rounded-full",
+              )}
+            >
+              {canView ? "Ver" : "Subir"}
+            </span>
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-slate-800">{copy.title}</p>
+            <p className="truncate text-[11px] text-slate-500">
+              {fileLabel
+                ? fileLabel
+                : showStoredRemoved
+                  ? "Se quitará al guardar"
+                  : hasStoredFoto
+                    ? "Cargado · pulse para ver"
+                    : dragOver
+                      ? "Suelte el archivo"
+                      : "Arrastre o elija un archivo"}
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {canView ? (
+                <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => setViewing(true)}>
+                  <Eye className="h-3 w-3" aria-hidden />
+                  Ver
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                disabled={compressing || ordering}
+                onClick={openPicker}
+              >
+                <Upload className="h-3 w-3" aria-hidden />
+                {canChange ? "Cambiar" : "Subir"}
+              </Button>
+              {(hasStoredFoto || previewUrl) && !showStoredRemoved ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-slate-600 hover:text-red-700"
+                  disabled={compressing || ordering}
+                  onClick={onQuitar}
+                >
+                  <Trash2 className="h-3 w-3" aria-hidden />
+                  Quitar
+                </Button>
+              ) : null}
+              {showStoredRemoved ? (
+                <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onRestaurar}>
+                  Deshacer
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        {compressing ? <p className="mt-1.5 text-[11px] text-slate-500">Optimizando…</p> : null}
+        {localError ? <p className="mt-1.5 text-[11px] text-red-600">{localError}</p> : null}
+        {serverError ? <p className="mt-1.5 text-[11px] text-red-600">{serverError}</p> : null}
+        {fileInput}
+        {fotoKey && quitar ? <input type="hidden" name={formNames.quitar} value="1" /> : null}
+        {viewing && canView && viewerUrl ? (
+          <FotoPreviewOverlay
+            title={copy.title}
+            url={viewerUrl}
+            isPdf={Boolean(previewUrl ? previewIsPdf : displayIsPdf)}
+            onClose={() => setViewing(false)}
+          />
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-start">
@@ -514,17 +732,7 @@ export function AspiranteFotoField({
           </div>
         ) : null}
 
-        <input
-          ref={inputRef}
-          id={id}
-          name={formNames.file}
-          type="file"
-          accept={acceptAttrForKind(kind)}
-          multiple={kind === "notas"}
-          className="sr-only"
-          disabled={compressing}
-          onChange={onFileChange}
-        />
+        {fileInput}
 
         {fotoKey && quitar ? <input type="hidden" name={formNames.quitar} value="1" /> : null}
       </div>

@@ -16,6 +16,7 @@ const A4_L: [number, number] = [841.89, 595.28];
 const HEADER_H = 46;
 const FOOTER_H = 22;
 const MARGIN = 28;
+const COVER_BANNER_H = 110;
 const GREEN = rgb(0, 102 / 255, 0);
 const GREEN_SOFT = rgb(215 / 255, 228 / 255, 189 / 255);
 const BLACK = rgb(0.08, 0.1, 0.12);
@@ -226,7 +227,7 @@ function drawFooter(
 ) {
   const { width } = page.getSize();
   const fecha = meta.generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" });
-  const left = pdfSafe(font, `${meta.convocatoriaCodigo} · ${meta.convocatoriaNombre}`);
+  const left = pdfSafe(font, meta.convocatoriaNombre);
   const right = pdfSafe(font, `${fecha}  ·  ${globalPage} / ${globalPages}`);
   page.drawRectangle({ x: 0, y: 0, width, height: FOOTER_H, color: GREEN_SOFT });
   page.drawText(ellipsize(font, left, 8, width * 0.62), {
@@ -453,8 +454,9 @@ function drawCoverPages(
   const pages: PDFPage[] = [];
   const headerRows = 1;
   const rowH = 16;
-  const tableTopFirst = 640;
-  const tableTopNext = 780;
+  const pageH = A4_P[1];
+  const tableTopFirst = pageH - COVER_BANNER_H - 92;
+  const tableTopNext = pageH - COVER_BANNER_H - 28;
   const usableFirst = tableTopFirst - (FOOTER_H + 36);
   const usableNext = tableTopNext - (FOOTER_H + 36);
   const rowsFirst = Math.max(8, Math.floor(usableFirst / rowH) - headerRows);
@@ -479,7 +481,13 @@ function drawCoverPages(
     const page = out.addPage(A4_P);
     pages.push(page);
     const { width, height } = page.getSize();
-    page.drawRectangle({ x: 0, y: height - 110, width, height: 110, color: GREEN });
+    page.drawRectangle({
+      x: 0,
+      y: height - COVER_BANNER_H,
+      width,
+      height: COVER_BANNER_H,
+      color: GREEN,
+    });
     if (logo && chunkIndex === 0) {
       const dim = logo.scaleToFit(64, 64);
       page.drawImage(logo, { x: MARGIN, y: height - 88, width: dim.width, height: dim.height });
@@ -514,17 +522,25 @@ function drawCoverPages(
     );
 
     if (chunkIndex === 0) {
-      page.drawText(pdfSafe(font, `${items.length} expediente(s) con al menos un documento academico.`), {
-        x: MARGIN,
-        y: height - 140,
-        size: 11,
-        font,
-        color: BLACK,
-      });
+      const conDocs = items.filter(hasAnyDoc).length;
+      const sinDocs = items.length - conDocs;
       page.drawText(
         pdfSafe(
           font,
-          "Un solo PDF: cada aspirante queda identificado en una portada y en el encabezado de cada hoja.",
+          `${items.length} aspirante(s) en el listado · ${conDocs} con documento · ${sinDocs} sin documento academico.`,
+        ),
+        {
+          x: MARGIN,
+          y: height - 140,
+          size: 11,
+          font,
+          color: BLACK,
+        },
+      );
+      page.drawText(
+        pdfSafe(
+          font,
+          "El listado incluye a todos. Solo hay expediente (imagenes) cuando hay al menos un documento.",
         ),
         {
           x: MARGIN,
@@ -545,7 +561,16 @@ function drawCoverPages(
       no: MARGIN + 500,
     };
     const tableTop = chunkIndex === 0 ? tableTopFirst : tableTopNext;
-    page.drawRectangle({ x: MARGIN - 4, y: tableTop - 4, width: width - MARGIN * 2 + 8, height: 18, color: GREEN });
+    const tableWidth = width - MARGIN * 2 + 8;
+    const tableBodyBottom = FOOTER_H + 16;
+    page.drawRectangle({
+      x: MARGIN - 4,
+      y: tableBodyBottom,
+      width: tableWidth,
+      height: tableTop - 4 - tableBodyBottom,
+      color: WHITE,
+    });
+    page.drawRectangle({ x: MARGIN - 4, y: tableTop - 4, width: tableWidth, height: 18, color: GREEN });
     const headers: [number, string][] = [
       [col.n, "N"],
       [col.nombre, "Apellidos y nombres"],
@@ -561,34 +586,47 @@ function drawCoverPages(
     const startN = chunks.slice(0, chunkIndex).reduce((acc, c) => acc + c.length, 0);
     chunk.forEach((a, i) => {
       const y = tableTop - 18 - i * rowH;
-      if (i % 2 === 0) {
-        page.drawRectangle({
-          x: MARGIN - 4,
-          y: y - 4,
-          width: width - MARGIN * 2 + 8,
-          height: rowH,
-          color: rgb(0.96, 0.97, 0.95),
-        });
-      }
-      const mark = (key: string | null) => (key ? "Si" : "No");
-      page.drawText(String(startN + i + 1), { x: col.n, y, size: 8, font, color: BLACK });
+      const missingAll = !hasAnyDoc(a);
+      page.drawRectangle({
+        x: MARGIN - 4,
+        y: y - 4,
+        width: tableWidth,
+        height: rowH,
+        color: missingAll
+          ? rgb(0.98, 0.93, 0.93)
+          : i % 2 === 0
+            ? rgb(0.96, 0.97, 0.95)
+            : WHITE,
+      });
+      const nameColor = missingAll ? RED_MISS : BLACK;
+      page.drawText(String(startN + i + 1), { x: col.n, y, size: 8, font, color: nameColor });
       page.drawText(ellipsize(font, nombreCompleto(a), 8, 230), {
         x: col.nombre,
         y,
         size: 8,
         font,
-        color: BLACK,
+        color: nameColor,
       });
       page.drawText(ellipsize(font, formatCedulaVe(a.cedula), 8, 86), {
         x: col.ci,
         y,
         size: 8,
         font,
-        color: BLACK,
+        color: nameColor,
       });
-      page.drawText(mark(a.fotoTituloKey), { x: col.fn, y, size: 8, font, color: BLACK });
-      page.drawText(mark(a.fotoTituloAutenticacionKey), { x: col.au, y, size: 8, font, color: BLACK });
-      page.drawText(mark(a.fotoNotasKey), { x: col.no, y, size: 8, font, color: BLACK });
+      const drawMark = (key: string | null, x: number) => {
+        const ok = Boolean(key);
+        page.drawText(ok ? "Si" : "No", {
+          x,
+          y,
+          size: 8,
+          font: ok ? font : fontBold,
+          color: ok ? BLACK : RED_MISS,
+        });
+      };
+      drawMark(a.fotoTituloKey, col.fn);
+      drawMark(a.fotoTituloAutenticacionKey, col.au);
+      drawMark(a.fotoNotasKey, col.no);
     });
   });
 
@@ -635,10 +673,10 @@ export async function buildDocumentosAcademicosBulkPdf(
   sources: AspiranteDocumentosAcademicosSource[],
   meta: DocumentosAcademicosBulkMeta,
 ): Promise<Uint8Array> {
-  const withDocs = sources.filter(hasAnyDoc);
-  if (!withDocs.length) {
+  if (!sources.length) {
     throw new Error("NONE");
   }
+  const withDocs = sources.filter(hasAnyDoc);
 
   const out = await PDFDocument.create();
   out.setTitle(`Documentos academicos - ${meta.convocatoriaNombre}`);
@@ -660,7 +698,7 @@ export async function buildDocumentosAcademicosBulkPdf(
   }
 
   const allPages: PDFPage[] = [];
-  allPages.push(...drawCoverPages(out, font, fontBold, logo, withDocs, meta));
+  allPages.push(...drawCoverPages(out, font, fontBold, logo, sources, meta));
 
   for (let i = 0; i < withDocs.length; i++) {
     const src = withDocs[i]!;

@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@src/generated/prisma";
 import { prisma } from "@src/lib/prisma";
 import { CalificacionAdmision, Sexo } from "@src/generated/prisma";
-import { aspiranteCreateSchema, aspiranteUpdateSchema, ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE } from "@src/lib/validators/aspirante";
+import {
+  aspiranteCreateSchema,
+  aspiranteQuickUpdateSchema,
+  aspiranteUpdateSchema,
+  ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
+} from "@src/lib/validators/aspirante";
 import { zodFieldErrors } from "@src/lib/zod-errors";
 import { requireWriter } from "@src/lib/auth/guards";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
@@ -460,6 +465,182 @@ export async function updateAspirante(
   revalidatePath(routes.personal.aspirantes);
   revalidatePath(routes.personal.aspirantesGestion);
   revalidatePath(routes.personal.aspirante(aspiranteId));
+  return { ok: true, errors: {} };
+}
+
+export async function updateAspiranteQuick(
+  _prev: AspiranteActionState,
+  formData: FormData,
+): Promise<AspiranteActionState> {
+  const session = await requireWriter();
+
+  const parsed = aspiranteQuickUpdateSchema.safeParse({
+    aspiranteId: formData.get("aspiranteId"),
+    nombres: formData.get("nombres"),
+    apellidos: formData.get("apellidos"),
+    cedula: formData.get("cedula"),
+    sexo: formData.get("sexo"),
+    fechaNacimiento: formData.get("fechaNacimiento"),
+    lugarNacimiento: formData.get("lugarNacimiento"),
+    telefono: emptyToNull(formData.get("telefono")),
+    correo: emptyToNull(formData.get("correo")),
+    direccion: emptyToNull(formData.get("direccion")),
+    pelotonId: emptyToNull(formData.get("pelotonId")),
+    estaturaCm: formData.get("estaturaCm"),
+    pesoKg: formData.get("pesoKg"),
+    tensionArterial: emptyToNull(formData.get("tensionArterial")),
+    tipoSangre: emptyToNull(formData.get("tipoSangre")),
+    alergias: emptyToNull(formData.get("alergias")),
+    condicionesMedicas: emptyToNull(formData.get("condicionesMedicas")),
+    discapacidad: emptyToNull(formData.get("discapacidad")),
+    observaciones: emptyToNull(formData.get("observaciones")),
+    contactoNombre: formData.get("contactoNombre"),
+    contactoParentesco: formData.get("contactoParentesco"),
+    contactoTelefono: formData.get("contactoTelefono"),
+    contactoDireccion: emptyToNull(formData.get("contactoDireccion")),
+  });
+  if (!parsed.success) {
+    return { ok: false, errors: zodFieldErrors(parsed.error) };
+  }
+
+  const d = parsed.data;
+  const convocatoria = await getConvocatoriaActiva();
+  if (!convocatoria) {
+    return {
+      ok: false,
+      errors: { _form: "No hay convocatoria activa. Un administrador debe activar un período de ingreso." },
+    };
+  }
+
+  const existing = await prisma.aspirante.findFirst({
+    where: { id: d.aspiranteId, convocatoriaId: convocatoria.id },
+    include: { contactos: { orderBy: { createdAt: "asc" }, take: 1 } },
+  });
+  if (!existing) {
+    return {
+      ok: false,
+      errors: {
+        _form: "No se encontró el aspirante en la convocatoria activa o no tiene permiso para editarlo.",
+      },
+    };
+  }
+
+  const pelotonResolved = await resolvePelotonIdForConvocatoria(prisma, convocatoria.id, d.pelotonId);
+  if (!pelotonResolved.ok) {
+    return { ok: false, errors: { pelotonId: pelotonResolved.error } };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.aspirante.update({
+        where: { id: d.aspiranteId },
+        data: {
+          nombres: d.nombres,
+          apellidos: d.apellidos,
+          cedula: d.cedula,
+          sexo:
+            d.sexo === "FEMENINO"
+              ? Sexo.FEMENINO
+              : d.sexo === "MASCULINO"
+                ? Sexo.MASCULINO
+                : existing.sexo,
+          fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
+          lugarNacimiento: d.lugarNacimiento,
+          telefono: d.telefono ?? null,
+          correo: d.correo ?? null,
+          direccion: d.direccion ?? null,
+          pelotonId: pelotonResolved.pelotonId,
+        },
+      });
+
+      await tx.datosFisicosMedicos.upsert({
+        where: { aspiranteId: d.aspiranteId },
+        create: {
+          aspiranteId: d.aspiranteId,
+          estaturaCm: d.estaturaCm ?? null,
+          pesoKg: d.pesoKg ?? null,
+          tensionArterial: d.tensionArterial ?? null,
+          tipoSangre: d.tipoSangre ?? null,
+          alergias: d.alergias ?? null,
+          condicionesMedicas: d.condicionesMedicas ?? null,
+          discapacidad: d.discapacidad ?? null,
+          observaciones: d.observaciones ?? null,
+        },
+        update: {
+          estaturaCm: d.estaturaCm ?? null,
+          pesoKg: d.pesoKg ?? null,
+          tensionArterial: d.tensionArterial ?? null,
+          tipoSangre: d.tipoSangre ?? null,
+          alergias: d.alergias ?? null,
+          condicionesMedicas: d.condicionesMedicas ?? null,
+          discapacidad: d.discapacidad ?? null,
+          observaciones: d.observaciones ?? null,
+        },
+      });
+
+      const contactoNombre = d.contactoNombre.trim();
+      const hasContacto = Boolean(contactoNombre);
+      const contacto = existing.contactos[0];
+      if (contacto) {
+        if (hasContacto) {
+          await tx.contactoEmergencia.update({
+            where: { id: contacto.id },
+            data: {
+              nombre: contactoNombre,
+              parentesco: d.contactoParentesco.trim() || "Por definir",
+              telefono: d.contactoTelefono.trim() || "—",
+              direccion: d.contactoDireccion ?? null,
+            },
+          });
+        } else {
+          await tx.contactoEmergencia.delete({ where: { id: contacto.id } });
+        }
+      } else if (hasContacto) {
+        await tx.contactoEmergencia.create({
+          data: {
+            aspiranteId: d.aspiranteId,
+            nombre: contactoNombre,
+            parentesco: d.contactoParentesco.trim() || "Por definir",
+            telefono: d.contactoTelefono.trim() || "—",
+            direccion: d.contactoDireccion ?? null,
+          },
+        });
+      }
+    });
+
+    const fotoResult = await applyAspiranteFotosFromForm(formData, d.aspiranteId, {
+      fotoKey: existing.fotoKey,
+      fotoCedulaKey: existing.fotoCedulaKey,
+      fotoTituloKey: existing.fotoTituloKey,
+      fotoTituloAutenticacionKey: existing.fotoTituloAutenticacionKey,
+      fotoNotasKey: existing.fotoNotasKey,
+    });
+    if ("ok" in fotoResult && fotoResult.ok === false) {
+      return fotoResult;
+    }
+
+    await writeAuditLog({
+      userId: session.user.id,
+      userEmail: session.user.email,
+      action: "ASPIRANTE_UPDATE",
+      entityType: "ASPIRANTE",
+      entityId: d.aspiranteId,
+      metadata: { cedula: d.cedula, modo: "rapido", convocatoriaId: convocatoria.id },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return {
+        ok: false,
+        errors: { cedula: "Esta cédula ya figura en la convocatoria activa." },
+      };
+    }
+    throw e;
+  }
+
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.personal.aspirante(d.aspiranteId));
   return { ok: true, errors: {} };
 }
 

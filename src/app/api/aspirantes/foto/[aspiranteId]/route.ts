@@ -3,6 +3,7 @@ import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
+import { toHonoreeCutoutPng } from "@src/lib/pdf/esquela-cumpleanos-assets";
 import { prisma } from "@src/lib/prisma";
 import {
   isDocumentoFotoKind,
@@ -53,8 +54,19 @@ export async function GET(
     return NextResponse.json({ message: "Sin imagen" }, { status: 404 });
   }
 
-  if (proxy) {
+  const cutout = search.get("cutout") === "1";
+  if (cutout || proxy) {
     const { body, contentType } = await getObjectBuffer(key);
+    if (cutout) {
+      const png = await toHonoreeCutoutPng(body);
+      return new NextResponse(new Uint8Array(png), {
+        status: 200,
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "private, no-store",
+        },
+      });
+    }
     return new NextResponse(new Uint8Array(body), {
       status: 200,
       headers: {

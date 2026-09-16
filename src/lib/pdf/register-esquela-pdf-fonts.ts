@@ -4,10 +4,13 @@ import { Font } from "@react-pdf/renderer";
 /** Familia registrada para PDFs de esquela (coincide con `public/fonts/`). */
 export const ESQUELA_PDF_FONT_FAMILY = "Urbanist";
 
+/** Caligrafía del nombre en el afiche de cumpleaños (Google Fonts, OFL). */
+export const ESQUELA_SCRIPT_FONT_FAMILY = "Satisfy";
+
 let registered = false;
 
 /**
- * Registra Urbanist (variable TTF oficial Google Fonts, OFL) para @react-pdf.
+ * Registra Urbanist y Satisfy (Google Fonts, OFL) para @react-pdf.
  * Idempotente por proceso Node.
  */
 export function registerEsquelaPdfFonts(): void {
@@ -17,13 +20,19 @@ export function registerEsquelaPdfFonts(): void {
     family: ESQUELA_PDF_FONT_FAMILY,
     fonts: [
       { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: "normal" },
+      { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: 700 },
       { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: "bold" },
+      { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: 800 },
       {
         src: path.join(dir, "Urbanist-Italic-wght.ttf"),
         fontWeight: "normal",
         fontStyle: "italic",
       },
     ],
+  });
+  Font.register({
+    family: ESQUELA_SCRIPT_FONT_FAMILY,
+    src: path.join(dir, "Satisfy-Regular.woff"),
   });
   registered = true;
 }

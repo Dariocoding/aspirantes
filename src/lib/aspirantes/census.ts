@@ -1,6 +1,6 @@
 import type { Prisma } from "@src/generated/prisma";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
-import { fechaNacimientoFilterForAgeRange, hasRealBirthDate } from "@src/lib/date";
+import { hasRealBirthDate } from "@src/lib/date";
 import { MESES_TITULO } from "@src/lib/meses";
 
 export function calificacionAdmisionEtiqueta(c: string) {
@@ -34,17 +34,6 @@ export function buildAspiranteCensusWhere(
   if (sp.sexo && sp.sexo !== "TODOS" && (sp.sexo === "MASCULINO" || sp.sexo === "FEMENINO")) {
     filters.push({ sexo: sp.sexo });
   }
-  if (
-    sp.calificacion &&
-    sp.calificacion !== "TODOS" &&
-    (sp.calificacion === "APTO" || sp.calificacion === "NO_APTO" || sp.calificacion === "EN_EVALUACION")
-  ) {
-    filters.push({ calificacionAdmision: sp.calificacion });
-  }
-  const unidad = sp.unidadPostulante?.trim();
-  if (unidad && unidad !== "TODOS") {
-    filters.push({ unidadPostulante: unidad });
-  }
   const peloton = sp.peloton?.trim();
   if (peloton && peloton !== "TODOS") {
     if (peloton === "SIN_ASIGNAR") {
@@ -52,15 +41,6 @@ export function buildAspiranteCensusWhere(
     } else {
       filters.push({ pelotonId: peloton });
     }
-  }
-  const emin = sp.edadMin ? Number(sp.edadMin) : NaN;
-  const emax = sp.edadMax ? Number(sp.edadMax) : NaN;
-  const fechaFilter = fechaNacimientoFilterForAgeRange({
-    edadMin: Number.isFinite(emin) ? emin : undefined,
-    edadMax: Number.isFinite(emax) ? emax : undefined,
-  });
-  if (fechaFilter) {
-    filters.push({ fechaNacimiento: fechaFilter });
   }
 
   return filters.length ? { AND: filters } : {};

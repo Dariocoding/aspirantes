@@ -11,16 +11,21 @@ type UserMenuProps = {
 
 export function UserMenu({ name, email, roleLabel }: UserMenuProps) {
   return (
-    <div className="px-4 py-4 text-sm text-slate-200">
-      <p className="font-medium text-amber-50/95">{name ?? "Usuario"}</p>
-      <p className="truncate text-xs text-emerald-200/45">{email}</p>
-      <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.12em] text-amber-600/80">
+    <div className="px-3 py-2.5">
+      <p className="truncate text-[13px] font-medium leading-tight text-amber-50">
+        {name ?? "Usuario"}
+      </p>
+      <p className="mt-0.5 truncate text-[11px] leading-tight text-slate-400">
+        {email}
+      </p>
+      <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.14em] text-amber-500/80">
         {roleLabel}
       </p>
       <Button
         type="button"
         variant="secondary"
-        className="mt-3 w-full border border-amber-900/40 bg-slate-900/80 text-slate-100 hover:bg-emerald-950/80 hover:text-amber-50"
+        size="sm"
+        className="mt-2 h-7 w-full border border-white/10 bg-white/5 text-xs text-slate-200 hover:bg-white/10 hover:text-white"
         onClick={() => signOut({ callbackUrl: "/login" })}
       >
         Cerrar sesión

@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   };
 
   return (
-    <div className="flex min-h-screen min-w-0 flex-col bg-slate-100 text-slate-900 md:flex-row md:items-start">
+    <div className="flex min-h-screen min-w-0 flex-col bg-stone-100 text-slate-900 md:flex-row md:items-start">
       <Sidebar user={sidebarUser} />
       <main className="min-h-screen min-w-0 w-full flex-1 p-4 md:p-8">{children}</main>
     </div>

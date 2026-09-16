@@ -8,6 +8,7 @@ import {
   ScrollText,
   Sparkles,
 } from "lucide-react";
+import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { createBirthdayEsquela, createEfemerideEsquela } from "@src/app/actions/esquelas";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
@@ -58,13 +59,6 @@ function calificacionMiniBadgeClass(c: string) {
   if (c === "APTO") return "border-emerald-200/90 bg-emerald-50/90 text-emerald-900";
   if (c === "NO_APTO") return "border-red-200/90 bg-red-50/90 text-red-900";
   return "border-amber-200/90 bg-amber-50/90 text-amber-900";
-}
-
-function inicialesAspirante(nombres: string, apellidos: string) {
-  const n = nombres.trim().charAt(0);
-  const a = apellidos.trim().charAt(0);
-  const s = `${n}${a}`.toUpperCase();
-  return s || "?";
 }
 
 const CALIFICACION_ESQUELAS: CalificacionAdmision[] = [
@@ -153,7 +147,7 @@ export default async function EsquelasPage() {
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-base font-semibold text-slate-900">Esquela de cumpleaños</CardTitle>
                 <CardDescription className="text-xs leading-relaxed text-slate-600">
-                  Convocatoria activa: solo aptos y en evaluación.
+                  Afiche ceremonial: cambia el nombre y coloca la foto del aspirante al centro de la corona.
                 </CardDescription>
               </div>
             </div>
@@ -179,12 +173,12 @@ export default async function EsquelasPage() {
                     className="group flex items-center justify-between gap-3 rounded-xl border border-transparent px-2 py-2 transition-colors hover:border-slate-200/80 hover:bg-slate-50/90"
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white text-xs font-semibold text-slate-700 shadow-sm"
-                        aria-hidden
-                      >
-                        {inicialesAspirante(a.nombres, a.apellidos)}
-                      </span>
+                      <AspiranteFotoThumbnail
+                        aspiranteId={a.id}
+                        fotoKey={a.fotoKey}
+                        nombre={`${a.nombres} ${a.apellidos}`}
+                        size="sm"
+                      />
                       <div className="min-w-0">
                         <span className="block truncate text-sm font-medium text-slate-900">
                           {a.nombres} {a.apellidos}
@@ -217,9 +211,12 @@ export default async function EsquelasPage() {
                     key={a.id}
                     className="flex items-center gap-3 rounded-xl border border-slate-100 px-2 py-2.5 text-sm text-slate-700"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white text-xs font-semibold text-slate-600">
-                      {inicialesAspirante(a.nombres, a.apellidos)}
-                    </span>
+                    <AspiranteFotoThumbnail
+                      aspiranteId={a.id}
+                      fotoKey={a.fotoKey}
+                      nombre={`${a.nombres} ${a.apellidos}`}
+                      size="sm"
+                    />
                     <span className="min-w-0 truncate font-medium">
                       {a.nombres} {a.apellidos}
                     </span>
@@ -382,7 +379,7 @@ export default async function EsquelasPage() {
                       Impresión
                   </Link>
                   <a
-                    href={`/api/esquelas/${item.id}/pdf`}
+                    href={`/api/esquelas/${item.id}/pdf?download=1`}
                     className={cn(
                       buttonVariants({ variant: "default", size: "sm" }),
                       "h-9 gap-1.5 bg-slate-900 shadow-sm hover:bg-slate-800",

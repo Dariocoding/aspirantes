@@ -1,7 +1,14 @@
 import Image from "next/image";
 import { auth } from "@src/auth";
+import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
-import { FANB_LOGIN_PHOTO_OVERLAY, INSTITUTION_LOGO_SRC } from "@src/lib/branding";
+import {
+  FANB_LOGIN_PHOTO_OVERLAY,
+  INSTITUTION_BRANCH,
+  INSTITUTION_NAME,
+  INSTITUTION_PRODUCT,
+  INSTITUTION_SHORT_NAME,
+} from "@src/lib/branding";
 import { cn } from "@src/lib/utils";
 import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
@@ -24,7 +31,7 @@ export default async function LoginPage() {
       <div className="absolute inset-0">
         <Image
           src={LOGIN_BACKGROUND_IMAGE}
-          alt="Fondo de login"
+          alt=""
           fill
           priority
           className="object-cover"
@@ -33,18 +40,19 @@ export default async function LoginPage() {
         <div className={cn("absolute inset-0", FANB_LOGIN_PHOTO_OVERLAY)} aria-hidden />
       </div>
 
-      <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-4 pt-2 sm:max-w-lg sm:gap-6 sm:pt-3">
-        <Image
-          src={INSTITUTION_LOGO_SRC}
-          alt="Fuerza Armada Nacional Bolivariana — Gestión de Personal"
-          width={280}
-          height={72}
-          priority
-          className="h-24 w-auto object-contain drop-shadow-[0_2px_14px_rgba(0,0,0,0.5)] sm:h-32 md:h-44"
-        />
-        <p className="text-center text-[10px] font-semibold uppercase leading-relaxed tracking-[0.2em] text-amber-200/90">
-          Fuerza Armada Nacional Bolivariana
-        </p>
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-3 pt-6 sm:max-w-lg sm:gap-4 sm:pt-8">
+        <CefoaCrest size="xl" priority />
+        <div className="text-center">
+          <p className="font-display text-2xl font-semibold tracking-[0.32em] text-amber-100 sm:text-3xl">
+            {INSTITUTION_SHORT_NAME}
+          </p>
+          <p className="mt-2 max-w-sm text-[11px] font-medium uppercase leading-relaxed tracking-[0.14em] text-slate-300">
+            {INSTITUTION_NAME}
+          </p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-amber-200/70">
+            {INSTITUTION_BRANCH} · {INSTITUTION_PRODUCT}
+          </p>
+        </div>
 
         <LoginForm />
       </div>

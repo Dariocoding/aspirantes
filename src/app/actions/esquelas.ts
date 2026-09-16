@@ -17,7 +17,7 @@ export async function createBirthdayEsquela(formData: FormData) {
     data: {
       tipo: TipoEsquela.CUMPLEANOS,
       titulo: `Felicitaciones de Cumpleaños: ${aspirante.nombres} ${aspirante.apellidos}`,
-      cuerpo: `La unidad militar extiende sus felicitaciones a ${aspirante.nombres} ${aspirante.apellidos} en su día de cumpleaños.`,
+      cuerpo: `Deseamos que la bendición de Dios todopoderoso le acompañe siempre en este nuevo año de vida y que siga cumpliendo muchos años más de Feliz Existencia al lado de su amada Familia.`,
       fechaEvento: new Date(),
       aspiranteId,
     },

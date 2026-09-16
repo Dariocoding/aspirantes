@@ -1,5 +1,6 @@
 import { LayoutGrid, Shield } from "lucide-react";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
+import { INSTITUTION_BRANCH, INSTITUTION_SHORT_NAME } from "@src/lib/branding";
 import { cn } from "@src/lib/utils";
 
 type HubPortalHeroProps = {
@@ -42,10 +43,10 @@ export function HubPortalHero({ userName, roleLabel, appCount }: HubPortalHeroPr
           </div>
           <div className="min-w-0 space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-900/70">
-              Fuerza Armada Nacional Bolivariana
+              {INSTITUTION_SHORT_NAME} · {INSTITUTION_BRANCH}
             </p>
             <h1 className="font-serif text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.65rem]">
-              Portal de aplicaciones
+              Portal institucional
             </h1>
             <p className="max-w-xl text-sm leading-relaxed text-slate-600">
               Bienvenido,{" "}
