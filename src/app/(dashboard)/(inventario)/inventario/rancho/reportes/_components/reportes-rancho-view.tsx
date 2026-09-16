@@ -42,7 +42,7 @@ import {
   type ReporteRanchoEstado,
   type ReporteRanchoMovimiento,
   type ReporteRanchoPreviewLinea,
-} from "@src/lib/inventario/reporte-rancho";
+} from "@src/lib/inventario/reporte-rancho-shared";
 import { cn } from "@src/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";

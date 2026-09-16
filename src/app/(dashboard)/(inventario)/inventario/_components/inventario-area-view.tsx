@@ -38,8 +38,8 @@ import {
   type InventarioItemsQuery,
   type InventarioItemsSort,
   type InventarioItemsSortDir,
-} from "@src/lib/inventario/queries";
-import type { InventarioStats as InventarioStatsData } from "@src/lib/inventario/stats";
+} from "@src/lib/inventario/queries-shared";
+import type { InventarioStats as InventarioStatsData } from "@src/lib/inventario/stats-types";
 import { cn } from "@src/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";

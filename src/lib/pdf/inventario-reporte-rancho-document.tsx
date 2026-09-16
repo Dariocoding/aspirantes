@@ -4,7 +4,7 @@ import {
   type ReporteRanchoEstado,
   type ReporteRanchoMovimiento,
   type ReporteRanchoPreviewLinea,
-} from "@src/lib/inventario/reporte-rancho";
+} from "@src/lib/inventario/reporte-rancho-shared";
 import { labelUnidad } from "@src/lib/inventario/area";
 
 export type InventarioReporteRanchoPdfProps = {

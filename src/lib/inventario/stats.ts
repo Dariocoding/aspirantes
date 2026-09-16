@@ -1,22 +1,10 @@
+import "server-only";
+
 import type { AreaInventario } from "@src/generated/prisma";
 import { prisma } from "@src/lib/prisma";
+import type { InventarioStats, InventarioStockAlertItem } from "@src/lib/inventario/stats-types";
 
-export type InventarioStats = {
-  totalItems: number;
-  activos: number;
-  stockBajo: number;
-  sinStock: number;
-  movimientosHoy: number;
-  ultimoMovimiento: Date | null;
-};
-
-export type InventarioStockAlertItem = {
-  id: string;
-  nombre: string;
-  unidad: string;
-  stockActual: number;
-  stockMinimo: number | null;
-};
+export type { InventarioStats, InventarioStockAlertItem } from "@src/lib/inventario/stats-types";
 
 const MOVIMIENTOS_PREVIEW = 8;
 

@@ -46,6 +46,7 @@ function serverActionAllowedOrigins(): string[] | undefined {
 const nextConfig: NextConfig = {
   // Imagen Docker mínima: solo archivos trazados (no todo node_modules).
   output: "standalone",
+  serverExternalPackages: ["sharp", "@prisma/client"],
   // Prisma genera el client fuera de node_modules; hay que incluirlo en el trace.
   outputFileTracingIncludes: {
     "/**": ["./src/generated/prisma/**/*"],

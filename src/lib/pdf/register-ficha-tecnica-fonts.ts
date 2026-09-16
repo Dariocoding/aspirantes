@@ -12,12 +12,12 @@ let registered = false;
  */
 export function registerFichaTecnicaPdfFonts(): void {
   if (registered) return;
-  const dir = path.join(process.cwd(), "assets", "fonts");
+  const dir = path.join(/*turbopackIgnore: true*/ process.cwd(), "assets", "fonts");
   Font.register({
     family: FICHA_TECNICA_PDF_FONT_FAMILY,
     fonts: [
-      { src: path.join(dir, "Arial.ttf"), fontWeight: "normal" },
-      { src: path.join(dir, "Arial-Bold.ttf"), fontWeight: "bold" },
+      { src: path.join(/*turbopackIgnore: true*/ dir, "Arial.ttf"), fontWeight: "normal" },
+      { src: path.join(/*turbopackIgnore: true*/ dir, "Arial-Bold.ttf"), fontWeight: "bold" },
     ],
   });
   registered = true;

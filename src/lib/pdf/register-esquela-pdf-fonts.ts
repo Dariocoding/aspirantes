@@ -15,16 +15,16 @@ let registered = false;
  */
 export function registerEsquelaPdfFonts(): void {
   if (registered) return;
-  const dir = path.join(process.cwd(), "public", "fonts");
+  const dir = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "fonts");
   Font.register({
     family: ESQUELA_PDF_FONT_FAMILY,
     fonts: [
-      { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: "normal" },
-      { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: 700 },
-      { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: "bold" },
-      { src: path.join(dir, "Urbanist-wght.ttf"), fontWeight: 800 },
+      { src: path.join(/*turbopackIgnore: true*/ dir, "Urbanist-wght.ttf"), fontWeight: "normal" },
+      { src: path.join(/*turbopackIgnore: true*/ dir, "Urbanist-wght.ttf"), fontWeight: 700 },
+      { src: path.join(/*turbopackIgnore: true*/ dir, "Urbanist-wght.ttf"), fontWeight: "bold" },
+      { src: path.join(/*turbopackIgnore: true*/ dir, "Urbanist-wght.ttf"), fontWeight: 800 },
       {
-        src: path.join(dir, "Urbanist-Italic-wght.ttf"),
+        src: path.join(/*turbopackIgnore: true*/ dir, "Urbanist-Italic-wght.ttf"),
         fontWeight: "normal",
         fontStyle: "italic",
       },
@@ -32,7 +32,7 @@ export function registerEsquelaPdfFonts(): void {
   });
   Font.register({
     family: ESQUELA_SCRIPT_FONT_FAMILY,
-    src: path.join(dir, "Satisfy-Regular.woff"),
+    src: path.join(/*turbopackIgnore: true*/ dir, "Satisfy-Regular.woff"),
   });
   registered = true;
 }

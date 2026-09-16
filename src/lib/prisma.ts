@@ -1,3 +1,4 @@
+import "server-only";
 import { setDefaultResultOrder } from "node:dns";
 import { PrismaClient } from "@src/generated/prisma";
 

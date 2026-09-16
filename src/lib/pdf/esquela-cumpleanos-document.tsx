@@ -189,7 +189,7 @@ export function EsquelaCumpleanosPdfDocument({
             <>
               <Svg width={photoW} height={photoH} style={styles.photoGlow}>
                 <Defs>
-                  <RadialGradient id="goldUnder" cx="50%" cy="38%" rx="58%" ry="58%">
+                  <RadialGradient id="goldUnder" cx="50%" cy="38%" r="58%">
                     <Stop offset="0%" stopColor={CUMPLEANOS_GOLD.light} />
                     <Stop offset="55%" stopColor={CUMPLEANOS_GOLD.fill} />
                     <Stop offset="100%" stopColor={CUMPLEANOS_GOLD.dark} />
