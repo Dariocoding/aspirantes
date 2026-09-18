@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CefoaCrest } from "@src/components/institution/cefoa-crest";
+import { BookMarked, CalendarDays, Medal, Users, type LucideIcon } from "lucide-react";
+import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
 import { INSTITUTION_SHORT_NAME } from "@src/lib/branding";
 import { routes } from "@src/lib/apps/routes";
@@ -11,6 +12,7 @@ export type PersonalHomeBirthday = {
   nombres: string;
   apellidos: string;
   cedula: string;
+  fotoKey: string | null;
   dia: number;
   fechaLabel: string;
   esHoy: boolean;
@@ -44,7 +46,38 @@ type Props = {
   proximasEfemerides: PersonalHomeEfemeride[];
 };
 
-const PELOTON_TONES = ["bg-[#0c1424]", "bg-[#3d4a2a]", "bg-[#1e3a5f]", "bg-[#5c4a1f]", "bg-[#2f3d48]"] as const;
+const PELOTON_TONES = ["#3b82f6", "#22c55e", "#38bdf8", "#84cc16", "#06b6d4"] as const;
+
+const SHORTCUTS: { href: string; label: string; hint: string; icon: LucideIcon; tone: string }[] = [
+  {
+    href: routes.personal.aspirantes,
+    label: "Censo",
+    hint: "Aspirantes",
+    icon: Users,
+    tone: "bg-sky-50 text-sky-700",
+  },
+  {
+    href: routes.personal.esquelas,
+    label: "Esquelas",
+    hint: "Honores",
+    icon: Medal,
+    tone: "bg-amber-50 text-amber-800",
+  },
+  {
+    href: routes.personal.efemerides,
+    label: "Efemérides",
+    hint: "Calendario",
+    icon: CalendarDays,
+    tone: "bg-emerald-50 text-emerald-800",
+  },
+  {
+    href: routes.personal.convocatorias,
+    label: "Convocatorias",
+    hint: "Períodos",
+    icon: BookMarked,
+    tone: "bg-indigo-50 text-indigo-700",
+  },
+];
 
 function Kpi({
   label,
@@ -170,20 +203,39 @@ export function PersonalHomeBoard({
         </div>
       </section>
 
+      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Atajos">
+        {SHORTCUTS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 transition-colors hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", item.tone)}>
+                <Icon className="h-4 w-4" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-900">{item.label}</span>
+                <span className="block text-[11px] text-slate-500">{item.hint}</span>
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+
       {pelotones.length > 0 ? (
         <section className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-900">Fuerza por pelotón</h2>
-            <Link href={routes.personal.aspirantes} className="text-xs font-medium text-slate-500 hover:text-slate-900">
-              Censo
-            </Link>
-          </div>
-          <div className="flex h-2 overflow-hidden rounded-sm bg-slate-100">
+          <h2 className="mb-2 text-sm font-semibold text-slate-900">Fuerza por pelotón</h2>
+          <div className="flex h-2.5 overflow-hidden rounded-sm bg-slate-100">
             {pelotones.map((p, i) => (
               <span
                 key={p.id}
-                className={cn(PELOTON_TONES[i % PELOTON_TONES.length], p.count === 0 && "opacity-20")}
-                style={{ flexGrow: Math.max(p.count, 0.35) }}
+                className={cn(p.count === 0 && "opacity-20")}
+                style={{
+                  backgroundColor: PELOTON_TONES[i % PELOTON_TONES.length],
+                  flexGrow: Math.max(p.count, 0.35),
+                }}
                 title={`${p.label}: ${p.count}`}
               />
             ))}
@@ -194,7 +246,10 @@ export function PersonalHomeBoard({
           <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
             {pelotones.map((p, i) => (
               <li key={p.id} className="flex items-center gap-1.5 text-[11px] text-slate-600">
-                <span className={cn("h-1.5 w-1.5 rounded-full", PELOTON_TONES[i % PELOTON_TONES.length])} />
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: PELOTON_TONES[i % PELOTON_TONES.length] }}
+                />
                 <span className="truncate">{p.label}</span>
                 <span className="font-medium text-slate-900 tabular-nums">{p.count}</span>
               </li>
@@ -230,6 +285,23 @@ export function PersonalHomeBoard({
                     persona.esHoy && "bg-amber-50",
                   )}
                 >
+                  <AspiranteIdentityLink
+                    aspiranteId={persona.id}
+                    fotoKey={persona.fotoKey}
+                    nombre={`${persona.nombres} ${persona.apellidos}`}
+                    size="sm"
+                    className="min-w-0 flex-1"
+                  >
+                    <span className="truncate text-[11px] text-slate-500">
+                      C.I. {persona.cedula}
+                      {persona.edadQueCumple != null ? (
+                        <>
+                          {" · "}
+                          <span className="tabular-nums">{persona.edadQueCumple}</span> años
+                        </>
+                      ) : null}
+                    </span>
+                  </AspiranteIdentityLink>
                   <span
                     className={cn(
                       "flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md text-[11px] font-semibold tabular-nums",
@@ -238,20 +310,6 @@ export function PersonalHomeBoard({
                   >
                     {persona.dia}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-900">
-                      {persona.nombres} {persona.apellidos}
-                    </p>
-                    <p className="truncate text-[11px] text-slate-500">
-                      C.I. {persona.cedula}
-                      {persona.edadQueCumple != null ? (
-                        <>
-                          {" · "}
-                          <span className="tabular-nums">{persona.edadQueCumple}</span> años
-                        </>
-                      ) : null}
-                    </p>
-                  </div>
                   {persona.esHoy ? (
                     <span className="shrink-0 text-[10px] font-semibold tracking-wide text-amber-800 uppercase">
                       Hoy
@@ -294,21 +352,6 @@ export function PersonalHomeBoard({
           )}
         </section>
       </div>
-
-      <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-500" aria-label="Atajos">
-        <Link className="hover:text-slate-900" href={routes.personal.aspirantes}>
-          Censo
-        </Link>
-        <Link className="hover:text-slate-900" href={routes.personal.esquelas}>
-          Esquelas
-        </Link>
-        <Link className="hover:text-slate-900" href={routes.personal.efemerides}>
-          Efemérides
-        </Link>
-        <Link className="hover:text-slate-900" href={routes.personal.convocatorias}>
-          Convocatorias
-        </Link>
-      </nav>
     </div>
   );
 }

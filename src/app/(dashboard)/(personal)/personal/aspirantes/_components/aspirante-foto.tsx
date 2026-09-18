@@ -1,8 +1,10 @@
 "use client";
 
 import { Camera, CheckCircle2, Eye, FileImage, FileText, ListOrdered, Trash2, Upload, UserRound, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { routes } from "@src/lib/apps/routes";
 import { Button } from "@src/components/ui/button";
 import {
   ASPIRANTE_FOTO_FORM,
@@ -122,6 +124,47 @@ export function AspiranteFotoThumbnail({
       className={box}
       iconSize={size === "lg" ? "lg" : size}
     />
+  );
+}
+
+/** Foto de carnet + nombre: hover y enlace al perfil. */
+export function AspiranteIdentityLink({
+  aspiranteId,
+  fotoKey,
+  nombre,
+  size = "sm",
+  className,
+  children,
+}: {
+  aspiranteId: string;
+  fotoKey: string | null;
+  nombre: string;
+  size?: "sm" | "md";
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <Link
+      href={routes.personal.aspirante(aspiranteId)}
+      className={cn(
+        "group/perfil inline-flex min-w-0 max-w-full items-center gap-2 rounded-md py-0.5 pr-1.5 outline-none transition-colors",
+        "hover:bg-sky-50 focus-visible:ring-2 focus-visible:ring-sky-500/50",
+        className,
+      )}
+    >
+      <span className="shrink-0 overflow-hidden rounded-full transition duration-200 group-hover/perfil:scale-110 group-hover/perfil:ring-2 group-hover/perfil:ring-sky-400/80">
+        <AspiranteFotoThumbnail aspiranteId={aspiranteId} fotoKey={fotoKey} nombre={nombre} size={size} />
+      </span>
+      <span className="min-w-0">
+        <span
+          className="block truncate text-sm font-medium text-slate-900 underline-offset-2 transition-colors group-hover/perfil:text-sky-800 group-hover/perfil:underline"
+          title={nombre}
+        >
+          {nombre}
+        </span>
+        {children}
+      </span>
+    </Link>
   );
 }
 

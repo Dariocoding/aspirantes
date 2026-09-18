@@ -21,6 +21,7 @@ export default async function PersonalDashboardPage() {
             cedula: true,
             sexo: true,
             fechaNacimiento: true,
+            fotoKey: true,
             pelotonId: true,
           },
         })
@@ -57,6 +58,7 @@ export default async function PersonalDashboardPage() {
       nombres: persona.nombres,
       apellidos: persona.apellidos,
       cedula: persona.cedula,
+      fotoKey: persona.fotoKey,
       dia: persona.fechaNacimiento.getDate(),
       fechaLabel: format(persona.fechaNacimiento, "d 'de' MMMM", { locale: es }),
       esHoy: isBirthdayToday(persona.fechaNacimiento),

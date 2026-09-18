@@ -8,7 +8,7 @@ import {
   ScrollText,
   Sparkles,
 } from "lucide-react";
-import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
+import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { createBirthdayEsquela, createEfemerideEsquela } from "@src/app/actions/esquelas";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
@@ -173,16 +173,12 @@ export default async function EsquelasPage() {
                     className="group flex items-center justify-between gap-3 rounded-xl border border-transparent px-2 py-2 transition-colors hover:border-slate-200/80 hover:bg-slate-50/90"
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <AspiranteFotoThumbnail
+                      <AspiranteIdentityLink
                         aspiranteId={a.id}
                         fotoKey={a.fotoKey}
                         nombre={`${a.nombres} ${a.apellidos}`}
                         size="sm"
-                      />
-                      <div className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-slate-900">
-                          {a.nombres} {a.apellidos}
-                        </span>
+                      >
                         <span
                           className={cn(
                             "mt-0.5 inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
@@ -191,7 +187,7 @@ export default async function EsquelasPage() {
                         >
                           {calificacionAdmisionEtiqueta(a.calificacionAdmision)}
                         </span>
-                      </div>
+                      </AspiranteIdentityLink>
                     </div>
                     <input type="hidden" name="aspiranteId" value={a.id} />
                     <Button
@@ -211,15 +207,12 @@ export default async function EsquelasPage() {
                     key={a.id}
                     className="flex items-center gap-3 rounded-xl border border-slate-100 px-2 py-2.5 text-sm text-slate-700"
                   >
-                    <AspiranteFotoThumbnail
+                    <AspiranteIdentityLink
                       aspiranteId={a.id}
                       fotoKey={a.fotoKey}
                       nombre={`${a.nombres} ${a.apellidos}`}
                       size="sm"
                     />
-                    <span className="min-w-0 truncate font-medium">
-                      {a.nombres} {a.apellidos}
-                    </span>
                   </div>
                 ))
               )}

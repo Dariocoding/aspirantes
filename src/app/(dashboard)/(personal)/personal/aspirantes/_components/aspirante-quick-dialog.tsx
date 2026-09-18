@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
-import { HeartPulse, Images, Loader2, Phone, UserRound, UserPlus } from "lucide-react";
+import { HeartPulse, Images, LifeBuoy, Loader2, Phone, UserRound, UserPlus } from "lucide-react";
 import { createAspirante, updateAspiranteQuick } from "@src/app/actions/aspirantes";
 import { AspiranteFotoField } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { Button, buttonVariants } from "@src/components/ui/button";
@@ -63,7 +63,7 @@ export type AspiranteQuickInitial = {
 };
 
 type Mode = "create" | "edit";
-type QuickTab = "identidad" | "contacto" | "salud" | "archivos";
+type QuickTab = "identidad" | "contacto" | "emergencia" | "salud" | "archivos";
 
 type DialogProps = {
   open: boolean;
@@ -76,6 +76,7 @@ type DialogProps = {
 const TABS: { id: QuickTab; label: string; icon: typeof UserRound }[] = [
   { id: "identidad", label: "Identidad", icon: UserRound },
   { id: "contacto", label: "Contacto", icon: Phone },
+  { id: "emergencia", label: "Emergencia", icon: LifeBuoy },
   { id: "salud", label: "Médicos", icon: HeartPulse },
   { id: "archivos", label: "Archivos", icon: Images },
 ];
@@ -99,7 +100,7 @@ function tabForError(errors: Record<string, string>): QuickTab | null {
   const keys = Object.keys(errors).filter((k) => k !== "_form");
   const fotoKeys = Object.values(ASPIRANTE_FOTO_FORM).map((item) => item.file);
   if (keys.some((k) => fotoKeys.includes(k))) return "archivos";
-  if (keys.some((k) => k.startsWith("contacto"))) return "contacto";
+  if (keys.some((k) => k.startsWith("contacto"))) return "emergencia";
   if (
     keys.some((k) =>
       [
@@ -189,7 +190,7 @@ function AspiranteQuickForm({
         {isEdit && initial ? <input type="hidden" name="aspiranteId" value={initial.id} /> : null}
 
         <div className="shrink-0 px-4 pt-0 pb-2">
-          <div className="grid grid-cols-4 gap-0.5 rounded-md border border-slate-200 bg-slate-100/80 p-0.5">
+          <div className="grid grid-cols-5 gap-0.5 rounded-md border border-slate-200 bg-slate-100/80 p-0.5">
             {TABS.map((item) => {
               const Icon = item.icon;
               const active = tab === item.id;
@@ -318,82 +319,85 @@ function AspiranteQuickForm({
           </fieldset>
 
           <fieldset hidden={tab !== "contacto"} className="border-0 p-0">
-            <legend className="sr-only">Contacto</legend>
-            <div className="flex flex-col gap-3.5">
-              <div>
-                <h3 className="mb-2 text-xs font-semibold text-slate-800">Del aspirante</h3>
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="quick-telefono">Teléfono</Label>
-                    <Input
-                      id="quick-telefono"
-                      name="telefono"
-                      defaultValue={initial?.telefono ?? ""}
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="quick-correo">Correo</Label>
-                    <Input
-                      id="quick-correo"
-                      name="correo"
-                      type="email"
-                      defaultValue={initial?.correo ?? ""}
-                      className="h-8"
-                    />
-                    <FieldError message={state.errors.correo} />
-                  </div>
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <Label htmlFor="quick-direccion">Dirección</Label>
-                    <Input
-                      id="quick-direccion"
-                      name="direccion"
-                      defaultValue={initial?.direccion ?? ""}
-                      className="h-8"
-                    />
-                  </div>
-                </div>
+            <legend className="sr-only">Contacto del aspirante</legend>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-telefono">Teléfono</Label>
+                <Input
+                  id="quick-telefono"
+                  name="telefono"
+                  defaultValue={initial?.telefono ?? ""}
+                  className="h-8"
+                />
               </div>
-              <div>
-                <h3 className="mb-2 text-xs font-semibold text-slate-800">Emergencia</h3>
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="quick-contacto-nombre">Nombre</Label>
-                    <Input
-                      id="quick-contacto-nombre"
-                      name="contactoNombre"
-                      defaultValue={initial?.contactoNombre ?? ""}
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="quick-contacto-parentesco">Parentesco</Label>
-                    <Input
-                      id="quick-contacto-parentesco"
-                      name="contactoParentesco"
-                      defaultValue={initial?.contactoParentesco ?? ""}
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="quick-contacto-telefono">Teléfono</Label>
-                    <Input
-                      id="quick-contacto-telefono"
-                      name="contactoTelefono"
-                      defaultValue={initial?.contactoTelefono ?? ""}
-                      className="h-8"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="quick-contacto-direccion">Dirección</Label>
-                    <Input
-                      id="quick-contacto-direccion"
-                      name="contactoDireccion"
-                      defaultValue={initial?.contactoDireccion ?? ""}
-                      className="h-8"
-                    />
-                  </div>
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-correo">Correo</Label>
+                <Input
+                  id="quick-correo"
+                  name="correo"
+                  type="email"
+                  defaultValue={initial?.correo ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.correo} />
+              </div>
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label htmlFor="quick-direccion">Dirección</Label>
+                <Input
+                  id="quick-direccion"
+                  name="direccion"
+                  defaultValue={initial?.direccion ?? ""}
+                  className="h-8"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset hidden={tab !== "emergencia"} className="border-0 p-0">
+            <legend className="sr-only">Contacto de emergencia</legend>
+            <p className="mb-2.5 text-[11px] text-slate-500">
+              Persona a avisar si ocurre un incidente. Opcional en el registro rápido.
+            </p>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-contacto-nombre">Nombre</Label>
+                <Input
+                  id="quick-contacto-nombre"
+                  name="contactoNombre"
+                  defaultValue={initial?.contactoNombre ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.contactoNombre} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-contacto-parentesco">Parentesco</Label>
+                <Input
+                  id="quick-contacto-parentesco"
+                  name="contactoParentesco"
+                  defaultValue={initial?.contactoParentesco ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.contactoParentesco} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-contacto-telefono">Teléfono</Label>
+                <Input
+                  id="quick-contacto-telefono"
+                  name="contactoTelefono"
+                  defaultValue={initial?.contactoTelefono ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.contactoTelefono} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-contacto-direccion">Dirección</Label>
+                <Input
+                  id="quick-contacto-direccion"
+                  name="contactoDireccion"
+                  defaultValue={initial?.contactoDireccion ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.contactoDireccion} />
               </div>
             </div>
           </fieldset>
@@ -588,7 +592,7 @@ export function AspiranteQuickDialog({ open, onOpenChange, mode, pelotones, init
           <DialogDescription>
             {isEdit
               ? "Nombres, apellidos y cédula son obligatorios; el resto es opcional."
-              : "Nombres, apellidos y cédula bastan para registrar."}
+              : "Nombres, apellidos y cédula bastan. Puede añadir contacto de emergencia, médicos y archivos."}
           </DialogDescription>
         </DialogHeader>
         {open ? (

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Check, Columns3, Mars, RotateCcw, Search, Venus } from "lucide-react";
-import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
+import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import {
   AspiranteDocumentoViewer,
   CENSUS_DOCUMENTO_META,
@@ -579,17 +579,13 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
                   bodyRows.push(
                     <TableRow key={a.id} className="border-slate-100 transition-colors">
                       <TableCell className="px-3 py-2 font-medium text-slate-900">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <AspiranteFotoThumbnail
-                            aspiranteId={a.id}
-                            fotoKey={a.fotoKey}
-                            nombre={nombreCompleto}
-                            size="sm"
-                          />
-                          <span className="min-w-0 truncate text-sm" title={nombreCompleto}>
-                            {nombreCompleto}
-                          </span>
-                        </div>
+                        <AspiranteIdentityLink
+                          aspiranteId={a.id}
+                          fotoKey={a.fotoKey}
+                          nombre={nombreCompleto}
+                          size="sm"
+                          className="-ml-1"
+                        />
                       </TableCell>
                       <TableCell className="px-3 py-2 font-mono text-sm tabular-nums text-slate-700">
                         {a.cedula}
