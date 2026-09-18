@@ -4,21 +4,13 @@ import sharp from "sharp";
 import { getObjectBuffer } from "@src/lib/storage/s3";
 import { cutoutWithGemini } from "@src/lib/pdf/gemini-cutout";
 
-const PLANTILLA_JPEG = path.join(
-  /*turbopackIgnore: true*/ process.cwd(),
-  "public",
-  "images",
-  "esquelas",
-  "cumpleanos-plantilla.jpg",
-);
-
-const LAUREL_PNG = path.join(
-  /*turbopackIgnore: true*/ process.cwd(),
-  "public",
-  "images",
-  "esquelas",
-  "corona-laurel.png",
-);
+function readPublicEsquelaAsset(fileName: "cumpleanos-plantilla.jpg" | "corona-laurel.png"): Buffer | null {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), "public", "images", "esquelas", fileName));
+  } catch {
+    return null;
+  }
+}
 
 const OVAL_W = 740;
 const OVAL_H = 900;
@@ -27,13 +19,12 @@ const PAPER_LUMA = 205;
 const PAPER_CHROMA = 34;
 
 export async function readLaurelOverlayPng(): Promise<Buffer | null> {
-  if (!fs.existsSync(LAUREL_PNG)) return null;
-  return fs.readFileSync(LAUREL_PNG);
+  return readPublicEsquelaAsset("corona-laurel.png");
 }
 
 export async function readCumpleanosPlantillaJpeg(): Promise<Buffer | null> {
-  if (!fs.existsSync(PLANTILLA_JPEG)) return null;
-  const raw = fs.readFileSync(PLANTILLA_JPEG);
+  const raw = readPublicEsquelaAsset("cumpleanos-plantilla.jpg");
+  if (!raw) return null;
   try {
     return await sharp(raw).rotate().jpeg({ quality: 90, chromaSubsampling: "4:4:4" }).toBuffer();
   } catch {

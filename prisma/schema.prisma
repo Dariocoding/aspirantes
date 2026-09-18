@@ -47,6 +47,92 @@ enum EstadoCivil {
   UNION_ESTABLE
 }
 
+enum ColorCabello {
+  NEGRO
+  CASTANO_CLARO
+  CASTANO_OSCURO
+  RUBIO
+  ROJIZO
+  CANOSO
+}
+
+enum FormaLabios {
+  VOLUMINOSOS
+  FINOS
+  GRUESO_EN_EL_CENTRO
+  NORMALES
+  AUMENTADOS
+}
+
+enum FormaNariz {
+  PEQUENA
+  PERFILADA
+  ANCHA
+  ARQUEADA
+  GRANDE
+}
+
+enum ColorOjos {
+  CAFE
+  AMBAR
+  AVELLANA
+  VERDE
+  AZUL
+  GRIS
+  NEGRO
+}
+
+enum ColorPiel {
+  CLARA
+  MORENA
+  MARRON
+  NEGRA
+}
+
+enum FactorRh {
+  POSITIVO
+  NEGATIVO
+}
+
+enum SenaParticular {
+  LUNARES
+  CICATRIZ
+  BERRUGA
+  MANCHAS_DE_LA_PIEL
+  LESIONES
+  TATUAJE
+  NINGUNA
+}
+
+enum TallaUniformePatriota {
+  XSS
+  SS
+  SR
+  SL
+  MS
+  MR
+  ML
+  LR
+  XL
+  XLR
+  XXL
+}
+
+enum TallaUniformeOliva {
+  FEM_8_10
+  FEM_10_12
+  FEM_12_14
+  FEM_14_16
+  FEM_16_18
+  FEM_18_20
+  MAS_28_30
+  MAS_30_32
+  MAS_32_34
+  MAS_34_36
+  MAS_36_38
+  MAS_38_40
+}
+
 enum TipoEsquela {
   CUMPLEANOS
   EFEMERIDE
@@ -258,6 +344,26 @@ model Aspirante {
   religion              String?
   /// Deporte que practica o le gusta hacer.
   deporte               String?
+  /// Usuario, enlace o `NO_POSEE` si declaró no tener esa red.
+  instagram             String?
+  twitter               String?
+  facebook              String?
+  /// Ambos padres de nacionalidad venezolana.
+  padresVenezolanos     Boolean?
+  madreNombres          String?
+  madreApellidos        String?
+  madreCedula           String?
+  madreFechaNacimiento  DateTime?
+  padreNombres          String?
+  padreApellidos        String?
+  padreCedula           String?
+  padreFechaNacimiento  DateTime?
+  poseeVehiculoPropio   Boolean?
+  poseeViviendaPropia   Boolean?
+  carnetPatriaSerial    String?
+  carnetPatriaCodigo    String?
+  /// Cuenta nómina BANFANB.
+  cuentaNominaBanfanb   String?
   convocatoriaId        String
   convocatoria          Convocatoria         @relation(fields: [convocatoriaId], references: [id], onDelete: Restrict)
   /// Pelotón del curso al que pertenece el aspirante (misma convocatoria).
@@ -321,6 +427,13 @@ model DatosFisicosMedicos {
   /** Tensión arterial, p. ej. "120/80". */
   tensionArterial   String?
   tipoSangre        String?
+  factorRh          FactorRh?
+  colorCabello      ColorCabello?
+  formaLabios       FormaLabios?
+  formaNariz        FormaNariz?
+  colorOjos         ColorOjos?
+  colorPiel         ColorPiel?
+  senaParticular    SenaParticular?
   alergias          String?
   condicionesMedicas String?
   discapacidad      String?
@@ -329,6 +442,8 @@ model DatosFisicosMedicos {
   tallaCamisa       String?
   tallaPantalon     String?
   tallaCalzado      String?
+  tallaUniformePatriota TallaUniformePatriota?
+  tallaUniformeOliva    TallaUniformeOliva?
   aspiranteId       String   @unique
   aspirante         Aspirante @relation(fields: [aspiranteId], references: [id], onDelete: Cascade)
   updatedAt         DateTime @updatedAt

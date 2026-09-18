@@ -1,19 +1,27 @@
-import fs from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 /**
  * Buffer PNG del logo institucional para @react-pdf (solo JPEG/PNG; el WebP de `public/` no es válido).
  * Preferir `public/images/cefoa-logo.png`. Fallback: logos del Ejército.
+ *
+ * `readFileSync(path.join(process.cwd(), "public", "images", …))` debe ir en una sola
+ * expresión: si la ruta se guarda en una variable, Turbopack traza todo el repo (NFT).
  */
 export function readInstitutionLogoPngBuffer(): Buffer | null {
-  // Rutas literales bajo `public/images` para que Turbopack no tracee todo el repo.
-  const candidates = [
-    path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "images", "cefoa-logo.png"),
-    path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "images", "ejercito_logo_print.png"),
-    path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "images", "ejercito_logo.png"),
-  ];
-  for (const filePath of candidates) {
-    if (fs.existsSync(filePath)) return fs.readFileSync(filePath);
+  try {
+    return readFileSync(path.join(process.cwd(), "public", "images", "cefoa-logo.png"));
+  } catch {
+    /* fallback */
   }
-  return null;
+  try {
+    return readFileSync(path.join(process.cwd(), "public", "images", "ejercito_logo_print.png"));
+  } catch {
+    /* fallback */
+  }
+  try {
+    return readFileSync(path.join(process.cwd(), "public", "images", "ejercito_logo.png"));
+  } catch {
+    return null;
+  }
 }

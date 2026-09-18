@@ -1,5 +1,22 @@
 import { z } from "zod";
 import { ESTADO_CIVIL_VALUES } from "@src/lib/aspirantes/estado-civil";
+import {
+  COLOR_CABELLO_VALUES,
+  COLOR_OJOS_VALUES,
+  COLOR_PIEL_VALUES,
+  FACTOR_RH_VALUES,
+  FORMA_LABIOS_VALUES,
+  FORMA_NARIZ_VALUES,
+  SENA_PARTICULAR_VALUES,
+  TIPO_SANGRE_GRUPO_VALUES,
+  parseFactorRh,
+  parseTipoSangreGrupo,
+} from "@src/lib/aspirantes/senaletica";
+import {
+  TALLA_UNIFORME_OLIVA_VALUES,
+  TALLA_UNIFORME_PATRIOTA_VALUES,
+  parsePadresVenezolanos,
+} from "@src/lib/aspirantes/tallas-familia";
 import { TIPO_ESTUDIO_ALL_VALUES } from "@src/lib/aspirantes/tipo-estudio";
 import {
   ageFromBirthDate,
@@ -16,6 +33,18 @@ const estadoCivilEnum = z.enum(ESTADO_CIVIL_VALUES);
 const estadoCivilField = z.preprocess(
   (v) => (v === "" || v === null || v === undefined ? null : v),
   estadoCivilEnum.nullable(),
+);
+
+function optionalCatalogEnum<T extends readonly [string, ...string[]]>(values: T) {
+  return z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? null : v),
+    z.enum(values).nullable(),
+  );
+}
+
+const redSocialEstadoField = z.preprocess(
+  (v) => (v === "" || v === null || v === undefined ? null : v),
+  z.enum(["NO_POSEE", "POSEE"]).nullable(),
 );
 
 function optionalFloat(max: number) {
@@ -39,6 +68,59 @@ const optionalTrimmedString = (max: number) =>
     (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
     z.string().max(max).nullable(),
   );
+
+const senaleticaFields = {
+  colorCabello: optionalCatalogEnum(COLOR_CABELLO_VALUES),
+  formaLabios: optionalCatalogEnum(FORMA_LABIOS_VALUES),
+  formaNariz: optionalCatalogEnum(FORMA_NARIZ_VALUES),
+  colorOjos: optionalCatalogEnum(COLOR_OJOS_VALUES),
+  colorPiel: optionalCatalogEnum(COLOR_PIEL_VALUES),
+  senaParticular: optionalCatalogEnum(SENA_PARTICULAR_VALUES),
+  factorRh: z.preprocess((v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    return parseFactorRh(String(v));
+  }, z.enum(FACTOR_RH_VALUES).nullable()),
+  instagramEstado: redSocialEstadoField,
+  instagramUsuario: optionalTrimmedString(120),
+  twitterEstado: redSocialEstadoField,
+  twitterUsuario: optionalTrimmedString(120),
+  facebookEstado: redSocialEstadoField,
+  facebookUsuario: optionalTrimmedString(120),
+};
+
+const familiaTallasFields = {
+  tallaUniformePatriota: optionalCatalogEnum(TALLA_UNIFORME_PATRIOTA_VALUES),
+  tallaUniformeOliva: optionalCatalogEnum(TALLA_UNIFORME_OLIVA_VALUES),
+  padresVenezolanos: z.preprocess((v) => parsePadresVenezolanos(v), z.boolean().nullable()),
+  madreNombres: optionalTrimmedString(120),
+  madreApellidos: optionalTrimmedString(120),
+  madreCedula: z.preprocess((v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const s = String(v).trim();
+    return s.length ? s : null;
+  }, z.string().regex(/^[0-9]{6,12}$/, "Cédula de la madre: solo dígitos, entre 6 y 12").nullable()),
+  padreNombres: optionalTrimmedString(120),
+  padreApellidos: optionalTrimmedString(120),
+  padreCedula: z.preprocess((v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const s = String(v).trim();
+    return s.length ? s : null;
+  }, z.string().regex(/^[0-9]{6,12}$/, "Cédula del padre: solo dígitos, entre 6 y 12").nullable()),
+  poseeVehiculoPropio: z.preprocess((v) => parsePadresVenezolanos(v), z.boolean().nullable()),
+  poseeViviendaPropia: z.preprocess((v) => parsePadresVenezolanos(v), z.boolean().nullable()),
+  carnetPatriaSerial: optionalTrimmedString(40),
+  carnetPatriaCodigo: optionalTrimmedString(40),
+  cuentaNominaBanfanb: z.preprocess((v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const s = String(v).replace(/\s+/g, "");
+    return s.length ? s : null;
+  }, z.string().regex(/^[0-9]{10,22}$/, "Cuenta nómina: solo dígitos, entre 10 y 22").nullable()),
+};
+
+const tipoSangreGrupoField = z.preprocess((v) => {
+  if (v === "" || v === null || v === undefined) return null;
+  return parseTipoSangreGrupo(String(v));
+}, z.enum(TIPO_SANGRE_GRUPO_VALUES).nullable());
 
 /** @deprecated Preferir `FECHA_NACIMIENTO_PENDIENTE` desde `@src/lib/date`. */
 export const ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE = FECHA_NACIMIENTO_PENDIENTE;
@@ -132,6 +214,11 @@ const optionalFechaNacimiento = z.preprocess(
   z.date().nullable(),
 );
 
+const familiaFechaFields = {
+  madreFechaNacimiento: optionalFechaNacimiento,
+  padreFechaNacimiento: optionalFechaNacimiento,
+};
+
 const requiredFechaNacimiento = z.preprocess((v) => {
   const d = coerceFechaNacimiento(v);
   return d === null ? undefined : d;
@@ -215,7 +302,7 @@ const aspiranteStaffBaseSchema = z.object({
   estaturaCm: optionalFloat(300),
   pesoKg: optionalFloat(400),
   tensionArterial: z.string().trim().max(20).optional().nullable(),
-  tipoSangre: z.string().trim().max(10).optional().nullable(),
+  tipoSangre: tipoSangreGrupoField,
   tallaGorra: optionalTrimmedString(16),
   tallaCamisa: optionalTrimmedString(16),
   tallaPantalon: optionalTrimmedString(16),
@@ -224,6 +311,9 @@ const aspiranteStaffBaseSchema = z.object({
   condicionesMedicas: z.string().trim().max(2000).optional().nullable(),
   discapacidad: z.string().trim().max(500).optional().nullable(),
   observaciones: z.string().trim().max(2000).optional().nullable(),
+  ...senaleticaFields,
+  ...familiaTallasFields,
+  ...familiaFechaFields,
   contactoNombre: optionalContactoString(120),
   contactoParentesco: optionalContactoString(80),
   contactoTelefono: optionalContactoString(40),
@@ -279,7 +369,7 @@ export const aspiranteQuickUpdateSchema = z
     estaturaCm: optionalFloat(300),
     pesoKg: optionalFloat(400),
     tensionArterial: z.string().trim().max(20).optional().nullable(),
-    tipoSangre: z.string().trim().max(10).optional().nullable(),
+    tipoSangre: tipoSangreGrupoField,
     tallaGorra: optionalTrimmedString(16),
     tallaCamisa: optionalTrimmedString(16),
     tallaPantalon: optionalTrimmedString(16),
@@ -288,6 +378,9 @@ export const aspiranteQuickUpdateSchema = z
     condicionesMedicas: z.string().trim().max(2000).optional().nullable(),
     discapacidad: z.string().trim().max(500).optional().nullable(),
     observaciones: z.string().trim().max(2000).optional().nullable(),
+    ...senaleticaFields,
+    ...familiaTallasFields,
+    ...familiaFechaFields,
     contactoNombre: optionalContactoString(120),
     contactoParentesco: optionalContactoString(80),
     contactoTelefono: optionalContactoString(40),

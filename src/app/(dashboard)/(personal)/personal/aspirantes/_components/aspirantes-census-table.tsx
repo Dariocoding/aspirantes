@@ -39,6 +39,7 @@ import {
   nacimientoMesGroupLabel,
 } from "@src/lib/aspirantes/census";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
+import { formatTipoSangre } from "@src/lib/aspirantes/senaletica";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
 import { ASPIRANTE_DOCUMENTO_KINDS } from "@src/lib/storage/aspirante-foto";
@@ -86,10 +87,36 @@ export type AspirantesCensusRow = {
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
+  factorRh: string | null;
+  colorCabello: string | null;
+  formaLabios: string | null;
+  formaNariz: string | null;
+  colorOjos: string | null;
+  colorPiel: string | null;
+  senaParticular: string | null;
+  instagram: string | null;
+  twitter: string | null;
+  facebook: string | null;
+  padresVenezolanos: boolean | null;
+  madreNombres: string | null;
+  madreApellidos: string | null;
+  madreCedula: string | null;
+  madreFechaNacimientoIso: string | null;
+  padreNombres: string | null;
+  padreApellidos: string | null;
+  padreCedula: string | null;
+  padreFechaNacimientoIso: string | null;
+  poseeVehiculoPropio: boolean | null;
+  poseeViviendaPropia: boolean | null;
+  carnetPatriaSerial: string | null;
+  carnetPatriaCodigo: string | null;
+  cuentaNominaBanfanb: string | null;
   tallaGorra: string | null;
   tallaCamisa: string | null;
   tallaPantalon: string | null;
   tallaCalzado: string | null;
+  tallaUniformePatriota: string | null;
+  tallaUniformeOliva: string | null;
   tensionArterial: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
@@ -270,12 +297,10 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
       return <TextCell value={a.nombreUniversidad} clamp />;
     case "paisUniversidad":
       return <TextCell value={a.paisUniversidad} />;
-    case "tipoSangre":
-      return a.tipoSangre?.trim() ? (
-        <span className="font-semibold tabular-nums text-slate-800">{a.tipoSangre.trim()}</span>
-      ) : (
-        <EmptyDash />
-      );
+    case "tipoSangre": {
+      const label = formatTipoSangre(a.tipoSangre, a.factorRh);
+      return label ? <span className="font-semibold tabular-nums text-slate-800">{label}</span> : <EmptyDash />;
+    }
     case "estatura":
       return a.estaturaCm != null ? (
         <span className="tabular-nums text-slate-700">{a.estaturaCm} cm</span>

@@ -5,7 +5,7 @@ import { prisma } from "@src/lib/prisma";
 import { CalificacionAdmision, TipoEsquela } from "@src/generated/prisma";
 import { requireWriter } from "@src/lib/auth/guards";
 import { routes } from "@src/lib/apps/routes";
-import { forbidden } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 
 export async function createBirthdayEsquela(formData: FormData) {
   await requireWriter();
@@ -13,7 +13,7 @@ export async function createBirthdayEsquela(formData: FormData) {
   const aspirante = await prisma.aspirante.findUniqueOrThrow({ where: { id: aspiranteId } });
   if (aspirante.calificacionAdmision === CalificacionAdmision.NO_APTO) forbidden();
 
-  await prisma.esquela.create({
+  const esquela = await prisma.esquela.create({
     data: {
       tipo: TipoEsquela.CUMPLEANOS,
       titulo: `Felicitaciones de Cumpleaños: ${aspirante.nombres} ${aspirante.apellidos}`,
@@ -24,6 +24,7 @@ export async function createBirthdayEsquela(formData: FormData) {
   });
 
   revalidatePath(routes.personal.esquelas);
+  redirect(routes.personal.esquela(esquela.id));
 }
 
 export async function createEfemerideEsquela(formData: FormData) {
@@ -31,7 +32,7 @@ export async function createEfemerideEsquela(formData: FormData) {
   const efemerideId = String(formData.get("efemerideId"));
   const efemeride = await prisma.efemeride.findUniqueOrThrow({ where: { id: efemerideId } });
 
-  await prisma.esquela.create({
+  const esquela = await prisma.esquela.create({
     data: {
       tipo: TipoEsquela.EFEMERIDE,
       titulo: `Conmemoración: ${efemeride.nombre}`,
@@ -42,4 +43,5 @@ export async function createEfemerideEsquela(formData: FormData) {
   });
 
   revalidatePath(routes.personal.esquelas);
+  redirect(routes.personal.esquela(esquela.id));
 }

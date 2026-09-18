@@ -3,7 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@src/generated/prisma";
 import { prisma } from "@src/lib/prisma";
-import { CalificacionAdmision, Sexo } from "@src/generated/prisma";
+import {
+  CalificacionAdmision,
+  ColorCabello,
+  ColorOjos,
+  ColorPiel,
+  FactorRh,
+  FormaLabios,
+  FormaNariz,
+  SenaParticular,
+  Sexo,
+  TallaUniformeOliva,
+  TallaUniformePatriota,
+} from "@src/generated/prisma";
+import { composeRedSocial } from "@src/lib/aspirantes/senaletica";
 import {
   aspiranteCreateSchema,
   aspiranteQuickUpdateSchema,
@@ -52,6 +65,137 @@ function emptyToNull(v: unknown) {
   return s.length ? s : null;
 }
 
+function formSenaletica(formData: FormData) {
+  return {
+    colorCabello: emptyToNull(formData.get("colorCabello")),
+    formaLabios: emptyToNull(formData.get("formaLabios")),
+    formaNariz: emptyToNull(formData.get("formaNariz")),
+    colorOjos: emptyToNull(formData.get("colorOjos")),
+    colorPiel: emptyToNull(formData.get("colorPiel")),
+    senaParticular: emptyToNull(formData.get("senaParticular")),
+    factorRh: emptyToNull(formData.get("factorRh")),
+    instagramEstado: emptyToNull(formData.get("instagramEstado")),
+    instagramUsuario: emptyToNull(formData.get("instagramUsuario")),
+    twitterEstado: emptyToNull(formData.get("twitterEstado")),
+    twitterUsuario: emptyToNull(formData.get("twitterUsuario")),
+    facebookEstado: emptyToNull(formData.get("facebookEstado")),
+    facebookUsuario: emptyToNull(formData.get("facebookUsuario")),
+    tallaUniformePatriota: emptyToNull(formData.get("tallaUniformePatriota")),
+    tallaUniformeOliva: emptyToNull(formData.get("tallaUniformeOliva")),
+    padresVenezolanos: emptyToNull(formData.get("padresVenezolanos")),
+    madreNombres: emptyToNull(formData.get("madreNombres")),
+    madreApellidos: emptyToNull(formData.get("madreApellidos")),
+    madreCedula: emptyToNull(formData.get("madreCedula")),
+    madreFechaNacimiento: emptyToNull(formData.get("madreFechaNacimiento")),
+    padreNombres: emptyToNull(formData.get("padreNombres")),
+    padreApellidos: emptyToNull(formData.get("padreApellidos")),
+    padreCedula: emptyToNull(formData.get("padreCedula")),
+    padreFechaNacimiento: emptyToNull(formData.get("padreFechaNacimiento")),
+    poseeVehiculoPropio: emptyToNull(formData.get("poseeVehiculoPropio")),
+    poseeViviendaPropia: emptyToNull(formData.get("poseeViviendaPropia")),
+    carnetPatriaSerial: emptyToNull(formData.get("carnetPatriaSerial")),
+    carnetPatriaCodigo: emptyToNull(formData.get("carnetPatriaCodigo")),
+    cuentaNominaBanfanb: emptyToNull(formData.get("cuentaNominaBanfanb")),
+  };
+}
+
+type SenaleticaParsed = {
+  colorCabello?: string | null;
+  formaLabios?: string | null;
+  formaNariz?: string | null;
+  colorOjos?: string | null;
+  colorPiel?: string | null;
+  senaParticular?: string | null;
+  factorRh?: string | null;
+  instagramEstado?: string | null;
+  instagramUsuario?: string | null;
+  twitterEstado?: string | null;
+  twitterUsuario?: string | null;
+  facebookEstado?: string | null;
+  facebookUsuario?: string | null;
+  tallaUniformePatriota?: string | null;
+  tallaUniformeOliva?: string | null;
+  padresVenezolanos?: boolean | null;
+  madreNombres?: string | null;
+  madreApellidos?: string | null;
+  madreCedula?: string | null;
+  madreFechaNacimiento?: Date | null;
+  padreNombres?: string | null;
+  padreApellidos?: string | null;
+  padreCedula?: string | null;
+  padreFechaNacimiento?: Date | null;
+  poseeVehiculoPropio?: boolean | null;
+  poseeViviendaPropia?: boolean | null;
+  carnetPatriaSerial?: string | null;
+  carnetPatriaCodigo?: string | null;
+  cuentaNominaBanfanb?: string | null;
+  tipoSangre?: string | null;
+  estaturaCm?: number;
+  pesoKg?: number;
+  tensionArterial?: string | null;
+  tallaGorra?: string | null;
+  tallaCamisa?: string | null;
+  tallaPantalon?: string | null;
+  tallaCalzado?: string | null;
+  alergias?: string | null;
+  condicionesMedicas?: string | null;
+  discapacidad?: string | null;
+  observaciones?: string | null;
+};
+
+function datosFisicosWrite(d: SenaleticaParsed) {
+  return {
+    estaturaCm: d.estaturaCm ?? null,
+    pesoKg: d.pesoKg ?? null,
+    tensionArterial: d.tensionArterial ?? null,
+    tipoSangre: d.tipoSangre ?? null,
+    factorRh: (d.factorRh as FactorRh | null | undefined) ?? null,
+    colorCabello: (d.colorCabello as ColorCabello | null | undefined) ?? null,
+    formaLabios: (d.formaLabios as FormaLabios | null | undefined) ?? null,
+    formaNariz: (d.formaNariz as FormaNariz | null | undefined) ?? null,
+    colorOjos: (d.colorOjos as ColorOjos | null | undefined) ?? null,
+    colorPiel: (d.colorPiel as ColorPiel | null | undefined) ?? null,
+    senaParticular: (d.senaParticular as SenaParticular | null | undefined) ?? null,
+    tallaUniformePatriota: (d.tallaUniformePatriota as TallaUniformePatriota | null | undefined) ?? null,
+    tallaUniformeOliva: (d.tallaUniformeOliva as TallaUniformeOliva | null | undefined) ?? null,
+    tallaGorra: d.tallaGorra ?? null,
+    tallaCamisa: d.tallaCamisa ?? null,
+    tallaPantalon: d.tallaPantalon ?? null,
+    tallaCalzado: d.tallaCalzado ?? null,
+    alergias: d.alergias ?? null,
+    condicionesMedicas: d.condicionesMedicas ?? null,
+    discapacidad: d.discapacidad ?? null,
+    observaciones: d.observaciones ?? null,
+  };
+}
+
+function familiaWrite(d: SenaleticaParsed) {
+  return {
+    padresVenezolanos: d.padresVenezolanos ?? null,
+    madreNombres: d.madreNombres ?? null,
+    madreApellidos: d.madreApellidos ?? null,
+    madreCedula: d.madreCedula ?? null,
+    madreFechaNacimiento: d.madreFechaNacimiento ?? null,
+    padreNombres: d.padreNombres ?? null,
+    padreApellidos: d.padreApellidos ?? null,
+    padreCedula: d.padreCedula ?? null,
+    padreFechaNacimiento: d.padreFechaNacimiento ?? null,
+    poseeVehiculoPropio: d.poseeVehiculoPropio ?? null,
+    poseeViviendaPropia: d.poseeViviendaPropia ?? null,
+    carnetPatriaSerial: d.carnetPatriaSerial ?? null,
+    carnetPatriaCodigo: d.carnetPatriaCodigo ?? null,
+    cuentaNominaBanfanb: d.cuentaNominaBanfanb ?? null,
+  };
+}
+
+function redesWrite(d: SenaleticaParsed) {
+  return {
+    instagram: composeRedSocial(d.instagramEstado, d.instagramUsuario),
+    twitter: composeRedSocial(d.twitterEstado, d.twitterUsuario),
+    facebook: composeRedSocial(d.facebookEstado, d.facebookUsuario),
+  };
+}
+
 export async function createAspirante(
   _prev: AspiranteActionState,
   formData: FormData,
@@ -87,6 +231,7 @@ export async function createAspirante(
     condicionesMedicas: emptyToNull(formData.get("condicionesMedicas")),
     discapacidad: emptyToNull(formData.get("discapacidad")),
     observaciones: emptyToNull(formData.get("observaciones")),
+    ...formSenaletica(formData),
     contactoNombre: formData.get("contactoNombre"),
     contactoParentesco: formData.get("contactoParentesco"),
     contactoTelefono: formData.get("contactoTelefono"),
@@ -151,6 +296,8 @@ export async function createAspirante(
         estadoCivil: d.estadoCivil ?? null,
         religion: d.religion ?? null,
         deporte: d.deporte ?? null,
+        ...redesWrite(d),
+        ...familiaWrite(d),
         convocatoriaId: convocatoria.id,
         pelotonId: pelotonResolved.pelotonId,
         tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
@@ -162,20 +309,7 @@ export async function createAspirante(
         anioEgresoUniversidad: d.anioEgresoUniversidad ?? null,
         ...(fichaPayload !== undefined ? { fichaEvaluacion: toPrismaFichaEvaluacion(fichaPayload) } : {}),
         datosFisicos: {
-          create: {
-            estaturaCm: d.estaturaCm ?? null,
-            pesoKg: d.pesoKg ?? null,
-            tensionArterial: d.tensionArterial ?? null,
-            tipoSangre: d.tipoSangre ?? null,
-            tallaGorra: d.tallaGorra ?? null,
-            tallaCamisa: d.tallaCamisa ?? null,
-            tallaPantalon: d.tallaPantalon ?? null,
-            tallaCalzado: d.tallaCalzado ?? null,
-            alergias: d.alergias ?? null,
-            condicionesMedicas: d.condicionesMedicas ?? null,
-            discapacidad: d.discapacidad ?? null,
-            observaciones: d.observaciones ?? null,
-          },
+          create: datosFisicosWrite(d),
         },
         ...(hasContacto
           ? {
@@ -310,6 +444,7 @@ export async function updateAspirante(
     condicionesMedicas: emptyToNull(formData.get("condicionesMedicas")),
     discapacidad: emptyToNull(formData.get("discapacidad")),
     observaciones: emptyToNull(formData.get("observaciones")),
+    ...formSenaletica(formData),
     contactoNombre: formData.get("contactoNombre"),
     contactoParentesco: formData.get("contactoParentesco"),
     contactoTelefono: formData.get("contactoTelefono"),
@@ -388,6 +523,8 @@ export async function updateAspirante(
           estadoCivil: d.estadoCivil ?? null,
           religion: d.religion ?? null,
           deporte: d.deporte ?? null,
+          ...redesWrite(d),
+          ...familiaWrite(d),
           pelotonId: pelotonResolved.pelotonId,
           tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
           nombreUniversidad: d.nombreUniversidad ?? null,
@@ -404,33 +541,9 @@ export async function updateAspirante(
         where: { aspiranteId },
         create: {
           aspiranteId,
-          estaturaCm: d.estaturaCm ?? null,
-          pesoKg: d.pesoKg ?? null,
-          tensionArterial: d.tensionArterial ?? null,
-          tipoSangre: d.tipoSangre ?? null,
-          tallaGorra: d.tallaGorra ?? null,
-          tallaCamisa: d.tallaCamisa ?? null,
-          tallaPantalon: d.tallaPantalon ?? null,
-          tallaCalzado: d.tallaCalzado ?? null,
-          alergias: d.alergias ?? null,
-          condicionesMedicas: d.condicionesMedicas ?? null,
-          discapacidad: d.discapacidad ?? null,
-          observaciones: d.observaciones ?? null,
+          ...datosFisicosWrite(d),
         },
-        update: {
-          estaturaCm: d.estaturaCm ?? null,
-          pesoKg: d.pesoKg ?? null,
-          tensionArterial: d.tensionArterial ?? null,
-          tipoSangre: d.tipoSangre ?? null,
-          tallaGorra: d.tallaGorra ?? null,
-          tallaCamisa: d.tallaCamisa ?? null,
-          tallaPantalon: d.tallaPantalon ?? null,
-          tallaCalzado: d.tallaCalzado ?? null,
-          alergias: d.alergias ?? null,
-          condicionesMedicas: d.condicionesMedicas ?? null,
-          discapacidad: d.discapacidad ?? null,
-          observaciones: d.observaciones ?? null,
-        },
+        update: datosFisicosWrite(d),
       });
 
       const contactoNombre = d.contactoNombre.trim();
@@ -530,6 +643,7 @@ export async function updateAspiranteQuick(
     condicionesMedicas: emptyToNull(formData.get("condicionesMedicas")),
     discapacidad: emptyToNull(formData.get("discapacidad")),
     observaciones: emptyToNull(formData.get("observaciones")),
+    ...formSenaletica(formData),
     contactoNombre: formData.get("contactoNombre"),
     contactoParentesco: formData.get("contactoParentesco"),
     contactoTelefono: formData.get("contactoTelefono"),
@@ -586,6 +700,8 @@ export async function updateAspiranteQuick(
           correo: d.correo ?? null,
           direccion: d.direccion ?? null,
           pelotonId: pelotonResolved.pelotonId,
+          ...redesWrite(d),
+          ...familiaWrite(d),
         },
       });
 
@@ -593,33 +709,9 @@ export async function updateAspiranteQuick(
         where: { aspiranteId: d.aspiranteId },
         create: {
           aspiranteId: d.aspiranteId,
-          estaturaCm: d.estaturaCm ?? null,
-          pesoKg: d.pesoKg ?? null,
-          tensionArterial: d.tensionArterial ?? null,
-          tipoSangre: d.tipoSangre ?? null,
-          tallaGorra: d.tallaGorra ?? null,
-          tallaCamisa: d.tallaCamisa ?? null,
-          tallaPantalon: d.tallaPantalon ?? null,
-          tallaCalzado: d.tallaCalzado ?? null,
-          alergias: d.alergias ?? null,
-          condicionesMedicas: d.condicionesMedicas ?? null,
-          discapacidad: d.discapacidad ?? null,
-          observaciones: d.observaciones ?? null,
+          ...datosFisicosWrite(d),
         },
-        update: {
-          estaturaCm: d.estaturaCm ?? null,
-          pesoKg: d.pesoKg ?? null,
-          tensionArterial: d.tensionArterial ?? null,
-          tipoSangre: d.tipoSangre ?? null,
-          tallaGorra: d.tallaGorra ?? null,
-          tallaCamisa: d.tallaCamisa ?? null,
-          tallaPantalon: d.tallaPantalon ?? null,
-          tallaCalzado: d.tallaCalzado ?? null,
-          alergias: d.alergias ?? null,
-          condicionesMedicas: d.condicionesMedicas ?? null,
-          discapacidad: d.discapacidad ?? null,
-          observaciones: d.observaciones ?? null,
-        },
+        update: datosFisicosWrite(d),
       });
 
       const contactoNombre = d.contactoNombre.trim();

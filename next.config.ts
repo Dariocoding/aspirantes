@@ -47,12 +47,19 @@ const nextConfig: NextConfig = {
   // Imagen Docker mínima: solo archivos trazados (no todo node_modules).
   output: "standalone",
   serverExternalPackages: ["sharp", "@prisma/client"],
-  // Prisma genera el client fuera de node_modules; hay que incluirlo en el trace.
+  // Solo el motor nativo y el schema; no el runtime JS (si se incluye, Turbopack traza el repo).
   outputFileTracingIncludes: {
-    "/**": ["./src/generated/prisma/**/*"],
+    "/**": [
+      "./src/generated/prisma/*.node",
+      "./src/generated/prisma/schema.prisma",
+      "./public/images/cefoa-logo.png",
+      "./public/images/esquelas/**/*",
+      "./public/fonts/**/*",
+      "./assets/fonts/**/*",
+    ],
   },
   outputFileTracingExcludes: {
-    "/**": ["./prisma.config.ts"],
+    "/**": ["./prisma.config.ts", "./next.config.ts", "./next.config.mjs"],
   },
   transpilePackages: ["pdfjs-dist"],
   experimental: {

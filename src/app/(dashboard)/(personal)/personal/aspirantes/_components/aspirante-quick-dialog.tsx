@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
-import { HeartPulse, Images, LifeBuoy, Loader2, Phone, UserRound, UserPlus } from "lucide-react";
+import { HeartPulse, Images, LifeBuoy, Loader2, Phone, ScanFace, UserRound, UserPlus } from "lucide-react";
 import { createAspirante, updateAspiranteQuick } from "@src/app/actions/aspirantes";
 import { AspiranteFotoField } from "@dashboard/aspirantes/_components/aspirante-foto";
+import { CatalogSelect, catalogOptions } from "@dashboard/aspirantes/_components/catalog-select";
+import { RedSocialField } from "@dashboard/aspirantes/_components/red-social-field";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import {
   Dialog,
@@ -25,6 +27,37 @@ import { hasRealBirthDate } from "@src/lib/date";
 import { labelPeloton, type PelotonResumen } from "@src/lib/pelotones";
 import { ASPIRANTE_FOTO_FORM } from "@src/lib/storage/aspirante-foto";
 import { cn } from "@src/lib/utils";
+import {
+  COLOR_CABELLO_LABELS,
+  COLOR_CABELLO_VALUES,
+  COLOR_OJOS_LABELS,
+  COLOR_OJOS_VALUES,
+  COLOR_PIEL_LABELS,
+  COLOR_PIEL_VALUES,
+  FACTOR_RH_LABELS,
+  FACTOR_RH_VALUES,
+  FORMA_LABIOS_LABELS,
+  FORMA_LABIOS_VALUES,
+  FORMA_NARIZ_LABELS,
+  FORMA_NARIZ_VALUES,
+  SENA_PARTICULAR_LABELS,
+  SENA_PARTICULAR_VALUES,
+  TIPO_SANGRE_GRUPO_LABELS,
+  TIPO_SANGRE_GRUPO_VALUES,
+  parseFactorRh,
+  parseTipoSangreGrupo,
+} from "@src/lib/aspirantes/senaletica";
+import {
+  TALLA_CAMISA_ALMILLA_LABELS,
+  TALLA_CAMISA_ALMILLA_VALUES,
+  TALLA_GORRA_QUEPIS_LABELS,
+  TALLA_GORRA_QUEPIS_VALUES,
+  TALLA_UNIFORME_OLIVA_FEM_VALUES,
+  TALLA_UNIFORME_OLIVA_LABELS,
+  TALLA_UNIFORME_OLIVA_MAS_VALUES,
+  TALLA_UNIFORME_PATRIOTA_LABELS,
+  TALLA_UNIFORME_PATRIOTA_VALUES,
+} from "@src/lib/aspirantes/tallas-familia";
 
 export type AspiranteQuickInitial = {
   id: string;
@@ -45,10 +78,36 @@ export type AspiranteQuickInitial = {
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
+  factorRh: string | null;
+  colorCabello: string | null;
+  formaLabios: string | null;
+  formaNariz: string | null;
+  colorOjos: string | null;
+  colorPiel: string | null;
+  senaParticular: string | null;
+  instagram: string | null;
+  twitter: string | null;
+  facebook: string | null;
+  padresVenezolanos: boolean | null;
+  madreNombres: string | null;
+  madreApellidos: string | null;
+  madreCedula: string | null;
+  madreFechaNacimientoIso: string | null;
+  padreNombres: string | null;
+  padreApellidos: string | null;
+  padreCedula: string | null;
+  padreFechaNacimientoIso: string | null;
+  poseeVehiculoPropio: boolean | null;
+  poseeViviendaPropia: boolean | null;
+  carnetPatriaSerial: string | null;
+  carnetPatriaCodigo: string | null;
+  cuentaNominaBanfanb: string | null;
   tallaGorra: string | null;
   tallaCamisa: string | null;
   tallaPantalon: string | null;
   tallaCalzado: string | null;
+  tallaUniformePatriota: string | null;
+  tallaUniformeOliva: string | null;
   tensionArterial: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
@@ -63,7 +122,7 @@ export type AspiranteQuickInitial = {
 };
 
 type Mode = "create" | "edit";
-type QuickTab = "identidad" | "contacto" | "emergencia" | "salud" | "archivos";
+type QuickTab = "identidad" | "contacto" | "emergencia" | "rasgos" | "salud" | "archivos";
 
 type DialogProps = {
   open: boolean;
@@ -77,6 +136,7 @@ const TABS: { id: QuickTab; label: string; icon: typeof UserRound }[] = [
   { id: "identidad", label: "Identidad", icon: UserRound },
   { id: "contacto", label: "Contacto", icon: Phone },
   { id: "emergencia", label: "Emergencia", icon: LifeBuoy },
+  { id: "rasgos", label: "Rasgos", icon: ScanFace },
   { id: "salud", label: "Médicos", icon: HeartPulse },
   { id: "archivos", label: "Archivos", icon: Images },
 ];
@@ -112,6 +172,8 @@ function tabForError(errors: Record<string, string>): QuickTab | null {
         "tallaCamisa",
         "tallaPantalon",
         "tallaCalzado",
+        "tallaUniformePatriota",
+        "tallaUniformeOliva",
         "alergias",
         "condicionesMedicas",
         "discapacidad",
@@ -121,7 +183,23 @@ function tabForError(errors: Record<string, string>): QuickTab | null {
   ) {
     return "salud";
   }
-  if (keys.some((k) => ["telefono", "correo", "direccion"].includes(k))) return "contacto";
+  if (
+    keys.some((k) =>
+      ["colorCabello", "formaLabios", "formaNariz", "colorOjos", "colorPiel", "senaParticular"].includes(k),
+    )
+  ) {
+    return "rasgos";
+  }
+  if (keys.some((k) => ["madreNombres", "madreApellidos", "madreCedula", "madreFechaNacimiento", "padreNombres", "padreApellidos", "padreCedula", "padreFechaNacimiento", "padresVenezolanos"].includes(k))) {
+    return "identidad";
+  }
+  if (
+    keys.some((k) =>
+      ["telefono", "correo", "direccion", "instagramEstado", "twitterEstado", "facebookEstado", "poseeVehiculoPropio", "poseeViviendaPropia", "carnetPatriaSerial", "carnetPatriaCodigo", "cuentaNominaBanfanb"].includes(k),
+    )
+  ) {
+    return "contacto";
+  }
   if (keys.length) return "identidad";
   return null;
 }
@@ -190,7 +268,7 @@ function AspiranteQuickForm({
         {isEdit && initial ? <input type="hidden" name="aspiranteId" value={initial.id} /> : null}
 
         <div className="shrink-0 px-4 pt-0 pb-2">
-          <div className="grid grid-cols-5 gap-0.5 rounded-md border border-slate-200 bg-slate-100/80 p-0.5">
+          <div className="grid grid-cols-3 gap-0.5 rounded-md border border-slate-200 bg-slate-100/80 p-0.5 sm:grid-cols-6">
             {TABS.map((item) => {
               const Icon = item.icon;
               const active = tab === item.id;
@@ -315,6 +393,107 @@ function AspiranteQuickForm({
                 </select>
                 <FieldError message={state.errors.pelotonId} />
               </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-padres-ve">Padres venezolanos</Label>
+                <select
+                  id="quick-padres-ve"
+                  name="padresVenezolanos"
+                  defaultValue={
+                    initial?.padresVenezolanos === true ? "SI" : initial?.padresVenezolanos === false ? "NO" : ""
+                  }
+                  className={selectClass}
+                >
+                  <option value="">Sin indicar</option>
+                  <option value="SI">Sí</option>
+                  <option value="NO">No</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-madre-nombres">Nombres de la madre</Label>
+                <Input
+                  id="quick-madre-nombres"
+                  name="madreNombres"
+                  defaultValue={initial?.madreNombres ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.madreNombres} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-madre-apellidos">Apellidos de la madre</Label>
+                <Input
+                  id="quick-madre-apellidos"
+                  name="madreApellidos"
+                  defaultValue={initial?.madreApellidos ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.madreApellidos} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-madre-cedula">Cédula de la madre</Label>
+                <Input
+                  id="quick-madre-cedula"
+                  name="madreCedula"
+                  inputMode="numeric"
+                  defaultValue={initial?.madreCedula ?? ""}
+                  placeholder="Solo dígitos, 6 a 12"
+                  className="h-8"
+                />
+                <FieldError message={state.errors.madreCedula} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-madre-fecha">Fecha de nacimiento de la madre</Label>
+                <Input
+                  id="quick-madre-fecha"
+                  name="madreFechaNacimiento"
+                  type="date"
+                  defaultValue={fechaInputFromIso(initial?.madreFechaNacimientoIso ?? undefined)}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.madreFechaNacimiento} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-padre-nombres">Nombres del padre</Label>
+                <Input
+                  id="quick-padre-nombres"
+                  name="padreNombres"
+                  defaultValue={initial?.padreNombres ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.padreNombres} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-padre-apellidos">Apellidos del padre</Label>
+                <Input
+                  id="quick-padre-apellidos"
+                  name="padreApellidos"
+                  defaultValue={initial?.padreApellidos ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.padreApellidos} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-padre-cedula">Cédula del padre</Label>
+                <Input
+                  id="quick-padre-cedula"
+                  name="padreCedula"
+                  inputMode="numeric"
+                  defaultValue={initial?.padreCedula ?? ""}
+                  placeholder="Solo dígitos, 6 a 12"
+                  className="h-8"
+                />
+                <FieldError message={state.errors.padreCedula} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-padre-fecha">Fecha de nacimiento del padre</Label>
+                <Input
+                  id="quick-padre-fecha"
+                  name="padreFechaNacimiento"
+                  type="date"
+                  defaultValue={fechaInputFromIso(initial?.padreFechaNacimientoIso ?? undefined)}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.padreFechaNacimiento} />
+              </div>
             </div>
           </fieldset>
 
@@ -350,6 +529,89 @@ function AspiranteQuickForm({
                   className="h-8"
                 />
               </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-vehiculo">Posee vehículo propio</Label>
+                <select
+                  id="quick-vehiculo"
+                  name="poseeVehiculoPropio"
+                  defaultValue={
+                    initial?.poseeVehiculoPropio === true ? "SI" : initial?.poseeVehiculoPropio === false ? "NO" : ""
+                  }
+                  className={selectClass}
+                >
+                  <option value="">Sin indicar</option>
+                  <option value="SI">Sí</option>
+                  <option value="NO">No</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-vivienda">Posee vivienda propia</Label>
+                <select
+                  id="quick-vivienda"
+                  name="poseeViviendaPropia"
+                  defaultValue={
+                    initial?.poseeViviendaPropia === true ? "SI" : initial?.poseeViviendaPropia === false ? "NO" : ""
+                  }
+                  className={selectClass}
+                >
+                  <option value="">Sin indicar</option>
+                  <option value="SI">Sí</option>
+                  <option value="NO">No</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-carnet-serial">Serial del carnet de la patria</Label>
+                <Input
+                  id="quick-carnet-serial"
+                  name="carnetPatriaSerial"
+                  defaultValue={initial?.carnetPatriaSerial ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.carnetPatriaSerial} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-carnet-codigo">Código del carnet de la patria</Label>
+                <Input
+                  id="quick-carnet-codigo"
+                  name="carnetPatriaCodigo"
+                  defaultValue={initial?.carnetPatriaCodigo ?? ""}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.carnetPatriaCodigo} />
+              </div>
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label htmlFor="quick-cuenta-banfanb">Número de cuenta nómina BANFANB</Label>
+                <Input
+                  id="quick-cuenta-banfanb"
+                  name="cuentaNominaBanfanb"
+                  inputMode="numeric"
+                  defaultValue={initial?.cuentaNominaBanfanb ?? ""}
+                  placeholder="Solo dígitos"
+                  className="h-8"
+                />
+                <FieldError message={state.errors.cuentaNominaBanfanb} />
+              </div>
+              <RedSocialField
+                id="quick-instagram"
+                label="Instagram"
+                estadoName="instagramEstado"
+                usuarioName="instagramUsuario"
+                stored={initial?.instagram}
+              />
+              <RedSocialField
+                id="quick-twitter"
+                label="Twitter / X"
+                estadoName="twitterEstado"
+                usuarioName="twitterUsuario"
+                stored={initial?.twitter}
+              />
+              <RedSocialField
+                id="quick-facebook"
+                label="Facebook"
+                estadoName="facebookEstado"
+                usuarioName="facebookUsuario"
+                stored={initial?.facebook}
+              />
             </div>
           </fieldset>
 
@@ -402,6 +664,54 @@ function AspiranteQuickForm({
             </div>
           </fieldset>
 
+          <fieldset hidden={tab !== "rasgos"} className="border-0 p-0">
+            <legend className="sr-only">Rasgos físicos</legend>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <CatalogSelect
+                id="quick-cabello"
+                name="colorCabello"
+                label="Cabello"
+                value={initial?.colorCabello}
+                options={catalogOptions(COLOR_CABELLO_VALUES, COLOR_CABELLO_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-labios"
+                name="formaLabios"
+                label="Boca / labios"
+                value={initial?.formaLabios}
+                options={catalogOptions(FORMA_LABIOS_VALUES, FORMA_LABIOS_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-nariz"
+                name="formaNariz"
+                label="Nariz"
+                value={initial?.formaNariz}
+                options={catalogOptions(FORMA_NARIZ_VALUES, FORMA_NARIZ_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-ojos"
+                name="colorOjos"
+                label="Ojos"
+                value={initial?.colorOjos}
+                options={catalogOptions(COLOR_OJOS_VALUES, COLOR_OJOS_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-piel"
+                name="colorPiel"
+                label="Piel"
+                value={initial?.colorPiel}
+                options={catalogOptions(COLOR_PIEL_VALUES, COLOR_PIEL_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-senas"
+                name="senaParticular"
+                label="Señas particulares"
+                value={initial?.senaParticular}
+                options={catalogOptions(SENA_PARTICULAR_VALUES, SENA_PARTICULAR_LABELS)}
+              />
+            </div>
+          </fieldset>
+
           <fieldset hidden={tab !== "salud"} className="border-0 p-0">
             <legend className="sr-only">Datos médicos</legend>
             <div className="grid gap-2.5 sm:grid-cols-2">
@@ -437,25 +747,64 @@ function AspiranteQuickForm({
                   className="h-8"
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="quick-sangre">Tipo de sangre</Label>
-                <Input id="quick-sangre" name="tipoSangre" defaultValue={initial?.tipoSangre ?? ""} className="h-8" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="quick-gorra">Talla gorra</Label>
-                <Input id="quick-gorra" name="tallaGorra" defaultValue={initial?.tallaGorra ?? ""} className="h-8" placeholder="S, M, L…" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="quick-camisa">Talla camisa</Label>
-                <Input id="quick-camisa" name="tallaCamisa" defaultValue={initial?.tallaCamisa ?? ""} className="h-8" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="quick-pantalon">Talla pantalón</Label>
-                <Input id="quick-pantalon" name="tallaPantalon" defaultValue={initial?.tallaPantalon ?? ""} className="h-8" />
-              </div>
+              <CatalogSelect
+                id="quick-sangre"
+                name="tipoSangre"
+                label="Tipo de sangre"
+                value={parseTipoSangreGrupo(initial?.tipoSangre)}
+                options={catalogOptions(TIPO_SANGRE_GRUPO_VALUES, TIPO_SANGRE_GRUPO_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-rh"
+                name="factorRh"
+                label="Factor RH"
+                value={initial?.factorRh ?? parseFactorRh(initial?.tipoSangre)}
+                options={catalogOptions(FACTOR_RH_VALUES, FACTOR_RH_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-patriota"
+                name="tallaUniformePatriota"
+                label="Talla uniforme patriota"
+                value={initial?.tallaUniformePatriota}
+                options={catalogOptions(TALLA_UNIFORME_PATRIOTA_VALUES, TALLA_UNIFORME_PATRIOTA_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-oliva"
+                name="tallaUniformeOliva"
+                label="Uniforme verde oliva / interior de cuartel"
+                value={initial?.tallaUniformeOliva}
+                groups={[
+                  {
+                    label: "Femenino",
+                    options: catalogOptions(TALLA_UNIFORME_OLIVA_FEM_VALUES, TALLA_UNIFORME_OLIVA_LABELS),
+                  },
+                  {
+                    label: "Masculino",
+                    options: catalogOptions(TALLA_UNIFORME_OLIVA_MAS_VALUES, TALLA_UNIFORME_OLIVA_LABELS),
+                  },
+                ]}
+              />
+              <CatalogSelect
+                id="quick-camisa"
+                name="tallaCamisa"
+                label="Camisa / almilla"
+                value={initial?.tallaCamisa}
+                options={catalogOptions(TALLA_CAMISA_ALMILLA_VALUES, TALLA_CAMISA_ALMILLA_LABELS)}
+              />
+              <CatalogSelect
+                id="quick-gorra"
+                name="tallaGorra"
+                label="Gorra / toca / quepis / boina"
+                value={initial?.tallaGorra}
+                options={catalogOptions(TALLA_GORRA_QUEPIS_VALUES, TALLA_GORRA_QUEPIS_LABELS)}
+              />
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="quick-calzado">Talla calzado</Label>
                 <Input id="quick-calzado" name="tallaCalzado" defaultValue={initial?.tallaCalzado ?? ""} className="h-8" placeholder="42" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-pantalon">Talla pantalón (otra)</Label>
+                <Input id="quick-pantalon" name="tallaPantalon" defaultValue={initial?.tallaPantalon ?? ""} className="h-8" />
               </div>
               <div className="flex flex-col gap-1.5 sm:col-span-2">
                 <Label htmlFor="quick-alergias">Alergias</Label>

@@ -8,6 +8,31 @@ import {
 import { calificacionAdmisionEtiqueta } from "@src/lib/aspirantes/census";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import {
+  COLOR_CABELLO_LABELS,
+  COLOR_OJOS_LABELS,
+  COLOR_PIEL_LABELS,
+  FORMA_LABIOS_LABELS,
+  FORMA_NARIZ_LABELS,
+  SENA_PARTICULAR_LABELS,
+  formatTipoSangre,
+  isColorCabello,
+  isColorOjos,
+  isColorPiel,
+  isFormaLabios,
+  isFormaNariz,
+  isSenaParticular,
+  labelRedSocial,
+} from "@src/lib/aspirantes/senaletica";
+import {
+  TALLA_CAMISA_ALMILLA_LABELS,
+  TALLA_UNIFORME_PATRIOTA_LABELS,
+  isTallaCamisaAlmilla,
+  isTallaUniformePatriota,
+  labelPadresVenezolanos,
+  labelSiNo,
+  labelTallaUniformeOliva,
+} from "@src/lib/aspirantes/tallas-familia";
+import {
   labelTipoEstudioShort,
   type TipoEstudioValue,
 } from "@src/lib/aspirantes/tipo-estudio";
@@ -52,10 +77,36 @@ export type AspirantePerfilSerializado = {
   pesoKg: number | null;
   tensionArterial: string | null;
   tipoSangre: string | null;
+  factorRh: string | null;
+  colorCabello: string | null;
+  formaLabios: string | null;
+  formaNariz: string | null;
+  colorOjos: string | null;
+  colorPiel: string | null;
+  senaParticular: string | null;
+  instagram: string | null;
+  twitter: string | null;
+  facebook: string | null;
+  padresVenezolanos: boolean | null;
+  madreNombres: string | null;
+  madreApellidos: string | null;
+  madreCedula: string | null;
+  madreFechaNacimientoLabel: string | null;
+  padreNombres: string | null;
+  padreApellidos: string | null;
+  padreCedula: string | null;
+  padreFechaNacimientoLabel: string | null;
+  poseeVehiculoPropio: boolean | null;
+  poseeViviendaPropia: boolean | null;
+  carnetPatriaSerial: string | null;
+  carnetPatriaCodigo: string | null;
+  cuentaNominaBanfanb: string | null;
   tallaGorra: string | null;
   tallaCamisa: string | null;
   tallaPantalon: string | null;
   tallaCalzado: string | null;
+  tallaUniformePatriota: string | null;
+  tallaUniformeOliva: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
   discapacidad: string | null;
@@ -498,6 +549,23 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <Campo label="Religión" value={a.religion} />
               <Campo label="Deporte" value={a.deporte} />
               <Campo label="Hijos" value={String(a.hijosCantidad)} />
+              <Campo label="Instagram" value={labelRedSocial(a.instagram)} />
+              <Campo label="Twitter / X" value={labelRedSocial(a.twitter)} />
+              <Campo label="Facebook" value={labelRedSocial(a.facebook)} />
+              <Campo label="Padres venezolanos" value={labelPadresVenezolanos(a.padresVenezolanos)} />
+              <Campo label="Nombres de la madre" value={a.madreNombres} />
+              <Campo label="Apellidos de la madre" value={a.madreApellidos} />
+              <Campo label="Cédula de la madre" value={a.madreCedula} />
+              <Campo label="Fecha de nacimiento de la madre" value={a.madreFechaNacimientoLabel} />
+              <Campo label="Nombres del padre" value={a.padreNombres} />
+              <Campo label="Apellidos del padre" value={a.padreApellidos} />
+              <Campo label="Cédula del padre" value={a.padreCedula} />
+              <Campo label="Fecha de nacimiento del padre" value={a.padreFechaNacimientoLabel} />
+              <Campo label="Posee vehículo propio" value={labelSiNo(a.poseeVehiculoPropio)} />
+              <Campo label="Posee vivienda propia" value={labelSiNo(a.poseeViviendaPropia)} />
+              <Campo label="Serial del carnet de la patria" value={a.carnetPatriaSerial} />
+              <Campo label="Código del carnet de la patria" value={a.carnetPatriaCodigo} />
+              <Campo label="Cuenta nómina BANFANB" value={a.cuentaNominaBanfanb} />
               <div className="sm:col-span-2 lg:col-span-3">
                 <Campo label="Dirección" value={a.direccion} />
               </div>
@@ -530,10 +598,19 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             <h2 className="text-sm font-semibold text-slate-900">Salud y datos físicos</h2>
             <Separator className="my-3" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Campo label="Cabello" value={isColorCabello(a.colorCabello) ? COLOR_CABELLO_LABELS[a.colorCabello] : null} />
+              <Campo label="Boca / labios" value={isFormaLabios(a.formaLabios) ? FORMA_LABIOS_LABELS[a.formaLabios] : null} />
+              <Campo label="Nariz" value={isFormaNariz(a.formaNariz) ? FORMA_NARIZ_LABELS[a.formaNariz] : null} />
+              <Campo label="Ojos" value={isColorOjos(a.colorOjos) ? COLOR_OJOS_LABELS[a.colorOjos] : null} />
+              <Campo label="Piel" value={isColorPiel(a.colorPiel) ? COLOR_PIEL_LABELS[a.colorPiel] : null} />
+              <Campo
+                label="Señas particulares"
+                value={isSenaParticular(a.senaParticular) ? SENA_PARTICULAR_LABELS[a.senaParticular] : null}
+              />
               <Campo label="Estatura (cm)" value={a.estaturaCm != null ? String(a.estaturaCm) : null} />
               <Campo label="Peso (kg)" value={a.pesoKg != null ? String(a.pesoKg) : null} />
               <Campo label="Tensión arterial" value={a.tensionArterial} />
-              <Campo label="Tipo de sangre" value={a.tipoSangre} />
+              <Campo label="Tipo de sangre" value={formatTipoSangre(a.tipoSangre, a.factorRh)} />
             </div>
           </div>
 
@@ -541,10 +618,18 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             <h2 className="text-sm font-semibold text-slate-900">Tallas</h2>
             <Separator className="my-3" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Campo label="Gorra" value={a.tallaGorra} />
-              <Campo label="Camisa" value={a.tallaCamisa} />
-              <Campo label="Pantalón" value={a.tallaPantalon} />
+              <Campo
+                label="Uniforme patriota"
+                value={isTallaUniformePatriota(a.tallaUniformePatriota) ? TALLA_UNIFORME_PATRIOTA_LABELS[a.tallaUniformePatriota] : a.tallaUniformePatriota}
+              />
+              <Campo label="Verde oliva / interior de cuartel" value={labelTallaUniformeOliva(a.tallaUniformeOliva)} />
+              <Campo
+                label="Camisa / almilla"
+                value={isTallaCamisaAlmilla(a.tallaCamisa) ? TALLA_CAMISA_ALMILLA_LABELS[a.tallaCamisa] : a.tallaCamisa}
+              />
+              <Campo label="Gorra / toca / quepis / boina" value={a.tallaGorra} />
               <Campo label="Calzado" value={a.tallaCalzado} />
+              <Campo label="Pantalón" value={a.tallaPantalon} />
             </div>
           </div>
 

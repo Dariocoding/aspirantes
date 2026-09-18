@@ -11,6 +11,40 @@ import { Textarea } from "@src/components/ui/textarea";
 import type { AspiranteActionState } from "@src/lib/action-types";
 import { aspiranteInitialActionState } from "@src/lib/action-types";
 import { ESTADO_CIVIL_LABELS, ESTADO_CIVIL_VALUES, isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
+import {
+  COLOR_CABELLO_LABELS,
+  COLOR_CABELLO_VALUES,
+  COLOR_OJOS_LABELS,
+  COLOR_OJOS_VALUES,
+  COLOR_PIEL_LABELS,
+  COLOR_PIEL_VALUES,
+  FACTOR_RH_LABELS,
+  FACTOR_RH_VALUES,
+  FORMA_LABIOS_LABELS,
+  FORMA_LABIOS_VALUES,
+  FORMA_NARIZ_LABELS,
+  FORMA_NARIZ_VALUES,
+  SENA_PARTICULAR_LABELS,
+  SENA_PARTICULAR_VALUES,
+  TIPO_SANGRE_GRUPO_LABELS,
+  TIPO_SANGRE_GRUPO_VALUES,
+  parseFactorRh,
+  parseTipoSangreGrupo,
+  composeRedSocial,
+} from "@src/lib/aspirantes/senaletica";
+import {
+  TALLA_CAMISA_ALMILLA_LABELS,
+  TALLA_CAMISA_ALMILLA_VALUES,
+  TALLA_GORRA_QUEPIS_LABELS,
+  TALLA_GORRA_QUEPIS_VALUES,
+  TALLA_UNIFORME_OLIVA_FEM_VALUES,
+  TALLA_UNIFORME_OLIVA_LABELS,
+  TALLA_UNIFORME_OLIVA_MAS_VALUES,
+  TALLA_UNIFORME_PATRIOTA_LABELS,
+  TALLA_UNIFORME_PATRIOTA_VALUES,
+} from "@src/lib/aspirantes/tallas-familia";
+import { CatalogSelect, catalogOptions } from "@dashboard/aspirantes/_components/catalog-select";
+import { RedSocialField } from "@dashboard/aspirantes/_components/red-social-field";
 import type { TipoEstudioValue } from "@src/lib/aspirantes/tipo-estudio";
 import {
   normalizeTipoEstudio,
@@ -87,10 +121,36 @@ function seedFromForm(
     pesoKg: formNumOrNull(fd, "pesoKg"),
     tensionArterial: formStr(fd, "tensionArterial") || null,
     tipoSangre: formStr(fd, "tipoSangre") || null,
+    factorRh: formStr(fd, "factorRh") || null,
+    colorCabello: formStr(fd, "colorCabello") || null,
+    formaLabios: formStr(fd, "formaLabios") || null,
+    formaNariz: formStr(fd, "formaNariz") || null,
+    colorOjos: formStr(fd, "colorOjos") || null,
+    colorPiel: formStr(fd, "colorPiel") || null,
+    senaParticular: formStr(fd, "senaParticular") || null,
+    instagram: composeRedSocial(formStr(fd, "instagramEstado"), formStr(fd, "instagramUsuario")),
+    twitter: composeRedSocial(formStr(fd, "twitterEstado"), formStr(fd, "twitterUsuario")),
+    facebook: composeRedSocial(formStr(fd, "facebookEstado"), formStr(fd, "facebookUsuario")),
+    padresVenezolanos: formStr(fd, "padresVenezolanos") === "SI" ? true : formStr(fd, "padresVenezolanos") === "NO" ? false : null,
+    madreNombres: formStr(fd, "madreNombres") || null,
+    madreApellidos: formStr(fd, "madreApellidos") || null,
+    madreCedula: formStr(fd, "madreCedula") || null,
+    madreFechaNacimiento: formStr(fd, "madreFechaNacimiento") || null,
+    padreNombres: formStr(fd, "padreNombres") || null,
+    padreApellidos: formStr(fd, "padreApellidos") || null,
+    padreCedula: formStr(fd, "padreCedula") || null,
+    padreFechaNacimiento: formStr(fd, "padreFechaNacimiento") || null,
+    poseeVehiculoPropio: formStr(fd, "poseeVehiculoPropio") === "SI" ? true : formStr(fd, "poseeVehiculoPropio") === "NO" ? false : null,
+    poseeViviendaPropia: formStr(fd, "poseeViviendaPropia") === "SI" ? true : formStr(fd, "poseeViviendaPropia") === "NO" ? false : null,
+    carnetPatriaSerial: formStr(fd, "carnetPatriaSerial") || null,
+    carnetPatriaCodigo: formStr(fd, "carnetPatriaCodigo") || null,
+    cuentaNominaBanfanb: formStr(fd, "cuentaNominaBanfanb") || null,
     tallaGorra: formStr(fd, "tallaGorra") || null,
     tallaCamisa: formStr(fd, "tallaCamisa") || null,
     tallaPantalon: formStr(fd, "tallaPantalon") || null,
     tallaCalzado: formStr(fd, "tallaCalzado") || null,
+    tallaUniformePatriota: formStr(fd, "tallaUniformePatriota") || null,
+    tallaUniformeOliva: formStr(fd, "tallaUniformeOliva") || null,
     alergias: formStr(fd, "alergias") || null,
     condicionesMedicas: formStr(fd, "condicionesMedicas") || null,
     discapacidad: formStr(fd, "discapacidad") || null,
@@ -157,10 +217,36 @@ export type AspiranteRegistroInitial = {
   pesoKg: number | null;
   tensionArterial: string | null;
   tipoSangre: string | null;
+  factorRh?: string | null;
+  colorCabello?: string | null;
+  formaLabios?: string | null;
+  formaNariz?: string | null;
+  colorOjos?: string | null;
+  colorPiel?: string | null;
+  senaParticular?: string | null;
+  instagram?: string | null;
+  twitter?: string | null;
+  facebook?: string | null;
+  padresVenezolanos?: boolean | null;
+  madreNombres?: string | null;
+  madreApellidos?: string | null;
+  madreCedula?: string | null;
+  madreFechaNacimiento?: string | null;
+  padreNombres?: string | null;
+  padreApellidos?: string | null;
+  padreCedula?: string | null;
+  padreFechaNacimiento?: string | null;
+  poseeVehiculoPropio?: boolean | null;
+  poseeViviendaPropia?: boolean | null;
+  carnetPatriaSerial?: string | null;
+  carnetPatriaCodigo?: string | null;
+  cuentaNominaBanfanb?: string | null;
   tallaGorra: string | null;
   tallaCamisa: string | null;
   tallaPantalon: string | null;
   tallaCalzado: string | null;
+  tallaUniformePatriota?: string | null;
+  tallaUniformeOliva?: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
   discapacidad: string | null;
@@ -290,10 +376,36 @@ export function AspiranteRegistroForm({
       pesoKg: seed?.pesoKg != null ? String(seed.pesoKg) : "",
       tensionArterial: seed?.tensionArterial ?? "",
       tipoSangre: seed?.tipoSangre ?? "",
+      factorRh: seed?.factorRh ?? "",
+      colorCabello: seed?.colorCabello ?? "",
+      formaLabios: seed?.formaLabios ?? "",
+      formaNariz: seed?.formaNariz ?? "",
+      colorOjos: seed?.colorOjos ?? "",
+      colorPiel: seed?.colorPiel ?? "",
+      senaParticular: seed?.senaParticular ?? "",
+      instagram: seed?.instagram ?? "",
+      twitter: seed?.twitter ?? "",
+      facebook: seed?.facebook ?? "",
+      padresVenezolanos: seed?.padresVenezolanos ?? null,
+      madreNombres: seed?.madreNombres ?? "",
+      madreApellidos: seed?.madreApellidos ?? "",
+      madreCedula: seed?.madreCedula ?? "",
+      madreFechaNacimiento: seed?.madreFechaNacimiento ?? "",
+      padreNombres: seed?.padreNombres ?? "",
+      padreApellidos: seed?.padreApellidos ?? "",
+      padreCedula: seed?.padreCedula ?? "",
+      padreFechaNacimiento: seed?.padreFechaNacimiento ?? "",
+      poseeVehiculoPropio: seed?.poseeVehiculoPropio ?? null,
+      poseeViviendaPropia: seed?.poseeViviendaPropia ?? null,
+      carnetPatriaSerial: seed?.carnetPatriaSerial ?? "",
+      carnetPatriaCodigo: seed?.carnetPatriaCodigo ?? "",
+      cuentaNominaBanfanb: seed?.cuentaNominaBanfanb ?? "",
       tallaGorra: seed?.tallaGorra ?? "",
       tallaCamisa: seed?.tallaCamisa ?? "",
       tallaPantalon: seed?.tallaPantalon ?? "",
       tallaCalzado: seed?.tallaCalzado ?? "",
+      tallaUniformePatriota: seed?.tallaUniformePatriota ?? "",
+      tallaUniformeOliva: seed?.tallaUniformeOliva ?? "",
       alergias: seed?.alergias ?? "",
       condicionesMedicas: seed?.condicionesMedicas ?? "",
       discapacidad: seed?.discapacidad ?? "",
@@ -660,6 +772,107 @@ export function AspiranteRegistroForm({
                 </>
               )}
             </div>
+            <div>
+              <Label>Padres venezolanos</Label>
+              <select
+                name="padresVenezolanos"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={
+                  defaults.padresVenezolanos === true ? "SI" : defaults.padresVenezolanos === false ? "NO" : ""
+                }
+              >
+                <option value="">Sin indicar</option>
+                <option value="SI">Sí</option>
+                <option value="NO">No</option>
+              </select>
+            </div>
+            <div>
+              <Label>Nombres de la madre</Label>
+              <Input name="madreNombres" defaultValue={defaults.madreNombres} />
+            </div>
+            <div>
+              <Label>Apellidos de la madre</Label>
+              <Input name="madreApellidos" defaultValue={defaults.madreApellidos} />
+            </div>
+            <div>
+              <Label>Cédula de la madre</Label>
+              <Input
+                name="madreCedula"
+                inputMode="numeric"
+                defaultValue={defaults.madreCedula}
+                placeholder="Solo dígitos, 6 a 12"
+              />
+            </div>
+            <div>
+              <Label>Fecha de nacimiento de la madre</Label>
+              <Input name="madreFechaNacimiento" type="date" defaultValue={defaults.madreFechaNacimiento} />
+            </div>
+            <div>
+              <Label>Nombres del padre</Label>
+              <Input name="padreNombres" defaultValue={defaults.padreNombres} />
+            </div>
+            <div>
+              <Label>Apellidos del padre</Label>
+              <Input name="padreApellidos" defaultValue={defaults.padreApellidos} />
+            </div>
+            <div>
+              <Label>Cédula del padre</Label>
+              <Input
+                name="padreCedula"
+                inputMode="numeric"
+                defaultValue={defaults.padreCedula}
+                placeholder="Solo dígitos, 6 a 12"
+              />
+            </div>
+            <div>
+              <Label>Fecha de nacimiento del padre</Label>
+              <Input name="padreFechaNacimiento" type="date" defaultValue={defaults.padreFechaNacimiento} />
+            </div>
+            <div>
+              <Label>Posee vehículo propio</Label>
+              <select
+                name="poseeVehiculoPropio"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={
+                  defaults.poseeVehiculoPropio === true ? "SI" : defaults.poseeVehiculoPropio === false ? "NO" : ""
+                }
+              >
+                <option value="">Sin indicar</option>
+                <option value="SI">Sí</option>
+                <option value="NO">No</option>
+              </select>
+            </div>
+            <div>
+              <Label>Posee vivienda propia</Label>
+              <select
+                name="poseeViviendaPropia"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={
+                  defaults.poseeViviendaPropia === true ? "SI" : defaults.poseeViviendaPropia === false ? "NO" : ""
+                }
+              >
+                <option value="">Sin indicar</option>
+                <option value="SI">Sí</option>
+                <option value="NO">No</option>
+              </select>
+            </div>
+            <div>
+              <Label>Serial del carnet de la patria</Label>
+              <Input name="carnetPatriaSerial" defaultValue={defaults.carnetPatriaSerial} />
+            </div>
+            <div>
+              <Label>Código del carnet de la patria</Label>
+              <Input name="carnetPatriaCodigo" defaultValue={defaults.carnetPatriaCodigo} />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Número de cuenta nómina BANFANB</Label>
+              <Input
+                name="cuentaNominaBanfanb"
+                inputMode="numeric"
+                defaultValue={defaults.cuentaNominaBanfanb}
+                placeholder="Solo dígitos"
+              />
+            </div>
             <div className="md:col-span-2">
               <Label>Calificación de admisión</Label>
               <select
@@ -776,6 +989,27 @@ export function AspiranteRegistroForm({
               <Label>Dirección</Label>
               <Textarea name="direccion" defaultValue={defaults.direccion} />
             </div>
+            <RedSocialField
+              id="reg-instagram"
+              label="Instagram"
+              estadoName="instagramEstado"
+              usuarioName="instagramUsuario"
+              stored={defaults.instagram}
+            />
+            <RedSocialField
+              id="reg-twitter"
+              label="Twitter / X"
+              estadoName="twitterEstado"
+              usuarioName="twitterUsuario"
+              stored={defaults.twitter}
+            />
+            <RedSocialField
+              id="reg-facebook"
+              label="Facebook"
+              estadoName="facebookEstado"
+              usuarioName="facebookUsuario"
+              stored={defaults.facebook}
+            />
           </div>
         </fieldset>
 
@@ -873,6 +1107,48 @@ export function AspiranteRegistroForm({
             Paso 4: {STEPS[3].title}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
+            <CatalogSelect
+              id="reg-cabello"
+              name="colorCabello"
+              label="Cabello"
+              value={defaults.colorCabello}
+              options={catalogOptions(COLOR_CABELLO_VALUES, COLOR_CABELLO_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-labios"
+              name="formaLabios"
+              label="Boca / labios"
+              value={defaults.formaLabios}
+              options={catalogOptions(FORMA_LABIOS_VALUES, FORMA_LABIOS_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-nariz"
+              name="formaNariz"
+              label="Nariz"
+              value={defaults.formaNariz}
+              options={catalogOptions(FORMA_NARIZ_VALUES, FORMA_NARIZ_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-ojos"
+              name="colorOjos"
+              label="Ojos"
+              value={defaults.colorOjos}
+              options={catalogOptions(COLOR_OJOS_VALUES, COLOR_OJOS_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-piel"
+              name="colorPiel"
+              label="Piel"
+              value={defaults.colorPiel}
+              options={catalogOptions(COLOR_PIEL_VALUES, COLOR_PIEL_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-senas"
+              name="senaParticular"
+              label="Señas particulares"
+              value={defaults.senaParticular}
+              options={catalogOptions(SENA_PARTICULAR_VALUES, SENA_PARTICULAR_LABELS)}
+            />
             <div>
               <Label>Estatura (cm)</Label>
               <Input
@@ -899,25 +1175,64 @@ export function AspiranteRegistroForm({
                 placeholder="Ej.: 120/80"
               />
             </div>
-            <div>
-              <Label>Tipo de Sangre</Label>
-              <Input name="tipoSangre" defaultValue={defaults.tipoSangre} />
-            </div>
-            <div>
-              <Label>Talla gorra</Label>
-              <Input name="tallaGorra" defaultValue={defaults.tallaGorra} placeholder="S, M, L…" />
-            </div>
-            <div>
-              <Label>Talla camisa</Label>
-              <Input name="tallaCamisa" defaultValue={defaults.tallaCamisa} placeholder="S, M, L…" />
-            </div>
-            <div>
-              <Label>Talla pantalón</Label>
-              <Input name="tallaPantalon" defaultValue={defaults.tallaPantalon} />
-            </div>
+            <CatalogSelect
+              id="reg-sangre"
+              name="tipoSangre"
+              label="Tipo de sangre"
+              value={parseTipoSangreGrupo(defaults.tipoSangre)}
+              options={catalogOptions(TIPO_SANGRE_GRUPO_VALUES, TIPO_SANGRE_GRUPO_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-rh"
+              name="factorRh"
+              label="Factor RH"
+              value={defaults.factorRh || parseFactorRh(defaults.tipoSangre)}
+              options={catalogOptions(FACTOR_RH_VALUES, FACTOR_RH_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-patriota"
+              name="tallaUniformePatriota"
+              label="Talla uniforme patriota"
+              value={defaults.tallaUniformePatriota}
+              options={catalogOptions(TALLA_UNIFORME_PATRIOTA_VALUES, TALLA_UNIFORME_PATRIOTA_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-oliva"
+              name="tallaUniformeOliva"
+              label="Uniforme verde oliva / interior de cuartel"
+              value={defaults.tallaUniformeOliva}
+              groups={[
+                {
+                  label: "Femenino",
+                  options: catalogOptions(TALLA_UNIFORME_OLIVA_FEM_VALUES, TALLA_UNIFORME_OLIVA_LABELS),
+                },
+                {
+                  label: "Masculino",
+                  options: catalogOptions(TALLA_UNIFORME_OLIVA_MAS_VALUES, TALLA_UNIFORME_OLIVA_LABELS),
+                },
+              ]}
+            />
+            <CatalogSelect
+              id="reg-camisa"
+              name="tallaCamisa"
+              label="Camisa / almilla"
+              value={defaults.tallaCamisa}
+              options={catalogOptions(TALLA_CAMISA_ALMILLA_VALUES, TALLA_CAMISA_ALMILLA_LABELS)}
+            />
+            <CatalogSelect
+              id="reg-gorra"
+              name="tallaGorra"
+              label="Gorra / toca / quepis / boina"
+              value={defaults.tallaGorra}
+              options={catalogOptions(TALLA_GORRA_QUEPIS_VALUES, TALLA_GORRA_QUEPIS_LABELS)}
+            />
             <div>
               <Label>Talla calzado</Label>
               <Input name="tallaCalzado" defaultValue={defaults.tallaCalzado} placeholder="38, 42…" />
+            </div>
+            <div>
+              <Label>Talla pantalón (otra)</Label>
+              <Input name="tallaPantalon" defaultValue={defaults.tallaPantalon} />
             </div>
             <div>
               <Label>Alergias</Label>
