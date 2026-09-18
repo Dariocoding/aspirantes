@@ -1,12 +1,8 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
-import {
-  FANB_APP_SHELL_GRADIENT,
-  INSTITUTION_BRANCH,
-  INSTITUTION_NAME,
-  INSTITUTION_SHORT_NAME,
-} from "@src/lib/branding";
+import { INSTITUTION_SHORT_NAME } from "@src/lib/branding";
 import { routes } from "@src/lib/apps/routes";
 import { cn } from "@src/lib/utils";
 
@@ -15,6 +11,7 @@ export type PersonalHomeBirthday = {
   nombres: string;
   apellidos: string;
   cedula: string;
+  dia: number;
   fechaLabel: string;
   esHoy: boolean;
   edadQueCumple: number | null;
@@ -35,7 +32,6 @@ export type PersonalHomePeloton = {
 
 type Props = {
   fechaLarga: string;
-  fechaCorta: string;
   nombreMes: string;
   convocatoria: { nombre: string; codigo: string; anio: number; comandanteNombre: string | null } | null;
   total: number;
@@ -48,49 +44,47 @@ type Props = {
   proximasEfemerides: PersonalHomeEfemeride[];
 };
 
-const GOLD = "#d4af37";
+const PELOTON_TONES = ["bg-[#0c1424]", "bg-[#3d4a2a]", "bg-[#1e3a5f]", "bg-[#5c4a1f]", "bg-[#2f3d48]"] as const;
 
-function CornerMarks({ className }: { className?: string }) {
-  const arm = "pointer-events-none absolute h-5 w-5 border-[#d4af37]/70";
-  return (
-    <div className={cn("pointer-events-none absolute inset-0", className)} aria-hidden>
-      <span className={cn(arm, "top-2 left-2 border-t border-l")} />
-      <span className={cn(arm, "top-2 right-2 border-t border-r")} />
-      <span className={cn(arm, "bottom-2 left-2 border-b border-l")} />
-      <span className={cn(arm, "right-2 bottom-2 border-r border-b")} />
-    </div>
-  );
-}
-
-function SectionKicker({ children }: { children: string }) {
-  return (
-    <p className="text-[10px] font-semibold tracking-[0.28em] text-amber-700/80 uppercase">{children}</p>
-  );
-}
-
-function EfectivoStat({
+function Kpi({
   label,
   value,
   hint,
+  hintWarn,
 }: {
   label: string;
   value: string;
   hint?: string;
+  hintWarn?: boolean;
 }) {
   return (
-    <div className="min-w-0 border-l border-amber-400/25 pl-4 first:border-l-0 first:pl-0">
-      <p className="text-[10px] font-semibold tracking-[0.22em] text-amber-200/55 uppercase">{label}</p>
-      <p className="font-display mt-1 text-3xl font-semibold tracking-tight text-amber-50 tabular-nums sm:text-4xl">
-        {value}
-      </p>
-      {hint ? <p className="mt-1 text-[11px] text-slate-400">{hint}</p> : null}
+    <div className="min-w-0 bg-white px-3 py-2.5">
+      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="mt-0.5 text-xl font-semibold leading-none text-slate-900 tabular-nums">{value}</p>
+      {hint ? (
+        <p className={cn("mt-1 truncate text-[11px]", hintWarn ? "text-amber-800" : "text-slate-500")}>{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function PanelHeader({
+  title,
+  aside,
+}: {
+  title: string;
+  aside?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+      {aside}
     </div>
   );
 }
 
 export function PersonalHomeBoard({
   fechaLarga,
-  fechaCorta,
   nombreMes,
   convocatoria,
   total,
@@ -102,248 +96,219 @@ export function PersonalHomeBoard({
   cumpleanosDelMes,
   proximasEfemerides,
 }: Props) {
-  const maxPeloton = Math.max(1, ...pelotones.map((p) => p.count), sinPeloton);
   const pctHombres = total ? Math.round((masculinos / total) * 100) : 0;
   const pctMujeres = total ? Math.round((femeninos / total) * 100) : 0;
-  const honoresHoy = cumpleanosDelMes.filter((p) => p.esHoy).length;
+  const hoyCount = cumpleanosDelMes.filter((p) => p.esHoy).length;
 
   return (
-    <article className="relative min-w-0 overflow-hidden rounded-sm border border-amber-900/40 shadow-[0_24px_60px_-28px_rgba(8,12,20,0.65)]">
-      <FanbFlagStripe className="h-1.5" />
-
-      <div className={cn("relative text-slate-100", FANB_APP_SHELL_GRADIENT)}>
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(-45deg, transparent, transparent 11px, #d4af37 11px, #d4af37 12px)",
-          }}
-          aria-hidden
-        />
-        <CornerMarks />
-
-        <header className="relative grid gap-6 px-5 pt-7 pb-6 sm:px-8 lg:grid-cols-[auto_1fr_auto] lg:items-center">
-          <CefoaCrest size="md" priority className="drop-shadow-[0_8px_24px_rgba(0,0,0,0.55)]" />
-
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold tracking-[0.34em] text-amber-200/80 uppercase">
-              {INSTITUTION_BRANCH} · Uso interno
-            </p>
-            <h1 className="font-display mt-2 text-balance text-3xl font-semibold tracking-[0.08em] text-amber-50 sm:text-4xl">
-              Puesto de mando
-            </h1>
-            <p className="mt-2 max-w-xl text-pretty text-sm leading-relaxed text-slate-300">
-              {INSTITUTION_SHORT_NAME} — {INSTITUTION_NAME}. Parte diario de efectivos, honores y calendario
-              institucional.
-            </p>
-          </div>
-
-          <div className="justify-self-start border border-amber-400/30 bg-black/25 px-4 py-3 text-right lg:justify-self-end">
-            <p className="font-mono text-xs tracking-[0.2em] text-amber-200 uppercase">{fechaCorta}</p>
-            <p className="mt-1 text-[11px] text-slate-400 capitalize">{fechaLarga}</p>
-            <p className="mt-2 text-[10px] tracking-[0.18em] text-amber-200/50 uppercase">Orden del día</p>
-          </div>
-        </header>
-
-        <div className="relative mx-5 mb-6 border border-dashed border-amber-400/25 bg-black/20 px-4 py-3 sm:mx-8">
-          {convocatoria ? (
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.24em] text-amber-200/60 uppercase">
-                  Convocatoria en vigor
-                </p>
-                <p className="mt-1 font-medium text-amber-50">{convocatoria.nombre}</p>
-                <p className="font-mono text-xs text-slate-400">
-                  {convocatoria.codigo} · {convocatoria.anio}
-                  {convocatoria.comandanteNombre ? ` · Cmte. ${convocatoria.comandanteNombre}` : null}
-                </p>
-              </div>
-              <span
-                className="inline-flex -rotate-6 items-center border-2 px-3 py-1 text-[11px] font-bold tracking-[0.2em] uppercase"
-                style={{ borderColor: GOLD, color: GOLD }}
-              >
-                Activa
-              </span>
-            </div>
-          ) : (
-            <p className="text-sm text-amber-100/90">
-              No hay convocatoria activa. Un administrador debe abrir un período en Convocatorias para mostrar el
-              censo en este parte.
-            </p>
-          )}
+    <div className="mx-auto min-w-0 max-w-6xl space-y-3">
+      <header className="flex min-w-0 flex-wrap items-center gap-3">
+        <CefoaCrest size="sm" priority className="drop-shadow-none" />
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Personal</h1>
+          <p className="truncate text-xs text-slate-500">
+            {INSTITUTION_SHORT_NAME}
+            <span className="text-slate-300"> · </span>
+            <span>{fechaLarga}</span>
+          </p>
         </div>
+        {convocatoria ? (
+          <p className="max-w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-right text-xs">
+            <span className="font-medium text-slate-900">{convocatoria.codigo}</span>
+            <span className="mt-0.5 block max-w-64 truncate text-slate-500">{convocatoria.nombre}</span>
+          </p>
+        ) : (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900">
+            Sin convocatoria activa
+          </p>
+        )}
+      </header>
 
-        <section className="relative grid gap-6 px-5 pb-7 sm:grid-cols-2 sm:px-8 xl:grid-cols-4">
-          <EfectivoStat label="Efectivos" value={String(total)} hint="Aspirantes en el censo activo" />
-          <EfectivoStat label="Varones" value={String(masculinos)} hint={total ? `${pctHombres}% del curso` : "Sin censo"} />
-          <EfectivoStat label="Damas" value={String(femeninos)} hint={total ? `${pctMujeres}% del curso` : "Sin censo"} />
-          <EfectivoStat
-            label="Edad media"
-            value={edadPromedio.toFixed(1)}
-            hint={honoresHoy ? `${honoresHoy} honor${honoresHoy === 1 ? "" : "es"} hoy` : "Años cumplidos"}
+      {!convocatoria ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          No hay cifras de censo hasta que un administrador active un período en{" "}
+          <Link href={routes.personal.convocatorias} className="font-medium underline underline-offset-2">
+            Convocatorias
+          </Link>
+          .
+        </p>
+      ) : null}
+
+      <section className="overflow-hidden rounded-lg border border-slate-200">
+        <FanbFlagStripe className="h-1" />
+        <div className="flex flex-wrap gap-px bg-slate-200">
+          <div className="min-w-36 flex-1">
+            <Kpi label="Aspirantes" value={String(total)} hint={convocatoria ? "Censo activo" : "Sin período"} />
+          </div>
+          <div className="min-w-36 flex-1 bg-white px-3 py-2.5">
+            <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">Composición</p>
+            <p className="mt-0.5 text-xl font-semibold leading-none text-slate-900 tabular-nums">
+              {masculinos}
+              <span className="mx-1 text-sm font-medium text-slate-400">/</span>
+              {femeninos}
+            </p>
+            <div className="mt-2 flex h-1.5 overflow-hidden rounded-sm bg-slate-100">
+              <span className="bg-[#0c1424]" style={{ width: `${pctHombres}%` }} />
+              <span className="bg-[#b45309]" style={{ width: `${pctMujeres}%` }} />
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">Varones · damas</p>
+          </div>
+          <div className="min-w-36 flex-1">
+            <Kpi label="Edad media" value={edadPromedio.toFixed(1)} hint="Años cumplidos" />
+          </div>
+          <div className="min-w-36 flex-1">
+            <Kpi
+              label="Pelotones"
+              value={String(pelotones.length)}
+              hint={`${sinPeloton} sin asignar`}
+              hintWarn={sinPeloton > 0}
+            />
+          </div>
+          <div className="min-w-36 flex-1">
+            <Kpi label="Hoy" value={String(hoyCount)} hint="Cumpleaños" />
+          </div>
+        </div>
+      </section>
+
+      {pelotones.length > 0 ? (
+        <section className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-900">Fuerza por pelotón</h2>
+            <Link href={routes.personal.aspirantes} className="text-xs font-medium text-slate-500 hover:text-slate-900">
+              Censo
+            </Link>
+          </div>
+          <div className="flex h-2 overflow-hidden rounded-sm bg-slate-100">
+            {pelotones.map((p, i) => (
+              <span
+                key={p.id}
+                className={cn(PELOTON_TONES[i % PELOTON_TONES.length], p.count === 0 && "opacity-20")}
+                style={{ flexGrow: Math.max(p.count, 0.35) }}
+                title={`${p.label}: ${p.count}`}
+              />
+            ))}
+            {sinPeloton > 0 ? (
+              <span className="bg-amber-500" style={{ flexGrow: sinPeloton }} title={`Sin pelotón: ${sinPeloton}`} />
+            ) : null}
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            {pelotones.map((p, i) => (
+              <li key={p.id} className="flex items-center gap-1.5 text-[11px] text-slate-600">
+                <span className={cn("h-1.5 w-1.5 rounded-full", PELOTON_TONES[i % PELOTON_TONES.length])} />
+                <span className="truncate">{p.label}</span>
+                <span className="font-medium text-slate-900 tabular-nums">{p.count}</span>
+              </li>
+            ))}
+            {sinPeloton > 0 ? (
+              <li className="flex items-center gap-1.5 text-[11px] text-amber-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Sin pelotón
+                <span className="font-medium tabular-nums">{sinPeloton}</span>
+              </li>
+            ) : null}
+          </ul>
+        </section>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <PanelHeader
+            title={`Cumpleaños · ${nombreMes}`}
+            aside={
+              <span className="text-[11px] text-slate-400 tabular-nums">{cumpleanosDelMes.length}</span>
+            }
           />
+          {cumpleanosDelMes.length === 0 ? (
+            <p className="px-3 py-6 text-sm text-slate-500">Nadie del censo activo cumple años este mes.</p>
+          ) : (
+            <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+              {cumpleanosDelMes.map((persona) => (
+                <li
+                  key={persona.id}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-1.5",
+                    persona.esHoy && "bg-amber-50",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md text-[11px] font-semibold tabular-nums",
+                      persona.esHoy ? "bg-amber-800 text-amber-50" : "bg-slate-100 text-slate-700",
+                    )}
+                  >
+                    {persona.dia}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {persona.nombres} {persona.apellidos}
+                    </p>
+                    <p className="truncate text-[11px] text-slate-500">
+                      C.I. {persona.cedula}
+                      {persona.edadQueCumple != null ? (
+                        <>
+                          {" · "}
+                          <span className="tabular-nums">{persona.edadQueCumple}</span> años
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+                  {persona.esHoy ? (
+                    <span className="shrink-0 text-[10px] font-semibold tracking-wide text-amber-800 uppercase">
+                      Hoy
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <PanelHeader
+            title="Efemérides · 15 días"
+            aside={
+              <Link href={routes.personal.efemerides} className="text-xs font-medium text-slate-500 hover:text-slate-900">
+                Ver todas
+              </Link>
+            }
+          />
+          {proximasEfemerides.length === 0 ? (
+            <p className="px-3 py-6 text-sm text-slate-500">No hay efemérides en los próximos 15 días.</p>
+          ) : (
+            <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+              {proximasEfemerides.map((item) => (
+                <li key={item.id} className="flex items-center gap-3 px-3 py-1.5">
+                  <span className="w-10 shrink-0 text-center">
+                    <span className="block text-sm font-semibold text-slate-900 tabular-nums leading-none">
+                      {item.dias}
+                    </span>
+                    <span className="text-[10px] text-slate-400">{item.dias === 1 ? "día" : "días"}</span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">{item.nombre}</p>
+                    <p className="truncate text-[11px] text-slate-500">{item.fechaLabel}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 
-      <div className="relative bg-[#f4efe4] px-5 py-6 sm:px-8">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.35]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(90,70,40,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(90,70,40,0.05) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-          aria-hidden
-        />
-
-        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <section className="min-w-0 border border-amber-900/15 bg-[#fbf7ee] p-4 shadow-sm sm:p-5">
-            <SectionKicker>Estructura de pelotones</SectionKicker>
-            <h2 className="mt-1 font-semibold tracking-wide text-slate-900">Fuerza por unidad</h2>
-            {pelotones.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-600">
-                {convocatoria
-                  ? "Esta convocatoria aún no tiene pelotones definidos."
-                  : "Sin convocatoria activa no hay estructura de pelotones."}
-              </p>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {pelotones.map((p) => (
-                  <li key={p.id}>
-                    <div className="mb-1 flex items-baseline justify-between gap-2">
-                      <span className="text-xs font-semibold tracking-[0.12em] text-slate-700 uppercase">
-                        {p.label}
-                      </span>
-                      <span className="font-mono text-xs tabular-nums text-slate-500">{p.count}</span>
-                    </div>
-                    <div className="h-1.5 bg-amber-950/10">
-                      <div
-                        className="h-full bg-[#1a2a18]"
-                        style={{ width: `${Math.max(4, (p.count / maxPeloton) * 100)}%` }}
-                      />
-                    </div>
-                  </li>
-                ))}
-                {sinPeloton > 0 ? (
-                  <li>
-                    <div className="mb-1 flex items-baseline justify-between gap-2">
-                      <span className="text-xs font-semibold tracking-[0.12em] text-amber-900 uppercase">
-                        Sin pelotón
-                      </span>
-                      <span className="font-mono text-xs tabular-nums text-amber-800">{sinPeloton}</span>
-                    </div>
-                    <div className="h-1.5 bg-amber-950/10">
-                      <div
-                        className="h-full bg-amber-700/80"
-                        style={{ width: `${Math.max(4, (sinPeloton / maxPeloton) * 100)}%` }}
-                      />
-                    </div>
-                  </li>
-                ) : null}
-              </ul>
-            )}
-
-            <nav className="mt-6 grid gap-2 sm:grid-cols-2" aria-label="Accesos de operación">
-              {[
-                { href: routes.personal.aspirantes, label: "Censo" },
-                { href: routes.personal.esquelas, label: "Esquelas" },
-                { href: routes.personal.efemerides, label: "Efemérides" },
-                { href: routes.personal.convocatorias, label: "Convocatorias" },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="border border-amber-950/20 bg-white/60 px-3 py-2 text-center text-[11px] font-semibold tracking-[0.18em] text-slate-800 uppercase transition-colors hover:border-amber-800 hover:bg-amber-50"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </section>
-
-          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
-            <section className="min-w-0 border border-amber-900/15 bg-[#fbf7ee] p-4 shadow-sm sm:p-5">
-              <SectionKicker>Parte de honores</SectionKicker>
-              <h2 className="mt-1 font-semibold tracking-wide text-slate-900">Cumpleaños de {nombreMes}</h2>
-              <div className="mt-4 max-h-112 space-y-2 overflow-y-auto pr-1">
-                {cumpleanosDelMes.length === 0 ? (
-                  <p className="text-sm text-slate-600">Nadie del censo activo cumple años este mes.</p>
-                ) : (
-                  cumpleanosDelMes.map((persona, index) => (
-                    <div
-                      key={persona.id}
-                      className={cn(
-                        "border-l-2 px-3 py-2",
-                        persona.esHoy
-                          ? "border-amber-600 bg-amber-100/80"
-                          : "border-amber-900/20 bg-white/50",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-[10px] font-mono tracking-wider text-slate-400 tabular-nums">
-                          {String(index + 1).padStart(2, "0")}
-                        </p>
-                        {persona.esHoy ? (
-                          <span className="text-[10px] font-bold tracking-[0.16em] text-amber-900 uppercase">
-                            Honores hoy
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="font-medium text-slate-900">
-                        {persona.nombres} {persona.apellidos}
-                      </p>
-                      <p className="text-xs text-slate-600">
-                        C.I. {persona.cedula}
-                        {persona.edadQueCumple != null ? (
-                          <>
-                            {" · "}
-                            <span className="tabular-nums">{persona.edadQueCumple}</span> años
-                          </>
-                        ) : null}
-                      </p>
-                      <p className="mt-1 text-xs font-medium tracking-wide text-slate-700 tabular-nums">
-                        {persona.fechaLabel}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section className="min-w-0 border border-amber-900/15 bg-[#fbf7ee] p-4 shadow-sm sm:p-5">
-              <SectionKicker>Calendario institucional</SectionKicker>
-              <h2 className="mt-1 font-semibold tracking-wide text-slate-900">Próximas efemérides</h2>
-              <p className="mt-1 text-xs text-slate-500">Ventana de 15 días.</p>
-              <div className="mt-4 space-y-2">
-                {proximasEfemerides.length === 0 ? (
-                  <p className="text-sm text-slate-600">No hay efemérides en los próximos 15 días.</p>
-                ) : (
-                  proximasEfemerides.map((item) => (
-                    <div key={item.id} className="flex gap-3 border-b border-amber-900/10 py-2 last:border-0">
-                      <div className="w-14 shrink-0 text-center">
-                        <p className="font-display text-2xl font-semibold text-[#1a2a18] tabular-nums leading-none">
-                          {item.dias}
-                        </p>
-                        <p className="mt-1 text-[9px] font-semibold tracking-[0.14em] text-slate-500 uppercase">
-                          {item.dias === 1 ? "día" : "días"}
-                        </p>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900">{item.nombre}</p>
-                        <p className="text-xs text-slate-600">{item.fechaLabel}</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <p className="relative mt-6 text-center text-[10px] tracking-[0.22em] text-amber-900/50 uppercase">
-          Honor · Disciplina · Lealtad · {INSTITUTION_SHORT_NAME}
-        </p>
-      </div>
-    </article>
+      <nav className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-500" aria-label="Atajos">
+        <Link className="hover:text-slate-900" href={routes.personal.aspirantes}>
+          Censo
+        </Link>
+        <Link className="hover:text-slate-900" href={routes.personal.esquelas}>
+          Esquelas
+        </Link>
+        <Link className="hover:text-slate-900" href={routes.personal.efemerides}>
+          Efemérides
+        </Link>
+        <Link className="hover:text-slate-900" href={routes.personal.convocatorias}>
+          Convocatorias
+        </Link>
+      </nav>
+    </div>
   );
 }

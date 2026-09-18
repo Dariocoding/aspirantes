@@ -44,7 +44,6 @@ export default async function PersonalDashboardPage() {
   const proximos15 = addDays(hoy, 15);
   const nombreMes = format(hoy, "MMMM", { locale: es });
   const fechaLarga = format(hoy, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
-  const fechaCorta = format(hoy, "dd.MM.yy");
 
   const cumpleanosDelMes = aspirantes
     .filter((a) => hasRealBirthDate(a.fechaNacimiento) && isBirthdayThisMonth(a.fechaNacimiento, hoy))
@@ -58,6 +57,7 @@ export default async function PersonalDashboardPage() {
       nombres: persona.nombres,
       apellidos: persona.apellidos,
       cedula: persona.cedula,
+      dia: persona.fechaNacimiento.getDate(),
       fechaLabel: format(persona.fechaNacimiento, "d 'de' MMMM", { locale: es }),
       esHoy: isBirthdayToday(persona.fechaNacimiento),
       edadQueCumple: ageTurningOnBirthday(persona.fechaNacimiento, hoy),
@@ -90,7 +90,6 @@ export default async function PersonalDashboardPage() {
   return (
     <PersonalHomeBoard
       fechaLarga={fechaLarga}
-      fechaCorta={fechaCorta}
       nombreMes={nombreMes}
       convocatoria={
         convocatoriaActiva
