@@ -100,6 +100,11 @@ function onlyDigits(raw: string): string {
   return raw.replace(/\D/g, "");
 }
 
+function cedulaPersona(raw: string): string {
+  const d = onlyDigits(raw);
+  return d.length >= 6 && d.length <= 12 ? d : "";
+}
+
 function fold(raw: string): string {
   return raw
     .normalize("NFD")
@@ -379,11 +384,11 @@ async function parseExcel(path: string): Promise<ExcelRow[]> {
       padresVenezolanos: parseSiNo(asText(val(43))),
       madreNombres: asText(val(44)),
       madreApellidos: asText(val(45)),
-      madreCedula: asText(val(46)),
+      madreCedula: cedulaPersona(asText(val(46))),
       madreFechaNacimiento: parseFecha(val(47)),
       padreNombres: asText(val(48)),
       padreApellidos: asText(val(49)),
-      padreCedula: asText(val(50)),
+      padreCedula: cedulaPersona(asText(val(50))),
       padreFechaNacimiento: parseFecha(val(51)),
       poseeViviendaPropia: parseSiNo(asText(val(53))),
       carnetPatriaSerial: asText(val(54)),

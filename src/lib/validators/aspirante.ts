@@ -69,6 +69,15 @@ const optionalTrimmedString = (max: number) =>
     z.string().max(max).nullable(),
   );
 
+/** Quita puntos, V- y espacios; vacío → null. */
+function optionalCedulaDigits(label: string) {
+  return z.preprocess((v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const digits = String(v).replace(/\D/g, "");
+    return digits.length ? digits : null;
+  }, z.string().regex(/^[0-9]{6,12}$/, `${label}: solo dígitos, entre 6 y 12`).nullable());
+}
+
 const senaleticaFields = {
   colorCabello: optionalCatalogEnum(COLOR_CABELLO_VALUES),
   formaLabios: optionalCatalogEnum(FORMA_LABIOS_VALUES),
@@ -94,18 +103,10 @@ const familiaTallasFields = {
   padresVenezolanos: z.preprocess((v) => parsePadresVenezolanos(v), z.boolean().nullable()),
   madreNombres: optionalTrimmedString(120),
   madreApellidos: optionalTrimmedString(120),
-  madreCedula: z.preprocess((v) => {
-    if (v === "" || v === null || v === undefined) return null;
-    const s = String(v).trim();
-    return s.length ? s : null;
-  }, z.string().regex(/^[0-9]{6,12}$/, "Cédula de la madre: solo dígitos, entre 6 y 12").nullable()),
+  madreCedula: optionalCedulaDigits("Cédula de la madre"),
   padreNombres: optionalTrimmedString(120),
   padreApellidos: optionalTrimmedString(120),
-  padreCedula: z.preprocess((v) => {
-    if (v === "" || v === null || v === undefined) return null;
-    const s = String(v).trim();
-    return s.length ? s : null;
-  }, z.string().regex(/^[0-9]{6,12}$/, "Cédula del padre: solo dígitos, entre 6 y 12").nullable()),
+  padreCedula: optionalCedulaDigits("Cédula del padre"),
   poseeVehiculoPropio: z.preprocess((v) => parsePadresVenezolanos(v), z.boolean().nullable()),
   poseeViviendaPropia: z.preprocess((v) => parsePadresVenezolanos(v), z.boolean().nullable()),
   carnetPatriaSerial: optionalTrimmedString(40),
