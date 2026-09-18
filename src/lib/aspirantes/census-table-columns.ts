@@ -141,7 +141,7 @@ export const CENSUS_OPTIONAL_COLUMNS: readonly CensusOptionalColumn[] = [
   },
   {
     id: "tipoSangre",
-    label: "Tipo de sangre",
+    label: "Grupo sanguíneo",
     group: "Datos físicos",
     defaultVisible: false,
     headClassName: "w-[7rem]",

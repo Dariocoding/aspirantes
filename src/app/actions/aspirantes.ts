@@ -16,7 +16,7 @@ import {
   TallaUniformeOliva,
   TallaUniformePatriota,
 } from "@src/generated/prisma";
-import { composeRedSocial } from "@src/lib/aspirantes/senaletica";
+import { composeRedSocial, homologarDatosSangre } from "@src/lib/aspirantes/senaletica";
 import {
   aspiranteCreateSchema,
   aspiranteQuickUpdateSchema,
@@ -144,12 +144,13 @@ type SenaleticaParsed = {
 };
 
 function datosFisicosWrite(d: SenaleticaParsed) {
+  const sangre = homologarDatosSangre(d.tipoSangre, d.factorRh);
   return {
     estaturaCm: d.estaturaCm ?? null,
     pesoKg: d.pesoKg ?? null,
     tensionArterial: d.tensionArterial ?? null,
-    tipoSangre: d.tipoSangre ?? null,
-    factorRh: (d.factorRh as FactorRh | null | undefined) ?? null,
+    tipoSangre: sangre.tipoSangre,
+    factorRh: (sangre.factorRh as FactorRh | null) ?? null,
     colorCabello: (d.colorCabello as ColorCabello | null | undefined) ?? null,
     formaLabios: (d.formaLabios as FormaLabios | null | undefined) ?? null,
     formaNariz: (d.formaNariz as FormaNariz | null | undefined) ?? null,

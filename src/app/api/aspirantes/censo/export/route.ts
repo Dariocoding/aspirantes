@@ -176,6 +176,7 @@ export async function GET(request: Request) {
       estaturaCm: a.datosFisicos?.estaturaCm ?? null,
       pesoKg: a.datosFisicos?.pesoKg ?? null,
       tipoSangre: a.datosFisicos?.tipoSangre ?? null,
+      factorRh: a.datosFisicos?.factorRh ?? null,
       tensionArterial: a.datosFisicos?.tensionArterial ?? null,
       alergias: a.datosFisicos?.alergias ?? null,
       condicionesMedicas: a.datosFisicos?.condicionesMedicas ?? null,

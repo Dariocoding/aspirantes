@@ -139,36 +139,100 @@ export function isSenaParticular(v: string | null | undefined): v is SenaParticu
   return isCatalogValue(SENA_PARTICULAR_VALUES, v);
 }
 
+/**
+ * Compacta variantes libres ("O positivo", "Orh+", "ORH+", "0+") a un token ABO ±.
+ * Quita "POSITIVO"/"RH" antes de buscar la letra O, para no confundirla con esas palabras.
+ */
+function compactTipoSangreToken(raw: string): string {
+  let n = raw
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toUpperCase();
+  n = n.replace(/POSITIVO/g, "+");
+  n = n.replace(/NEGATIVO/g, "-");
+  n = n.replace(/\bPOS\b/g, "+");
+  n = n.replace(/\bNEG\b/g, "-");
+  n = n.replace(/[-–—−]/g, "-");
+  n = n.replace(/R\s*H/g, "RH");
+  n = n.replace(/RH\s*\+/g, "+");
+  n = n.replace(/RH\s*[-–—]/g, "-");
+  n = n.replace(/RH/g, "");
+  n = n.replace(/GRUPO\s*SANGUINEO|TIPO\s*DE\s*SANGRE|TIPO\s*SANGRE|SANGRE|GRUPO|FACTOR/g, "");
+  n = n.replace(/[^ABO0+\-]/g, "");
+  n = n.replace(/0/g, "O");
+  return n;
+}
+
+function isBlankSangre(raw: string | null | undefined): boolean {
+  const t = raw?.trim() ?? "";
+  return !t || /^[—–\-]+$/.test(t) || t.toLowerCase() === "n/a" || t.toLowerCase() === "na";
+}
+
 export function parseTipoSangreGrupo(raw: string | null | undefined): TipoSangreGrupoValue | null {
-  if (!raw) return null;
-  const n = raw.toUpperCase().replace(/\s+/g, "");
-  if (isTipoSangreGrupo(n)) return n;
+  if (isBlankSangre(raw)) return null;
+  const n = compactTipoSangreToken(raw);
+  if (!n) return null;
   if (n.includes("AB")) return "AB";
-  if (n.startsWith("A") || n.includes("A+") || n.includes("A-")) return "A";
-  if (n.startsWith("B") || n.includes("B+") || n.includes("B-")) return "B";
-  if (n.startsWith("O") || n.startsWith("0")) return "O";
+  if (n.includes("A")) return "A";
+  if (n.includes("B")) return "B";
+  if (n.includes("O")) return "O";
   return null;
 }
 
 export function parseFactorRh(raw: string | null | undefined): FactorRhValue | null {
-  if (!raw) return null;
-  const n = raw.toUpperCase();
-  if (isFactorRh(n)) return n;
-  if (n.includes("POS") || n.includes("+")) return "POSITIVO";
-  if (n.includes("NEG") || n.includes("-")) return "NEGATIVO";
+  if (isBlankSangre(raw)) return null;
+  const folded = raw.trim().toUpperCase();
+  if (isFactorRh(folded)) return folded;
+  const n = compactTipoSangreToken(raw);
+  if (n.includes("+")) return "POSITIVO";
+  if (n.includes("-")) return "NEGATIVO";
   return null;
+}
+
+export function splitTipoSangreFields(
+  raw: string | null | undefined,
+  factorRh?: string | null,
+): { tipoSangre: TipoSangreGrupoValue | null; factorRh: FactorRhValue | null } {
+  const tipoSangre = parseTipoSangreGrupo(raw);
+  const rh = parseFactorRh(factorRh) ?? parseFactorRh(raw);
+  return { tipoSangre, factorRh: rh };
 }
 
 export function formatTipoSangre(
   grupo: string | null | undefined,
   factorRh: string | null | undefined,
 ): string | null {
-  const g = parseTipoSangreGrupo(grupo) ?? (isTipoSangreGrupo(grupo) ? grupo : null);
-  const rh = isFactorRh(factorRh) ? factorRh : parseFactorRh(factorRh ?? grupo);
+  const { tipoSangre: g, factorRh: rh } = splitTipoSangreFields(grupo, factorRh);
   if (!g && !rh) return grupo?.trim() || null;
   if (!g) return rh ? FACTOR_RH_LABELS[rh] : null;
   if (!rh) return g;
   return `${g}${rh === "POSITIVO" ? "+" : "-"}`;
+}
+
+/**
+ * Persistencia: grupo solo A/B/AB/O y RH solo POSITIVO/NEGATIVO.
+ * Si hay grupo y falta el factor, se asume positivo.
+ */
+export function homologarDatosSangre(
+  tipoSangre: string | null | undefined,
+  factorRh?: string | null,
+  defaultRh: FactorRhValue | null = "POSITIVO",
+): { tipoSangre: TipoSangreGrupoValue | null; factorRh: FactorRhValue | null } {
+  const { tipoSangre: g, factorRh: rh } = splitTipoSangreFields(tipoSangre, factorRh);
+  if (!g) return { tipoSangre: null, factorRh: rh };
+  return { tipoSangre: g, factorRh: rh ?? defaultRh };
+}
+
+/** Excel/censo: siempre A+/A-/B+/B-/AB+/AB-/O+. Si hay grupo y falta RH, se asume positivo. */
+export function formatTipoSangreHomologado(
+  grupo: string | null | undefined,
+  factorRh: string | null | undefined,
+  defaultRh: FactorRhValue = "POSITIVO",
+): string | null {
+  const { tipoSangre: g, factorRh: rh } = homologarDatosSangre(grupo, factorRh, defaultRh);
+  if (!g) return null;
+  const sign = rh === "NEGATIVO" ? "-" : "+";
+  return `${g}${sign}`;
 }
 
 export function labelRedSocial(v: string | null | undefined): string | null {

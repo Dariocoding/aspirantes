@@ -9,6 +9,7 @@ import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/
 import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
+import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
 
 export type AspiranteCensoExportRow = {
   nombres: string;
@@ -38,6 +39,7 @@ export type AspiranteCensoExportRow = {
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
+  factorRh: string | null;
   tensionArterial: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
@@ -178,7 +180,7 @@ function cellValue(
     case "paisUniversidad":
       return dash(r.paisUniversidad);
     case "tipoSangre":
-      return dash(r.tipoSangre);
+      return dash(formatTipoSangreHomologado(r.tipoSangre, r.factorRh));
     case "estatura":
       return optionalNumber(r.estaturaCm);
     case "peso":

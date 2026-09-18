@@ -14,7 +14,7 @@ import {
   FORMA_LABIOS_LABELS,
   FORMA_NARIZ_LABELS,
   SENA_PARTICULAR_LABELS,
-  formatTipoSangre,
+  formatTipoSangreHomologado,
   isColorCabello,
   isColorOjos,
   isColorPiel,
@@ -610,7 +610,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <Campo label="Estatura (cm)" value={a.estaturaCm != null ? String(a.estaturaCm) : null} />
               <Campo label="Peso (kg)" value={a.pesoKg != null ? String(a.pesoKg) : null} />
               <Campo label="Tensión arterial" value={a.tensionArterial} />
-              <Campo label="Tipo de sangre" value={formatTipoSangre(a.tipoSangre, a.factorRh)} />
+              <Campo label="Grupo sanguíneo" value={formatTipoSangreHomologado(a.tipoSangre, a.factorRh)} />
             </div>
           </div>
 

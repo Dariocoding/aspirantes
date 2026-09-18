@@ -21,6 +21,7 @@ import {
   type TipoEstudioValue,
 } from "@src/lib/aspirantes/tipo-estudio";
 import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/census";
+import { homologarDatosSangre, type FactorRhValue } from "@src/lib/aspirantes/senaletica";
 
 const EMPTY = new Set(["", "—", "-", "–", "n/a", "na"]);
 
@@ -46,6 +47,13 @@ function blankToNull(raw: string | undefined): string | null {
 
 function hasColumn(ids: Set<string>, id: string) {
   return ids.has(id);
+}
+
+function parseSangreImport(raw: string | null): {
+  tipoSangre: string | null;
+  factorRh: FactorRhValue | null;
+} {
+  return homologarDatosSangre(raw);
 }
 
 function parseSexo(raw: string | null): Sexo | null | undefined {
@@ -319,7 +327,8 @@ export async function applyCensusXlsxImport(
                   estaturaCm: hasColumn(ids, "estatura") ? (parseNumber(blankToNull(v.estatura)) ?? null) : null,
                   pesoKg: hasColumn(ids, "peso") ? (parseNumber(blankToNull(v.peso)) ?? null) : null,
                   tensionArterial: hasColumn(ids, "tension") ? blankToNull(v.tension) : null,
-                  tipoSangre: hasColumn(ids, "tipoSangre") ? blankToNull(v.tipoSangre) : null,
+                  tipoSangre: hasColumn(ids, "tipoSangre") ? parseSangreImport(blankToNull(v.tipoSangre)).tipoSangre : null,
+                  factorRh: hasColumn(ids, "tipoSangre") ? parseSangreImport(blankToNull(v.tipoSangre)).factorRh : null,
                   tallaGorra: hasColumn(ids, "tallaGorra") ? blankToNull(v.tallaGorra) : null,
                   tallaCamisa: hasColumn(ids, "tallaCamisa") ? blankToNull(v.tallaCamisa) : null,
                   tallaPantalon: hasColumn(ids, "tallaPantalon") ? blankToNull(v.tallaPantalon) : null,
@@ -420,6 +429,7 @@ export async function applyCensusXlsxImport(
           pesoKg?: number | null;
           tensionArterial?: string | null;
           tipoSangre?: string | null;
+          factorRh?: FactorRhValue | null;
           tallaGorra?: string | null;
           tallaCamisa?: string | null;
           tallaPantalon?: string | null;
@@ -432,7 +442,11 @@ export async function applyCensusXlsxImport(
         if (hasColumn(ids, "estatura")) fisicoPatch.estaturaCm = parseNumber(blankToNull(v.estatura)) ?? null;
         if (hasColumn(ids, "peso")) fisicoPatch.pesoKg = parseNumber(blankToNull(v.peso)) ?? null;
         if (hasColumn(ids, "tension")) fisicoPatch.tensionArterial = blankToNull(v.tension);
-        if (hasColumn(ids, "tipoSangre")) fisicoPatch.tipoSangre = blankToNull(v.tipoSangre);
+        if (hasColumn(ids, "tipoSangre")) {
+          const sangre = parseSangreImport(blankToNull(v.tipoSangre));
+          fisicoPatch.tipoSangre = sangre.tipoSangre;
+          fisicoPatch.factorRh = sangre.factorRh;
+        }
         if (hasColumn(ids, "tallaGorra")) fisicoPatch.tallaGorra = blankToNull(v.tallaGorra);
         if (hasColumn(ids, "tallaCamisa")) fisicoPatch.tallaCamisa = blankToNull(v.tallaCamisa);
         if (hasColumn(ids, "tallaPantalon")) fisicoPatch.tallaPantalon = blankToNull(v.tallaPantalon);

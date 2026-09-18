@@ -39,7 +39,7 @@ import {
   nacimientoMesGroupLabel,
 } from "@src/lib/aspirantes/census";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
-import { formatTipoSangre } from "@src/lib/aspirantes/senaletica";
+import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
 import { ASPIRANTE_DOCUMENTO_KINDS } from "@src/lib/storage/aspirante-foto";
@@ -303,7 +303,7 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
     case "paisUniversidad":
       return <TextCell value={a.paisUniversidad} />;
     case "tipoSangre": {
-      const label = formatTipoSangre(a.tipoSangre, a.factorRh);
+      const label = formatTipoSangreHomologado(a.tipoSangre, a.factorRh);
       return label ? <span className="font-semibold tabular-nums text-slate-800">{label}</span> : <EmptyDash />;
     }
     case "estatura":

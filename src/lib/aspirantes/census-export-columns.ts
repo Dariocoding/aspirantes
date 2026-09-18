@@ -44,7 +44,7 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "contactoEmergencia", label: "Contacto de emergencia", group: "Contacto", width: 28, align: "left" },
   { id: "universidad", label: "Universidad", group: "Estudios", width: 24, align: "left" },
   { id: "paisUniversidad", label: "País de estudio", group: "Estudios", width: 16, align: "left" },
-  { id: "tipoSangre", label: "Tipo de sangre", group: "Datos físicos", width: 12, align: "center" },
+  { id: "tipoSangre", label: "Grupo sanguíneo", group: "Datos físicos", width: 14, align: "center" },
   { id: "estatura", label: "Estatura (cm)", group: "Datos físicos", width: 12, align: "center" },
   { id: "peso", label: "Peso (kg)", group: "Datos físicos", width: 12, align: "center" },
   { id: "tension", label: "Tensión arterial", group: "Datos físicos", width: 14, align: "center" },
@@ -125,6 +125,11 @@ HEADER_TO_COLUMN_ID.set("credo", "religion");
 HEADER_TO_COLUMN_ID.set("deporte", "deporte");
 HEADER_TO_COLUMN_ID.set("deportequepractica", "deporte");
 HEADER_TO_COLUMN_ID.set("deportequegusta", "deporte");
+HEADER_TO_COLUMN_ID.set("tiposangre", "tipoSangre");
+HEADER_TO_COLUMN_ID.set("gruposanguineo", "tipoSangre");
+HEADER_TO_COLUMN_ID.set("gruposangre", "tipoSangre");
+HEADER_TO_COLUMN_ID.set("rh", "tipoSangre");
+HEADER_TO_COLUMN_ID.set("factorrh", "tipoSangre");
 
 export function censusExportColumnIdFromHeader(header: string): string | undefined {
   const folded = foldCensusHeader(header);

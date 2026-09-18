@@ -20,6 +20,7 @@ import {
 import { zodFieldErrors } from "@src/lib/zod-errors";
 import { applyAspiranteFotosFromForm } from "@src/lib/aspirantes/apply-fotos";
 import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
+import { homologarDatosSangre } from "@src/lib/aspirantes/senaletica";
 import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { toDateInputValue } from "@src/lib/date-input";
 import { getPresignedGetUrl } from "@src/lib/storage/s3";
@@ -274,6 +275,7 @@ export async function updateAspiranteSelfService(
       },
     });
 
+    const sangre = homologarDatosSangre(d.tipoSangre);
     await tx.datosFisicosMedicos.upsert({
       where: { aspiranteId: aspirante.id },
       create: {
@@ -281,7 +283,8 @@ export async function updateAspiranteSelfService(
         estaturaCm: d.estaturaCm ?? null,
         pesoKg: d.pesoKg ?? null,
         tensionArterial: d.tensionArterial ?? null,
-        tipoSangre: d.tipoSangre ?? null,
+        tipoSangre: sangre.tipoSangre,
+        factorRh: sangre.factorRh,
         tallaGorra: d.tallaGorra ?? null,
         tallaCamisa: d.tallaCamisa ?? null,
         tallaPantalon: d.tallaPantalon ?? null,
@@ -295,7 +298,8 @@ export async function updateAspiranteSelfService(
         estaturaCm: d.estaturaCm ?? null,
         pesoKg: d.pesoKg ?? null,
         tensionArterial: d.tensionArterial ?? null,
-        tipoSangre: d.tipoSangre ?? null,
+        tipoSangre: sangre.tipoSangre,
+        factorRh: sangre.factorRh,
         tallaGorra: d.tallaGorra ?? null,
         tallaCamisa: d.tallaCamisa ?? null,
         tallaPantalon: d.tallaPantalon ?? null,
