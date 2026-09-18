@@ -1,16 +1,4 @@
-import {
-  Defs,
-  Document,
-  Ellipse,
-  Image,
-  Page,
-  RadialGradient,
-  Stop,
-  StyleSheet,
-  Svg,
-  Text,
-  View,
-} from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import {
   CUMPLEANOS_GOLD,
   CUMPLEANOS_LAYOUT,
@@ -66,13 +54,6 @@ const styles = StyleSheet.create({
   bg: {
     width: CUMPLEANOS_PAGE_W,
     height: CUMPLEANOS_PAGE_H,
-  },
-  photoGlow: {
-    position: "absolute",
-    left: photoLeft,
-    top: photoTop,
-    width: photoW,
-    height: photoH,
   },
   photo: {
     position: "absolute",
@@ -186,26 +167,8 @@ export function EsquelaCumpleanosPdfDocument({
           {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image */}
           <Image src={jpegSrc(plantillaJpeg)} style={styles.bg} />
           {fotoPng ? (
-            <>
-              <Svg width={photoW} height={photoH} style={styles.photoGlow}>
-                <Defs>
-                  <RadialGradient id="goldUnder" cx="50%" cy="38%" r="58%">
-                    <Stop offset="0%" stopColor={CUMPLEANOS_GOLD.light} />
-                    <Stop offset="55%" stopColor={CUMPLEANOS_GOLD.fill} />
-                    <Stop offset="100%" stopColor={CUMPLEANOS_GOLD.dark} />
-                  </RadialGradient>
-                </Defs>
-                <Ellipse
-                  cx={photoW / 2}
-                  cy={photoH / 2}
-                  rx={photoW / 2}
-                  ry={photoH / 2}
-                  fill="url(#goldUnder)"
-                />
-              </Svg>
-              {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image */}
-              <Image src={pngSrc(fotoPng)} style={styles.photo} />
-            </>
+            // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
+            <Image src={pngSrc(fotoPng)} style={styles.photo} />
           ) : null}
           {laurelPng ? (
             // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image

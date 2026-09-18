@@ -52,30 +52,18 @@ export function EsquelaCumpleanosPoster({
         className="absolute inset-0 z-0 h-full w-full object-cover"
       />
       {fotoSrc ? (
-        <>
-          <div
-            className="absolute left-1/2 z-9 -translate-x-1/2 -translate-y-1/2"
-            style={{
-              top: `${CUMPLEANOS_LAYOUT.photoCenterYPct * 100}%`,
-              width: `${CUMPLEANOS_LAYOUT.photoWidthPct * 100}%`,
-              height: `${CUMPLEANOS_LAYOUT.photoHeightPct * 100}%`,
-              clipPath: "ellipse(50% 50% at 50% 50%)",
-              background: CUMPLEANOS_GOLD.underCss,
-            }}
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element -- foto del aspirante vía API propia */}
-          <img
-            src={fotoSrc}
-            alt=""
-            className="absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 object-cover"
-            style={{
-              top: `${CUMPLEANOS_LAYOUT.photoCenterYPct * 100}%`,
-              width: `${CUMPLEANOS_LAYOUT.photoWidthPct * 100}%`,
-              height: `${CUMPLEANOS_LAYOUT.photoHeightPct * 100}%`,
-              clipPath: "ellipse(50% 50% at 50% 50%)",
-            }}
-          />
-        </>
+        // eslint-disable-next-line @next/next/no-img-element -- foto del aspirante vía API propia
+        <img
+          src={fotoSrc}
+          alt=""
+          className="absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 object-cover"
+          style={{
+            top: `${CUMPLEANOS_LAYOUT.photoCenterYPct * 100}%`,
+            width: `${CUMPLEANOS_LAYOUT.photoWidthPct * 100}%`,
+            height: `${CUMPLEANOS_LAYOUT.photoHeightPct * 100}%`,
+            clipPath: "ellipse(50% 50% at 50% 50%)",
+          }}
+        />
       ) : null}
       {/* eslint-disable-next-line @next/next/no-img-element -- corona extraída de la plantilla */}
       <img

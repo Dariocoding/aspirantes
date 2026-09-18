@@ -3,7 +3,7 @@ import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
-import { toHonoreeCutoutPng } from "@src/lib/pdf/esquela-cumpleanos-assets";
+import { toHonoreeCutoutPng, toHonoreeOvalPng } from "@src/lib/pdf/esquela-cumpleanos-assets";
 import { prisma } from "@src/lib/prisma";
 import {
   isDocumentoFotoKind,
@@ -60,10 +60,11 @@ export async function GET(
   }
 
   const cutout = search.get("cutout") === "1";
-  if (cutout || proxy) {
+  const oval = search.get("oval") === "1";
+  if (cutout || oval || proxy) {
     const { body, contentType } = await getObjectBuffer(key);
-    if (cutout) {
-      const png = await toHonoreeCutoutPng(body);
+    if (cutout || oval) {
+      const png = cutout ? await toHonoreeCutoutPng(body) : await toHonoreeOvalPng(body);
       return new NextResponse(new Uint8Array(png), {
         status: 200,
         headers: {

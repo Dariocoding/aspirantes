@@ -5,7 +5,7 @@ import {
   type AspiranteFotoKind,
 } from "@src/lib/storage/aspirante-foto";
 
-type EncodeMime = "image/webp" | "image/jpeg";
+type EncodeMime = "image/webp" | "image/jpeg" | "image/png";
 
 type Preset = {
   maxEdge: number;
@@ -26,6 +26,7 @@ const PRESET: Record<AspiranteFotoKind, Preset> = {
 const MIME_EXT: Record<EncodeMime, AspiranteArchivoExt> = {
   "image/webp": "webp",
   "image/jpeg": "jpg",
+  "image/png": "png",
 };
 
 function scaleToMax(width: number, height: number, maxEdge: number): { w: number; h: number } {
@@ -66,6 +67,16 @@ function isCompressibleImage(file: File): boolean {
   return t.startsWith("image/") || /\.(jpe?g|png|webp|bmp|heic|heif)$/.test(name);
 }
 
+function fileMayHaveAlpha(file: File): boolean {
+  const t = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return t === "image/png" || t === "image/webp" || name.endsWith(".png") || name.endsWith(".webp");
+}
+
+function shouldKeepAlpha(file: File, kind: AspiranteFotoKind): boolean {
+  return kind === "esquela" && fileMayHaveAlpha(file);
+}
+
 async function encodeCandidate(
   canvas: HTMLCanvasElement,
   mime: EncodeMime,
@@ -90,9 +101,14 @@ export async function compressAspiranteImage(file: File, kind: AspiranteFotoKind
 
   const preset = PRESET[kind];
   const allowed = allowedExtsForKind(kind);
+  const keepAlpha = shouldKeepAlpha(file, kind);
   const candidates: EncodeMime[] = [];
   if (preset.prefer === "image/webp" && allowed.has("webp")) candidates.push("image/webp");
-  if (allowed.has("jpg")) candidates.push("image/jpeg");
+  if (keepAlpha) {
+    if (allowed.has("png")) candidates.push("image/png");
+  } else if (allowed.has("jpg")) {
+    candidates.push("image/jpeg");
+  }
   if (candidates.length === 0) return file;
 
   let bitmap: ImageBitmap;
@@ -107,11 +123,13 @@ export async function compressAspiranteImage(file: File, kind: AspiranteFotoKind
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: keepAlpha });
     if (!ctx) return file;
 
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, w, h);
+    if (!keepAlpha) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+    }
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(bitmap, 0, 0, w, h);

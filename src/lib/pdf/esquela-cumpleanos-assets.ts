@@ -190,12 +190,37 @@ function ovalMaskSvg(): Buffer {
   );
 }
 
-/** Encaja la foto en el óvalo (cover). No quita fondo ni altera colores. */
+function cornersAreAlreadyTransparent(data: Buffer, width: number, height: number): boolean {
+  const patches: Array<[number, number]> = [
+    [2, 2],
+    [width - 3, 2],
+    [2, height - 3],
+    [width - 3, height - 3],
+  ];
+  let transparent = 0;
+  for (const [x, y] of patches) {
+    const a = data[(y * width + x) * 4 + 3] ?? 255;
+    if (a < 24) transparent += 1;
+  }
+  return transparent >= 2;
+}
+
+/** Encaja la foto en el óvalo (cover). Conserva alfa; si el estudio quedó blanco opaco, lo quita. */
 export async function toHonoreeOvalPng(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer)
+  const sized = await sharp(buffer)
     .rotate()
     .resize(OVAL_W, OVAL_H, { fit: "cover", position: "centre" })
     .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  if (!cornersAreAlreadyTransparent(sized.data, sized.info.width, sized.info.height)) {
+    knockOutStudioBackdrop(sized.data, sized.info.width, sized.info.height);
+  }
+
+  return sharp(sized.data, {
+    raw: { width: sized.info.width, height: sized.info.height, channels: 4 },
+  })
     .composite([{ input: ovalMaskSvg(), blend: "dest-in" }])
     .png()
     .toBuffer();

@@ -36,7 +36,7 @@ export default async function EsquelaDetallePage({
     : null;
   const fotoSrc =
     fotoSource && esquela.aspirante
-      ? aspiranteFotoUrl(esquela.aspirante.id, fotoSource.kind)
+      ? aspiranteFotoUrl(esquela.aspirante.id, fotoSource.kind, { oval: true })
       : null;
   const pdfHref = `/api/esquelas/${id}/pdf`;
 

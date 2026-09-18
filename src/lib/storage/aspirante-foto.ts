@@ -185,11 +185,12 @@ export function pickFotoForEsquela(
 export function aspiranteFotoUrl(
   aspiranteId: string,
   kind: AspiranteFotoKind = "perfil",
-  extra?: { cutout?: boolean },
+  extra?: { cutout?: boolean; oval?: boolean },
 ): string {
   const params = new URLSearchParams();
   if (kind !== "perfil") params.set("tipo", kind);
   if (extra?.cutout) params.set("cutout", "1");
+  if (extra?.oval) params.set("oval", "1");
   const q = params.toString();
   return `/api/aspirantes/foto/${aspiranteId}${q ? `?${q}` : ""}`;
 }
