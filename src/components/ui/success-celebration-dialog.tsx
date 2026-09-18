@@ -83,7 +83,7 @@ export function SuccessCelebrationDialog({
   }, [open]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false} disablePointerDismissal>
       <DialogContent
         showCloseButton={false}
         className="z-[100] max-w-[min(22rem,calc(100vw-2rem))] gap-0 overflow-hidden border-emerald-200/80 bg-gradient-to-b from-white to-emerald-50/90 p-0 shadow-emerald-900/15 sm:max-w-md dark:border-emerald-900/40 dark:from-emerald-950/95 dark:to-slate-950 dark:shadow-black/40"

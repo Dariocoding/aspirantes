@@ -654,7 +654,13 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
                           aspiranteId={a.id}
                           nombreCompleto={nombreCompleto}
                           canWrite={canWrite}
-                          onQuickEdit={canWrite ? () => setQuickEdit(a) : undefined}
+                          onQuickEdit={
+                            canWrite
+                              ? () => {
+                                  window.setTimeout(() => setQuickEdit(a), 0);
+                                }
+                              : undefined
+                          }
                         />
                       </TableCell>
                     </TableRow>,

@@ -305,17 +305,19 @@ export function PersonalHomeBoard({
                   </AspiranteIdentityLink>
                   <span
                     className={cn(
-                      "flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md text-[11px] font-semibold tabular-nums",
+                      "shrink-0 rounded-md px-2 py-1 text-right",
                       persona.esHoy ? "bg-amber-800 text-amber-50" : "bg-slate-100 text-slate-700",
                     )}
                   >
-                    {persona.dia}
-                  </span>
-                  {persona.esHoy ? (
-                    <span className="shrink-0 text-[10px] font-semibold tracking-wide text-amber-800 uppercase">
-                      Hoy
+                    <span className="block text-[11px] font-semibold leading-none capitalize">
+                      {persona.fechaLabel}
                     </span>
-                  ) : null}
+                    {persona.esHoy ? (
+                      <span className="mt-0.5 block text-[10px] font-semibold tracking-wide uppercase">
+                        Hoy
+                      </span>
+                    ) : null}
+                  </span>
                 </li>
               ))}
             </ul>

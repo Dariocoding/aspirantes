@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState, type ReactNode } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { GraduationCap, HeartPulse, Images, LifeBuoy, Loader2, Phone, ScanFace, UserRound, UserPlus } from "lucide-react";
 import { createAspirante, updateAspiranteQuick } from "@src/app/actions/aspirantes";
 import { AspiranteFotoField } from "@dashboard/aspirantes/_components/aspirante-foto";
@@ -237,22 +237,25 @@ function AspiranteQuickForm({
   pelotones,
   initial,
   onClose,
+  onSaved,
 }: {
   mode: Mode;
   pelotones: PelotonResumen[];
   initial?: AspiranteQuickInitial | null;
   onClose: () => void;
+  onSaved: () => void;
 }) {
-  const router = useRouter();
   const isEdit = mode === "edit";
   const action = isEdit ? updateAspiranteQuick : createAspirante;
   const [state, formAction, pending] = useActionState(action, aspiranteInitialActionState);
-  const [celebrateOpen, setCelebrateOpen] = useState(false);
   const [tab, setTab] = useState<QuickTab>("identidad");
+  const savedRef = useRef(false);
 
   useEffect(() => {
-    if (state.ok) setCelebrateOpen(true);
-  }, [state.ok]);
+    if (!state.ok || savedRef.current) return;
+    savedRef.current = true;
+    onSaved();
+  }, [state.ok, onSaved]);
 
   useEffect(() => {
     if (state.ok) return;
@@ -266,23 +269,6 @@ function AspiranteQuickForm({
 
   return (
     <>
-      <SuccessCelebrationDialog
-        open={celebrateOpen}
-        onOpenChange={(open) => {
-          setCelebrateOpen(open);
-          if (!open) {
-            onClose();
-            router.refresh();
-          }
-        }}
-        variant={isEdit ? "saved" : "created"}
-        title={isEdit ? "Datos actualizados" : "Aspirante registrado"}
-        description={
-          isEdit
-            ? "Identidad, contacto, estudios, salud y archivos quedaron guardados. Las evaluaciones no se tocaron."
-            : "Ya figura en el censo. Puede completar evaluaciones después."
-        }
-      />
       <form
         action={formAction}
         className="flex flex-col"
@@ -1061,32 +1047,65 @@ function AspiranteQuickForm({
 }
 
 export function AspiranteQuickDialog({ open, onOpenChange, mode, pelotones, initial }: DialogProps) {
+  const router = useRouter();
   const isEdit = mode === "edit";
+  const [celebrateOpen, setCelebrateOpen] = useState(false);
+
+  useEffect(() => {
+    if (open) setCelebrateOpen(false);
+  }, [open]);
+
+  const onSaved = useCallback(() => {
+    setCelebrateOpen(true);
+  }, []);
+
+  const formOpen = open && !celebrateOpen;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[min(90dvh,760px)] w-[calc(100vw-1.5rem)] max-w-2xl gap-0 overflow-hidden sm:max-w-3xl"
-        key={isEdit ? initial?.id ?? "edit" : "create"}
-      >
-        <DialogHeader className="px-4 py-3">
-          <DialogTitle>{isEdit ? "Edición rápida" : "Registro rápido"}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Nombres, apellidos y cédula son obligatorios; el resto es opcional."
-              : "Nombres, apellidos y cédula bastan. Puede añadir estudios, contacto de emergencia, médicos y archivos."}
-          </DialogDescription>
-        </DialogHeader>
-        {open ? (
-          <AspiranteQuickForm
-            key={isEdit ? initial?.id ?? "edit" : "create"}
-            mode={mode}
-            pelotones={pelotones}
-            initial={initial}
-            onClose={() => onOpenChange(false)}
-          />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={formOpen} onOpenChange={onOpenChange}>
+        <DialogContent
+          className="max-h-[min(90dvh,760px)] w-[calc(100vw-1.5rem)] max-w-2xl gap-0 overflow-hidden sm:max-w-3xl"
+          key={isEdit ? initial?.id ?? "edit" : "create"}
+        >
+          <DialogHeader className="px-4 py-3">
+            <DialogTitle>{isEdit ? "Edición rápida" : "Registro rápido"}</DialogTitle>
+            <DialogDescription>
+              {isEdit
+                ? "Nombres, apellidos y cédula son obligatorios; el resto es opcional."
+                : "Nombres, apellidos y cédula bastan. Puede añadir estudios, contacto de emergencia, médicos y archivos."}
+            </DialogDescription>
+          </DialogHeader>
+          {formOpen ? (
+            <AspiranteQuickForm
+              key={isEdit ? initial?.id ?? "edit" : "create"}
+              mode={mode}
+              pelotones={pelotones}
+              initial={initial}
+              onClose={() => onOpenChange(false)}
+              onSaved={onSaved}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+      <SuccessCelebrationDialog
+        open={celebrateOpen}
+        onOpenChange={(next) => {
+          setCelebrateOpen(next);
+          if (!next) {
+            onOpenChange(false);
+            router.refresh();
+          }
+        }}
+        variant={isEdit ? "saved" : "created"}
+        title={isEdit ? "Datos actualizados" : "Aspirante registrado"}
+        description={
+          isEdit
+            ? "Identidad, contacto, estudios, salud y archivos quedaron guardados. Las evaluaciones no se tocaron."
+            : "Ya figura en el censo. Puede completar evaluaciones después."
+        }
+      />
+    </>
   );
 }
 
