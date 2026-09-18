@@ -70,6 +70,31 @@ export function isBirthdayThisMonth(date: Date, reference: Date = new Date()) {
 }
 
 /**
+ * Orden para generar esquelas: cumpleaños de este mes (día 1→31),
+ * luego el resto del año cíclico (mes siguiente → …), sin fecha al final.
+ */
+export function sortByUpcomingBirthday<
+  T extends { fechaNacimiento: Date; nombres: string; apellidos: string },
+>(rows: T[], reference: Date = new Date()): T[] {
+  const thisMonth = reference.getMonth();
+  return [...rows].sort((a, b) => {
+    const rankA = upcomingBirthdayRank(a.fechaNacimiento, thisMonth);
+    const rankB = upcomingBirthdayRank(b.fechaNacimiento, thisMonth);
+    if (rankA !== rankB) return rankA - rankB;
+    return `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`, "es");
+  });
+}
+
+function upcomingBirthdayRank(birth: Date, thisMonth: number): number {
+  if (!hasRealBirthDate(birth)) return Number.POSITIVE_INFINITY;
+  const month = birth.getMonth();
+  const day = birth.getDate();
+  if (month === thisMonth) return day;
+  const monthsAhead = (month - thisMonth + 12) % 12;
+  return 100 + monthsAhead * 32 + day;
+}
+
+/**
  * Filtro Prisma sobre `fechaNacimiento` equivalente a un rango de edad en años cumplidos.
  * `edadMin` / `edadMax` inclusivos.
  */
