@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { BookMarked, CalendarDays, Medal, Users, type LucideIcon } from "lucide-react";
 import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
+import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
 import { INSTITUTION_SHORT_NAME } from "@src/lib/branding";
 import { routes } from "@src/lib/apps/routes";
