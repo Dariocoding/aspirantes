@@ -45,12 +45,17 @@ export type AspiranteQuickInitial = {
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
+  tallaGorra: string | null;
+  tallaCamisa: string | null;
+  tallaPantalon: string | null;
+  tallaCalzado: string | null;
   tensionArterial: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
   discapacidad: string | null;
   observaciones: string | null;
   fotoKey?: string | null;
+  fotoEsquelaKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
   fotoTituloAutenticacionKey?: string | null;
@@ -102,6 +107,10 @@ function tabForError(errors: Record<string, string>): QuickTab | null {
         "pesoKg",
         "tensionArterial",
         "tipoSangre",
+        "tallaGorra",
+        "tallaCamisa",
+        "tallaPantalon",
+        "tallaCalzado",
         "alergias",
         "condicionesMedicas",
         "discapacidad",
@@ -428,6 +437,22 @@ function AspiranteQuickForm({
                 <Label htmlFor="quick-sangre">Tipo de sangre</Label>
                 <Input id="quick-sangre" name="tipoSangre" defaultValue={initial?.tipoSangre ?? ""} className="h-8" />
               </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-gorra">Talla gorra</Label>
+                <Input id="quick-gorra" name="tallaGorra" defaultValue={initial?.tallaGorra ?? ""} className="h-8" placeholder="S, M, L…" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-camisa">Talla camisa</Label>
+                <Input id="quick-camisa" name="tallaCamisa" defaultValue={initial?.tallaCamisa ?? ""} className="h-8" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-pantalon">Talla pantalón</Label>
+                <Input id="quick-pantalon" name="tallaPantalon" defaultValue={initial?.tallaPantalon ?? ""} className="h-8" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-calzado">Talla calzado</Label>
+                <Input id="quick-calzado" name="tallaCalzado" defaultValue={initial?.tallaCalzado ?? ""} className="h-8" placeholder="42" />
+              </div>
               <div className="flex flex-col gap-1.5 sm:col-span-2">
                 <Label htmlFor="quick-alergias">Alergias</Label>
                 <Input id="quick-alergias" name="alergias" defaultValue={initial?.alergias ?? ""} className="h-8" />
@@ -465,7 +490,7 @@ function AspiranteQuickForm({
           <fieldset hidden={tab !== "archivos"} className="border-0 p-0">
             <legend className="sr-only">Archivos</legend>
             <p className="mb-2.5 text-[11px] text-slate-500">
-              Foto de perfil y documentos. Pulse para ver, arrastre para subir, o quite lo que no corresponda.
+              Foto de carnet, foto de esquela y documentos. Pulse para ver, arrastre para subir, o quite lo que no corresponda.
               Se guardan al registrar.
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -477,6 +502,15 @@ function AspiranteQuickForm({
                 kind="perfil"
                 layout="compact"
                 serverError={state.errors[ASPIRANTE_FOTO_FORM.perfil.file]}
+              />
+              <AspiranteFotoField
+                id="quick-foto-esquela"
+                aspiranteId={initial?.id}
+                fotoKey={initial?.fotoEsquelaKey}
+                nombre={`${initial?.nombres ?? ""} ${initial?.apellidos ?? ""}`.trim() || "aspirante"}
+                kind="esquela"
+                layout="compact"
+                serverError={state.errors[ASPIRANTE_FOTO_FORM.esquela.file]}
               />
               <AspiranteFotoField
                 id="quick-foto-cedula"

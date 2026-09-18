@@ -14,12 +14,13 @@ const EXTS_JPEG_PNG = new Set<AspiranteArchivoExt>(["jpg", "png"]);
 const EXTS_IMAGEN = new Set<AspiranteArchivoExt>(["jpg", "png", "webp", "gif"]);
 const EXTS_NOTAS = new Set<AspiranteArchivoExt>(["jpg", "png", "pdf"]);
 
-export type AspiranteFotoKind = "perfil" | "cedula" | "titulo" | "tituloAuth" | "notas";
+export type AspiranteFotoKind = "perfil" | "esquela" | "cedula" | "titulo" | "tituloAuth" | "notas";
 
-export type AspiranteDocumentoKind = Exclude<AspiranteFotoKind, "perfil">;
+export type AspiranteDocumentoKind = Exclude<AspiranteFotoKind, "perfil" | "esquela">;
 
 export const ASPIRANTE_FOTO_KINDS: readonly AspiranteFotoKind[] = [
   "perfil",
+  "esquela",
   "cedula",
   "titulo",
   "tituloAuth",
@@ -35,6 +36,7 @@ export const ASPIRANTE_DOCUMENTO_KINDS: readonly AspiranteDocumentoKind[] = [
 
 export type AspiranteFotoDbField =
   | "fotoKey"
+  | "fotoEsquelaKey"
   | "fotoCedulaKey"
   | "fotoTituloKey"
   | "fotoTituloAutenticacionKey"
@@ -42,6 +44,7 @@ export type AspiranteFotoDbField =
 
 const KIND_FILE: Record<AspiranteFotoKind, string> = {
   perfil: "foto",
+  esquela: "esquela",
   cedula: "cedula",
   titulo: "titulo",
   tituloAuth: "titulo-auth",
@@ -54,6 +57,7 @@ export const ASPIRANTE_FOTO_FORM: Record<
   { file: string; quitar: string; dbField: AspiranteFotoDbField }
 > = {
   perfil: { file: "imagen", quitar: "quitarImagen", dbField: "fotoKey" },
+  esquela: { file: "imagenEsquela", quitar: "quitarImagenEsquela", dbField: "fotoEsquelaKey" },
   cedula: { file: "imagenCedula", quitar: "quitarImagenCedula", dbField: "fotoCedulaKey" },
   titulo: { file: "imagenTitulo", quitar: "quitarImagenTitulo", dbField: "fotoTituloKey" },
   tituloAuth: {
@@ -164,6 +168,20 @@ export function aspiranteFotoKey(aspiranteId: string, ext: string): string {
 }
 
 /** Ruta de la API de foto (usable en servidor y cliente). */
+export function isAspiranteFotoKind(v: string | null | undefined): v is AspiranteFotoKind {
+  return Boolean(v && (ASPIRANTE_FOTO_KINDS as readonly string[]).includes(v));
+}
+
+/** Fuente de la foto en esquelas: ceremonial si existe; si no, carnet. */
+export function pickFotoForEsquela(
+  fotoEsquelaKey: string | null | undefined,
+  fotoCarnetKey: string | null | undefined,
+): { key: string; kind: "esquela" | "perfil" } | null {
+  if (fotoEsquelaKey) return { key: fotoEsquelaKey, kind: "esquela" };
+  if (fotoCarnetKey) return { key: fotoCarnetKey, kind: "perfil" };
+  return null;
+}
+
 export function aspiranteFotoUrl(
   aspiranteId: string,
   kind: AspiranteFotoKind = "perfil",

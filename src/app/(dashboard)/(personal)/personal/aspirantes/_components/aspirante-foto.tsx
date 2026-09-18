@@ -130,9 +130,14 @@ const KIND_COPY: Record<
   { title: string; help: string; aria: string }
 > = {
   perfil: {
-    title: "Foto del aspirante",
+    title: "Foto de carnet",
     help: `Opcional. ${formatHelpForKind("perfil")}`,
-    aria: "foto del aspirante",
+    aria: "foto de carnet",
+  },
+  esquela: {
+    title: "Foto de esquela",
+    help: `Opcional. Se usa en la esquela de cumpleaños; si no hay, se usa la foto de carnet. ${formatHelpForKind("esquela")}`,
+    aria: "foto de esquela",
   },
   cedula: {
     title: "Foto de la cédula",
@@ -252,7 +257,7 @@ export function AspiranteFotoField({
 
   const formNames = ASPIRANTE_FOTO_FORM[kind];
   const copy = KIND_COPY[kind];
-  const isDoc = kind !== "perfil";
+  const isDoc = kind !== "perfil" && kind !== "esquela";
   const thumbClass = isDoc ? DOC_THUMB : THUMB_SIZE.lg;
   const rounded = isDoc ? "md" : "full";
 

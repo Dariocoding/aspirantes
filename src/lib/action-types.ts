@@ -28,10 +28,16 @@ export type AspiranteSelfServiceRecord = {
   correo: string | null;
   hijosCantidad: number;
   estadoCivil: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
+  religion: string | null;
+  deporte: string | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tensionArterial: string | null;
   tipoSangre: string | null;
+  tallaGorra: string | null;
+  tallaCamisa: string | null;
+  tallaPantalon: string | null;
+  tallaCalzado: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
   discapacidad: string | null;
@@ -46,6 +52,7 @@ export type AspiranteSelfServiceRecord = {
   fotoKey: string | null;
   /** URL firmada temporal para previsualizar la foto tipo carnet en el portal público. */
   fotoPerfilUrl: string | null;
+  fotoEsquelaKey: string | null;
   fotoCedulaKey: string | null;
   fotoTituloKey: string | null;
   fotoTituloAutenticacionKey: string | null;

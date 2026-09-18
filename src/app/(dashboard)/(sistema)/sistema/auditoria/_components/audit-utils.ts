@@ -17,6 +17,7 @@ const ACTION_LABELS: Record<string, string> = {
   CENSO_EXPORT_XLSX_EXAMENES: "Exportación Excel de exámenes médicos",
   CENSO_EXPORT_XLSX_LISTA_OFICIAL: "Exportación Excel de lista oficial",
   CENSO_EXPORT_XLSX_CUMPLEANOS: "Exportación Excel de cumpleaños",
+  CENSO_IMPORT_XLSX: "Importación Excel del censo",
 };
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -40,7 +41,7 @@ export function auditActionBadgeClass(action: string): string {
   if (action.includes("CREATE") || action.includes("ACTIVAR")) {
     return "border-emerald-200/90 bg-emerald-50 text-emerald-900";
   }
-  if (action.includes("UPDATE")) {
+  if (action.includes("IMPORT") || action.includes("UPDATE")) {
     return "border-sky-200/90 bg-sky-50 text-sky-900";
   }
   if (action.includes("EXPORT")) {
@@ -52,7 +53,7 @@ export function auditActionBadgeClass(action: string): string {
 export function auditActionAccentClass(action: string): string {
   if (action.includes("DELETE")) return "bg-rose-500";
   if (action.includes("CREATE") || action.includes("ACTIVAR")) return "bg-emerald-500";
-  if (action.includes("UPDATE")) return "bg-sky-500";
+  if (action.includes("IMPORT") || action.includes("UPDATE")) return "bg-sky-500";
   if (action.includes("EXPORT")) return "bg-amber-500";
   return "bg-slate-400";
 }

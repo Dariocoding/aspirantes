@@ -80,11 +80,17 @@ function seedFromForm(
     correo: formStr(fd, "correo") || null,
     hijosCantidad: hijos != null ? hijos : 0,
     estadoCivil: isEstadoCivilValue(estadoCivilRaw) ? estadoCivilRaw : null,
+    religion: formStr(fd, "religion") || null,
+    deporte: formStr(fd, "deporte") || null,
     pelotonId: formStr(fd, "pelotonId") || null,
     estaturaCm: formNumOrNull(fd, "estaturaCm"),
     pesoKg: formNumOrNull(fd, "pesoKg"),
     tensionArterial: formStr(fd, "tensionArterial") || null,
     tipoSangre: formStr(fd, "tipoSangre") || null,
+    tallaGorra: formStr(fd, "tallaGorra") || null,
+    tallaCamisa: formStr(fd, "tallaCamisa") || null,
+    tallaPantalon: formStr(fd, "tallaPantalon") || null,
+    tallaCalzado: formStr(fd, "tallaCalzado") || null,
     alergias: formStr(fd, "alergias") || null,
     condicionesMedicas: formStr(fd, "condicionesMedicas") || null,
     discapacidad: formStr(fd, "discapacidad") || null,
@@ -144,11 +150,17 @@ export type AspiranteRegistroInitial = {
   correo: string | null;
   hijosCantidad: number;
   estadoCivil?: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
+  religion?: string | null;
+  deporte?: string | null;
   pelotonId?: string | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tensionArterial: string | null;
   tipoSangre: string | null;
+  tallaGorra: string | null;
+  tallaCamisa: string | null;
+  tallaPantalon: string | null;
+  tallaCalzado: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
   discapacidad: string | null;
@@ -160,6 +172,7 @@ export type AspiranteRegistroInitial = {
   /** JSON almacenado en BD (`fichaEvaluacion`); el cliente lo parsea con el catálogo actual. */
   fichaEvaluacion?: unknown | null;
   fotoKey?: string | null;
+  fotoEsquelaKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
   fotoTituloAutenticacionKey?: string | null;
@@ -267,6 +280,8 @@ export function AspiranteRegistroForm({
       lugarNacimiento: seed?.lugarNacimiento ?? "",
       hijosCantidad: seed != null ? String(seed.hijosCantidad) : "0",
       estadoCivil: seed?.estadoCivil ?? "",
+      religion: seed?.religion ?? "",
+      deporte: seed?.deporte ?? "",
       pelotonId: seed?.pelotonId ?? "",
       telefono: seed?.telefono ?? "",
       correo: seed?.correo ?? "",
@@ -275,6 +290,10 @@ export function AspiranteRegistroForm({
       pesoKg: seed?.pesoKg != null ? String(seed.pesoKg) : "",
       tensionArterial: seed?.tensionArterial ?? "",
       tipoSangre: seed?.tipoSangre ?? "",
+      tallaGorra: seed?.tallaGorra ?? "",
+      tallaCamisa: seed?.tallaCamisa ?? "",
+      tallaPantalon: seed?.tallaPantalon ?? "",
+      tallaCalzado: seed?.tallaCalzado ?? "",
       alergias: seed?.alergias ?? "",
       condicionesMedicas: seed?.condicionesMedicas ?? "",
       discapacidad: seed?.discapacidad ?? "",
@@ -502,6 +521,13 @@ export function AspiranteRegistroForm({
               kind="perfil"
             />
             <AspiranteFotoField
+              id="aspirante-foto-esquela"
+              aspiranteId={seed?.id}
+              fotoKey={seed?.fotoEsquelaKey ?? initial?.fotoEsquelaKey}
+              nombre={`${defaults.nombres} ${defaults.apellidos}`.trim() || "aspirante"}
+              kind="esquela"
+            />
+            <AspiranteFotoField
               id="aspirante-foto-cedula"
               aspiranteId={seed?.id}
               fotoKey={seed?.fotoCedulaKey ?? initial?.fotoCedulaKey}
@@ -684,6 +710,53 @@ export function AspiranteRegistroForm({
               </select>
             </div>
             <div>
+              <Label htmlFor="religion">Religión</Label>
+              <Input
+                id="religion"
+                name="religion"
+                list="religion-sugerencias"
+                defaultValue={defaults.religion}
+                placeholder="Ej.: Católica, evangélica…"
+                autoComplete="off"
+              />
+              <datalist id="religion-sugerencias">
+                <option value="Católica" />
+                <option value="Evangélica" />
+                <option value="Cristiana" />
+                <option value="Adventista" />
+                <option value="Testigo de Jehová" />
+                <option value="Musulmana" />
+                <option value="Judía" />
+                <option value="Ninguna" />
+              </datalist>
+            </div>
+            <div>
+              <Label htmlFor="deporte">Deporte</Label>
+              <Input
+                id="deporte"
+                name="deporte"
+                list="deporte-sugerencias"
+                defaultValue={defaults.deporte}
+                placeholder="El que practica o le gusta"
+                autoComplete="off"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Deporte que practica o le gusta hacer.
+              </p>
+              <datalist id="deporte-sugerencias">
+                <option value="Fútbol" />
+                <option value="Béisbol" />
+                <option value="Baloncesto" />
+                <option value="Voleibol" />
+                <option value="Natación" />
+                <option value="Atletismo" />
+                <option value="Ciclismo" />
+                <option value="Boxeo" />
+                <option value="Artes marciales" />
+                <option value="Tenis" />
+              </datalist>
+            </div>
+            <div>
               <Label>Teléfono</Label>
               <Input
                 name="telefono"
@@ -829,6 +902,22 @@ export function AspiranteRegistroForm({
             <div>
               <Label>Tipo de Sangre</Label>
               <Input name="tipoSangre" defaultValue={defaults.tipoSangre} />
+            </div>
+            <div>
+              <Label>Talla gorra</Label>
+              <Input name="tallaGorra" defaultValue={defaults.tallaGorra} placeholder="S, M, L…" />
+            </div>
+            <div>
+              <Label>Talla camisa</Label>
+              <Input name="tallaCamisa" defaultValue={defaults.tallaCamisa} placeholder="S, M, L…" />
+            </div>
+            <div>
+              <Label>Talla pantalón</Label>
+              <Input name="tallaPantalon" defaultValue={defaults.tallaPantalon} />
+            </div>
+            <div>
+              <Label>Talla calzado</Label>
+              <Input name="tallaCalzado" defaultValue={defaults.tallaCalzado} placeholder="38, 42…" />
             </div>
             <div>
               <Label>Alergias</Label>

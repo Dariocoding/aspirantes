@@ -48,6 +48,7 @@ import { cn } from "@src/lib/utils";
 export type AspirantesCensusRow = {
   id: string;
   fotoKey: string | null;
+  fotoEsquelaKey: string | null;
   fotoCedulaKey: string | null;
   fotoTituloKey: string | null;
   fotoTituloAutenticacionKey: string | null;
@@ -73,6 +74,8 @@ export type AspirantesCensusRow = {
   correo: string | null;
   direccion: string | null;
   estadoCivil: string | null;
+  religion: string | null;
+  deporte: string | null;
   hijosCantidad: number;
   nombreUniversidad: string | null;
   paisUniversidad: string | null;
@@ -83,6 +86,10 @@ export type AspirantesCensusRow = {
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
+  tallaGorra: string | null;
+  tallaCamisa: string | null;
+  tallaPantalon: string | null;
+  tallaCalzado: string | null;
   tensionArterial: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
@@ -242,6 +249,10 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
       return <TextCell value={a.direccion} clamp />;
     case "estadoCivil":
       return <TextCell value={labelEstadoCivil(a.estadoCivil) ?? undefined} />;
+    case "religion":
+      return <TextCell value={a.religion} />;
+    case "deporte":
+      return <TextCell value={a.deporte} />;
     case "hijos":
       return <span className="tabular-nums text-slate-700">{a.hijosCantidad}</span>;
     case "contactoEmergencia": {
@@ -275,6 +286,20 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
       return a.pesoKg != null ? <span className="tabular-nums text-slate-700">{a.pesoKg} kg</span> : <EmptyDash />;
     case "tension":
       return <TextCell value={a.tensionArterial} />;
+    case "tallaGorra":
+    case "tallaCamisa":
+    case "tallaPantalon":
+    case "tallaCalzado": {
+      const value =
+        col.id === "tallaGorra"
+          ? a.tallaGorra
+          : col.id === "tallaCamisa"
+            ? a.tallaCamisa
+            : col.id === "tallaPantalon"
+              ? a.tallaPantalon
+              : a.tallaCalzado;
+      return <TextCell value={value} />;
+    }
     default:
       return <EmptyDash />;
   }
@@ -288,7 +313,11 @@ function cellAlignClass(id: CensusOptionalColumnId): string {
     id === "nacimiento" ||
     id === "hijos" ||
     id === "estatura" ||
-    id === "peso"
+    id === "peso" ||
+    id === "tallaGorra" ||
+    id === "tallaCamisa" ||
+    id === "tallaPantalon" ||
+    id === "tallaCalzado"
   ) {
     return "text-center";
   }

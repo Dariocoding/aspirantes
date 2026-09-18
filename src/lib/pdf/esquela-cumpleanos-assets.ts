@@ -193,6 +193,23 @@ function fadeOuterPaperWhite(data: Buffer, width: number, height: number): void 
   }
 }
 
+function ovalMaskSvg(): Buffer {
+  return Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${OVAL_W}" height="${OVAL_H}"><ellipse cx="${OVAL_W / 2}" cy="${OVAL_H / 2}" rx="${OVAL_W / 2}" ry="${OVAL_H / 2}" fill="#fff"/></svg>`,
+  );
+}
+
+/** Encaja la foto en el óvalo (cover). No quita fondo ni altera colores. */
+export async function toHonoreeOvalPng(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer)
+    .rotate()
+    .resize(OVAL_W, OVAL_H, { fit: "cover", position: "centre" })
+    .ensureAlpha()
+    .composite([{ input: ovalMaskSvg(), blend: "dest-in" }])
+    .png()
+    .toBuffer();
+}
+
 /** Recorta el fondo (Gemini si hay clave; si no, blanco de estudio) y deja un óvalo vertical. */
 export async function toHonoreeCutoutPng(buffer: Buffer): Promise<Buffer> {
   const geminiPng = await cutoutWithGemini(buffer);
@@ -211,24 +228,24 @@ export async function toHonoreeCutoutPng(buffer: Buffer): Promise<Buffer> {
     fadeOuterPaperWhite(sized.data, sized.info.width, sized.info.height);
   }
 
-  const ovalMask = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${OVAL_W}" height="${OVAL_H}"><ellipse cx="${OVAL_W / 2}" cy="${OVAL_H / 2}" rx="${OVAL_W / 2}" ry="${OVAL_H / 2}" fill="#fff"/></svg>`,
-  );
-
   return sharp(sized.data, {
     raw: { width: sized.info.width, height: sized.info.height, channels: 4 },
   })
-    .composite([{ input: ovalMask, blend: "dest-in" }])
+    .composite([{ input: ovalMaskSvg(), blend: "dest-in" }])
     .png()
     .toBuffer();
 }
 
-export async function loadFotoCircularForEsquelaPdf(fotoKey: string | null): Promise<Buffer | null> {
+export async function loadFotoOvalForEsquelaPdf(fotoKey: string | null): Promise<Buffer | null> {
   if (!fotoKey) return null;
   try {
     const { body } = await getObjectBuffer(fotoKey);
-    return await toHonoreeCutoutPng(body);
+    return await toHonoreeOvalPng(body);
   } catch {
     return null;
   }
+}
+
+export async function loadFotoCircularForEsquelaPdf(fotoKey: string | null): Promise<Buffer | null> {
+  return loadFotoOvalForEsquelaPdf(fotoKey);
 }

@@ -254,6 +254,10 @@ model Aspirante {
   correo                String?
   hijosCantidad         Int                  @default(0)
   estadoCivil           EstadoCivil?
+  /// Religión o credo declarado.
+  religion              String?
+  /// Deporte que practica o le gusta hacer.
+  deporte               String?
   convocatoriaId        String
   convocatoria          Convocatoria         @relation(fields: [convocatoriaId], references: [id], onDelete: Restrict)
   /// Pelotón del curso al que pertenece el aspirante (misma convocatoria).
@@ -266,8 +270,10 @@ model Aspirante {
   esquelasGeneradas     Esquela[]
   /// Revisión de expediente, prueba física y examen médico (estructura versionada; ver `src/lib/aspirantes/ficha-evaluacion.ts`).
   fichaEvaluacion       Json?
-  /// Clave del objeto en S3/R2 (p. ej. aspirantes/{id}/foto.webp).
+  /// Clave del objeto en S3/R2 (p. ej. aspirantes/{id}/foto.webp). Foto tipo carnet.
   fotoKey               String?
+  /// Foto ceremonial para esquelas (S3/R2). Si falta, se usa `fotoKey`.
+  fotoEsquelaKey        String?
   /// Foto de la cédula de identidad (S3/R2).
   fotoCedulaKey         String?
   /// Foto del título universitario / fondo negro (S3/R2).
@@ -319,6 +325,10 @@ model DatosFisicosMedicos {
   condicionesMedicas String?
   discapacidad      String?
   observaciones     String?
+  tallaGorra        String?
+  tallaCamisa       String?
+  tallaPantalon     String?
+  tallaCalzado      String?
   aspiranteId       String   @unique
   aspirante         Aspirante @relation(fields: [aspiranteId], references: [id], onDelete: Cascade)
   updatedAt         DateTime @updatedAt

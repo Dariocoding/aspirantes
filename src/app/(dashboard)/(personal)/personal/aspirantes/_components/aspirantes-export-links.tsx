@@ -1,7 +1,9 @@
 "use client";
 
-import { ChevronDown, FileDown, FileSpreadsheet, Loader2 } from "lucide-react";
+import { ChevronDown, FileDown, FileSpreadsheet, FileUp, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { AspirantesExcelColumnsDialog } from "@dashboard/aspirantes/_components/aspirantes-excel-columns-dialog";
+import { AspirantesExcelImportDialog } from "@dashboard/aspirantes/_components/aspirantes-excel-import-dialog";
 import { Button } from "@src/components/ui/button";
 import {
   Dialog,
@@ -73,6 +75,8 @@ const triggerClass =
 export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatoriaCount }: Props) {
   const suffix = exportQuery ? `&${exportQuery}` : "";
   const base = "/api/aspirantes/censo/export";
+  const [excelOpen, setExcelOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +91,14 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
     } finally {
       setBusyLabel(null);
     }
+  }
+
+  function exportExcel(columnIds: string[]) {
+    const params = new URLSearchParams(exportQuery);
+    params.set("format", "xlsx");
+    params.set("columns", columnIds.join(","));
+    setExcelOpen(false);
+    void runDownload(`${base}?${params.toString()}`, "censo-aspirantes.xlsx", "el Excel del censo");
   }
 
   const fichasTodasUrl = `${base}?format=pdf&variant=fichas-tecnicas&scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
@@ -109,31 +121,19 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
           <DropdownMenuContent align="end" className="min-w-64">
             <DropdownMenuGroup>
               <DropdownMenuGroupLabel>Hojas de cálculo</DropdownMenuGroupLabel>
-              <DropdownMenuItem
-                nativeButton={false}
-                render={<a href={`${base}?format=xlsx${suffix}`} />}
-              >
+              <DropdownMenuItem disabled={Boolean(busyLabel)} onClick={() => setExcelOpen(true)}>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="font-medium">Censo completo</span>
-                  <span className="text-xs text-muted-foreground">Directorio según los filtros actuales</span>
+                  <span className="font-medium">Columnas y orden</span>
+                  <span className="text-xs text-muted-foreground">Elija qué campos salen y en qué orden</span>
                 </span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                nativeButton={false}
-                render={<a href={`${base}?format=xlsx&variant=examenes-medicos${suffix}`} />}
-              >
+              <DropdownMenuItem disabled={Boolean(busyLabel)} onClick={() => setImportOpen(true)}>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="font-medium">Exámenes médicos</span>
-                  <span className="text-xs text-muted-foreground">Nombre, cédula y checklist médico</span>
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                nativeButton={false}
-                render={<a href={`${base}?format=xlsx&variant=lista-oficial${suffix}`} />}
-              >
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="font-medium">Lista oficial</span>
-                  <span className="text-xs text-muted-foreground">N°, JQUIA, apellidos, nombres, cédula, sexo</span>
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <FileUp className="h-3.5 w-3.5 text-emerald-700" aria-hidden />
+                    Importar y editar
+                  </span>
+                  <span className="text-xs text-muted-foreground">Actualiza por cédula las columnas del archivo</span>
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -244,12 +244,24 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
         </p>
       ) : null}
 
+      <AspirantesExcelColumnsDialog
+        open={excelOpen}
+        onOpenChange={setExcelOpen}
+        busy={Boolean(busyLabel)}
+        onExport={exportExcel}
+      />
+      <AspirantesExcelImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        convocatoriaId={convocatoriaId}
+      />
+
       <Dialog open={Boolean(busyLabel)} onOpenChange={() => {}}>
         <DialogContent showCloseButton={false} className="max-w-sm">
           <DialogHeader className="border-0">
             <DialogTitle className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-indigo-800" aria-hidden />
-              Generando PDF
+              Generando archivo
             </DialogTitle>
             <DialogDescription className="text-left">
               Se están armando {busyLabel}. No cierre esta ventana; con muchos aspirantes puede tardar

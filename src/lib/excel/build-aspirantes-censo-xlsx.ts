@@ -1,5 +1,13 @@
 import ExcelJS from "exceljs";
-import { sexoEtiqueta } from "@src/lib/aspirantes/census";
+import {
+  examenIdFromExportColumn,
+  getCensusExportColumn,
+  isExamExportColumnId,
+  type CensusExportColumn,
+} from "@src/lib/aspirantes/census-export-columns";
+import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/census";
+import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
+import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 
 export type AspiranteCensoExportRow = {
@@ -12,12 +20,42 @@ export type AspiranteCensoExportRow = {
   sexo: string;
   edad: number;
   fechaNacimiento: Date;
+  lugarNacimiento: string;
+  calificacionAdmision: string;
+  pelotonLabel: string | null;
+  telefono: string | null;
+  correo: string | null;
+  direccion: string | null;
+  estadoCivil: string | null;
+  religion: string | null;
+  deporte: string | null;
+  hijosCantidad: number;
+  nombreUniversidad: string | null;
+  paisUniversidad: string | null;
+  contactoNombre: string | null;
+  contactoParentesco: string | null;
+  contactoTelefono: string | null;
+  estaturaCm: number | null;
+  pesoKg: number | null;
+  tipoSangre: string | null;
+  tensionArterial: string | null;
+  alergias: string | null;
+  condicionesMedicas: string | null;
+  discapacidad: string | null;
+  observaciones: string | null;
+  tallaGorra: string | null;
+  tallaCamisa: string | null;
+  tallaPantalon: string | null;
+  tallaCalzado: string | null;
+  fichaEvaluacion: unknown;
 };
 
 export type BuildAspirantesCensoXlsxParams = {
   convocatoriaNombre: string;
+  convocatoriaCodigo: string;
   anio: number;
   rows: AspiranteCensoExportRow[];
+  columnIds: string[];
   generatedAt: Date;
 };
 
@@ -31,8 +69,7 @@ const BORDER: Partial<ExcelJS.Borders> = {
 const HEADER_FILL = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF1E293B" } };
 const ZEBRA_A = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF8FAFC" } };
 const ZEBRA_B = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFFFFF" } };
-
-const COL_WIDTHS = [34, 28, 34, 14, 12, 8, 13] as const;
+const SI_FILL = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFD1FAE5" } };
 
 function sexoFill(sexo: string): ExcelJS.Fill {
   if (sexo === "FEMENINO") {
@@ -52,7 +89,24 @@ function formatCarreraConNivel(titulo: string | null, tipoEstudio: string | null
   return nivel ? `${carrera} (${nivel})` : carrera;
 }
 
-/** Approx. wrapped lines for ExcelJS (no native autofit). */
+function dash(value: string | null | undefined): string {
+  const t = value?.trim();
+  return t ? t : "—";
+}
+
+function optionalNumber(value: number | null | undefined): string | number {
+  if (value == null || Number.isNaN(value)) return "—";
+  return value;
+}
+
+function formatContacto(r: AspiranteCensoExportRow): string {
+  const nombre = r.contactoNombre?.trim();
+  const parentesco = r.contactoParentesco?.trim();
+  const tel = r.contactoTelefono?.trim();
+  const parts = [nombre, parentesco, tel].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "—";
+}
+
 function estimateWrappedLines(text: string, colWidth: number): number {
   const charsPerLine = Math.max(8, Math.floor(colWidth * 1.05));
   const parts = text.split(/\r?\n/);
@@ -64,147 +118,181 @@ function estimateWrappedLines(text: string, colWidth: number): number {
   return Math.max(1, lines);
 }
 
-function estimateRowHeight(values: string[], colWidths: readonly number[]): number {
-  let maxLines = 1;
-  values.forEach((v, i) => {
-    const w = colWidths[i] ?? 12;
-    maxLines = Math.max(maxLines, estimateWrappedLines(v, w));
-  });
-  return Math.min(72, Math.max(22, 14 + maxLines * 14));
+function cellValue(
+  col: CensusExportColumn,
+  r: AspiranteCensoExportRow,
+  index: number,
+): string | number {
+  if (isExamExportColumnId(col.id)) {
+    const examenId = examenIdFromExportColumn(col.id);
+    if (!examenId) return "";
+    const ficha = parseFichaEvaluacion(r.fichaEvaluacion);
+    return ficha.examenMedico[examenId]?.si === true ? "SI" : "";
+  }
+
+  switch (col.id) {
+    case "numero":
+      return index + 1;
+    case "nombreCompleto":
+      return `${r.nombres} ${r.apellidos}`.trim();
+    case "nombres":
+      return r.nombres.trim();
+    case "apellidos":
+      return r.apellidos.trim();
+    case "cedula":
+      return r.cedula;
+    case "sexo":
+      return sexoEtiqueta(r.sexo);
+    case "edad":
+      return r.edad;
+    case "nacimiento":
+      return r.fechaNacimiento.toLocaleDateString("es-VE");
+    case "lugarNacimiento":
+      return dash(r.lugarNacimiento);
+    case "unidad":
+      return dash(r.unidadPostulante);
+    case "carrera":
+      return formatCarreraConNivel(r.tituloUniversidad, r.tipoEstudio);
+    case "calificacion":
+      return calificacionAdmisionEtiqueta(r.calificacionAdmision);
+    case "peloton":
+      return dash(r.pelotonLabel);
+    case "telefono":
+      return dash(r.telefono);
+    case "correo":
+      return dash(r.correo);
+    case "direccion":
+      return dash(r.direccion);
+    case "estadoCivil":
+      return dash(labelEstadoCivil(r.estadoCivil) ?? undefined);
+    case "religion":
+      return dash(r.religion);
+    case "deporte":
+      return dash(r.deporte);
+    case "hijos":
+      return r.hijosCantidad;
+    case "contactoEmergencia":
+      return formatContacto(r);
+    case "universidad":
+      return dash(r.nombreUniversidad);
+    case "paisUniversidad":
+      return dash(r.paisUniversidad);
+    case "tipoSangre":
+      return dash(r.tipoSangre);
+    case "estatura":
+      return optionalNumber(r.estaturaCm);
+    case "peso":
+      return optionalNumber(r.pesoKg);
+    case "tension":
+      return dash(r.tensionArterial);
+    case "alergias":
+      return dash(r.alergias);
+    case "condicionesMedicas":
+      return dash(r.condicionesMedicas);
+    case "discapacidad":
+      return dash(r.discapacidad);
+    case "observaciones":
+      return dash(r.observaciones);
+    case "tallaGorra":
+      return dash(r.tallaGorra);
+    case "tallaCamisa":
+      return dash(r.tallaCamisa);
+    case "tallaPantalon":
+      return dash(r.tallaPantalon);
+    case "tallaCalzado":
+      return dash(r.tallaCalzado);
+    default:
+      return "";
+  }
 }
 
 export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCensoXlsxParams): Promise<Buffer> {
-  const { convocatoriaNombre, anio, rows, generatedAt } = params;
+  const { convocatoriaNombre, convocatoriaCodigo, anio, rows, columnIds, generatedAt } = params;
+  const columns = columnIds.map((id) => getCensusExportColumn(id)).filter((c): c is CensusExportColumn => Boolean(c));
+  if (!columns.length) {
+    throw new Error("Seleccione al menos una columna para exportar.");
+  }
 
+  const lastCol = columns.length;
   const wb = new ExcelJS.Workbook();
   wb.creator = "FANB Aspirantes";
   wb.created = generatedAt;
 
   const ws = wb.addWorksheet("Censo", {
-    views: [{ state: "frozen", ySplit: 4, activeCell: "A5", showGridLines: true }],
+    views: [{ state: "frozen", ySplit: 3, xSplit: 0, activeCell: "A4", showGridLines: true }],
     properties: { defaultRowHeight: 22 },
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
   });
 
-  ws.columns = COL_WIDTHS.map((width) => ({ width }));
+  columns.forEach((col, i) => {
+    ws.getColumn(i + 1).width = col.width;
+  });
 
-  ws.mergeCells("A1:G1");
-  const title = ws.getCell("A1");
+  ws.mergeCells(1, 1, 1, lastCol);
+  const title = ws.getCell(1, 1);
   title.value = "CENSO DE ASPIRANTES";
   title.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
   title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
   title.alignment = { vertical: "middle", horizontal: "center" };
-  title.border = BORDER;
+  applyCellBorder(title);
   ws.getRow(1).height = 30;
 
-  ws.mergeCells("A2:G2");
-  const sub = ws.getCell("A2");
-  sub.value = `${convocatoriaNombre}  ·  ${anio}  ·  Total: ${rows.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
+  ws.mergeCells(2, 1, 2, lastCol);
+  const sub = ws.getCell(2, 1);
+  sub.value = `${convocatoriaNombre}  ·  ${convocatoriaCodigo}  ·  ${anio}  ·  Total: ${rows.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
   sub.font = { name: "Calibri", size: 11, color: { argb: "FF334155" } };
   sub.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
   sub.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
   applyCellBorder(sub);
   ws.getRow(2).height = 22;
 
-  ws.mergeCells("A3:G3");
-  const hint = ws.getCell("A3");
-  hint.value =
-    "Sexo con sombreado. La cédula identifica a cada aspirante. Unidad, carrera, sexo y nacimiento corresponden al directorio vigente.";
-  hint.font = { name: "Calibri", size: 9, italic: true, color: { argb: "FF64748B" } };
-  hint.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
-  hint.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  applyCellBorder(hint);
-  ws.getRow(3).height = 18;
-
-  const headers = [
-    "Nombre completo",
-    "Unidad postulante",
-    "Carrera",
-    "Cédula",
-    "Sexo",
-    "Edad",
-    "Nacimiento",
-  ];
-  const headerRow = ws.getRow(4);
-  headerRow.height = 24;
-  headers.forEach((text, i) => {
+  const headerRow = ws.getRow(3);
+  headerRow.height = 28;
+  columns.forEach((col, i) => {
     const cell = headerRow.getCell(i + 1);
-    cell.value = text;
-    cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+    cell.value = col.label;
+    cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = HEADER_FILL;
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
     applyCellBorder(cell);
   });
 
   rows.forEach((r, idx) => {
-    const rowNum = 5 + idx;
-    const row = ws.getRow(rowNum);
+    const row = ws.getRow(4 + idx);
     const zebra = idx % 2 === 0 ? ZEBRA_A : ZEBRA_B;
-    const nombre = `${r.nombres} ${r.apellidos}`.trim();
-    const unidad = (r.unidadPostulante ?? "").trim() || "—";
-    const carrera = formatCarreraConNivel(r.tituloUniversidad, r.tipoEstudio);
-    const nacimiento = r.fechaNacimiento.toLocaleDateString("es-VE");
+    let maxLines = 1;
 
-    row.height = estimateRowHeight([nombre, unidad, carrera, "", "", "", ""], COL_WIDTHS);
-
-    const cells: {
-      value: string | number;
-      align: Partial<ExcelJS.Alignment>;
-      fill?: ExcelJS.Fill;
-      font?: Partial<ExcelJS.Font>;
-    }[] = [
-      {
-        value: nombre,
-        align: { horizontal: "left", vertical: "middle", wrapText: true },
-        fill: zebra,
-        font: { name: "Calibri", size: 11, bold: true, color: { argb: "FF0F172A" } },
-      },
-      {
-        value: unidad,
-        align: { horizontal: "left", vertical: "middle", wrapText: true },
-        fill: zebra,
-        font: { name: "Calibri", size: 11, color: { argb: "FF1E293B" } },
-      },
-      {
-        value: carrera,
-        align: { horizontal: "left", vertical: "middle", wrapText: true },
-        fill: zebra,
-        font: { name: "Calibri", size: 11, color: { argb: "FF1E293B" } },
-      },
-      {
-        value: r.cedula,
-        align: { horizontal: "center", vertical: "middle" },
-        fill: zebra,
-        font: { name: "Consolas", size: 11, color: { argb: "FF0F172A" } },
-      },
-      {
-        value: sexoEtiqueta(r.sexo),
-        align: { horizontal: "center", vertical: "middle" },
-        fill: sexoFill(r.sexo),
-        font: { name: "Calibri", size: 11, color: { argb: "FF1E293B" } },
-      },
-      {
-        value: r.edad,
-        align: { horizontal: "center", vertical: "middle" },
-        fill: zebra,
-        font: { name: "Calibri", size: 11, color: { argb: "FF334155" } },
-      },
-      {
-        value: nacimiento,
-        align: { horizontal: "center", vertical: "middle" },
-        fill: zebra,
-        font: { name: "Calibri", size: 11, color: { argb: "FF334155" } },
-      },
-    ];
-
-    cells.forEach((c, i) => {
+    columns.forEach((col, i) => {
       const cell = row.getCell(i + 1);
-      cell.value = c.value;
-      cell.alignment = c.align;
-      if (c.fill) cell.fill = c.fill;
-      if (c.font) cell.font = { ...cell.font, ...c.font };
+      const value = cellValue(col, r, idx);
+      const examSi = isExamExportColumnId(col.id) && value === "SI";
+      cell.value = value;
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: col.align,
+        wrapText: col.align === "left",
+      };
+      if (col.id === "sexo") {
+        cell.fill = sexoFill(r.sexo);
+      } else if (examSi) {
+        cell.fill = SI_FILL;
+      } else {
+        cell.fill = zebra;
+      }
+      const mono = col.id === "cedula" || col.id === "numero" || col.id === "telefono";
+      cell.font = {
+        name: mono ? "Consolas" : "Calibri",
+        size: 11,
+        bold: col.id === "nombreCompleto" || examSi,
+        color: { argb: examSi ? "FF065F46" : "FF0F172A" },
+      };
       applyCellBorder(cell);
+      if (typeof value === "string" && col.align === "left") {
+        maxLines = Math.max(maxLines, estimateWrappedLines(value, col.width));
+      }
     });
+
+    row.height = Math.min(72, Math.max(22, 14 + maxLines * 14));
   });
 
   const buf = await wb.xlsx.writeBuffer();

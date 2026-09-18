@@ -1,4 +1,4 @@
-export const CENSUS_COLUMN_GROUPS = ["Identidad", "Postulación", "Contacto", "Estudios", "Datos físicos"] as const;
+export const CENSUS_COLUMN_GROUPS = ["Identidad", "Postulación", "Contacto", "Estudios", "Datos físicos", "Tallas"] as const;
 
 export type CensusColumnGroup = (typeof CENSUS_COLUMN_GROUPS)[number];
 
@@ -16,6 +16,8 @@ export type CensusOptionalColumnId =
   | "correo"
   | "direccion"
   | "estadoCivil"
+  | "religion"
+  | "deporte"
   | "hijos"
   | "contactoEmergencia"
   | "universidad"
@@ -23,7 +25,11 @@ export type CensusOptionalColumnId =
   | "tipoSangre"
   | "estatura"
   | "peso"
-  | "tension";
+  | "tension"
+  | "tallaGorra"
+  | "tallaCamisa"
+  | "tallaPantalon"
+  | "tallaCalzado";
 
 export type CensusOptionalColumn = {
   id: CensusOptionalColumnId;
@@ -92,6 +98,22 @@ export const CENSUS_OPTIONAL_COLUMNS: readonly CensusOptionalColumn[] = [
     headClassName: "w-[8rem]",
     minWidthRem: 8,
   },
+  {
+    id: "religion",
+    label: "Religión",
+    group: "Contacto",
+    defaultVisible: false,
+    headClassName: "w-[9rem]",
+    minWidthRem: 9,
+  },
+  {
+    id: "deporte",
+    label: "Deporte",
+    group: "Contacto",
+    defaultVisible: false,
+    headClassName: "w-[10rem]",
+    minWidthRem: 10,
+  },
   { id: "hijos", label: "Hijos", group: "Contacto", defaultVisible: false, headClassName: "w-14", minWidthRem: 3.5 },
   {
     id: "contactoEmergencia",
@@ -135,6 +157,17 @@ export const CENSUS_OPTIONAL_COLUMNS: readonly CensusOptionalColumn[] = [
     headClassName: "w-[7rem]",
     minWidthRem: 7,
   },
+  { id: "tallaGorra", label: "Gorra", group: "Tallas", defaultVisible: false, headClassName: "w-16", minWidthRem: 4 },
+  { id: "tallaCamisa", label: "Camisa", group: "Tallas", defaultVisible: false, headClassName: "w-16", minWidthRem: 4 },
+  {
+    id: "tallaPantalon",
+    label: "Pantalón",
+    group: "Tallas",
+    defaultVisible: false,
+    headClassName: "w-16",
+    minWidthRem: 4,
+  },
+  { id: "tallaCalzado", label: "Calzado", group: "Tallas", defaultVisible: false, headClassName: "w-16", minWidthRem: 4 },
 ];
 
 export const CENSUS_OPTIONAL_COLUMN_IDS = CENSUS_OPTIONAL_COLUMNS.map((c) => c.id);

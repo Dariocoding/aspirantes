@@ -9,14 +9,18 @@ import {
   isDocumentoFotoKind,
   saveAspiranteDocumentoFoto,
 } from "@src/lib/aspirantes/save-documento-foto";
-import { ASPIRANTE_FOTO_FORM, type AspiranteFotoKind } from "@src/lib/storage/aspirante-foto";
+import {
+  ASPIRANTE_FOTO_FORM,
+  isAspiranteFotoKind,
+  type AspiranteFotoKind,
+} from "@src/lib/storage/aspirante-foto";
 import { getObjectBuffer, getPresignedGetUrl } from "@src/lib/storage/s3";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 function parseKind(raw: string | null): AspiranteFotoKind {
-  if (raw && isDocumentoFotoKind(raw)) return raw;
+  if (isAspiranteFotoKind(raw)) return raw;
   return "perfil";
 }
 
@@ -42,6 +46,7 @@ export async function GET(
     where: { id: aspiranteId },
     select: {
       fotoKey: true,
+      fotoEsquelaKey: true,
       fotoCedulaKey: true,
       fotoTituloKey: true,
       fotoTituloAutenticacionKey: true,

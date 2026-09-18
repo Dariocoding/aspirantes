@@ -6,10 +6,11 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { formatDate } from "@src/lib/date";
 import {
-  loadFotoCircularForEsquelaPdf,
+  loadFotoOvalForEsquelaPdf,
   readCumpleanosPlantillaJpeg,
   readLaurelOverlayPng,
 } from "@src/lib/pdf/esquela-cumpleanos-assets";
+import { pickFotoForEsquela } from "@src/lib/storage/aspirante-foto";
 import { EsquelaCumpleanosPdfDocument } from "@src/lib/pdf/esquela-cumpleanos-document";
 import { honoreeDisplayName } from "@src/lib/pdf/esquela-cumpleanos-layout";
 import { EsquelaPdfDocument } from "@src/lib/pdf/esquela-document";
@@ -38,7 +39,9 @@ export async function GET(
   const { id } = await context.params;
   const esquela = await prisma.esquela.findUnique({
     where: { id },
-    include: { aspirante: { select: { nombres: true, apellidos: true, fotoKey: true } } },
+    include: {
+      aspirante: { select: { nombres: true, apellidos: true, fotoKey: true, fotoEsquelaKey: true } },
+    },
   });
 
   if (!esquela) {
@@ -53,7 +56,11 @@ export async function GET(
     if (!plantillaJpeg) {
       return NextResponse.json({ message: "Falta la plantilla de cumpleaños" }, { status: 500 });
     }
-    const fotoPng = await loadFotoCircularForEsquelaPdf(esquela.aspirante?.fotoKey ?? null);
+    const fotoSource = pickFotoForEsquela(
+      esquela.aspirante?.fotoEsquelaKey,
+      esquela.aspirante?.fotoKey,
+    );
+    const fotoPng = await loadFotoOvalForEsquelaPdf(fotoSource?.key ?? null);
     const laurelPng = await readLaurelOverlayPng();
     const nombre = esquela.aspirante
       ? honoreeDisplayName(esquela.aspirante.nombres, esquela.aspirante.apellidos)

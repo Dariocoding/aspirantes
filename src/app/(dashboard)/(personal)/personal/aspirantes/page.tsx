@@ -47,6 +47,7 @@ function toCensusRow(
     nombres: a.nombres,
     apellidos: a.apellidos,
     cedula: a.cedula,
+    fotoEsquelaKey: a.fotoEsquelaKey,
     fotoCedulaKey: a.fotoCedulaKey,
     fotoTituloKey: a.fotoTituloKey,
     fotoTituloAutenticacionKey: a.fotoTituloAutenticacionKey,
@@ -69,6 +70,8 @@ function toCensusRow(
     correo: a.correo,
     direccion: a.direccion,
     estadoCivil: a.estadoCivil,
+    religion: a.religion,
+    deporte: a.deporte,
     hijosCantidad: a.hijosCantidad,
     nombreUniversidad: a.nombreUniversidad,
     paisUniversidad: a.paisUniversidad,
@@ -79,6 +82,10 @@ function toCensusRow(
     estaturaCm: a.datosFisicos?.estaturaCm ?? null,
     pesoKg: a.datosFisicos?.pesoKg ?? null,
     tipoSangre: a.datosFisicos?.tipoSangre ?? null,
+    tallaGorra: a.datosFisicos?.tallaGorra ?? null,
+    tallaCamisa: a.datosFisicos?.tallaCamisa ?? null,
+    tallaPantalon: a.datosFisicos?.tallaPantalon ?? null,
+    tallaCalzado: a.datosFisicos?.tallaCalzado ?? null,
     tensionArterial: a.datosFisicos?.tensionArterial ?? null,
     alergias: a.datosFisicos?.alergias ?? null,
     condicionesMedicas: a.datosFisicos?.condicionesMedicas ?? null,
@@ -263,7 +270,7 @@ export default async function AspirantesPage({
               <CardDescription className="text-xs text-slate-600">
                 Listado paginado e identificación básica.
                 {write
-                  ? " Excel y PDF exportan todos los registros que cumplen los filtros actuales."
+                  ? " Excel permite elegir columnas, exportar e importar por cédula; PDF exporta según los filtros actuales."
                   : " La exportación masiva (Excel/PDF) está reservada a operadores y administradores."}
               </CardDescription>
             </div>

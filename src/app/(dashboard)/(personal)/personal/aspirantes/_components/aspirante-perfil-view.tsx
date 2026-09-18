@@ -42,6 +42,8 @@ export type AspirantePerfilSerializado = {
   correo: string | null;
   hijosCantidad: number;
   estadoCivil: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO" | "UNION_ESTABLE" | null;
+  religion: string | null;
+  deporte: string | null;
   convocatoriaCodigo: string;
   convocatoriaNombre: string;
   convocatoriaAnio: number;
@@ -50,6 +52,10 @@ export type AspirantePerfilSerializado = {
   pesoKg: number | null;
   tensionArterial: string | null;
   tipoSangre: string | null;
+  tallaGorra: string | null;
+  tallaCamisa: string | null;
+  tallaPantalon: string | null;
+  tallaCalzado: string | null;
   alergias: string | null;
   condicionesMedicas: string | null;
   discapacidad: string | null;
@@ -60,6 +66,7 @@ export type AspirantePerfilSerializado = {
   contactoDireccion: string | null;
   fichaEvaluacion: unknown | null;
   fotoKey: string | null;
+  fotoEsquelaKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
   fotoTituloAutenticacionKey?: string | null;
@@ -357,6 +364,20 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
                 nombre={nombreCompleto}
                 size="lg"
               />
+              {a.fotoEsquelaKey ? (
+                <div className="flex flex-col items-center gap-1">
+                  <AspiranteFotoThumbnail
+                    aspiranteId={a.id}
+                    fotoKey={a.fotoEsquelaKey}
+                    nombre={`${nombreCompleto} (esquela)`}
+                    size="lg"
+                    kind="esquela"
+                  />
+                  <span className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">
+                    Esquela
+                  </span>
+                </div>
+              ) : null}
               <div className="min-w-0 space-y-1">
                 <CardTitle className="text-xl font-semibold tracking-tight text-slate-900">{nombreCompleto}</CardTitle>
                 <CardDescription className="text-sm text-slate-600">
@@ -474,6 +495,8 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <Campo label="Teléfono" value={a.telefono} />
               <Campo label="Correo" value={a.correo} />
               <Campo label="Estado civil" value={labelEstadoCivil(a.estadoCivil)} />
+              <Campo label="Religión" value={a.religion} />
+              <Campo label="Deporte" value={a.deporte} />
               <Campo label="Hijos" value={String(a.hijosCantidad)} />
               <div className="sm:col-span-2 lg:col-span-3">
                 <Campo label="Dirección" value={a.direccion} />
@@ -511,6 +534,23 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <Campo label="Peso (kg)" value={a.pesoKg != null ? String(a.pesoKg) : null} />
               <Campo label="Tensión arterial" value={a.tensionArterial} />
               <Campo label="Tipo de sangre" value={a.tipoSangre} />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Tallas</h2>
+            <Separator className="my-3" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Campo label="Gorra" value={a.tallaGorra} />
+              <Campo label="Camisa" value={a.tallaCamisa} />
+              <Campo label="Pantalón" value={a.tallaPantalon} />
+              <Campo label="Calzado" value={a.tallaCalzado} />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="sr-only">Salud (resto)</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Campo label="Alergias" value={a.alergias} />
               <Campo label="Discapacidad" value={a.discapacidad} />
               <div className="sm:col-span-2">

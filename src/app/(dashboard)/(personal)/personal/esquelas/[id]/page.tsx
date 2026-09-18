@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { EsquelaCumpleanosPoster } from "@dashboard/esquelas/_components/esquela-cumpleanos-poster";
 import { EsquelaDetalleToolbar } from "@dashboard/esquelas/_components/esquela-detalle-toolbar";
 import { buttonVariants } from "@src/components/ui/button";
-import { aspiranteFotoUrl } from "@src/lib/storage/aspirante-foto";
+import { aspiranteFotoUrl, pickFotoForEsquela } from "@src/lib/storage/aspirante-foto";
 import { auth } from "@src/auth";
 import { routes } from "@src/lib/apps/routes";
 import { honoreeDisplayName } from "@src/lib/pdf/esquela-cumpleanos-layout";
@@ -31,9 +31,12 @@ export default async function EsquelaDetallePage({
   const nombre = esquela.aspirante
     ? honoreeDisplayName(esquela.aspirante.nombres, esquela.aspirante.apellidos)
     : esquela.titulo;
+  const fotoSource = esCumple
+    ? pickFotoForEsquela(esquela.aspirante?.fotoEsquelaKey, esquela.aspirante?.fotoKey)
+    : null;
   const fotoSrc =
-    esCumple && esquela.aspirante?.fotoKey
-      ? aspiranteFotoUrl(esquela.aspirante.id, "perfil", { cutout: true })
+    fotoSource && esquela.aspirante
+      ? aspiranteFotoUrl(esquela.aspirante.id, fotoSource.kind)
       : null;
   const pdfHref = `/api/esquelas/${id}/pdf`;
 

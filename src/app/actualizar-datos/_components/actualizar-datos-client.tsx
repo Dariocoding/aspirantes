@@ -394,6 +394,51 @@ function EditForm({
                 ))}
               </select>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="religion">Religión</Label>
+              <Input
+                id="religion"
+                name="religion"
+                list="religion-sugerencias"
+                defaultValue={defaults.religion ?? ""}
+                placeholder="Ej.: Católica, evangélica…"
+                autoComplete="off"
+              />
+              <datalist id="religion-sugerencias">
+                <option value="Católica" />
+                <option value="Evangélica" />
+                <option value="Cristiana" />
+                <option value="Adventista" />
+                <option value="Testigo de Jehová" />
+                <option value="Musulmana" />
+                <option value="Judía" />
+                <option value="Ninguna" />
+              </datalist>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="deporte">Deporte</Label>
+              <Input
+                id="deporte"
+                name="deporte"
+                list="deporte-sugerencias"
+                defaultValue={defaults.deporte ?? ""}
+                placeholder="El que practica o le gusta"
+                autoComplete="off"
+              />
+              <p className="text-xs text-slate-500">Deporte que practica o le gusta hacer.</p>
+              <datalist id="deporte-sugerencias">
+                <option value="Fútbol" />
+                <option value="Béisbol" />
+                <option value="Baloncesto" />
+                <option value="Voleibol" />
+                <option value="Natación" />
+                <option value="Atletismo" />
+                <option value="Ciclismo" />
+                <option value="Boxeo" />
+                <option value="Artes marciales" />
+                <option value="Tenis" />
+              </datalist>
+            </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Dirección</Label>
               <Textarea name="direccion" rows={2} defaultValue={defaults.direccion ?? ""} />
@@ -430,6 +475,22 @@ function EditForm({
             <div className="space-y-1.5">
               <Label>Tipo de sangre</Label>
               <Input name="tipoSangre" defaultValue={defaults.tipoSangre ?? ""} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Talla gorra</Label>
+              <Input name="tallaGorra" defaultValue={defaults.tallaGorra ?? ""} placeholder="S, M, L…" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Talla camisa</Label>
+              <Input name="tallaCamisa" defaultValue={defaults.tallaCamisa ?? ""} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Talla pantalón</Label>
+              <Input name="tallaPantalon" defaultValue={defaults.tallaPantalon ?? ""} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Talla calzado</Label>
+              <Input name="tallaCalzado" defaultValue={defaults.tallaCalzado ?? ""} placeholder="42" />
             </div>
             <div className="space-y-1.5">
               <Label>Alergias</Label>

@@ -49,7 +49,8 @@ export function buildAspiranteCensusWhere(
 export function censusOrderBy(
   sort: string | undefined,
 ): Prisma.AspiranteOrderByWithRelationInput | Prisma.AspiranteOrderByWithRelationInput[] {
-  if (sort === "nombres") return { nombres: "asc" };
+  if (sort === "nombres") return [{ nombres: "asc" }, { apellidos: "asc" }];
+  if (sort === "apellidos") return [{ apellidos: "asc" }, { nombres: "asc" }];
   if (sort === "titulo") return { tituloUniversidad: "asc" };
   if (sort === "carrera") {
     // Agrupa por carrera (A-Z) y, dentro de cada una, orden alfabético por nombre.
