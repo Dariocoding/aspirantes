@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
-import { HeartPulse, Images, LifeBuoy, Loader2, Phone, ScanFace, UserRound, UserPlus } from "lucide-react";
+import { GraduationCap, HeartPulse, Images, LifeBuoy, Loader2, Phone, ScanFace, UserRound, UserPlus } from "lucide-react";
 import { createAspirante, updateAspiranteQuick } from "@src/app/actions/aspirantes";
 import { AspiranteFotoField } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { CatalogSelect, catalogOptions } from "@dashboard/aspirantes/_components/catalog-select";
@@ -47,6 +47,11 @@ import {
   parseFactorRh,
   parseTipoSangreGrupo,
 } from "@src/lib/aspirantes/senaletica";
+import {
+  TIPO_ESTUDIO_LABELS,
+  TIPO_ESTUDIO_VALUES,
+  normalizeTipoEstudio,
+} from "@src/lib/aspirantes/tipo-estudio";
 import {
   TALLA_CAMISA_ALMILLA_LABELS,
   TALLA_CAMISA_ALMILLA_VALUES,
@@ -119,10 +124,17 @@ export type AspiranteQuickInitial = {
   fotoTituloKey?: string | null;
   fotoTituloAutenticacionKey?: string | null;
   fotoNotasKey?: string | null;
+  tipoEstudio?: string | null;
+  nombreUniversidad?: string | null;
+  tituloUniversidad?: string | null;
+  paisUniversidad?: string | null;
+  nucleoUniversidad?: string | null;
+  anioIngresoUniversidad?: number | null;
+  anioEgresoUniversidad?: number | null;
 };
 
 type Mode = "create" | "edit";
-type QuickTab = "identidad" | "contacto" | "emergencia" | "rasgos" | "salud" | "archivos";
+type QuickTab = "identidad" | "contacto" | "estudios" | "emergencia" | "rasgos" | "salud" | "archivos";
 
 type DialogProps = {
   open: boolean;
@@ -135,6 +147,7 @@ type DialogProps = {
 const TABS: { id: QuickTab; label: string; icon: typeof UserRound }[] = [
   { id: "identidad", label: "Identidad", icon: UserRound },
   { id: "contacto", label: "Contacto", icon: Phone },
+  { id: "estudios", label: "Estudios", icon: GraduationCap },
   { id: "emergencia", label: "Emergencia", icon: LifeBuoy },
   { id: "rasgos", label: "Rasgos", icon: ScanFace },
   { id: "salud", label: "Médicos", icon: HeartPulse },
@@ -160,6 +173,21 @@ function tabForError(errors: Record<string, string>): QuickTab | null {
   const keys = Object.keys(errors).filter((k) => k !== "_form");
   const fotoKeys = Object.values(ASPIRANTE_FOTO_FORM).map((item) => item.file);
   if (keys.some((k) => fotoKeys.includes(k))) return "archivos";
+  if (
+    keys.some((k) =>
+      [
+        "tipoEstudio",
+        "nombreUniversidad",
+        "tituloUniversidad",
+        "paisUniversidad",
+        "nucleoUniversidad",
+        "anioIngresoUniversidad",
+        "anioEgresoUniversidad",
+      ].includes(k),
+    )
+  ) {
+    return "estudios";
+  }
   if (keys.some((k) => k.startsWith("contacto"))) return "emergencia";
   if (
     keys.some((k) =>
@@ -251,8 +279,8 @@ function AspiranteQuickForm({
         title={isEdit ? "Datos actualizados" : "Aspirante registrado"}
         description={
           isEdit
-            ? "Identidad, contacto, salud y archivos quedaron guardados. Estudios y evaluaciones no se tocaron."
-            : "Ya figura en el censo. Puede completar estudios y evaluaciones después."
+            ? "Identidad, contacto, estudios, salud y archivos quedaron guardados. Las evaluaciones no se tocaron."
+            : "Ya figura en el censo. Puede completar evaluaciones después."
         }
       />
       <form
@@ -268,7 +296,7 @@ function AspiranteQuickForm({
         {isEdit && initial ? <input type="hidden" name="aspiranteId" value={initial.id} /> : null}
 
         <div className="shrink-0 px-4 pt-0 pb-2">
-          <div className="grid grid-cols-3 gap-0.5 rounded-md border border-slate-200 bg-slate-100/80 p-0.5 sm:grid-cols-6">
+          <div className="grid grid-cols-4 gap-0.5 rounded-md border border-slate-200 bg-slate-100/80 p-0.5 sm:grid-cols-7">
             {TABS.map((item) => {
               const Icon = item.icon;
               const active = tab === item.id;
@@ -615,6 +643,110 @@ function AspiranteQuickForm({
             </div>
           </fieldset>
 
+          <fieldset hidden={tab !== "estudios"} className="border-0 p-0">
+            <legend className="sr-only">Estudios</legend>
+            <p className="mb-2.5 text-[11px] text-slate-500">
+              Estudios conducentes a título universitario. Opcional; si completa alguno, indique grado, universidad y título.
+            </p>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label htmlFor="quick-tipo-estudio">Grado educativo</Label>
+                <select
+                  id="quick-tipo-estudio"
+                  name="tipoEstudio"
+                  defaultValue={normalizeTipoEstudio(initial?.tipoEstudio) ?? ""}
+                  className={selectClass}
+                >
+                  <option value="">Sin indicar</option>
+                  {TIPO_ESTUDIO_VALUES.map((v) => (
+                    <option key={v} value={v}>
+                      {TIPO_ESTUDIO_LABELS[v]}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={state.errors.tipoEstudio} />
+              </div>
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label htmlFor="quick-universidad">Universidad</Label>
+                <Input
+                  id="quick-universidad"
+                  name="nombreUniversidad"
+                  defaultValue={initial?.nombreUniversidad ?? ""}
+                  placeholder="Universidad, instituto o centro de estudios"
+                  className="h-8"
+                />
+                <FieldError message={state.errors.nombreUniversidad} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-titulo">Título</Label>
+                <Input
+                  id="quick-titulo"
+                  name="tituloUniversidad"
+                  defaultValue={initial?.tituloUniversidad ?? ""}
+                  placeholder="Ej.: Abogada, Ingeniero"
+                  className="h-8"
+                />
+                <FieldError message={state.errors.tituloUniversidad} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-pais-universidad">País</Label>
+                <Input
+                  id="quick-pais-universidad"
+                  name="paisUniversidad"
+                  defaultValue={initial?.paisUniversidad ?? ""}
+                  placeholder="Ej.: Venezuela"
+                  className="h-8"
+                />
+                <FieldError message={state.errors.paisUniversidad} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-anio-ingreso">Año de ingreso</Label>
+                <Input
+                  id="quick-anio-ingreso"
+                  name="anioIngresoUniversidad"
+                  type="number"
+                  inputMode="numeric"
+                  min={1950}
+                  max={2100}
+                  placeholder="Ej.: 2018"
+                  defaultValue={
+                    initial?.anioIngresoUniversidad != null ? String(initial.anioIngresoUniversidad) : ""
+                  }
+                  className="h-8"
+                />
+                <FieldError message={state.errors.anioIngresoUniversidad} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-anio-egreso">Año de egreso</Label>
+                <Input
+                  id="quick-anio-egreso"
+                  name="anioEgresoUniversidad"
+                  type="number"
+                  inputMode="numeric"
+                  min={1950}
+                  max={2100}
+                  placeholder="Ej.: 2023"
+                  defaultValue={
+                    initial?.anioEgresoUniversidad != null ? String(initial.anioEgresoUniversidad) : ""
+                  }
+                  className="h-8"
+                />
+                <FieldError message={state.errors.anioEgresoUniversidad} />
+              </div>
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <Label htmlFor="quick-nucleo">Núcleo</Label>
+                <Input
+                  id="quick-nucleo"
+                  name="nucleoUniversidad"
+                  defaultValue={initial?.nucleoUniversidad ?? ""}
+                  placeholder="Ej.: Dtto. Capital"
+                  className="h-8"
+                />
+                <FieldError message={state.errors.nucleoUniversidad} />
+              </div>
+            </div>
+          </fieldset>
+
           <fieldset hidden={tab !== "emergencia"} className="border-0 p-0">
             <legend className="sr-only">Contacto de emergencia</legend>
             <p className="mb-2.5 text-[11px] text-slate-500">
@@ -933,7 +1065,7 @@ export function AspiranteQuickDialog({ open, onOpenChange, mode, pelotones, init
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[min(90dvh,760px)] w-[calc(100vw-1.5rem)] max-w-2xl gap-0 overflow-hidden sm:max-w-2xl"
+        className="max-h-[min(90dvh,760px)] w-[calc(100vw-1.5rem)] max-w-2xl gap-0 overflow-hidden sm:max-w-3xl"
         key={isEdit ? initial?.id ?? "edit" : "create"}
       >
         <DialogHeader className="px-4 py-3">
@@ -941,7 +1073,7 @@ export function AspiranteQuickDialog({ open, onOpenChange, mode, pelotones, init
           <DialogDescription>
             {isEdit
               ? "Nombres, apellidos y cédula son obligatorios; el resto es opcional."
-              : "Nombres, apellidos y cédula bastan. Puede añadir contacto de emergencia, médicos y archivos."}
+              : "Nombres, apellidos y cédula bastan. Puede añadir estudios, contacto de emergencia, médicos y archivos."}
           </DialogDescription>
         </DialogHeader>
         {open ? (

@@ -648,6 +648,13 @@ export async function updateAspiranteQuick(
     contactoParentesco: formData.get("contactoParentesco"),
     contactoTelefono: formData.get("contactoTelefono"),
     contactoDireccion: emptyToNull(formData.get("contactoDireccion")),
+    tipoEstudio: emptyToNull(formData.get("tipoEstudio")),
+    nombreUniversidad: emptyToNull(formData.get("nombreUniversidad")),
+    tituloUniversidad: emptyToNull(formData.get("tituloUniversidad")),
+    paisUniversidad: emptyToNull(formData.get("paisUniversidad")),
+    nucleoUniversidad: emptyToNull(formData.get("nucleoUniversidad")),
+    anioIngresoUniversidad: formData.get("anioIngresoUniversidad"),
+    anioEgresoUniversidad: formData.get("anioEgresoUniversidad"),
   });
   if (!parsed.success) {
     return { ok: false, errors: zodFieldErrors(parsed.error) };
@@ -702,6 +709,13 @@ export async function updateAspiranteQuick(
           pelotonId: pelotonResolved.pelotonId,
           ...redesWrite(d),
           ...familiaWrite(d),
+          tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
+          nombreUniversidad: d.nombreUniversidad ?? null,
+          tituloUniversidad: d.tituloUniversidad ?? null,
+          paisUniversidad: d.paisUniversidad ?? null,
+          nucleoUniversidad: d.nucleoUniversidad ?? null,
+          anioIngresoUniversidad: d.anioIngresoUniversidad ?? null,
+          anioEgresoUniversidad: d.anioEgresoUniversidad ?? null,
         },
       });
 

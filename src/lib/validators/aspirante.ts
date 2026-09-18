@@ -340,7 +340,7 @@ export const aspiranteUpdateSchema = aspiranteStaffBaseSchema
   })
   .superRefine(refineStaffFechaNacimiento);
 
-/** Identidad, contacto, emergencia y datos médicos desde el censo. */
+/** Identidad, contacto, estudios, emergencia y datos médicos desde el censo. */
 export const aspiranteQuickUpdateSchema = z
   .object({
     aspiranteId: z.string().trim().min(1, "Identificador de aspirante inválido"),
@@ -385,8 +385,10 @@ export const aspiranteQuickUpdateSchema = z
     contactoParentesco: optionalContactoString(80),
     contactoTelefono: optionalContactoString(40),
     contactoDireccion: z.string().trim().max(500).optional().nullable(),
+    ...estudioFields,
   })
   .superRefine((data, ctx) => {
+    refineEstudioFields(data, ctx);
     if (data.fechaNacimiento != null && hasRealBirthDate(data.fechaNacimiento)) {
       refineEdadDesdeNacimiento(data.fechaNacimiento, ctx);
     }

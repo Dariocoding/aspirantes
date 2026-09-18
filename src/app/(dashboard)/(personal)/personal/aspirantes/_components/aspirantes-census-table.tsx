@@ -80,6 +80,9 @@ export type AspirantesCensusRow = {
   hijosCantidad: number;
   nombreUniversidad: string | null;
   paisUniversidad: string | null;
+  nucleoUniversidad: string | null;
+  anioIngresoUniversidad: number | null;
+  anioEgresoUniversidad: number | null;
   contactoNombre: string | null;
   contactoParentesco: string | null;
   contactoTelefono: string | null;
