@@ -180,7 +180,7 @@ function cellValue(
     case "paisUniversidad":
       return dash(r.paisUniversidad);
     case "tipoSangre":
-      return dash(formatTipoSangreHomologado(r.tipoSangre, r.factorRh));
+      return formatTipoSangreHomologado(r.tipoSangre, r.factorRh) ?? "—";
     case "estatura":
       return optionalNumber(r.estaturaCm);
     case "peso":
@@ -268,7 +268,13 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
       const cell = row.getCell(i + 1);
       const value = cellValue(col, r, idx);
       const examSi = isExamExportColumnId(col.id) && value === "SI";
-      cell.value = value;
+      if (col.id === "tipoSangre") {
+        const text = String(value);
+        cell.numFmt = "@";
+        cell.value = { richText: [{ font: { name: "Calibri", size: 11, bold: true }, text }] };
+      } else {
+        cell.value = value;
+      }
       cell.alignment = {
         vertical: "middle",
         horizontal: col.align,
@@ -282,12 +288,14 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
         cell.fill = zebra;
       }
       const mono = col.id === "cedula" || col.id === "numero" || col.id === "telefono";
-      cell.font = {
-        name: mono ? "Consolas" : "Calibri",
-        size: 11,
-        bold: col.id === "nombreCompleto" || examSi,
-        color: { argb: examSi ? "FF065F46" : "FF0F172A" },
-      };
+      if (col.id !== "tipoSangre") {
+        cell.font = {
+          name: mono ? "Consolas" : "Calibri",
+          size: 11,
+          bold: col.id === "nombreCompleto" || examSi,
+          color: { argb: examSi ? "FF065F46" : "FF0F172A" },
+        };
+      }
       applyCellBorder(cell);
       if (typeof value === "string" && col.align === "left") {
         maxLines = Math.max(maxLines, estimateWrappedLines(value, col.width));

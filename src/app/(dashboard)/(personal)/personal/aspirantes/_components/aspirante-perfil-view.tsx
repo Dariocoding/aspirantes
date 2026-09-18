@@ -610,7 +610,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <Campo label="Estatura (cm)" value={a.estaturaCm != null ? String(a.estaturaCm) : null} />
               <Campo label="Peso (kg)" value={a.pesoKg != null ? String(a.pesoKg) : null} />
               <Campo label="Tensión arterial" value={a.tensionArterial} />
-              <Campo label="Grupo sanguíneo" value={formatTipoSangreHomologado(a.tipoSangre, a.factorRh)} />
+              <Campo label="Tipo de sangre" value={formatTipoSangreHomologado(a.tipoSangre, a.factorRh)} />
             </div>
           </div>
 

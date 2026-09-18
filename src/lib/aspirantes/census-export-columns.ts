@@ -44,7 +44,7 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "contactoEmergencia", label: "Contacto de emergencia", group: "Contacto", width: 28, align: "left" },
   { id: "universidad", label: "Universidad", group: "Estudios", width: 24, align: "left" },
   { id: "paisUniversidad", label: "País de estudio", group: "Estudios", width: 16, align: "left" },
-  { id: "tipoSangre", label: "Grupo sanguíneo", group: "Datos físicos", width: 14, align: "center" },
+  { id: "tipoSangre", label: "Tipo de sangre", group: "Datos físicos", width: 12, align: "center" },
   { id: "estatura", label: "Estatura (cm)", group: "Datos físicos", width: 12, align: "center" },
   { id: "peso", label: "Peso (kg)", group: "Datos físicos", width: 12, align: "center" },
   { id: "tension", label: "Tensión arterial", group: "Datos físicos", width: 14, align: "center" },

@@ -169,7 +169,7 @@ function isBlankSangre(raw: string | null | undefined): boolean {
 }
 
 export function parseTipoSangreGrupo(raw: string | null | undefined): TipoSangreGrupoValue | null {
-  if (isBlankSangre(raw)) return null;
+  if (raw == null || isBlankSangre(raw)) return null;
   const n = compactTipoSangreToken(raw);
   if (!n) return null;
   if (n.includes("AB")) return "AB";
@@ -180,7 +180,7 @@ export function parseTipoSangreGrupo(raw: string | null | undefined): TipoSangre
 }
 
 export function parseFactorRh(raw: string | null | undefined): FactorRhValue | null {
-  if (isBlankSangre(raw)) return null;
+  if (raw == null || isBlankSangre(raw)) return null;
   const folded = raw.trim().toUpperCase();
   if (isFactorRh(folded)) return folded;
   const n = compactTipoSangreToken(raw);

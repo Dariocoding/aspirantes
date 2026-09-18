@@ -3,7 +3,7 @@ import { authConfig } from "@src/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-export { auth as middleware };
+export { auth as proxy };
 
 export const config = {
   matcher: [
