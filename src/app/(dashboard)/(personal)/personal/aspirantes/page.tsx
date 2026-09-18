@@ -17,6 +17,7 @@ import {
   isCensusCarreraGroupSort,
   isCensusGradoGroupSort,
   isCensusNacimientoMesSort,
+  isCensusReligionGroupSort,
   nacimientoMesGroupKey,
   sortAspirantesByGradoEducativo,
   sortAspirantesByNacimientoMes,
@@ -174,9 +175,10 @@ export default async function AspirantesPage({
   const groupByCarrera = isCensusCarreraGroupSort(sp.sort);
   const groupByNacimientoMes = isCensusNacimientoMesSort(sp.sort);
   const groupByGrado = isCensusGradoGroupSort(sp.sort);
+  const groupByReligion = isCensusReligionGroupSort(sp.sort);
   const sortInMemory = groupByNacimientoMes || groupByGrado;
 
-  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, pelotones] =
+  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones] =
     await Promise.all([
     sortInMemory
       ? Promise.resolve(0)
@@ -209,6 +211,13 @@ export default async function AspirantesPage({
           _count: { _all: true },
         })
       : Promise.resolve([] as { tituloUniversidad: string | null; _count: { _all: number } }[]),
+    groupByReligion
+      ? prisma.aspirante.groupBy({
+          by: ["religion"],
+          where,
+          _count: { _all: true },
+        })
+      : Promise.resolve([] as { religion: string | null; _count: { _all: number } }[]),
     prisma.peloton.findMany({
       where: { convocatoriaId: convocatoriaFiltroId },
       orderBy: { numero: "asc" },
@@ -228,6 +237,9 @@ export default async function AspirantesPage({
 
   const countByCarrera = new Map(
     carreraGrupos.map((g) => [g.tituloUniversidad ?? "", g._count._all]),
+  );
+  const countByReligion = new Map(
+    religionGrupos.map((g) => [g.religion ?? "", g._count._all]),
   );
 
   const countByNacimientoMes = new Map<number, number>();
@@ -251,7 +263,9 @@ export default async function AspirantesPage({
     groupByCarrera,
     groupByNacimientoMes,
     groupByGrado,
+    groupByReligion,
     countByCarrera: Object.fromEntries(countByCarrera),
+    countByReligion: Object.fromEntries(countByReligion),
     countByNacimientoMes: Object.fromEntries(
       [...countByNacimientoMes.entries()].map(([k, v]) => [String(k), v]),
     ),

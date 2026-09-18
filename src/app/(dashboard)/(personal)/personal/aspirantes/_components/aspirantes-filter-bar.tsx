@@ -17,6 +17,7 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  Church,
   Clock3,
   GraduationCap,
   Hash,
@@ -75,6 +76,7 @@ const SORT_LABEL: Record<string, string> = {
   "nacimiento-mes": "Mes de nacimiento",
   carrera: "Por carrera",
   grado: "Por grado",
+  religion: "Por religión",
 };
 
 const SORT_OPTIONS = [
@@ -90,6 +92,7 @@ const GROUP_OPTIONS = [
   { value: "carrera", key: "carrera", label: "Carrera", hint: "Agrupa por título universitario", icon: Hash },
   { value: "grado", key: "grado", label: "Grado", hint: "Nivel educativo", icon: Layers },
   { value: "nacimiento-mes", key: "nacimiento-mes", label: "Mes", hint: "Ene → Dic", icon: CalendarDays },
+  { value: "religion", key: "religion", label: "Religión", hint: "Agrupa por credo", icon: Church },
 ] as const;
 
 const ACTIVE_SORTS = new Set([
@@ -100,6 +103,7 @@ const ACTIVE_SORTS = new Set([
   "grado",
   "nacimiento",
   "nacimiento-mes",
+  "religion",
   "reciente",
 ]);
 

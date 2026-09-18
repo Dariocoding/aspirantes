@@ -131,9 +131,11 @@ export type AspirantesCensusGrouping = {
   groupByCarrera: boolean;
   groupByNacimientoMes: boolean;
   groupByGrado: boolean;
+  groupByReligion: boolean;
   countByCarrera: Record<string, number>;
   countByNacimientoMes: Record<string, number>;
   countByGrado: Record<string, number>;
+  countByReligion: Record<string, number>;
 };
 
 type Props = {
@@ -539,6 +541,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
                 let prevCarreraKey: string | null = null;
                 let prevNacimientoMesKey: number | null = null;
                 let prevGradoKey: number | null = null;
+                let prevReligionKey: string | null = null;
 
                     for (const aRaw of rows) {
                       const a = {
@@ -549,6 +552,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
                   const carreraKey = a.tituloUniversidad ?? "";
                   const nacimientoMesKey = nacimientoMesGroupKey(birthDate(a.fechaNacimientoIso));
                   const gradoKey = gradoEducativoGroupKey(a.tipoEstudio);
+                  const religionKey = a.religion ?? "";
 
                   if (grouping.groupByCarrera && carreraKey !== prevCarreraKey) {
                     prevCarreraKey = carreraKey;
@@ -579,6 +583,24 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
                         <TableCell colSpan={colSpan} className="px-3 py-2 text-sm font-semibold text-slate-800">
                           <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                             <span>{gradoEducativoGroupLabel(gradoKey)}</span>
+                            <span className="text-xs font-medium tabular-nums text-slate-500">({grupoCount})</span>
+                          </span>
+                        </TableCell>
+                      </TableRow>,
+                    );
+                  }
+
+                  if (grouping.groupByReligion && religionKey !== prevReligionKey) {
+                    prevReligionKey = religionKey;
+                    const grupoCount = grouping.countByReligion[religionKey] ?? 0;
+                    bodyRows.push(
+                      <TableRow
+                        key={`grupo-religion-${religionKey || "_sin"}`}
+                        className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
+                      >
+                        <TableCell colSpan={colSpan} className="px-3 py-2 text-sm font-semibold text-slate-800">
+                          <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <span>{religionKey.trim() || "Sin religión"}</span>
                             <span className="text-xs font-medium tabular-nums text-slate-500">({grupoCount})</span>
                           </span>
                         </TableCell>

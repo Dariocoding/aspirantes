@@ -56,6 +56,9 @@ export function censusOrderBy(
     // Agrupa por carrera (A-Z) y, dentro de cada una, orden alfabético por nombre.
     return [{ tituloUniversidad: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
   }
+  if (sort === "religion") {
+    return [{ religion: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
+  }
   if (sort === "reciente") return { createdAt: "desc" };
   if (sort === "nacimiento") return { fechaNacimiento: "asc" };
   // `nacimiento-mes` se ordena en memoria por mes/día (ver sortAspirantesByNacimientoMes).
@@ -66,6 +69,10 @@ export function censusOrderBy(
 
 export function isCensusCarreraGroupSort(sort: string | undefined) {
   return sort === "carrera";
+}
+
+export function isCensusReligionGroupSort(sort: string | undefined) {
+  return sort === "religion";
 }
 
 /** Orden por mes del calendario (ene→dic), no por año. */
