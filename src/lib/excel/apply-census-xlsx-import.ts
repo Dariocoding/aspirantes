@@ -286,7 +286,7 @@ export async function applyCensusXlsxImport(
           continue;
         }
         if (hasColumn(ids, "estatura") && blankToNull(v.estatura) && homologarEstaturaCm(blankToNull(v.estatura)) == null) {
-          errors.push({ excelRow: row.excelRow, cedula: row.cedula, message: "Estatura inválida. Use centímetros (p. ej. 175) o metros (p. ej. 1,75)." });
+          errors.push({ excelRow: row.excelRow, cedula: row.cedula, message: "Estatura inválida. Use metros (p. ej. 1,75)." });
           continue;
         }
         if (

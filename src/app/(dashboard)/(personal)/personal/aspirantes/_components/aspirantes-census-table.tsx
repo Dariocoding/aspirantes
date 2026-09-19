@@ -40,7 +40,7 @@ import {
 } from "@src/lib/aspirantes/census";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
-import { formatEstaturaCm } from "@src/lib/aspirantes/medidas";
+import { formatEstaturaM } from "@src/lib/aspirantes/medidas";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
 import { ASPIRANTE_DOCUMENTO_KINDS } from "@src/lib/storage/aspirante-foto";
@@ -308,8 +308,8 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
       return label ? <span className="font-semibold tabular-nums text-slate-800">{label}</span> : <EmptyDash />;
     }
     case "estatura": {
-      const cm = formatEstaturaCm(a.estaturaCm);
-      return cm ? <span className="tabular-nums text-slate-700">{cm} cm</span> : <EmptyDash />;
+      const metros = formatEstaturaM(a.estaturaCm);
+      return metros ? <span className="tabular-nums text-slate-700">{metros} m</span> : <EmptyDash />;
     }
     case "peso":
       return a.pesoKg != null ? <span className="tabular-nums text-slate-700">{a.pesoKg} kg</span> : <EmptyDash />;

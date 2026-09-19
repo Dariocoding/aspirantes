@@ -20,6 +20,7 @@ import type { AspiranteSelfServiceRecord, AspiranteSelfServiceState } from "@src
 import { aspiranteSelfServiceInitialState } from "@src/lib/action-types";
 import { ESTADO_CIVIL_LABELS, ESTADO_CIVIL_VALUES } from "@src/lib/aspirantes/estado-civil";
 import { TIPO_ESTUDIO_LABELS, TIPO_ESTUDIO_VALUES } from "@src/lib/aspirantes/tipo-estudio";
+import { estaturaInputValue } from "@src/lib/aspirantes/medidas";
 import { FANB_INSTITUTION_PANEL } from "@src/lib/branding";
 import { cn } from "@src/lib/utils";
 import { CheckCircle2, IdCard, Loader2, Save, Search } from "lucide-react";
@@ -452,12 +453,13 @@ function EditForm({
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Estatura (cm)</Label>
+              <Label>Estatura (m)</Label>
               <Input
                 name="estaturaCm"
                 type="number"
-                step="0.1"
-                defaultValue={defaults.estaturaCm ?? ""}
+                step="0.01"
+                placeholder="1.70"
+                defaultValue={estaturaInputValue(defaults.estaturaCm)}
               />
             </div>
             <div className="space-y-1.5">

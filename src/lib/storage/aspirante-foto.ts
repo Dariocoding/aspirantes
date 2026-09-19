@@ -85,6 +85,9 @@ export function formatHelpForKind(kind: AspiranteFotoKind): string {
   if (kind === "notas") {
     return "JPEG, PNG o PDF. Varias imágenes se unen en un PDF; una sola se queda como imagen.";
   }
+  if (kind === "esquela") {
+    return "JPEG, PNG, WebP o GIF. Se guarda tal cual, sin comprimir ni convertir.";
+  }
   return "JPEG, PNG, WebP o GIF.";
 }
 

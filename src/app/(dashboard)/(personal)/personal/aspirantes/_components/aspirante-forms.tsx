@@ -32,6 +32,7 @@ import {
   parseTipoSangreGrupo,
   composeRedSocial,
 } from "@src/lib/aspirantes/senaletica";
+import { estaturaInputValue } from "@src/lib/aspirantes/medidas";
 import {
   TALLA_CAMISA_ALMILLA_LABELS,
   TALLA_CAMISA_ALMILLA_VALUES,
@@ -372,7 +373,7 @@ export function AspiranteRegistroForm({
       telefono: seed?.telefono ?? "",
       correo: seed?.correo ?? "",
       direccion: seed?.direccion ?? "",
-      estaturaCm: seed?.estaturaCm != null ? String(seed.estaturaCm) : "",
+      estaturaCm: estaturaInputValue(seed?.estaturaCm),
       pesoKg: seed?.pesoKg != null ? String(seed.pesoKg) : "",
       tensionArterial: seed?.tensionArterial ?? "",
       tipoSangre: seed?.tipoSangre ?? "",
@@ -1150,12 +1151,13 @@ export function AspiranteRegistroForm({
               options={catalogOptions(SENA_PARTICULAR_VALUES, SENA_PARTICULAR_LABELS)}
             />
             <div>
-              <Label>Estatura (cm)</Label>
+              <Label>Estatura (m)</Label>
               <Input
                 name="estaturaCm"
                 type="number"
                 step="0.01"
-                defaultValue={defaults.estaturaCm}
+                placeholder="1.70"
+                defaultValue={estaturaInputValue(defaults.estaturaCm)}
               />
             </div>
             <div>

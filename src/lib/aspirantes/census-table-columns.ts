@@ -147,7 +147,7 @@ export const CENSUS_OPTIONAL_COLUMNS: readonly CensusOptionalColumn[] = [
     headClassName: "w-[7rem]",
     minWidthRem: 7,
   },
-  { id: "estatura", label: "Estatura", group: "Datos físicos", defaultVisible: false, headClassName: "w-[6rem]", minWidthRem: 6 },
+  { id: "estatura", label: "Estatura (m)", group: "Datos físicos", defaultVisible: false, headClassName: "w-[6rem]", minWidthRem: 6 },
   { id: "peso", label: "Peso", group: "Datos físicos", defaultVisible: false, headClassName: "w-[6rem]", minWidthRem: 6 },
   {
     id: "tension",

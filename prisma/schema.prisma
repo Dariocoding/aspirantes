@@ -422,6 +422,7 @@ model ContactoEmergencia {
 
 model DatosFisicosMedicos {
   id                String   @id @default(cuid())
+  /// Estatura en metros (el nombre del campo es histórico).
   estaturaCm        Float?
   pesoKg            Float?
   /** Tensión arterial, p. ej. "120/80". */

@@ -14,9 +14,8 @@ type Preset = {
 };
 
 /** Perfil más liviano; documentos más nítidos (cédula, título, autenticación, notas). */
-const PRESET: Record<AspiranteFotoKind, Preset> = {
+const PRESET: Record<Exclude<AspiranteFotoKind, "esquela">, Preset> = {
   perfil: { maxEdge: 1400, quality: 0.84, prefer: "image/webp" },
-  esquela: { maxEdge: 1600, quality: 0.86, prefer: "image/webp" },
   cedula: { maxEdge: 2000, quality: 0.86, prefer: "image/webp" },
   titulo: { maxEdge: 2400, quality: 0.88, prefer: "image/jpeg" },
   tituloAuth: { maxEdge: 2400, quality: 0.88, prefer: "image/jpeg" },
@@ -97,6 +96,8 @@ async function encodeCandidate(
  * No toca GIF. WebP solo si el tipo de documento lo admite en servidor.
  */
 export async function compressAspiranteImage(file: File, kind: AspiranteFotoKind): Promise<File> {
+  // La foto ceremonial se usa tal cual en el afiche; no reescalar ni pasar a WebP.
+  if (kind === "esquela") return file;
   if (!isCompressibleImage(file) || typeof createImageBitmap !== "function") return file;
 
   const preset = PRESET[kind];
@@ -172,6 +173,7 @@ async function encodeImageAsJpegBytes(file: File, maxEdge: number, quality: numb
 
 /** Imagen o PDF (hoja por hoja). Si no hay ganancia, deja el original. */
 export async function compressAspiranteUpload(file: File, kind: AspiranteFotoKind): Promise<File> {
+  if (kind === "esquela") return file;
   if (fileLooksPdf(file)) {
     const { compressAspirantePdf } = await import("@src/lib/storage/compress-pdf-client");
     return compressAspirantePdf(file, kind);

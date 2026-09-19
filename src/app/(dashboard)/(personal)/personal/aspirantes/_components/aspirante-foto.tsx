@@ -179,7 +179,7 @@ const KIND_COPY: Record<
   },
   esquela: {
     title: "Foto de esquela",
-    help: `Opcional. Se usa en la esquela de cumpleaños; si no hay, se usa la foto de carnet. ${formatHelpForKind("esquela")}`,
+    help: `Opcional. Se usa en la esquela de cumpleaños tal cual (sin comprimir). Si no hay, se usa la foto de carnet. ${formatHelpForKind("esquela")}`,
     aria: "foto de esquela",
   },
   cedula: {

@@ -1,30 +1,51 @@
-/** Estatura adulta razonable en centímetros (FANB / censo). */
-export const ESTATURA_CM_MIN = 100;
-export const ESTATURA_CM_MAX = 250;
+/** Estatura adulta razonable en metros. */
+export const ESTATURA_M_MIN = 1;
+export const ESTATURA_M_MAX = 2.5;
+
+/** @deprecated Use ESTATURA_M_MIN */
+export const ESTATURA_CM_MIN = ESTATURA_M_MIN;
+/** @deprecated Use ESTATURA_M_MAX */
+export const ESTATURA_CM_MAX = ESTATURA_M_MAX;
+
+function roundMeters(m: number): number {
+  return Math.round(m * 100) / 100;
+}
 
 /**
- * Homologa estatura a centímetros.
- * Acepta 180, 1.80, 1,6, "1,65 m", "165cm".
- * Metros (~1.2–2.5) → ×100. Dos dígitos (p. ej. 66) = 1 m + cm → 166.
+ * Homologa estatura a metros (1,80).
+ * Acepta 1,6 / 1.80 / 180 cm / 66 (1 m 66).
  */
-export function homologarEstaturaCm(raw: unknown): number | null {
+export function homologarEstaturaM(raw: unknown): number | null {
   if (raw == null || raw === "") return null;
   if (typeof raw === "number" && !Number.isFinite(raw)) return null;
   const t = String(raw).trim().toLowerCase();
   if (!t) return null;
-  const hasMeterUnit = /(?:^|[^a-z])m(?:etros?)?(?:$|[^a-z])/i.test(t) && !/\bcm\b/.test(t);
   const n = Number(t.replace(",", ".").replace(/[^\d.]/g, ""));
   if (!Number.isFinite(n) || n <= 0) return null;
 
-  let cm = n;
-  if (hasMeterUnit || n < 3) cm = n * 100;
-  else if (n >= 50 && n < 100) cm = 100 + n;
-  cm = Math.round(cm);
-  if (cm < ESTATURA_CM_MIN || cm > ESTATURA_CM_MAX) return null;
-  return cm;
+  let meters = n;
+  if (n >= 50 && n < 100) meters = (100 + n) / 100;
+  else if (n >= 100 && n <= 250) meters = n / 100;
+  else if (n >= ESTATURA_M_MIN && n <= ESTATURA_M_MAX) meters = n;
+  else return null;
+
+  meters = roundMeters(meters);
+  if (meters < ESTATURA_M_MIN || meters > ESTATURA_M_MAX) return null;
+  return meters;
 }
 
-export function formatEstaturaCm(raw: unknown): string | null {
-  const cm = homologarEstaturaCm(raw);
-  return cm == null ? null : String(cm);
+/** Alias: el campo Prisma sigue llamándose `estaturaCm`, pero el valor es en metros. */
+export const homologarEstaturaCm = homologarEstaturaM;
+
+export function formatEstaturaM(raw: unknown): string | null {
+  const m = homologarEstaturaM(raw);
+  if (m == null) return null;
+  return m.toFixed(2).replace(".", ",");
+}
+
+export const formatEstaturaCm = formatEstaturaM;
+
+export function estaturaInputValue(raw: unknown): string {
+  const m = homologarEstaturaM(raw);
+  return m == null ? "" : m.toFixed(2);
 }

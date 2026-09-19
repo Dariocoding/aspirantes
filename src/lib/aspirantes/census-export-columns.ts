@@ -45,7 +45,7 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "universidad", label: "Universidad", group: "Estudios", width: 24, align: "left" },
   { id: "paisUniversidad", label: "País de estudio", group: "Estudios", width: 16, align: "left" },
   { id: "tipoSangre", label: "Tipo de sangre", group: "Datos físicos", width: 12, align: "center" },
-  { id: "estatura", label: "Estatura (cm)", group: "Datos físicos", width: 12, align: "center" },
+  { id: "estatura", label: "Estatura (m)", group: "Datos físicos", width: 12, align: "center" },
   { id: "peso", label: "Peso (kg)", group: "Datos físicos", width: 12, align: "center" },
   { id: "tension", label: "Tensión arterial", group: "Datos físicos", width: 14, align: "center" },
   { id: "alergias", label: "Alergias", group: "Datos físicos", width: 22, align: "left" },
@@ -114,6 +114,10 @@ HEADER_TO_COLUMN_ID.set("ceduladeidentidad", "cedula");
 HEADER_TO_COLUMN_ID.set("nombre", "nombreCompleto");
 HEADER_TO_COLUMN_ID.set("nombresyapellidos", "nombreCompleto");
 HEADER_TO_COLUMN_ID.set("estatura", "estatura");
+HEADER_TO_COLUMN_ID.set("estaturacm", "estatura");
+HEADER_TO_COLUMN_ID.set("estaturam", "estatura");
+HEADER_TO_COLUMN_ID.set("estaturaenmetros", "estatura");
+HEADER_TO_COLUMN_ID.set("estaturaencentimetros", "estatura");
 HEADER_TO_COLUMN_ID.set("peso", "peso");
 HEADER_TO_COLUMN_ID.set("tensionarterial", "tension");
 HEADER_TO_COLUMN_ID.set("gorra", "tallaGorra");

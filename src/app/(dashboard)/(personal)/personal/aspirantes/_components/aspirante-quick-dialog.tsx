@@ -47,6 +47,7 @@ import {
   parseFactorRh,
   parseTipoSangreGrupo,
 } from "@src/lib/aspirantes/senaletica";
+import { estaturaInputValue } from "@src/lib/aspirantes/medidas";
 import {
   TIPO_ESTUDIO_LABELS,
   TIPO_ESTUDIO_VALUES,
@@ -834,13 +835,14 @@ function AspiranteQuickForm({
             <legend className="sr-only">Datos médicos</legend>
             <div className="grid gap-2.5 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="quick-estatura">Estatura (cm)</Label>
+                <Label htmlFor="quick-estatura">Estatura (m)</Label>
                 <Input
                   id="quick-estatura"
                   name="estaturaCm"
                   type="number"
                   step="0.01"
-                  defaultValue={initial?.estaturaCm != null ? String(initial.estaturaCm) : ""}
+                  placeholder="1.70"
+                  defaultValue={estaturaInputValue(initial?.estaturaCm)}
                   className="h-8"
                 />
               </div>

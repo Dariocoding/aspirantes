@@ -59,8 +59,8 @@ export async function GET(
     return NextResponse.json({ message: "Sin imagen" }, { status: 404 });
   }
 
-  const cutout = search.get("cutout") === "1";
-  const oval = search.get("oval") === "1";
+  const cutout = kind !== "esquela" && search.get("cutout") === "1";
+  const oval = kind !== "esquela" && search.get("oval") === "1";
   if (cutout || oval || proxy) {
     const { body, contentType } = await getObjectBuffer(key);
     if (cutout || oval) {

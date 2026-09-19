@@ -280,6 +280,9 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
         const text = String(value);
         cell.numFmt = "@";
         cell.value = { richText: [{ font: { name: "Calibri", size: 11, bold: true }, text }] };
+      } else if (col.id === "estatura" && typeof value === "number") {
+        cell.numFmt = "0.00";
+        cell.value = value;
       } else {
         cell.value = value;
       }

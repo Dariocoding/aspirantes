@@ -1,5 +1,5 @@
 /**
- * Homologa estaturaCm a centímetros (1,6 / 1.80 → 160 / 180).
+ * Homologa estaturaCm a metros (180 / 1,6 → 1.80 / 1.60).
  * Ejecutar: .\node_modules\.bin\tsx.CMD prisma/normalize-estatura.ts
  */
 import { readFileSync } from "node:fs";
@@ -68,7 +68,7 @@ async function main() {
       skipped += 1;
       continue;
     }
-    if (next === r.estaturaCm) {
+    if (Math.abs(next - r.estaturaCm) < 0.0005) {
       skipped += 1;
       continue;
     }

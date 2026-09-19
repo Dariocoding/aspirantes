@@ -18,7 +18,7 @@ import {
   parsePadresVenezolanos,
 } from "@src/lib/aspirantes/tallas-familia";
 import { TIPO_ESTUDIO_ALL_VALUES } from "@src/lib/aspirantes/tipo-estudio";
-import { ESTATURA_CM_MAX, ESTATURA_CM_MIN, homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
+import { ESTATURA_M_MAX, ESTATURA_M_MIN, homologarEstaturaM } from "@src/lib/aspirantes/medidas";
 import {
   ageFromBirthDate,
   FECHA_NACIMIENTO_PENDIENTE,
@@ -59,8 +59,8 @@ function optionalFloat(max: number) {
 function optionalEstaturaCm() {
   return z.preprocess((val) => {
     if (val === "" || val === null || val === undefined) return undefined;
-    return homologarEstaturaCm(val) ?? undefined;
-  }, z.number().min(ESTATURA_CM_MIN).max(ESTATURA_CM_MAX).optional());
+    return homologarEstaturaM(val) ?? undefined;
+  }, z.number().min(ESTATURA_M_MIN).max(ESTATURA_M_MAX).optional());
 }
 
 function optionalYear() {

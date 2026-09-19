@@ -6,7 +6,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { formatDate } from "@src/lib/date";
 import {
-  loadFotoOvalForEsquelaPdf,
+  loadFotoForCumpleanosPdf,
   readCumpleanosPlantillaJpeg,
   readLaurelOverlayPng,
 } from "@src/lib/pdf/esquela-cumpleanos-assets";
@@ -60,7 +60,7 @@ export async function GET(
       esquela.aspirante?.fotoEsquelaKey,
       esquela.aspirante?.fotoKey,
     );
-    const fotoPng = await loadFotoOvalForEsquelaPdf(fotoSource?.key ?? null);
+    const foto = await loadFotoForCumpleanosPdf(fotoSource?.key ?? null, fotoSource?.kind);
     const laurelPng = await readLaurelOverlayPng();
     const nombre = esquela.aspirante
       ? honoreeDisplayName(esquela.aspirante.nombres, esquela.aspirante.apellidos)
@@ -68,7 +68,7 @@ export async function GET(
     const doc = createElement(EsquelaCumpleanosPdfDocument, {
       nombre,
       plantillaJpeg,
-      fotoPng,
+      foto,
       laurelPng,
     });
     buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);

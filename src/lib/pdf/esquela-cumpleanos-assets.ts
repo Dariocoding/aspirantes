@@ -187,11 +187,42 @@ export async function toHonoreeCutoutPng(buffer: Buffer): Promise<Buffer> {
   return fitHonoreePng(geminiPng ?? buffer, !geminiPng);
 }
 
+export type EsquelaPdfFoto = { data: Buffer; format: "jpg" | "png" };
+
+/** JPEG/PNG tal cual; WebP/GIF a PNG solo para que react-pdf pueda incrustarlos. */
+async function toPdfSafeFoto(buffer: Buffer): Promise<EsquelaPdfFoto> {
+  const format = (await sharp(buffer).metadata()).format;
+  if (format === "jpeg") {
+    return { data: Buffer.from(buffer), format: "jpg" };
+  }
+  if (format === "png") {
+    return { data: Buffer.from(buffer), format: "png" };
+  }
+  const png = await sharp(buffer).ensureAlpha().png().toBuffer();
+  return { data: png, format: "png" };
+}
+
 export async function loadFotoOvalForEsquelaPdf(fotoKey: string | null): Promise<Buffer | null> {
   if (!fotoKey) return null;
   try {
     const { body } = await getObjectBuffer(fotoKey);
     return await toHonoreeOvalPng(body);
+  } catch {
+    return null;
+  }
+}
+
+/** Foto ceremonial: sin óvalo, recorte ni reescalado. La de carnet sí se encaja. */
+export async function loadFotoForCumpleanosPdf(
+  fotoKey: string | null,
+  kind: "esquela" | "perfil" | undefined,
+): Promise<EsquelaPdfFoto | null> {
+  if (!fotoKey) return null;
+  try {
+    const { body } = await getObjectBuffer(fotoKey);
+    if (kind === "esquela") return await toPdfSafeFoto(body);
+    const png = await toHonoreeOvalPng(body);
+    return { data: png, format: "png" };
   } catch {
     return null;
   }

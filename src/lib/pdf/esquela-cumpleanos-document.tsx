@@ -150,25 +150,27 @@ function HonoreeName({ nombre }: { nombre: string }) {
 export type EsquelaCumpleanosPdfProps = {
   nombre: string;
   plantillaJpeg: Buffer;
-  fotoPng: Buffer | null;
+  foto: { data: Buffer; format: "jpg" | "png" } | null;
   laurelPng: Buffer | null;
 };
 
 export function EsquelaCumpleanosPdfDocument({
   nombre,
   plantillaJpeg,
-  fotoPng,
+  foto,
   laurelPng,
 }: EsquelaCumpleanosPdfProps) {
+  const fotoSrc =
+    foto?.format === "jpg" ? jpegSrc(foto.data) : foto ? pngSrc(foto.data) : null;
   return (
     <Document>
       <Page size={{ width: CUMPLEANOS_PAGE_W, height: CUMPLEANOS_PAGE_H }} style={styles.page} wrap={false}>
         <View style={styles.canvas}>
           {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image */}
           <Image src={jpegSrc(plantillaJpeg)} style={styles.bg} />
-          {fotoPng ? (
+          {fotoSrc ? (
             // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
-            <Image src={pngSrc(fotoPng)} style={styles.photo} />
+            <Image src={fotoSrc} style={styles.photo} />
           ) : null}
           {laurelPng ? (
             // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
