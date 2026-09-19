@@ -186,6 +186,7 @@ export async function GET(request: Request) {
       tallaCamisa: a.datosFisicos?.tallaCamisa ?? null,
       tallaPantalon: a.datosFisicos?.tallaPantalon ?? null,
       tallaCalzado: a.datosFisicos?.tallaCalzado ?? null,
+      tallaUniformePatriota: a.datosFisicos?.tallaUniformePatriota ?? null,
       fichaEvaluacion: a.fichaEvaluacion,
     };
   });

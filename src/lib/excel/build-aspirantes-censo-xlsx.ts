@@ -10,6 +10,7 @@ import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
+import { TALLA_UNIFORME_PATRIOTA_LABELS, isTallaUniformePatriota } from "@src/lib/aspirantes/tallas-familia";
 
 export type AspiranteCensoExportRow = {
   nombres: string;
@@ -49,6 +50,7 @@ export type AspiranteCensoExportRow = {
   tallaCamisa: string | null;
   tallaPantalon: string | null;
   tallaCalzado: string | null;
+  tallaUniformePatriota: string | null;
   fichaEvaluacion: unknown;
 };
 
@@ -203,6 +205,12 @@ function cellValue(
       return dash(r.tallaPantalon);
     case "tallaCalzado":
       return dash(r.tallaCalzado);
+    case "tallaUniformePatriota":
+      return dash(
+        isTallaUniformePatriota(r.tallaUniformePatriota)
+          ? TALLA_UNIFORME_PATRIOTA_LABELS[r.tallaUniformePatriota]
+          : r.tallaUniformePatriota,
+      );
     default:
       return "";
   }

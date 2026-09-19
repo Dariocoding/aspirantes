@@ -56,6 +56,7 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "tallaCamisa", label: "Camisa", group: "Tallas", width: 10, align: "center" },
   { id: "tallaPantalon", label: "Pantalón", group: "Tallas", width: 10, align: "center" },
   { id: "tallaCalzado", label: "Calzado", group: "Tallas", width: 10, align: "center" },
+  { id: "tallaUniformePatriota", label: "Talla uniforme patriota", group: "Tallas", width: 18, align: "center" },
 ];
 
 const EXAM_EXPORT_COLUMNS: readonly CensusExportColumn[] = EXAMEN_MEDICO_ITEMS.map((item) => ({
@@ -120,6 +121,9 @@ HEADER_TO_COLUMN_ID.set("camisa", "tallaCamisa");
 HEADER_TO_COLUMN_ID.set("pantalon", "tallaPantalon");
 HEADER_TO_COLUMN_ID.set("calzado", "tallaCalzado");
 HEADER_TO_COLUMN_ID.set("zapatos", "tallaCalzado");
+HEADER_TO_COLUMN_ID.set("tallauniformepatriota", "tallaUniformePatriota");
+HEADER_TO_COLUMN_ID.set("uniformepatriota", "tallaUniformePatriota");
+HEADER_TO_COLUMN_ID.set("patriota", "tallaUniformePatriota");
 HEADER_TO_COLUMN_ID.set("religion", "religion");
 HEADER_TO_COLUMN_ID.set("credo", "religion");
 HEADER_TO_COLUMN_ID.set("deporte", "deporte");

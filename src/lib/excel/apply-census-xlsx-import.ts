@@ -1,4 +1,4 @@
-import { CalificacionAdmision, Prisma, PrismaClient, Sexo } from "@src/generated/prisma";
+import { CalificacionAdmision, Prisma, PrismaClient, Sexo, TallaUniformePatriota } from "@src/generated/prisma";
 import type { CensusImportParseOk } from "@src/lib/excel/parse-aspirantes-censo-xlsx";
 import {
   examenIdFromExportColumn,
@@ -22,6 +22,7 @@ import {
 } from "@src/lib/aspirantes/tipo-estudio";
 import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/census";
 import { homologarDatosSangre, type FactorRhValue } from "@src/lib/aspirantes/senaletica";
+import { isTallaUniformePatriota } from "@src/lib/aspirantes/tallas-familia";
 
 const EMPTY = new Set(["", "—", "-", "–", "n/a", "na"]);
 
@@ -54,6 +55,15 @@ function parseSangreImport(raw: string | null): {
   factorRh: FactorRhValue | null;
 } {
   return homologarDatosSangre(raw);
+}
+
+function parseTallaUniformePatriota(raw: string | null): TallaUniformePatriota | null | undefined {
+  if (raw == null) return null;
+  const t = raw.trim().toUpperCase();
+  if (!t) return null;
+  if (isTallaUniformePatriota(t)) return t as TallaUniformePatriota;
+  if (t === "SM") return TallaUniformePatriota.SR;
+  return undefined;
 }
 
 function parseSexo(raw: string | null): Sexo | null | undefined {
@@ -274,6 +284,17 @@ export async function applyCensusXlsxImport(
           errors.push({ excelRow: row.excelRow, cedula: row.cedula, message: "Fecha de nacimiento inválida." });
           continue;
         }
+        if (
+          hasColumn(ids, "tallaUniformePatriota") &&
+          parseTallaUniformePatriota(blankToNull(v.tallaUniformePatriota)) === undefined
+        ) {
+          errors.push({
+            excelRow: row.excelRow,
+            cedula: row.cedula,
+            message: "Talla de uniforme patriota no reconocida.",
+          });
+          continue;
+        }
 
         const pelotonId = hasColumn(ids, "peloton")
           ? (matchPeloton(blankToNull(v.peloton), pelotones) as { ok: true; id: string | null }).id
@@ -333,6 +354,9 @@ export async function applyCensusXlsxImport(
                   tallaCamisa: hasColumn(ids, "tallaCamisa") ? blankToNull(v.tallaCamisa) : null,
                   tallaPantalon: hasColumn(ids, "tallaPantalon") ? blankToNull(v.tallaPantalon) : null,
                   tallaCalzado: hasColumn(ids, "tallaCalzado") ? blankToNull(v.tallaCalzado) : null,
+                  tallaUniformePatriota: hasColumn(ids, "tallaUniformePatriota")
+                    ? (parseTallaUniformePatriota(blankToNull(v.tallaUniformePatriota)) ?? null)
+                    : null,
                   alergias: hasColumn(ids, "alergias") ? blankToNull(v.alergias) : null,
                   condicionesMedicas: hasColumn(ids, "condicionesMedicas")
                     ? blankToNull(v.condicionesMedicas)
@@ -434,6 +458,7 @@ export async function applyCensusXlsxImport(
           tallaCamisa?: string | null;
           tallaPantalon?: string | null;
           tallaCalzado?: string | null;
+          tallaUniformePatriota?: TallaUniformePatriota | null;
           alergias?: string | null;
           condicionesMedicas?: string | null;
           discapacidad?: string | null;
@@ -451,6 +476,10 @@ export async function applyCensusXlsxImport(
         if (hasColumn(ids, "tallaCamisa")) fisicoPatch.tallaCamisa = blankToNull(v.tallaCamisa);
         if (hasColumn(ids, "tallaPantalon")) fisicoPatch.tallaPantalon = blankToNull(v.tallaPantalon);
         if (hasColumn(ids, "tallaCalzado")) fisicoPatch.tallaCalzado = blankToNull(v.tallaCalzado);
+        if (hasColumn(ids, "tallaUniformePatriota")) {
+          fisicoPatch.tallaUniformePatriota =
+            parseTallaUniformePatriota(blankToNull(v.tallaUniformePatriota)) ?? null;
+        }
         if (hasColumn(ids, "alergias")) fisicoPatch.alergias = blankToNull(v.alergias);
         if (hasColumn(ids, "condicionesMedicas")) fisicoPatch.condicionesMedicas = blankToNull(v.condicionesMedicas);
         if (hasColumn(ids, "discapacidad")) fisicoPatch.discapacidad = blankToNull(v.discapacidad);
