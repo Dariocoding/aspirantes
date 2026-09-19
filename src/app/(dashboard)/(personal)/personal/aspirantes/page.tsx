@@ -223,10 +223,15 @@ export default async function AspirantesPage({
       orderBy: { numero: "asc" },
       select: { id: true, numero: true, nombre: true },
     }),
-    prisma.membrete.findMany({
-      orderBy: [{ isDefault: "desc" }, { nombre: "asc" }],
-      select: { id: true, nombre: true, isDefault: true },
-    }),
+    prisma.membrete
+      .findMany({
+        orderBy: [{ isDefault: "desc" }, { nombre: "asc" }],
+        select: { id: true, nombre: true, isDefault: true },
+      })
+      .catch((err) => {
+        console.error("membrete.findMany", err);
+        return [];
+      }),
   ]);
 
   const aspirantesOrdenados = groupByNacimientoMes
