@@ -1052,20 +1052,36 @@ export function AspiranteQuickDialog({ open, onOpenChange, mode, pelotones, init
   const router = useRouter();
   const isEdit = mode === "edit";
   const [celebrateOpen, setCelebrateOpen] = useState(false);
+  const [awaitingCelebrate, setAwaitingCelebrate] = useState(false);
 
   useEffect(() => {
-    if (open) setCelebrateOpen(false);
+    if (open) {
+      setCelebrateOpen(false);
+      setAwaitingCelebrate(false);
+    }
   }, [open]);
 
   const onSaved = useCallback(() => {
-    setCelebrateOpen(true);
+    setAwaitingCelebrate(true);
   }, []);
 
-  const formOpen = open && !celebrateOpen;
+  const formOpen = open && !celebrateOpen && !awaitingCelebrate;
 
   return (
     <>
-      <Dialog open={formOpen} onOpenChange={onOpenChange}>
+      <Dialog
+        open={formOpen}
+        onOpenChange={(next) => {
+          if (!next && awaitingCelebrate) return;
+          onOpenChange(next);
+        }}
+        onOpenChangeComplete={(nextOpen) => {
+          if (!nextOpen && awaitingCelebrate) {
+            setCelebrateOpen(true);
+            setAwaitingCelebrate(false);
+          }
+        }}
+      >
         <DialogContent
           className="max-h-[min(90dvh,760px)] w-[calc(100vw-1.5rem)] max-w-2xl gap-0 overflow-hidden sm:max-w-3xl"
           key={isEdit ? initial?.id ?? "edit" : "create"}

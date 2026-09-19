@@ -7,8 +7,83 @@ import { XIcon } from "lucide-react";
 import { cn } from "@src/lib/utils";
 import { Button } from "@src/components/ui/button";
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+/** Un poco más que `duration-200` del popup; si getAnimations() no dispara, el portal no se queda encima. */
+const CLOSE_UNMOUNT_FALLBACK_MS = 350;
+
+type DialogActions = {
+  unmount: () => void;
+  close: () => void;
+};
+
+function mergeActionsRef(
+  internal: React.RefObject<DialogActions | null>,
+  external?: React.RefObject<DialogActions | null>,
+): React.RefObject<DialogActions | null> {
+  return {
+    get current() {
+      return internal.current;
+    },
+    set current(value) {
+      internal.current = value;
+      if (external) external.current = value;
+    },
+  };
+}
+
+/** Base UI deja el backdrop en `data-closed` si la transición de salida se aborta (abrir/cerrar rápido). */
+export function useDialogCloseUnmountFallback(
+  isOpen: boolean,
+  actionsRef: React.RefObject<DialogActions | null>,
+) {
+  const wasOpenRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      wasOpenRef.current = true;
+      return;
+    }
+    if (!wasOpenRef.current) return;
+
+    const timeout = window.setTimeout(() => {
+      actionsRef.current?.unmount();
+      wasOpenRef.current = false;
+    }, CLOSE_UNMOUNT_FALLBACK_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [actionsRef, isOpen]);
+}
+
+function Dialog({
+  actionsRef,
+  open,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: DialogPrimitive.Root.Props) {
+  const internalActionsRef = React.useRef<DialogActions | null>(null);
+  const resolvedActionsRef = React.useMemo(
+    () => mergeActionsRef(internalActionsRef, actionsRef as React.RefObject<DialogActions | null> | undefined),
+    [actionsRef],
+  );
+  const isControlled = open !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(Boolean(defaultOpen));
+  const isOpen = isControlled ? Boolean(open) : uncontrolledOpen;
+
+  useDialogCloseUnmountFallback(isOpen, resolvedActionsRef);
+
+  return (
+    <DialogPrimitive.Root
+      {...props}
+      data-slot="dialog"
+      open={open}
+      defaultOpen={defaultOpen}
+      actionsRef={resolvedActionsRef}
+      onOpenChange={(next, eventDetails) => {
+        if (!isControlled) setUncontrolledOpen(next);
+        onOpenChange?.(next, eventDetails);
+      }}
+    />
+  );
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
@@ -24,7 +99,7 @@ function DialogBackdrop({ className, ...props }: DialogPrimitive.Backdrop.Props)
     <DialogPrimitive.Backdrop
       data-slot="dialog-backdrop"
       className={cn(
-        "fixed inset-0 z-50 min-h-dvh bg-black/10 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-[-webkit-touch-callout:none]:absolute supports-backdrop-filter:backdrop-blur-xs",
+        "fixed inset-0 z-50 min-h-dvh bg-black/10 transition-opacity duration-150 data-closed:pointer-events-none data-ending-style:opacity-0 data-starting-style:opacity-0 supports-[-webkit-touch-callout:none]:absolute supports-backdrop-filter:backdrop-blur-xs",
         className,
       )}
       {...props}
@@ -46,7 +121,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[min(calc(100dvh-2rem),720px)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-y-auto rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-lg transition duration-200 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[min(calc(100dvh-2rem),720px)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-0 overflow-y-auto rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-lg transition duration-200 data-closed:pointer-events-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0",
           className,
         )}
         {...props}
