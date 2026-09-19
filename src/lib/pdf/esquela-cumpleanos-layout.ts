@@ -30,6 +30,14 @@ export const CUMPLEANOS_LAYOUT = {
   /** Relieve tipo «Feliz Cumpleaños»: un peldaño pequeño. */
   nameDepthEm: 0.032,
   nameStrokeEm: 0.034,
+  /**
+   * JPEG/PDF: el trazo CSS se ve más pesado en pantalla; al exportar (y con
+   * submuestreo 4:2:0) hay que pintar más tinta o el nombre queda claro y fino.
+   */
+  nameExportStrokeEm: 0.078,
+  nameExportFauxBoldEm: 0.02,
+  nameExportShadowYEm: 0.048,
+  nameExportShadowBlurEm: 0.07,
 } as const;
 
 const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y", "e", "da", "do", "dos", "das"]);

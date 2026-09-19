@@ -21,12 +21,20 @@ const nameWidth = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.nameWidthPct;
 const nameLeft = (CUMPLEANOS_PAGE_W - nameWidth) / 2;
 const nameTop = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.nameTopPct;
 
-const OUTLINE: Array<[number, number]> = [
-  [-0.55, 0],
-  [0.55, 0],
-  [0, -0.55],
-  [0, 0.55],
-];
+function fauxBoldOffsets(emPx: number): Array<[number, number]> {
+  const r = emPx;
+  const d = emPx * 0.72;
+  return [
+    [-r, 0],
+    [r, 0],
+    [0, -r],
+    [0, r],
+    [-d, -d],
+    [d, -d],
+    [-d, d],
+    [d, d],
+  ];
+}
 
 /** jpeg-js exige Buffer de Node (`readUInt16BE`); Uint8Array deja la página en blanco. */
 function jpegSrc(data: Buffer) {
@@ -88,8 +96,23 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
     width: nameWidth,
     letterSpacing: CUMPLEANOS_LAYOUT.nameLetterSpacingPt,
   };
+  const stroke = fontSize * CUMPLEANOS_LAYOUT.nameExportStrokeEm;
+  const bold = fontSize * CUMPLEANOS_LAYOUT.nameExportFauxBoldEm;
+  const shadowY = fontSize * CUMPLEANOS_LAYOUT.nameExportShadowYEm;
   return (
     <View style={styles.lineBox}>
+      <Text
+        style={{
+          ...base,
+          color: "#2a1808",
+          opacity: 0.5,
+          position: "absolute",
+          left: 0,
+          top: shadowY,
+        }}
+      >
+        {text}
+      </Text>
       <Text
         style={{
           ...base,
@@ -101,9 +124,9 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
       >
         {text}
       </Text>
-      {OUTLINE.map(([x, y]) => (
+      {fauxBoldOffsets(stroke).map(([x, y]) => (
         <Text
-          key={`${x},${y}`}
+          key={`s${x},${y}`}
           style={{
             ...base,
             color: CUMPLEANOS_GOLD.stroke,
@@ -115,18 +138,21 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
           {text}
         </Text>
       ))}
-      <Text style={{ ...base, color: CUMPLEANOS_GOLD.fill }}>{text}</Text>
-      <Text
-        style={{
-          ...base,
-          color: CUMPLEANOS_GOLD.light,
-          position: "absolute",
-          left: 0,
-          top: -0.4,
-        }}
-      >
-        {text}
-      </Text>
+      {fauxBoldOffsets(bold).map(([x, y]) => (
+        <Text
+          key={`b${x},${y}`}
+          style={{
+            ...base,
+            color: CUMPLEANOS_GOLD.dark,
+            position: "absolute",
+            left: x,
+            top: y,
+          }}
+        >
+          {text}
+        </Text>
+      ))}
+      <Text style={{ ...base, color: CUMPLEANOS_GOLD.dark }}>{text}</Text>
     </View>
   );
 }

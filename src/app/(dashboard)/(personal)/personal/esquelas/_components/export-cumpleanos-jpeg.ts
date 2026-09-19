@@ -36,6 +36,69 @@ function drawContained(
   ctx.drawImage(img, x + (boxW - dw) / 2, y + (boxH - dh) / 2, dw, dh);
 }
 
+function fauxBoldOffsets(em: number): Array<[number, number]> {
+  const r = em;
+  const d = em * 0.72;
+  return [
+    [-r, 0],
+    [r, 0],
+    [0, -r],
+    [0, r],
+    [-d, -d],
+    [d, -d],
+    [-d, d],
+    [d, d],
+  ];
+}
+
+function drawExportGoldScript(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  cx: number,
+  y: number,
+  fontPx: number,
+  maxWidth: number,
+  depth: number,
+): void {
+  const strokeW = Math.max(2.4, fontPx * CUMPLEANOS_LAYOUT.nameExportStrokeEm);
+  const bold = fontPx * CUMPLEANOS_LAYOUT.nameExportFauxBoldEm;
+  const grad = ctx.createLinearGradient(cx, y, cx, y + fontPx);
+  grad.addColorStop(0, CUMPLEANOS_GOLD.fill);
+  grad.addColorStop(0.38, CUMPLEANOS_GOLD.dark);
+  grad.addColorStop(1, "#8f6910");
+
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.miterLimit = 2;
+
+  ctx.shadowColor = "rgba(40, 24, 6, 0.62)";
+  ctx.shadowBlur = fontPx * CUMPLEANOS_LAYOUT.nameExportShadowBlurEm;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = fontPx * CUMPLEANOS_LAYOUT.nameExportShadowYEm;
+  ctx.fillStyle = CUMPLEANOS_GOLD.stroke;
+  ctx.fillText(text, cx, y, maxWidth);
+
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.fillStyle = CUMPLEANOS_GOLD.dark;
+  ctx.fillText(text, cx, y + depth, maxWidth);
+
+  ctx.strokeStyle = CUMPLEANOS_GOLD.stroke;
+  ctx.lineWidth = strokeW;
+  ctx.strokeText(text, cx, y, maxWidth);
+  for (const [dx, dy] of fauxBoldOffsets(bold)) {
+    ctx.strokeText(text, cx + dx, y + dy, maxWidth);
+  }
+
+  ctx.fillStyle = grad;
+  ctx.fillText(text, cx, y, maxWidth);
+  ctx.fillText(text, cx + bold * 0.35, y, maxWidth);
+  ctx.restore();
+}
+
 function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -102,23 +165,10 @@ export async function exportCumpleanosJpegBlob(nombre: string, fotoSrc: string |
     ctx.letterSpacing = CUMPLEANOS_LAYOUT.nameLetterSpacingEm;
 
     lines.forEach((text, i) => {
-      const y = nameTop + i * lineH;
-      const grad = ctx.createLinearGradient(cx, y, cx, y + fontPx);
-      grad.addColorStop(0, CUMPLEANOS_GOLD.light);
-      grad.addColorStop(0.42, CUMPLEANOS_GOLD.fill);
-      grad.addColorStop(1, CUMPLEANOS_GOLD.dark);
-      ctx.lineJoin = "round";
-      ctx.miterLimit = 2;
-      ctx.fillStyle = CUMPLEANOS_GOLD.dark;
-      ctx.fillText(text, cx, y + depth, nameWidth);
-      ctx.lineWidth = Math.max(1.2, fontPx * CUMPLEANOS_LAYOUT.nameStrokeEm);
-      ctx.strokeStyle = CUMPLEANOS_GOLD.stroke;
-      ctx.strokeText(text, cx, y, nameWidth);
-      ctx.fillStyle = grad;
-      ctx.fillText(text, cx, y, nameWidth);
+      drawExportGoldScript(ctx, text, cx, nameTop + i * lineH, fontPx, nameWidth, depth);
     });
 
-    return await canvasToJpeg(canvas, 0.93);
+    return await canvasToJpeg(canvas, 0.96);
   } finally {
     plantilla.close();
     laurel.close();
