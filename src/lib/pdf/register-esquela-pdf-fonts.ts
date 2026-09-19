@@ -5,12 +5,12 @@ import { Font } from "@react-pdf/renderer";
 export const ESQUELA_PDF_FONT_FAMILY = "Urbanist";
 
 /** Caligrafía del nombre en el afiche de cumpleaños (Google Fonts, OFL). */
-export const ESQUELA_SCRIPT_FONT_FAMILY = "Satisfy";
+export const ESQUELA_SCRIPT_FONT_FAMILY = "GreatVibes";
 
 let registered = false;
 
 /**
- * Registra Urbanist y Satisfy (Google Fonts, OFL) para @react-pdf.
+ * Registra Urbanist y Great Vibes (Google Fonts, OFL) para @react-pdf.
  * Idempotente por proceso Node.
  */
 export function registerEsquelaPdfFonts(): void {
@@ -31,7 +31,7 @@ export function registerEsquelaPdfFonts(): void {
   });
   Font.register({
     family: ESQUELA_SCRIPT_FONT_FAMILY,
-    src: path.join(process.cwd(), "public", "fonts", "Satisfy-Regular.woff"),
+    src: path.join(process.cwd(), "public", "fonts", "GreatVibes-Regular.ttf"),
   });
   registered = true;
 }

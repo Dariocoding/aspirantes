@@ -20,13 +20,15 @@ export const CUMPLEANOS_GOLD = {
  * Ajustar juntas en PDF y en la vista previa HTML.
  */
 export const CUMPLEANOS_LAYOUT = {
-  nameTopPct: 0.236,
-  nameWidthPct: 0.9,
+  nameTopPct: 0.228,
+  nameWidthPct: 0.92,
   photoWidthPct: 0.28,
   photoHeightPct: 0.335,
   photoCenterYPct: 0.478,
-  nameLetterSpacingPt: 0.15,
-  nameLetterSpacingEm: "0.01em",
+  nameLetterSpacingPt: 0,
+  nameLetterSpacingEm: "0em",
+  /** Relieve: un escalón hacia abajo, sin capas extra. */
+  nameDepthEm: 0.05,
 } as const;
 
 const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y", "e", "da", "do", "dos", "das"]);
@@ -54,14 +56,13 @@ export function honoreeDisplayName(nombres: string, apellidos: string): string {
 }
 
 export type HonoreeNameLayout = {
-  rank: string;
   lines: string[];
   fontSize: number;
 };
 
-/** Satisfy (script) ~0.42 em por carácter. */
+/** Great Vibes: caligrafía ancha (~0.50 em por carácter). */
 function scriptWidth(text: string, fontSize: number): number {
-  return text.length * fontSize * 0.42;
+  return text.length * fontSize * 0.5;
 }
 
 function wrapWords(text: string, fontSize: number, maxWidth: number): string[] {
@@ -82,22 +83,18 @@ function wrapWords(text: string, fontSize: number, maxWidth: number): string[] {
 }
 
 export function layoutHonoreeName(full: string, maxWidth = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.nameWidthPct): HonoreeNameLayout {
-  const rank = "Asp/Ofic";
-  const name = full.replace(/^Asp\s*\/\s*Ofic\s+/i, "").trim();
-  let fontSize = 36;
-  if (name.length > 42) fontSize = 26;
-  else if (name.length > 32) fontSize = 30;
-  else if (name.length > 22) fontSize = 34;
+  const text = full.replace(/\s+/g, " ").trim();
+  let fontSize = text.length > 40 ? 26 : text.length > 32 ? 30 : 34;
 
   while (fontSize > 18) {
-    const lines = wrapWords(name, fontSize, maxWidth);
-    const longest = Math.max(scriptWidth(rank, fontSize), ...lines.map((l) => scriptWidth(l, fontSize)));
-    if (longest <= maxWidth && lines.length <= 3) {
-      return { rank, lines, fontSize };
+    const lines = wrapWords(text, fontSize, maxWidth);
+    const longest = Math.max(...lines.map((l) => scriptWidth(l, fontSize)));
+    if (longest <= maxWidth && lines.length <= 2) {
+      return { lines, fontSize };
     }
-    fontSize -= 2;
+    fontSize -= 1;
   }
-  return { rank, lines: wrapWords(name, 18, maxWidth), fontSize: 18 };
+  return { lines: wrapWords(text, 18, maxWidth), fontSize: 18 };
 }
 
 export function honoreeScriptFontSize(nombre: string): number {

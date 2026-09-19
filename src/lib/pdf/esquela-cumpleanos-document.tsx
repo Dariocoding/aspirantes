@@ -22,14 +22,10 @@ const nameLeft = (CUMPLEANOS_PAGE_W - nameWidth) / 2;
 const nameTop = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.nameTopPct;
 
 const OUTLINE: Array<[number, number]> = [
-  [-0.8, 0],
-  [0.8, 0],
-  [0, -0.8],
-  [0, 0.8],
-  [-0.6, -0.6],
-  [0.6, -0.6],
-  [-0.6, 0.6],
-  [0.6, 0.6],
+  [-0.55, 0],
+  [0.55, 0],
+  [0, -0.55],
+  [0, 0.55],
 ];
 
 /** jpeg-js exige Buffer de Node (`readUInt16BE`); Uint8Array deja la página en blanco. */
@@ -94,6 +90,17 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
   };
   return (
     <View style={styles.lineBox}>
+      <Text
+        style={{
+          ...base,
+          color: CUMPLEANOS_GOLD.dark,
+          position: "absolute",
+          left: 0,
+          top: fontSize * CUMPLEANOS_LAYOUT.nameDepthEm,
+        }}
+      >
+        {text}
+      </Text>
       {OUTLINE.map(([x, y]) => (
         <Text
           key={`${x},${y}`}
@@ -108,17 +115,6 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
           {text}
         </Text>
       ))}
-      <Text
-        style={{
-          ...base,
-          color: CUMPLEANOS_GOLD.dark,
-          position: "absolute",
-          left: 0,
-          top: 0.7,
-        }}
-      >
-        {text}
-      </Text>
       <Text style={{ ...base, color: CUMPLEANOS_GOLD.fill }}>{text}</Text>
       <Text
         style={{
@@ -126,7 +122,7 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
           color: CUMPLEANOS_GOLD.light,
           position: "absolute",
           left: 0,
-          top: -0.55,
+          top: -0.4,
         }}
       >
         {text}
@@ -136,10 +132,9 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
 }
 
 function HonoreeName({ nombre }: { nombre: string }) {
-  const { rank, lines, fontSize } = layoutHonoreeName(nombre);
+  const { lines, fontSize } = layoutHonoreeName(nombre);
   return (
     <View style={styles.nameWrap}>
-      <ScriptLine text={rank} fontSize={fontSize} />
       {lines.map((line) => (
         <ScriptLine key={line} text={line} fontSize={fontSize} />
       ))}

@@ -56,7 +56,14 @@ export async function exportCumpleanosJpegBlob(nombre: string, fotoSrc: string |
     fotoSrc ? loadBitmap(fotoSrc).catch(() => null) : Promise.resolve(null),
   ]);
 
-  await document.fonts.load(`48px SatisfyPoster`);
+  if (!document.getElementById("great-vibes-poster-font")) {
+    const style = document.createElement("style");
+    style.id = "great-vibes-poster-font";
+    style.textContent =
+      '@font-face{font-family:"GreatVibesPoster";src:url("/fonts/GreatVibes-Regular.ttf") format("truetype");font-weight:400;font-style:normal;}';
+    document.head.appendChild(style);
+  }
+  await document.fonts.load("48px GreatVibesPoster");
   await document.fonts.ready;
 
   const canvas = document.createElement("canvas");
@@ -80,21 +87,21 @@ export async function exportCumpleanosJpegBlob(nombre: string, fotoSrc: string |
 
     ctx.drawImage(laurel, 0, 0, CANVAS_W, CANVAS_H);
 
-    const { rank, lines, fontSize } = layoutHonoreeName(nombre);
+    const { lines, fontSize } = layoutHonoreeName(nombre);
     const fontPx = (fontSize / CUMPLEANOS_PAGE_W) * CANVAS_W;
     const nameWidth = CANVAS_W * CUMPLEANOS_LAYOUT.nameWidthPct;
     const nameLeft = (CANVAS_W - nameWidth) / 2;
     const nameTop = CANVAS_H * CUMPLEANOS_LAYOUT.nameTopPct;
     const cx = nameLeft + nameWidth / 2;
-    const lineH = fontPx * 1.18;
-    const allLines = [rank, ...lines];
+    const lineH = fontPx * 1.28;
+    const depth = fontPx * CUMPLEANOS_LAYOUT.nameDepthEm;
 
-    ctx.font = `${fontPx}px SatisfyPoster, cursive`;
+    ctx.font = `${fontPx}px GreatVibesPoster, cursive`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.letterSpacing = CUMPLEANOS_LAYOUT.nameLetterSpacingEm;
 
-    allLines.forEach((text, i) => {
+    lines.forEach((text, i) => {
       const y = nameTop + i * lineH;
       const grad = ctx.createLinearGradient(cx, y, cx, y + fontPx);
       grad.addColorStop(0, CUMPLEANOS_GOLD.light);
@@ -102,7 +109,9 @@ export async function exportCumpleanosJpegBlob(nombre: string, fotoSrc: string |
       grad.addColorStop(1, CUMPLEANOS_GOLD.dark);
       ctx.lineJoin = "round";
       ctx.miterLimit = 2;
-      ctx.lineWidth = Math.max(1, fontPx * 0.028);
+      ctx.fillStyle = CUMPLEANOS_GOLD.dark;
+      ctx.fillText(text, cx, y + depth, nameWidth);
+      ctx.lineWidth = Math.max(1, fontPx * 0.022);
       ctx.strokeStyle = CUMPLEANOS_GOLD.stroke;
       ctx.strokeText(text, cx, y, nameWidth);
       ctx.fillStyle = grad;
