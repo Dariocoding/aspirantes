@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { EsquelaCumpleanosPoster } from "@dashboard/esquelas/_components/esquela-cumpleanos-poster";
+import { EsquelaCumpleanosDownloadButton } from "@dashboard/esquelas/_components/esquela-cumpleanos-detail";
 import { EsquelaDetalleToolbar } from "@dashboard/esquelas/_components/esquela-detalle-toolbar";
 import { buttonVariants } from "@src/components/ui/button";
 import { aspiranteFotoUrl, pickFotoForEsquela } from "@src/lib/storage/aspirante-foto";
@@ -39,7 +40,7 @@ export default async function EsquelaDetallePage({
       ? aspiranteFotoUrl(
           esquela.aspirante.id,
           fotoSource.kind,
-          fotoSource.kind === "esquela" ? undefined : { oval: true },
+          fotoSource.kind === "esquela" ? { proxy: true } : { oval: true },
         )
       : null;
   const pdfHref = `/api/esquelas/${id}/pdf`;
@@ -54,7 +55,15 @@ export default async function EsquelaDetallePage({
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Volver a esquelas
         </Link>
-        <EsquelaDetalleToolbar pdfHref={pdfHref} />
+        {esCumple ? (
+          <EsquelaCumpleanosDownloadButton
+            nombre={nombre}
+            fotoSrc={fotoSrc}
+            fileName={`esquela-${id}.jpg`}
+          />
+        ) : (
+          <EsquelaDetalleToolbar pdfHref={pdfHref} />
+        )}
       </div>
 
       {esCumple ? (
