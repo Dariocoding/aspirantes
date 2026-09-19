@@ -255,8 +255,11 @@ export async function applyCensusXlsxImport(
   });
   const byCedula = new Map(existing.map((a) => [a.cedula, a]));
 
-  await db.$transaction(async (tx) => {
-    for (const row of parsed.rows) {
+  // Neon + pooler: cada fila son 1–3 roundtrips. El timeout por defecto (5 s)
+  // aborta el lote entero, Prisma lanza P2028 y la ruta responde 500.
+  await db.$transaction(
+    async (tx) => {
+      for (const row of parsed.rows) {
       const v = row.values;
       const current = byCedula.get(row.cedula);
 
@@ -405,17 +408,28 @@ export async function applyCensusXlsxImport(
         }
 
         const data: Prisma.AspiranteUpdateInput = {};
-        if (hasColumn(ids, "nombres") && blankToNull(v.nombres)) data.nombres = blankToNull(v.nombres)!;
-        if (hasColumn(ids, "apellidos") && blankToNull(v.apellidos)) data.apellidos = blankToNull(v.apellidos)!;
+        if (hasColumn(ids, "nombres") && blankToNull(v.nombres)) {
+          const next = blankToNull(v.nombres)!;
+          if (next !== current.nombres) data.nombres = next;
+        }
+        if (hasColumn(ids, "apellidos") && blankToNull(v.apellidos)) {
+          const next = blankToNull(v.apellidos)!;
+          if (next !== current.apellidos) data.apellidos = next;
+        }
         if (
           hasColumn(ids, "nombreCompleto") &&
           !hasColumn(ids, "nombres") &&
           !hasColumn(ids, "apellidos") &&
           blankToNull(v.nombreCompleto)
         ) {
-          const split = splitNombreCompleto(blankToNull(v.nombreCompleto)!, current.nombres, current.apellidos);
-          data.nombres = split.nombres;
-          data.apellidos = split.apellidos;
+          const full = blankToNull(v.nombreCompleto)!;
+          const currentFull = `${current.nombres} ${current.apellidos}`.replace(/\s+/g, " ").trim();
+          const incomingFull = full.replace(/\s+/g, " ").trim();
+          if (incomingFull.localeCompare(currentFull, "es", { sensitivity: "accent" }) !== 0) {
+            const split = splitNombreCompleto(full, current.nombres, current.apellidos);
+            if (split.nombres !== current.nombres) data.nombres = split.nombres;
+            if (split.apellidos !== current.apellidos) data.apellidos = split.apellidos;
+          }
         }
         if (hasColumn(ids, "sexo")) {
           const sexo = parseSexo(blankToNull(v.sexo));
@@ -444,7 +458,9 @@ export async function applyCensusXlsxImport(
           }
           data.hijosCantidad = hijos;
         }
-        if (hasColumn(ids, "peloton")) data.peloton = pelotonId ? { connect: { id: pelotonId } } : { disconnect: true };
+        if (hasColumn(ids, "peloton") && pelotonId !== (current.pelotonId ?? null)) {
+          data.peloton = pelotonId ? { connect: { id: pelotonId } } : { disconnect: true };
+        }
         if (hasColumn(ids, "carrera")) {
           const carrera = parseCarrera(blankToNull(v.carrera));
           data.tituloUniversidad = carrera.titulo;
@@ -469,8 +485,14 @@ export async function applyCensusXlsxImport(
           discapacidad?: string | null;
           observaciones?: string | null;
         } = {};
-        if (hasColumn(ids, "estatura")) fisicoPatch.estaturaCm = homologarEstaturaCm(blankToNull(v.estatura));
-        if (hasColumn(ids, "peso")) fisicoPatch.pesoKg = parseNumber(blankToNull(v.peso)) ?? null;
+        if (hasColumn(ids, "estatura")) {
+          const next = homologarEstaturaCm(blankToNull(v.estatura));
+          if (next !== (current.datosFisicos?.estaturaCm ?? null)) fisicoPatch.estaturaCm = next;
+        }
+        if (hasColumn(ids, "peso")) {
+          const next = parseNumber(blankToNull(v.peso)) ?? null;
+          if (next !== (current.datosFisicos?.pesoKg ?? null)) fisicoPatch.pesoKg = next;
+        }
         if (hasColumn(ids, "tension")) fisicoPatch.tensionArterial = blankToNull(v.tension);
         if (hasColumn(ids, "tipoSangre")) {
           const sangre = parseSangreImport(blankToNull(v.tipoSangre));
@@ -561,8 +583,10 @@ export async function applyCensusXlsxImport(
           message: e instanceof Error ? e.message : "No se pudo guardar la fila.",
         });
       }
-    }
-  });
+      }
+    },
+    { maxWait: 20_000, timeout: 180_000 },
+  );
 
   return { updated, created, unchanged, errors, columns: parsed.columnIds };
 }

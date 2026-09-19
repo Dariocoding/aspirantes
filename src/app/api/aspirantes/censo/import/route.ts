@@ -62,7 +62,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await applyCensusXlsxImport(prisma, convocatoria.id, parsed);
+  let result;
+  try {
+    result = await applyCensusXlsxImport(prisma, convocatoria.id, parsed);
+  } catch (e) {
+    const code = e && typeof e === "object" && "code" in e ? String(e.code) : "";
+    const message =
+      code === "P2028"
+        ? "La importación tardó demasiado y se canceló. No se guardó ningún cambio. Vuelva a intentar."
+        : e instanceof Error
+          ? e.message
+          : "No se pudo guardar la importación.";
+    return NextResponse.json({ message }, { status: 500 });
+  }
 
   await writeAuditLog({
     userId: session.user.id,
