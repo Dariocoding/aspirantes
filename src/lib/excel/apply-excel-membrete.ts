@@ -26,20 +26,13 @@ function middleWidth(ws: ExcelJS.Worksheet, start: number, end: number): number 
   return sum;
 }
 
-function addLogo(
-  wb: ExcelJS.Workbook,
-  ws: ExcelJS.Worksheet,
-  buf: Buffer,
-  tlCol: number,
-  brCol: number,
-  rowSpan: number,
-) {
+function addLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, buf: Buffer, tlCol: number) {
   const id = wb.addImage({ buffer: buf as unknown as ExcelJS.Buffer, extension: "png" });
-  ws.addImage(id, {
+  const position: ExcelJS.ImagePosition = {
     tl: { col: tlCol, row: 0.2 },
-    br: { col: brCol, row: Math.max(0.8, rowSpan - 0.2) },
-    editAs: "twoCell",
-  });
+    ext: { width: 72, height: 72 },
+  };
+  ws.addImage(id, position);
 }
 
 /**
@@ -99,12 +92,11 @@ export function applyExcelMembreteHeader(
     ws.getRow(rowNum).height = i < textOffset ? LINE_HEIGHT : Math.max(LINE_HEIGHT, wraps * 15);
   }
 
-  const logoBottom = canFlank ? blockRows : LOGO_ROWS;
   if (leftBuf) {
-    addLogo(wb, ws, leftBuf, 0.18, 0.82, logoBottom);
+    addLogo(wb, ws, leftBuf, 0.18);
   }
   if (rightBuf && lastCol > 1) {
-    addLogo(wb, ws, rightBuf, lastCol - 0.82, lastCol - 0.18, logoBottom);
+    addLogo(wb, ws, rightBuf, lastCol - 0.92);
   }
 
   return rowsUsed;
