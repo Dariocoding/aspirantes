@@ -227,23 +227,34 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   }
 
   const lastCol = columns.length;
+  const headerSpan = Math.max(lastCol, 8);
   const wb = new ExcelJS.Workbook();
   wb.creator = "FANB Aspirantes";
   wb.created = generatedAt;
 
   const ws = wb.addWorksheet("Censo", {
-    properties: { defaultRowHeight: 22 },
-    pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    properties: { defaultRowHeight: 20 },
+    pageSetup: {
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      horizontalCentered: true,
+    },
   });
 
   columns.forEach((col, i) => {
-    ws.getColumn(i + 1).width = col.width;
+    const column = ws.getColumn(i + 1);
+    column.width = col.width;
+    column.font = { name: "Arial", size: 12, bold: false, color: { argb: "FF0F172A" } };
   });
+  for (let c = lastCol + 1; c <= headerSpan; c++) {
+    ws.getColumn(c).width = 12;
+  }
 
-  const offset = applyExcelMembreteHeader(wb, ws, lastCol, params.membrete);
-  const titleRow = offset + 1;
-  const colHeaderRow = offset + 2;
-  const dataStartRow = offset + 3;
+  const offset = applyExcelMembreteHeader(wb, ws, headerSpan, params.membrete);
+  const colHeaderRow = offset + 1;
+  const dataStartRow = offset + 2;
 
   ws.views = [
     {
@@ -256,21 +267,12 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   ];
   ws.pageSetup.printTitlesRow = `${colHeaderRow}:${colHeaderRow}`;
 
-  ws.mergeCells(titleRow, 1, titleRow, lastCol);
-  const title = ws.getCell(titleRow, 1);
-  title.value = "CENSO DE ASPIRANTES";
-  title.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
-  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
-  title.alignment = { vertical: "middle", horizontal: "center" };
-  applyCellBorder(title);
-  ws.getRow(titleRow).height = 30;
-
   const headerRow = ws.getRow(colHeaderRow);
-  headerRow.height = 28;
+  headerRow.height = 22;
   columns.forEach((col, i) => {
     const cell = headerRow.getCell(i + 1);
     cell.value = col.label;
-    cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    cell.font = { name: "Arial", size: 12, bold: true, color: { argb: "FFFFFFFF" } };
     cell.fill = HEADER_FILL;
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
     applyCellBorder(cell);
@@ -288,7 +290,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
       if (col.id === "tipoSangre") {
         const text = String(value);
         cell.numFmt = "@";
-        cell.value = { richText: [{ font: { name: "Calibri", size: 11, bold: true }, text }] };
+        cell.value = { richText: [{ font: { name: "Arial", size: 12, bold: true }, text }] };
       } else if (col.id === "estatura" && typeof value === "number") {
         cell.numFmt = "0.00";
         cell.value = value;
@@ -307,12 +309,11 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
       } else {
         cell.fill = zebra;
       }
-      const mono = col.id === "cedula" || col.id === "numero" || col.id === "telefono";
       if (col.id !== "tipoSangre") {
         cell.font = {
-          name: mono ? "Consolas" : "Calibri",
-          size: 11,
-          bold: col.id === "nombreCompleto" || examSi,
+          name: "Arial",
+          size: 12,
+          bold: false,
           color: { argb: examSi ? "FF065F46" : "FF0F172A" },
         };
       }
