@@ -18,6 +18,7 @@ import {
   parsePadresVenezolanos,
 } from "@src/lib/aspirantes/tallas-familia";
 import { TIPO_ESTUDIO_ALL_VALUES } from "@src/lib/aspirantes/tipo-estudio";
+import { ESTATURA_CM_MAX, ESTATURA_CM_MIN, homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import {
   ageFromBirthDate,
   FECHA_NACIMIENTO_PENDIENTE,
@@ -53,6 +54,13 @@ function optionalFloat(max: number) {
     const n = Number(val);
     return Number.isFinite(n) ? n : undefined;
   }, z.number().positive().max(max).optional());
+}
+
+function optionalEstaturaCm() {
+  return z.preprocess((val) => {
+    if (val === "" || val === null || val === undefined) return undefined;
+    return homologarEstaturaCm(val) ?? undefined;
+  }, z.number().min(ESTATURA_CM_MIN).max(ESTATURA_CM_MAX).optional());
 }
 
 function optionalYear() {
@@ -300,7 +308,7 @@ const aspiranteStaffBaseSchema = z.object({
     (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
     z.string().min(1).nullable(),
   ),
-  estaturaCm: optionalFloat(300),
+  estaturaCm: optionalEstaturaCm(),
   pesoKg: optionalFloat(400),
   tensionArterial: z.string().trim().max(20).optional().nullable(),
   tipoSangre: tipoSangreGrupoField,
@@ -367,7 +375,7 @@ export const aspiranteQuickUpdateSchema = z
       (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
       z.string().min(1).nullable(),
     ),
-    estaturaCm: optionalFloat(300),
+    estaturaCm: optionalEstaturaCm(),
     pesoKg: optionalFloat(400),
     tensionArterial: z.string().trim().max(20).optional().nullable(),
     tipoSangre: tipoSangreGrupoField,
@@ -436,7 +444,7 @@ export const aspiranteSelfServiceUpdateSchema = z
     estadoCivil: estadoCivilField,
     religion: optionalTrimmedString(80),
     deporte: optionalTrimmedString(120),
-    estaturaCm: optionalFloat(300),
+    estaturaCm: optionalEstaturaCm(),
     pesoKg: optionalFloat(400),
     tensionArterial: z.string().trim().max(20).optional().nullable(),
     tipoSangre: z.string().trim().max(10).optional().nullable(),

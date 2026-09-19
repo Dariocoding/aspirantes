@@ -21,6 +21,7 @@ import { zodFieldErrors } from "@src/lib/zod-errors";
 import { applyAspiranteFotosFromForm } from "@src/lib/aspirantes/apply-fotos";
 import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import { homologarDatosSangre } from "@src/lib/aspirantes/senaletica";
+import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { toDateInputValue } from "@src/lib/date-input";
 import { getPresignedGetUrl } from "@src/lib/storage/s3";
@@ -280,7 +281,7 @@ export async function updateAspiranteSelfService(
       where: { aspiranteId: aspirante.id },
       create: {
         aspiranteId: aspirante.id,
-        estaturaCm: d.estaturaCm ?? null,
+        estaturaCm: homologarEstaturaCm(d.estaturaCm) ?? null,
         pesoKg: d.pesoKg ?? null,
         tensionArterial: d.tensionArterial ?? null,
         tipoSangre: sangre.tipoSangre,
@@ -295,7 +296,7 @@ export async function updateAspiranteSelfService(
         observaciones: d.observaciones ?? null,
       },
       update: {
-        estaturaCm: d.estaturaCm ?? null,
+        estaturaCm: homologarEstaturaCm(d.estaturaCm) ?? null,
         pesoKg: d.pesoKg ?? null,
         tensionArterial: d.tensionArterial ?? null,
         tipoSangre: sangre.tipoSangre,

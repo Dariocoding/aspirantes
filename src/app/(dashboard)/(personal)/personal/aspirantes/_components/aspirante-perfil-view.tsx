@@ -23,6 +23,7 @@ import {
   isSenaParticular,
   labelRedSocial,
 } from "@src/lib/aspirantes/senaletica";
+import { formatEstaturaCm } from "@src/lib/aspirantes/medidas";
 import {
   TALLA_CAMISA_ALMILLA_LABELS,
   TALLA_UNIFORME_PATRIOTA_LABELS,
@@ -607,7 +608,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
                 label="Señas particulares"
                 value={isSenaParticular(a.senaParticular) ? SENA_PARTICULAR_LABELS[a.senaParticular] : null}
               />
-              <Campo label="Estatura (cm)" value={a.estaturaCm != null ? String(a.estaturaCm) : null} />
+              <Campo label="Estatura (cm)" value={formatEstaturaCm(a.estaturaCm)} />
               <Campo label="Peso (kg)" value={a.pesoKg != null ? String(a.pesoKg) : null} />
               <Campo label="Tensión arterial" value={a.tensionArterial} />
               <Campo label="Tipo de sangre" value={formatTipoSangreHomologado(a.tipoSangre, a.factorRh)} />

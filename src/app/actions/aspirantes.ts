@@ -17,6 +17,7 @@ import {
   TallaUniformePatriota,
 } from "@src/generated/prisma";
 import { composeRedSocial, homologarDatosSangre } from "@src/lib/aspirantes/senaletica";
+import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import {
   aspiranteCreateSchema,
   aspiranteQuickUpdateSchema,
@@ -146,7 +147,7 @@ type SenaleticaParsed = {
 function datosFisicosWrite(d: SenaleticaParsed) {
   const sangre = homologarDatosSangre(d.tipoSangre, d.factorRh);
   return {
-    estaturaCm: d.estaturaCm ?? null,
+    estaturaCm: homologarEstaturaCm(d.estaturaCm) ?? null,
     pesoKg: d.pesoKg ?? null,
     tensionArterial: d.tensionArterial ?? null,
     tipoSangre: sangre.tipoSangre,

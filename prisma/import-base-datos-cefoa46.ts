@@ -22,6 +22,7 @@ import {
 } from "../src/generated/prisma";
 import { hasRealBirthDate } from "../src/lib/date";
 import { isTallaUniformePatriota } from "../src/lib/aspirantes/tallas-familia";
+import { homologarEstaturaCm } from "../src/lib/aspirantes/medidas";
 
 function loadEnvLocal() {
   const path = resolve(process.cwd(), ".env.local");
@@ -144,13 +145,7 @@ function parseFecha(v: unknown): Date | null {
 }
 
 function parseEstaturaCm(v: unknown): number | null {
-  const t = asText(v).replace(",", ".");
-  if (!t) return null;
-  const n = Number(t.replace(/[^\d.]/g, ""));
-  if (!Number.isFinite(n) || n <= 0) return null;
-  if (n < 3) return Math.round(n * 1000) / 10;
-  if (n < 50) return Math.round(n * 100);
-  return Math.round(n * 10) / 10;
+  return homologarEstaturaCm(asText(v) || v);
 }
 
 function parseEstadoCivil(raw: string): EstadoCivil | null {

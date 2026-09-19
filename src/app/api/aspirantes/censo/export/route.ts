@@ -7,6 +7,7 @@ import { buildAspiranteCensusWhere, censusOrderBy, isCensusGradoGroupSort, isCen
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { CENSUS_EXPORT_DEFAULT_IDS, parseCensusExportColumnIds } from "@src/lib/aspirantes/census-export-columns";
+import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
 import { buildAspirantesCumpleanosXlsxBuffer } from "@src/lib/excel/build-aspirantes-cumpleanos-xlsx";
 import { ageFromBirthDate } from "@src/lib/date";
@@ -173,7 +174,7 @@ export async function GET(request: Request) {
       contactoNombre: contacto?.nombre ?? null,
       contactoParentesco: contacto?.parentesco ?? null,
       contactoTelefono: contacto?.telefono ?? null,
-      estaturaCm: a.datosFisicos?.estaturaCm ?? null,
+      estaturaCm: a.datosFisicos?.estaturaCm != null ? homologarEstaturaCm(a.datosFisicos.estaturaCm) : null,
       pesoKg: a.datosFisicos?.pesoKg ?? null,
       tipoSangre: a.datosFisicos?.tipoSangre ?? null,
       factorRh: a.datosFisicos?.factorRh ?? null,

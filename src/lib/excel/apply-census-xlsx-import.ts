@@ -22,6 +22,7 @@ import {
 } from "@src/lib/aspirantes/tipo-estudio";
 import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/census";
 import { homologarDatosSangre, type FactorRhValue } from "@src/lib/aspirantes/senaletica";
+import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import { isTallaUniformePatriota } from "@src/lib/aspirantes/tallas-familia";
 
 const EMPTY = new Set(["", "—", "-", "–", "n/a", "na"]);
@@ -284,6 +285,10 @@ export async function applyCensusXlsxImport(
           errors.push({ excelRow: row.excelRow, cedula: row.cedula, message: "Fecha de nacimiento inválida." });
           continue;
         }
+        if (hasColumn(ids, "estatura") && blankToNull(v.estatura) && homologarEstaturaCm(blankToNull(v.estatura)) == null) {
+          errors.push({ excelRow: row.excelRow, cedula: row.cedula, message: "Estatura inválida. Use centímetros (p. ej. 175) o metros (p. ej. 1,75)." });
+          continue;
+        }
         if (
           hasColumn(ids, "tallaUniformePatriota") &&
           parseTallaUniformePatriota(blankToNull(v.tallaUniformePatriota)) === undefined
@@ -345,7 +350,7 @@ export async function applyCensusXlsxImport(
               paisUniversidad: hasColumn(ids, "paisUniversidad") ? blankToNull(v.paisUniversidad) : null,
               datosFisicos: {
                 create: {
-                  estaturaCm: hasColumn(ids, "estatura") ? (parseNumber(blankToNull(v.estatura)) ?? null) : null,
+                  estaturaCm: hasColumn(ids, "estatura") ? homologarEstaturaCm(blankToNull(v.estatura)) : null,
                   pesoKg: hasColumn(ids, "peso") ? (parseNumber(blankToNull(v.peso)) ?? null) : null,
                   tensionArterial: hasColumn(ids, "tension") ? blankToNull(v.tension) : null,
                   tipoSangre: hasColumn(ids, "tipoSangre") ? parseSangreImport(blankToNull(v.tipoSangre)).tipoSangre : null,
@@ -464,7 +469,7 @@ export async function applyCensusXlsxImport(
           discapacidad?: string | null;
           observaciones?: string | null;
         } = {};
-        if (hasColumn(ids, "estatura")) fisicoPatch.estaturaCm = parseNumber(blankToNull(v.estatura)) ?? null;
+        if (hasColumn(ids, "estatura")) fisicoPatch.estaturaCm = homologarEstaturaCm(blankToNull(v.estatura));
         if (hasColumn(ids, "peso")) fisicoPatch.pesoKg = parseNumber(blankToNull(v.peso)) ?? null;
         if (hasColumn(ids, "tension")) fisicoPatch.tensionArterial = blankToNull(v.tension);
         if (hasColumn(ids, "tipoSangre")) {
