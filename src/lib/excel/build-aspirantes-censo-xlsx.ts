@@ -220,7 +220,7 @@ function cellValue(
 }
 
 export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCensoXlsxParams): Promise<Buffer> {
-  const { convocatoriaNombre, convocatoriaCodigo, anio, rows, columnIds, generatedAt } = params;
+  const { rows, columnIds, generatedAt } = params;
   const columns = columnIds.map((id) => getCensusExportColumn(id)).filter((c): c is CensusExportColumn => Boolean(c));
   if (!columns.length) {
     throw new Error("Seleccione al menos una columna para exportar.");
@@ -242,9 +242,8 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
 
   const offset = applyExcelMembreteHeader(wb, ws, lastCol, params.membrete);
   const titleRow = offset + 1;
-  const subRow = offset + 2;
-  const colHeaderRow = offset + 3;
-  const dataStartRow = offset + 4;
+  const colHeaderRow = offset + 2;
+  const dataStartRow = offset + 3;
 
   ws.views = [
     {
@@ -265,15 +264,6 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   title.alignment = { vertical: "middle", horizontal: "center" };
   applyCellBorder(title);
   ws.getRow(titleRow).height = 30;
-
-  ws.mergeCells(subRow, 1, subRow, lastCol);
-  const sub = ws.getCell(subRow, 1);
-  sub.value = `${convocatoriaNombre}  ·  ${convocatoriaCodigo}  ·  ${anio}  ·  Total: ${rows.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
-  sub.font = { name: "Calibri", size: 11, color: { argb: "FF334155" } };
-  sub.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
-  sub.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  applyCellBorder(sub);
-  ws.getRow(subRow).height = 22;
 
   const headerRow = ws.getRow(colHeaderRow);
   headerRow.height = 28;

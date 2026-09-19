@@ -3,8 +3,43 @@ import ExcelJS from "exceljs";
 import type { MembreteSpec } from "@src/lib/membrete";
 import { readMembreteLogoPngBuffer } from "@src/lib/pdf/institution-logo";
 
+const LOGO_COL_MIN_WIDTH = 13;
+const LINE_HEIGHT = 18;
+const LOGO_ROWS = 5;
+
 function logoBuffer(kind: MembreteSpec["logoIzq"]): Buffer | null {
   return readMembreteLogoPngBuffer(kind);
+}
+
+function columnWidth(ws: ExcelJS.Worksheet, col: number): number {
+  const w = ws.getColumn(col).width;
+  return typeof w === "number" && w > 0 ? w : 10;
+}
+
+function ensureMinWidth(ws: ExcelJS.Worksheet, col: number, min: number) {
+  ws.getColumn(col).width = Math.max(columnWidth(ws, col), min);
+}
+
+function middleWidth(ws: ExcelJS.Worksheet, start: number, end: number): number {
+  let sum = 0;
+  for (let c = start; c <= end; c++) sum += columnWidth(ws, c);
+  return sum;
+}
+
+function addLogo(
+  wb: ExcelJS.Workbook,
+  ws: ExcelJS.Worksheet,
+  buf: Buffer,
+  tlCol: number,
+  brCol: number,
+  rowSpan: number,
+) {
+  const id = wb.addImage({ buffer: buf as unknown as ExcelJS.Buffer, extension: "png" });
+  ws.addImage(id, {
+    tl: { col: tlCol, row: 0.2 },
+    br: { col: brCol, row: Math.max(0.8, rowSpan - 0.2) },
+    editAs: "twoCell",
+  });
 }
 
 /**
@@ -23,47 +58,53 @@ export function applyExcelMembreteHeader(
   const rightBuf = logoBuffer(membrete.logoDer);
   if (!lineas.length && !leftBuf && !rightBuf) return 0;
 
-  const rowsUsed = Math.max(lineas.length, leftBuf || rightBuf ? 5 : lineas.length);
-  const padTop = Math.max(0, Math.floor((rowsUsed - lineas.length) / 2));
+  if (leftBuf) ensureMinWidth(ws, 1, LOGO_COL_MIN_WIDTH);
+  if (rightBuf && lastCol > 1) ensureMinWidth(ws, lastCol, LOGO_COL_MIN_WIDTH);
+
+  const canFlank = lastCol >= 3;
+  const textStart = canFlank && leftBuf ? 2 : 1;
+  const textEnd = canFlank && rightBuf ? Math.max(textStart, lastCol - 1) : lastCol;
+  const textColsWidth = middleWidth(ws, textStart, textEnd);
+  const hasLogos = Boolean(leftBuf || rightBuf);
+  const textOffset = !canFlank && hasLogos ? LOGO_ROWS : 0;
+  const blockRows = Math.max(lineas.length, canFlank && hasLogos ? LOGO_ROWS : lineas.length);
+  const rowsUsed = textOffset + blockRows;
+  const padTop = canFlank ? Math.max(0, Math.floor((blockRows - lineas.length) / 2)) : 0;
   const padded: string[] = Array.from({ length: rowsUsed }, () => "");
   lineas.forEach((line, i) => {
-    padded[padTop + i] = line;
+    padded[textOffset + padTop + i] = line;
   });
 
   const firstTextIndex = padded.findIndex((t) => t.length > 0);
-  const textStart = lastCol >= 4 && leftBuf ? 2 : 1;
-  const textEnd = lastCol >= 4 && rightBuf ? lastCol - 1 : lastCol;
+  const charsPerLine = Math.max(12, Math.floor(textColsWidth * 1.05));
 
   for (let i = 0; i < rowsUsed; i++) {
     const rowNum = i + 1;
-    ws.mergeCells(rowNum, textStart, rowNum, textEnd);
-    const cell = ws.getCell(rowNum, textStart);
-    cell.value = padded[i] || "";
+    const mergeStart = i < textOffset ? 1 : textStart;
+    const mergeEnd = i < textOffset ? lastCol : textEnd;
+    if (mergeStart !== mergeEnd) {
+      ws.mergeCells(rowNum, mergeStart, rowNum, mergeEnd);
+    }
+    const cell = ws.getCell(rowNum, mergeStart);
+    const text = padded[i] || "";
+    cell.value = text;
     cell.font = {
       name: "Calibri",
-      size: i === firstTextIndex ? 11 : 9,
-      bold: i === firstTextIndex,
+      size: i === firstTextIndex ? 12 : 10,
+      bold: i === firstTextIndex || i === firstTextIndex + 1,
       color: { argb: "FF111827" },
     };
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    ws.getRow(rowNum).height = 16;
+    const wraps = text ? Math.ceil(text.length / charsPerLine) : 1;
+    ws.getRow(rowNum).height = i < textOffset ? LINE_HEIGHT : Math.max(LINE_HEIGHT, wraps * 15);
   }
 
+  const logoBottom = canFlank ? blockRows : LOGO_ROWS;
   if (leftBuf) {
-    const id = wb.addImage({ buffer: leftBuf as unknown as ExcelJS.Buffer, extension: "png" });
-    ws.addImage(id, {
-      tl: { col: 0.12, row: 0.15 },
-      ext: { width: 58, height: 58 },
-      editAs: "oneCell",
-    });
+    addLogo(wb, ws, leftBuf, 0.18, 0.82, logoBottom);
   }
-  if (rightBuf) {
-    const id = wb.addImage({ buffer: rightBuf as unknown as ExcelJS.Buffer, extension: "png" });
-    ws.addImage(id, {
-      tl: { col: Math.max(0, lastCol - 1.05), row: 0.15 },
-      ext: { width: 58, height: 58 },
-      editAs: "oneCell",
-    });
+  if (rightBuf && lastCol > 1) {
+    addLogo(wb, ws, rightBuf, lastCol - 0.82, lastCol - 0.18, logoBottom);
   }
 
   return rowsUsed;
