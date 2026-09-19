@@ -102,13 +102,11 @@ export async function compressAspiranteImage(file: File, kind: AspiranteFotoKind
   const preset = PRESET[kind];
   const allowed = allowedExtsForKind(kind);
   const keepAlpha = shouldKeepAlpha(file, kind);
+  if (keepAlpha) return file;
+
   const candidates: EncodeMime[] = [];
   if (preset.prefer === "image/webp" && allowed.has("webp")) candidates.push("image/webp");
-  if (keepAlpha) {
-    if (allowed.has("png")) candidates.push("image/png");
-  } else if (allowed.has("jpg")) {
-    candidates.push("image/jpeg");
-  }
+  if (allowed.has("jpg")) candidates.push("image/jpeg");
   if (candidates.length === 0) return file;
 
   let bitmap: ImageBitmap;

@@ -23,13 +23,7 @@ export async function readLaurelOverlayPng(): Promise<Buffer | null> {
 }
 
 export async function readCumpleanosPlantillaJpeg(): Promise<Buffer | null> {
-  const raw = readPublicEsquelaAsset("cumpleanos-plantilla.jpg");
-  if (!raw) return null;
-  try {
-    return await sharp(raw).rotate().jpeg({ quality: 90, chromaSubsampling: "4:4:4" }).toBuffer();
-  } catch {
-    return raw;
-  }
+  return readPublicEsquelaAsset("cumpleanos-plantilla.jpg");
 }
 
 function luma(r: number, g: number, b: number): number {
@@ -89,7 +83,6 @@ function isNearBg(
 export function knockOutStudioBackdrop(data: Buffer, width: number, height: number): void {
   const bg = sampleCorners(data, width, height);
   if (luma(bg.r, bg.g, bg.b) < 200) {
-    fadeOuterPaperWhite(data, width, height);
     return;
   }
 
@@ -146,110 +139,52 @@ export function knockOutStudioBackdrop(data: Buffer, width: number, height: numb
     if (!marked[i]) continue;
     data[i * 4 + 3] = 0;
   }
+}
 
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const i = y * width + x;
-      const o = i * 4;
-      if ((data[o + 3] ?? 255) === 0) continue;
-      let edge = 0;
-      if (marked[i - 1] || marked[i + 1] || marked[i - width] || marked[i + width]) edge = 1;
-      if (edge) data[o + 3] = 70;
-    }
+function hasTransparentPixels(data: Buffer): boolean {
+  const pixels = data.length / 4;
+  const step = Math.max(1, Math.floor(pixels / 12000));
+  for (let i = 0; i < pixels; i += step) {
+    if ((data[i * 4 + 3] ?? 255) < 250) return true;
   }
-
-  fadeOuterPaperWhite(data, width, height);
+  return false;
 }
 
-/** El halo blanco del óvalo (fuera del pecho/cara) se hace transparente. */
-function fadeOuterPaperWhite(data: Buffer, width: number, height: number): void {
-  const cx = (width - 1) / 2;
-  const cy = (height - 1) / 2;
-  const rx = width / 2;
-  const ry = height / 2;
-  const pixels = width * height;
-  for (let i = 0; i < pixels; i++) {
-    const x = i % width;
-    const y = (i / width) | 0;
-    const o = i * 4;
-    const r = data[o] ?? 0;
-    const g = data[o + 1] ?? 0;
-    const b = data[o + 2] ?? 0;
-    if (!isPaperWhite(r, g, b)) continue;
-    const dist = Math.hypot((x - cx) / rx, (y - cy) / ry);
-    if (dist < 0.4) continue;
-    const t = Math.min(1, (dist - 0.4) / 0.38);
-    const s = t * t * (3 - 2 * t);
-    data[o + 3] = Math.round((data[o + 3] ?? 255) * (1 - s));
-  }
-}
+async function fitHonoreePng(buffer: Buffer, knockOutIfOpaque: boolean): Promise<Buffer> {
+  const original = await sharp(buffer).rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const alreadyCutout = hasTransparentPixels(original.data);
 
-function ovalMaskSvg(): Buffer {
-  return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${OVAL_W}" height="${OVAL_H}"><ellipse cx="${OVAL_W / 2}" cy="${OVAL_H / 2}" rx="${OVAL_W / 2}" ry="${OVAL_H / 2}" fill="#fff"/></svg>`,
-  );
-}
-
-function cornersAreAlreadyTransparent(data: Buffer, width: number, height: number): boolean {
-  const patches: Array<[number, number]> = [
-    [2, 2],
-    [width - 3, 2],
-    [2, height - 3],
-    [width - 3, height - 3],
-  ];
-  let transparent = 0;
-  for (const [x, y] of patches) {
-    const a = data[(y * width + x) * 4 + 3] ?? 255;
-    if (a < 24) transparent += 1;
-  }
-  return transparent >= 2;
-}
-
-/** Encaja la foto en el óvalo (cover). Conserva alfa; si el estudio quedó blanco opaco, lo quita. */
-export async function toHonoreeOvalPng(buffer: Buffer): Promise<Buffer> {
   const sized = await sharp(buffer)
     .rotate()
-    .resize(OVAL_W, OVAL_H, { fit: "cover", position: "centre" })
     .ensureAlpha()
+    .resize(OVAL_W, OVAL_H, {
+      fit: "contain",
+      position: "centre",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  if (!cornersAreAlreadyTransparent(sized.data, sized.info.width, sized.info.height)) {
+  if (knockOutIfOpaque && !alreadyCutout) {
     knockOutStudioBackdrop(sized.data, sized.info.width, sized.info.height);
   }
 
   return sharp(sized.data, {
     raw: { width: sized.info.width, height: sized.info.height, channels: 4 },
   })
-    .composite([{ input: ovalMaskSvg(), blend: "dest-in" }])
     .png()
     .toBuffer();
 }
 
-/** Recorta el fondo (Gemini si hay clave; si no, blanco de estudio) y deja un óvalo vertical. */
+/** Encaja la foto en el hueco de la corona sin recortar ni inventar un óvalo opaco. */
+export async function toHonoreeOvalPng(buffer: Buffer): Promise<Buffer> {
+  return fitHonoreePng(buffer, false);
+}
+
+/** Recorta el fondo (Gemini si hay clave; si no, blanco de estudio) y conserva la silueta. */
 export async function toHonoreeCutoutPng(buffer: Buffer): Promise<Buffer> {
   const geminiPng = await cutoutWithGemini(buffer);
-  const source = geminiPng ?? buffer;
-
-  const sized = await sharp(source)
-    .rotate()
-    .resize(OVAL_W, OVAL_H, { fit: "cover", position: "attention" })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  if (!geminiPng) {
-    knockOutStudioBackdrop(sized.data, sized.info.width, sized.info.height);
-  } else {
-    fadeOuterPaperWhite(sized.data, sized.info.width, sized.info.height);
-  }
-
-  return sharp(sized.data, {
-    raw: { width: sized.info.width, height: sized.info.height, channels: 4 },
-  })
-    .composite([{ input: ovalMaskSvg(), blend: "dest-in" }])
-    .png()
-    .toBuffer();
+  return fitHonoreePng(geminiPng ?? buffer, !geminiPng);
 }
 
 export async function loadFotoOvalForEsquelaPdf(fotoKey: string | null): Promise<Buffer | null> {

@@ -56,12 +56,11 @@ export function EsquelaCumpleanosPoster({
         <img
           src={fotoSrc}
           alt=""
-          className="absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 object-cover"
+          className="absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 object-contain"
           style={{
             top: `${CUMPLEANOS_LAYOUT.photoCenterYPct * 100}%`,
             width: `${CUMPLEANOS_LAYOUT.photoWidthPct * 100}%`,
             height: `${CUMPLEANOS_LAYOUT.photoHeightPct * 100}%`,
-            clipPath: "ellipse(50% 50% at 50% 50%)",
           }}
         />
       ) : null}

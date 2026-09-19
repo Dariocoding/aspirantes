@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     top: photoTop,
     width: photoW,
     height: photoH,
-    objectFit: "cover",
+    objectFit: "contain",
   },
   laurel: {
     position: "absolute",
