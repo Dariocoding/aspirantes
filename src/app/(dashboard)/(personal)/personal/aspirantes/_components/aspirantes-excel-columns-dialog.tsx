@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
+import { routes } from "@src/lib/apps/routes";
 import {
   CENSUS_EXPORT_COLUMN_GROUPS,
   CENSUS_EXPORT_COLUMNS,
@@ -19,7 +20,13 @@ import {
   getCensusExportColumn,
   moveCensusExportColumn,
 } from "@src/lib/aspirantes/census-export-columns";
+import {
+  defaultMembreteOptionId,
+  MEMBRETE_NONE_ID,
+  type MembreteOption,
+} from "@src/lib/membrete";
 import { cn } from "@src/lib/utils";
+import Link from "next/link";
 
 const REQUIRED_EXPORT_IDS = new Set<string>(CENSUS_EXPORT_DEFAULT_IDS);
 
@@ -27,10 +34,21 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   busy: boolean;
+  membretes: MembreteOption[];
+  membreteId: string;
+  onMembreteIdChange: (id: string) => void;
   onExport: (columnIds: string[]) => void;
 };
 
-export function AspirantesExcelColumnsDialog({ open, onOpenChange, busy, onExport }: Props) {
+export function AspirantesExcelColumnsDialog({
+  open,
+  onOpenChange,
+  busy,
+  membretes,
+  membreteId,
+  onMembreteIdChange,
+  onExport,
+}: Props) {
   const [ids, setIds] = useState<string[]>([...CENSUS_EXPORT_DEFAULT_IDS]);
   const [query, setQuery] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -78,9 +96,38 @@ export function AspirantesExcelColumnsDialog({ open, onOpenChange, busy, onExpor
             Exportar Excel
           </DialogTitle>
           <DialogDescription>
-            N°, nombre completo y cédula salen siempre. Marque el resto y ordénelas a la derecha.
+            N°, nombre completo y cédula salen siempre. Elija el membrete institucional y el resto de
+            columnas.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex flex-wrap items-end gap-3 px-5 pt-3">
+          <div className="min-w-0 flex-1">
+            <label htmlFor="excel-membrete" className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+              Membrete
+            </label>
+            <select
+              id="excel-membrete"
+              className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              value={membreteId || defaultMembreteOptionId(membretes)}
+              onChange={(e) => onMembreteIdChange(e.target.value)}
+            >
+              <option value={MEMBRETE_NONE_ID}>Sin membrete (solo título actual)</option>
+              {membretes.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nombre}
+                  {m.isDefault ? " (predeterminado)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Link
+            href={routes.personal.membretes}
+            className="mb-0.5 text-xs font-medium text-slate-600 underline underline-offset-2 hover:text-slate-900"
+          >
+            Diseñar membretes
+          </Link>
+        </div>
 
         <div className="grid min-h-0 flex-1 gap-0 border-t border-border md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
           <div className="flex min-h-0 flex-col border-b border-border md:border-r md:border-b-0">

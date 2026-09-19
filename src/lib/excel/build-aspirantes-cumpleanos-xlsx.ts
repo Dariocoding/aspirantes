@@ -1,5 +1,7 @@
 import ExcelJS from "exceljs";
 import { hasRealBirthDate } from "@src/lib/date";
+import { applyExcelMembreteHeader } from "@src/lib/excel/apply-excel-membrete";
+import type { MembreteSpec } from "@src/lib/membrete";
 import { MESES_TITULO } from "@src/lib/meses";
 
 export type AspiranteCumpleanosExportRow = {
@@ -16,6 +18,7 @@ export type BuildAspirantesCumpleanosXlsxParams = {
   anio: number;
   rows: AspiranteCumpleanosExportRow[];
   generatedAt: Date;
+  membrete?: MembreteSpec | null;
 };
 
 const BORDER: Partial<ExcelJS.Borders> = {
@@ -210,14 +213,12 @@ export async function buildAspirantesCumpleanosXlsxBuffer(
   wb.created = generatedAt;
 
   const ws = wb.addWorksheet("Cumpleaños por mes", {
-    views: [{ state: "frozen", ySplit: 3, activeCell: "A4", showGridLines: false }],
     properties: { defaultRowHeight: 20 },
     pageSetup: {
       orientation: "portrait",
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
-      printTitlesRow: "1:3",
     },
   });
 
@@ -225,55 +226,63 @@ export async function buildAspirantesCumpleanosXlsxBuffer(
     ws.getColumn(i + 1).width = w;
   });
 
+  const offset = applyExcelMembreteHeader(wb, ws, LAST_COL, params.membrete);
+  const titleRow = offset + 1;
+  const subRow = offset + 2;
+  const resumenRow = offset + 3;
+
+  ws.views = [{ state: "frozen", ySplit: resumenRow, activeCell: `A${resumenRow + 1}`, showGridLines: false }];
+  ws.pageSetup.printTitlesRow = `${titleRow}:${resumenRow}`;
+
   // —— Encabezado ——
-  ws.mergeCells(1, 1, 1, LAST_COL);
-  const title = ws.getCell(1, 1);
+  ws.mergeCells(titleRow, 1, titleRow, LAST_COL);
+  const title = ws.getCell(titleRow, 1);
   title.value = "LISTADO DE CUMPLEAÑOS POR MES — ASPIRANTES";
   title.font = { name: "Calibri", size: 15, bold: true, color: { argb: "FFFFFFFF" } };
   title.fill = solidFill("FF0F172A");
   title.alignment = { vertical: "middle", horizontal: "center" };
   applyCellBorder(title);
   for (let c = 2; c <= LAST_COL; c++) {
-    const side = ws.getCell(1, c);
+    const side = ws.getCell(titleRow, c);
     side.fill = solidFill("FF0F172A");
     applyCellBorder(side);
   }
-  ws.getRow(1).height = 30;
+  ws.getRow(titleRow).height = 30;
 
-  ws.mergeCells(2, 1, 2, LAST_COL);
-  const sub = ws.getCell(2, 1);
+  ws.mergeCells(subRow, 1, subRow, LAST_COL);
+  const sub = ws.getCell(subRow, 1);
   sub.value = `${convocatoriaNombre}  ·  ${convocatoriaCodigo}  ·  ${anio}  ·  Con fecha: ${conFecha}  ·  Sin fecha: ${sinFecha.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
   sub.font = { name: "Calibri", size: 10, color: { argb: "FF334155" } };
   sub.fill = solidFill("FFE2E8F0");
   sub.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
   applyCellBorder(sub);
   for (let c = 2; c <= LAST_COL; c++) {
-    const side = ws.getCell(2, c);
+    const side = ws.getCell(subRow, c);
     side.fill = solidFill("FFE2E8F0");
     applyCellBorder(side);
   }
-  ws.getRow(2).height = 20;
+  ws.getRow(subRow).height = 20;
 
   // —— Resumen por mes ——
-  ws.mergeCells(3, 1, 3, LAST_COL);
+  ws.mergeCells(resumenRow, 1, resumenRow, LAST_COL);
   const resumenParts = MESES_TITULO.map((nombre, i) => {
     const n = byMonth.get(i)?.length ?? 0;
     return `${nombre.slice(0, 3)} ${n}`;
   });
-  const resumen = ws.getCell(3, 1);
+  const resumen = ws.getCell(resumenRow, 1);
   resumen.value = `Resumen:  ${resumenParts.join("  ·  ")}`;
   resumen.font = { name: "Calibri", size: 9, color: { argb: "FF475569" } };
   resumen.fill = solidFill("FFF8FAFC");
   resumen.alignment = { vertical: "middle", horizontal: "left", indent: 1, wrapText: true };
   applyCellBorder(resumen);
   for (let c = 2; c <= LAST_COL; c++) {
-    const side = ws.getCell(3, c);
+    const side = ws.getCell(resumenRow, c);
     side.fill = solidFill("FFF8FAFC");
     applyCellBorder(side);
   }
-  ws.getRow(3).height = 22;
+  ws.getRow(resumenRow).height = 22;
 
-  let rowNum = 4;
+  let rowNum = resumenRow + 1;
 
   // —— Secciones por mes (enero → diciembre) ——
   for (let mes = 0; mes < 12; mes++) {

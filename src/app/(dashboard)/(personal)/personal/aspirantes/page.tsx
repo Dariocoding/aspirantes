@@ -178,7 +178,7 @@ export default async function AspirantesPage({
   const groupByReligion = isCensusReligionGroupSort(sp.sort);
   const sortInMemory = groupByNacimientoMes || groupByGrado;
 
-  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones] =
+  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones, membreteRows] =
     await Promise.all([
     sortInMemory
       ? Promise.resolve(0)
@@ -222,6 +222,10 @@ export default async function AspirantesPage({
       where: { convocatoriaId: convocatoriaFiltroId },
       orderBy: { numero: "asc" },
       select: { id: true, numero: true, nombre: true },
+    }),
+    prisma.membrete.findMany({
+      orderBy: [{ isDefault: "desc" }, { nombre: "asc" }],
+      select: { id: true, nombre: true, isDefault: true },
     }),
   ]);
 
@@ -323,6 +327,7 @@ export default async function AspirantesPage({
                   exportQuery={censusQueryString(qsBase, {})}
                   convocatoriaId={convocatoriaFiltroId}
                   convocatoriaCount={convocatoriaAspiranteCount}
+                  membretes={membreteRows}
                 />
               ) : null}
               {write ? <AspiranteQuickRegisterButton pelotones={pelotones} /> : null}

@@ -37,7 +37,7 @@ export function excelCellToText(value: ExcelJS.CellValue): string {
 }
 
 function findHeaderRow(ws: ExcelJS.Worksheet): { rowNumber: number; map: Map<number, string> } | null {
-  const maxScan = Math.min(12, ws.rowCount || 12);
+  const maxScan = Math.min(24, ws.rowCount || 24);
   for (let r = 1; r <= maxScan; r++) {
     const row = ws.getRow(r);
     const map = new Map<number, string>();

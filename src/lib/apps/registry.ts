@@ -22,6 +22,7 @@ import {
   Medal,
   ClipboardList,
   Shield,
+  Stamp,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -140,6 +141,7 @@ const personalMainLinks: AppNavLink[] = [
 const personalConfigLinks: AppNavLink[] = [
   { href: routes.personal.efemerides, label: "Efemérides", icon: CalendarDays },
   { href: routes.personal.esquelas, label: "Esquelas", icon: Medal },
+  { href: routes.personal.membretes, label: "Membretes", icon: Stamp },
   {
     href: routes.personal.convocatorias,
     label: "Convocatorias",

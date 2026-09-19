@@ -14,6 +14,7 @@ import {
 } from "@src/components/ui/dialog";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuGroupLabel,
@@ -21,6 +22,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@src/components/ui/dropdown-menu";
+import { routes } from "@src/lib/apps/routes";
+import {
+  defaultMembreteOptionId,
+  MEMBRETE_NONE_ID,
+  type MembreteOption,
+} from "@src/lib/membrete";
+import Link from "next/link";
 
 type Props = {
   /** Cadena de consulta sin `format` (mismos filtros que el listado). */
@@ -28,6 +36,7 @@ type Props = {
   convocatoriaId: string;
   /** Aspirantes de la convocatoria (sin filtros del listado). */
   convocatoriaCount: number;
+  membretes: MembreteOption[];
 };
 
 function filenameFromContentDisposition(header: string | null, fallback: string) {
@@ -72,13 +81,19 @@ async function downloadExport(url: string, fallbackName: string) {
 const triggerClass =
   "h-8 gap-1.5 rounded-md px-2.5 text-slate-800 shadow-none hover:bg-slate-100";
 
-export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatoriaCount }: Props) {
+export function AspirantesExportLinks({
+  exportQuery,
+  convocatoriaId,
+  convocatoriaCount,
+  membretes,
+}: Props) {
   const suffix = exportQuery ? `&${exportQuery}` : "";
   const base = "/api/aspirantes/censo/export";
   const [excelOpen, setExcelOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [membreteId, setMembreteId] = useState(() => defaultMembreteOptionId(membretes));
 
   async function runDownload(url: string, fallbackName: string, label: string) {
     if (busyLabel) return;
@@ -97,8 +112,13 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
     const params = new URLSearchParams(exportQuery);
     params.set("format", "xlsx");
     params.set("columns", columnIds.join(","));
+    params.set("membrete", membreteId || MEMBRETE_NONE_ID);
     setExcelOpen(false);
     void runDownload(`${base}?${params.toString()}`, "censo-aspirantes.xlsx", "el Excel del censo");
+  }
+
+  function membreteQuery() {
+    return `membrete=${encodeURIComponent(membreteId || MEMBRETE_NONE_ID)}`;
   }
 
   const fichasTodasUrl = `${base}?format=pdf&variant=fichas-tecnicas&scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
@@ -120,6 +140,32 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-64">
             <DropdownMenuGroup>
+              <DropdownMenuGroupLabel>Membrete</DropdownMenuGroupLabel>
+              <DropdownMenuCheckboxItem
+                checked={membreteId === MEMBRETE_NONE_ID}
+                onCheckedChange={(checked) => {
+                  if (checked) setMembreteId(MEMBRETE_NONE_ID);
+                }}
+              >
+                Sin membrete
+              </DropdownMenuCheckboxItem>
+              {membretes.map((m) => (
+                <DropdownMenuCheckboxItem
+                  key={m.id}
+                  checked={membreteId === m.id}
+                  onCheckedChange={(checked) => {
+                    if (checked) setMembreteId(m.id);
+                  }}
+                >
+                  {m.nombre}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuItem nativeButton={false} render={<Link href={routes.personal.membretes} />}>
+                <span className="text-xs text-muted-foreground">Diseñar o editar membretes…</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
               <DropdownMenuGroupLabel>Hojas de cálculo</DropdownMenuGroupLabel>
               <DropdownMenuItem disabled={Boolean(busyLabel)} onClick={() => setExcelOpen(true)}>
                 <span className="flex min-w-0 flex-col gap-0.5">
@@ -137,8 +183,14 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                nativeButton={false}
-                render={<a href={`${base}?format=xlsx&variant=cumpleanos${suffix}`} />}
+                disabled={Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(
+                    `${base}?format=xlsx&variant=cumpleanos&${membreteQuery()}${suffix}`,
+                    "cumpleanos-aspirantes.xlsx",
+                    "el Excel de cumpleaños",
+                  )
+                }
               >
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">Cumpleaños</span>
@@ -248,6 +300,9 @@ export function AspirantesExportLinks({ exportQuery, convocatoriaId, convocatori
         open={excelOpen}
         onOpenChange={setExcelOpen}
         busy={Boolean(busyLabel)}
+        membretes={membretes}
+        membreteId={membreteId}
+        onMembreteIdChange={setMembreteId}
         onExport={exportExcel}
       />
       <AspirantesExcelImportDialog

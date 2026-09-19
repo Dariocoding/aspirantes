@@ -10,6 +10,7 @@ import { CENSUS_EXPORT_DEFAULT_IDS, parseCensusExportColumnIds } from "@src/lib/
 import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
 import { buildAspirantesCumpleanosXlsxBuffer } from "@src/lib/excel/build-aspirantes-cumpleanos-xlsx";
+import { isMembreteLogoKind, MEMBRETE_NONE_ID, type MembreteSpec } from "@src/lib/membrete";
 import { ageFromBirthDate } from "@src/lib/date";
 import { labelPeloton } from "@src/lib/pelotones";
 import { AspirantesCensoPdfDocument } from "@src/lib/pdf/aspirantes-censo-document";
@@ -46,6 +47,18 @@ function parseSp(searchParams: URLSearchParams): Record<string, string | undefin
 
 function safeFilePart(s: string) {
   return s.replace(/[^\w.-]+/g, "_").replace(/^\.+/, "").slice(0, 48) || "censo";
+}
+
+function toMembreteSpec(row: {
+  lineas: string[];
+  logoIzq: string;
+  logoDer: string;
+}): MembreteSpec {
+  return {
+    lineas: row.lineas,
+    logoIzq: isMembreteLogoKind(row.logoIzq) ? row.logoIzq : "none",
+    logoDer: isMembreteLogoKind(row.logoDer) ? row.logoDer : "none",
+  };
 }
 
 export async function GET(request: Request) {
@@ -122,6 +135,17 @@ export async function GET(request: Request) {
 
   const convocatoriaActual =
     convocatorias.find((c) => c.id === convocatoriaFiltroId) ?? convocatorias[0]!;
+
+  const membreteParam = url.searchParams.get("membrete")?.trim() ?? "";
+  let membrete: MembreteSpec | null = null;
+  let membreteId: string | null = null;
+  if (membreteParam && membreteParam !== MEMBRETE_NONE_ID) {
+    const row = await prisma.membrete.findUnique({ where: { id: membreteParam } });
+    if (row) {
+      membrete = toMembreteSpec(row);
+      membreteId = row.id;
+    }
+  }
 
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
   const sort = censusOrderBy(sp.sort);
@@ -221,6 +245,7 @@ export async function GET(request: Request) {
       convocatoriaCodigo: convocatoriaActual.codigo,
       convocatoriaNombre: convocatoriaActual.nombre,
       ...(columnIds ? { columns: columnIds } : {}),
+      ...(membreteId ? { membreteId } : {}),
       ...(scopeConvocatoria ? { scope: "convocatoria" } : {}),
     },
   });
@@ -238,6 +263,7 @@ export async function GET(request: Request) {
         edad: ageFromBirthDate(a.fechaNacimiento),
       })),
       generatedAt,
+      membrete,
     });
 
     return new NextResponse(new Uint8Array(buffer), {
@@ -259,6 +285,7 @@ export async function GET(request: Request) {
       rows: exportRows,
       columnIds: columnIds ?? [...CENSUS_EXPORT_DEFAULT_IDS],
       generatedAt,
+      membrete,
     });
 
     return new NextResponse(new Uint8Array(buffer), {

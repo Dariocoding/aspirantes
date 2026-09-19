@@ -11,6 +11,8 @@ import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
 import { TALLA_UNIFORME_PATRIOTA_LABELS, isTallaUniformePatriota } from "@src/lib/aspirantes/tallas-familia";
+import { applyExcelMembreteHeader } from "@src/lib/excel/apply-excel-membrete";
+import type { MembreteSpec } from "@src/lib/membrete";
 
 export type AspiranteCensoExportRow = {
   nombres: string;
@@ -61,6 +63,7 @@ export type BuildAspirantesCensoXlsxParams = {
   rows: AspiranteCensoExportRow[];
   columnIds: string[];
   generatedAt: Date;
+  membrete?: MembreteSpec | null;
 };
 
 const BORDER: Partial<ExcelJS.Borders> = {
@@ -229,7 +232,6 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   wb.created = generatedAt;
 
   const ws = wb.addWorksheet("Censo", {
-    views: [{ state: "frozen", ySplit: 3, xSplit: 0, activeCell: "A4", showGridLines: true }],
     properties: { defaultRowHeight: 22 },
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
   });
@@ -238,25 +240,42 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
     ws.getColumn(i + 1).width = col.width;
   });
 
-  ws.mergeCells(1, 1, 1, lastCol);
-  const title = ws.getCell(1, 1);
+  const offset = applyExcelMembreteHeader(wb, ws, lastCol, params.membrete);
+  const titleRow = offset + 1;
+  const subRow = offset + 2;
+  const colHeaderRow = offset + 3;
+  const dataStartRow = offset + 4;
+
+  ws.views = [
+    {
+      state: "frozen",
+      ySplit: colHeaderRow,
+      xSplit: 0,
+      activeCell: `A${dataStartRow}`,
+      showGridLines: true,
+    },
+  ];
+  ws.pageSetup.printTitlesRow = `${colHeaderRow}:${colHeaderRow}`;
+
+  ws.mergeCells(titleRow, 1, titleRow, lastCol);
+  const title = ws.getCell(titleRow, 1);
   title.value = "CENSO DE ASPIRANTES";
   title.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
   title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F172A" } };
   title.alignment = { vertical: "middle", horizontal: "center" };
   applyCellBorder(title);
-  ws.getRow(1).height = 30;
+  ws.getRow(titleRow).height = 30;
 
-  ws.mergeCells(2, 1, 2, lastCol);
-  const sub = ws.getCell(2, 1);
+  ws.mergeCells(subRow, 1, subRow, lastCol);
+  const sub = ws.getCell(subRow, 1);
   sub.value = `${convocatoriaNombre}  ·  ${convocatoriaCodigo}  ·  ${anio}  ·  Total: ${rows.length}  ·  Generado: ${generatedAt.toLocaleString("es-VE", { dateStyle: "short", timeStyle: "short" })}`;
   sub.font = { name: "Calibri", size: 11, color: { argb: "FF334155" } };
   sub.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
   sub.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
   applyCellBorder(sub);
-  ws.getRow(2).height = 22;
+  ws.getRow(subRow).height = 22;
 
-  const headerRow = ws.getRow(3);
+  const headerRow = ws.getRow(colHeaderRow);
   headerRow.height = 28;
   columns.forEach((col, i) => {
     const cell = headerRow.getCell(i + 1);
@@ -268,7 +287,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   });
 
   rows.forEach((r, idx) => {
-    const row = ws.getRow(4 + idx);
+    const row = ws.getRow(dataStartRow + idx);
     const zebra = idx % 2 === 0 ? ZEBRA_A : ZEBRA_B;
     let maxLines = 1;
 

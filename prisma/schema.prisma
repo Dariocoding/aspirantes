@@ -450,6 +450,23 @@ model DatosFisicosMedicos {
   updatedAt         DateTime @updatedAt
 }
 
+/// Encabezado institucional reutilizable en exportaciones (Excel).
+model Membrete {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  /// Renglones centrados del membrete (máx. 8 en validación de app).
+  lineas    String[]
+  /// `none` | `cefoa`
+  logoIzq   String   @default("cefoa")
+  /// `none` | `cefoa`
+  logoDer   String   @default("none")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isDefault])
+}
+
 model Efemeride {
   id          String   @id @default(cuid())
   nombre      String

@@ -12,6 +12,7 @@ export const routes = {
     esquelas: "/personal/esquelas",
     esquela: (id: string) => `/personal/esquelas/${encodeURIComponent(id)}`,
     convocatorias: "/personal/convocatorias",
+    membretes: "/personal/membretes",
     manual: "/personal/manual",
   },
   sistema: {
@@ -33,6 +34,7 @@ export const personalPathPrefixes = [
   routes.personal.efemerides,
   routes.personal.esquelas,
   routes.personal.convocatorias,
+  routes.personal.membretes,
   routes.personal.manual,
 ] as const;
 

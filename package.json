@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "node scripts/copy-pdfjs-worker.mjs && next dev",
+    "dev:webpack": "node scripts/copy-pdfjs-worker.mjs && next dev --webpack",
     "build": "next build",
     "vercel-build": "prisma migrate deploy && next build",
     "start": "next start",

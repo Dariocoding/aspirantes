@@ -79,6 +79,14 @@ export type EfemerideActionState = {
 
 export const efemerideInitialActionState: EfemerideActionState = { ok: false, errors: {} };
 
+export type MembreteActionState = {
+  ok: boolean;
+  errors: Record<string, string>;
+  id?: string;
+};
+
+export const membreteInitialActionState: MembreteActionState = { ok: false, errors: {} };
+
 export type UsuarioActionState = {
   ok: boolean;
   errors: Record<string, string>;

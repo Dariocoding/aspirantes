@@ -50,6 +50,9 @@
       "@dashboard/convocatorias/*": [
         "./src/app/(dashboard)/(personal)/personal/convocatorias/*"
       ],
+      "@dashboard/membretes/*": [
+        "./src/app/(dashboard)/(personal)/personal/membretes/*"
+      ],
       "@dashboard/manual/*": [
         "./src/app/(dashboard)/(personal)/personal/manual/*"
       ],

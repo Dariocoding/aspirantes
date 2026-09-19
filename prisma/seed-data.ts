@@ -90,6 +90,25 @@ export async function runSeed(client: PrismaClient) {
   await seedRbac(client);
   await seedInventario(client);
 
+  await client.membrete.upsert({
+    where: { nombre: "CEFOA — Oficiales asimilados Nro. 45" },
+    create: {
+      id: "membrete_cefoa45",
+      nombre: "CEFOA — Oficiales asimilados Nro. 45",
+      lineas: [
+        "República Bolivariana de Venezuela",
+        "Ministerio del Poder Popular para la Defensa",
+        "Ejército Bolivariano",
+        "Dirección de Educación del Ejército",
+        "Curso Especial de Formación de Oficiales en las Categoría de Asimilados Nro. 45",
+      ],
+      logoIzq: "cefoa",
+      logoDer: "none",
+      isDefault: true,
+    },
+    update: {},
+  });
+
   const inserted = await client.efemeride.createMany({
     data: efemeridesVenezuela,
     skipDuplicates: true,
