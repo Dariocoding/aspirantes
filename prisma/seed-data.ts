@@ -3,6 +3,7 @@ import type { PrismaClient } from "../src/generated/prisma";
 import { seedRbac } from "./seed-rbac";
 import { seedInventario } from "./seed-inventario";
 import { SYSTEM_ROLE_IDS } from "../src/lib/auth/rbac-catalog";
+import { PLANTILLA_MEMBRETE_CEFOA45 } from "../src/lib/membrete";
 
 const efemeridesVenezuela = [
   // --- ENERO ---
@@ -80,6 +81,31 @@ const efemeridesVenezuela = [
   { nombre: "Fin de Año", dia: 31, mes: 12, tipo: "FERIADO", descripcion: "Cierre del año calendario." }
 ];
 
+const MEMBRETE_CEFOA45_ID = "membrete_cefoa45";
+const MEMBRETE_CEFOA45_NOMBRE = "CEFOA — Oficiales asimilados Nro. 45";
+
+async function seedMembreteCefoa45(client: PrismaClient) {
+  const byId = await client.membrete.findUnique({ where: { id: MEMBRETE_CEFOA45_ID } });
+  if (byId) return;
+  const byNombre = await client.membrete.findUnique({ where: { nombre: MEMBRETE_CEFOA45_NOMBRE } });
+  if (byNombre) return;
+  try {
+    await client.membrete.create({
+      data: {
+        id: MEMBRETE_CEFOA45_ID,
+        nombre: MEMBRETE_CEFOA45_NOMBRE,
+        lineas: [...PLANTILLA_MEMBRETE_CEFOA45],
+        logoIzq: "ejercito",
+        logoDer: "cefoa",
+        isDefault: true,
+      },
+    });
+  } catch (err) {
+    const code = typeof err === "object" && err && "code" in err ? String(err.code) : "";
+    if (code !== "P2002") throw err;
+  }
+}
+
 /**
  * Datos iniciales idempotentes: añade efemérides del catálogo que aún no existen
  * (clave única día + mes + nombre) sin borrar las creadas o editadas en la app.
@@ -89,28 +115,7 @@ const efemeridesVenezuela = [
 export async function runSeed(client: PrismaClient) {
   await seedRbac(client);
   await seedInventario(client);
-
-  await client.membrete.upsert({
-    where: { nombre: "CEFOA — Oficiales asimilados Nro. 45" },
-    create: {
-      id: "membrete_cefoa45",
-      nombre: "CEFOA — Oficiales asimilados Nro. 45",
-      lineas: [
-        "República Bolivariana de Venezuela",
-        "Ministerio del Poder Popular para la Defensa",
-        "Ejército Bolivariano",
-        "Dirección de Educación del Ejército",
-        "Curso Especial de Formación de Oficiales en las Categoría de Asimilados Nro. 45",
-      ],
-      logoIzq: "ejercito",
-      logoDer: "cefoa",
-      isDefault: true,
-    },
-    update: {
-      logoIzq: "ejercito",
-      logoDer: "cefoa",
-    },
-  });
+  await seedMembreteCefoa45(client);
 
   const inserted = await client.efemeride.createMany({
     data: efemeridesVenezuela,
