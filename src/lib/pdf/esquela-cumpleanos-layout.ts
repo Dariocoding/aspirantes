@@ -20,7 +20,7 @@ export const CUMPLEANOS_GOLD = {
  * Ajustar juntas en PDF y en la vista previa HTML.
  */
 export const CUMPLEANOS_LAYOUT = {
-  nameTopPct: 0.222,
+  nameTopPct: 0.242,
   nameWidthPct: 0.945,
   photoWidthPct: 0.28,
   photoHeightPct: 0.335,
