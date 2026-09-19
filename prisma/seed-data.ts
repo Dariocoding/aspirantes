@@ -102,11 +102,14 @@ export async function runSeed(client: PrismaClient) {
         "Dirección de Educación del Ejército",
         "Curso Especial de Formación de Oficiales en las Categoría de Asimilados Nro. 45",
       ],
-      logoIzq: "cefoa",
-      logoDer: "none",
+      logoIzq: "ejercito",
+      logoDer: "cefoa",
       isDefault: true,
     },
-    update: {},
+    update: {
+      logoIzq: "ejercito",
+      logoDer: "cefoa",
+    },
   });
 
   const inserted = await client.efemeride.createMany({

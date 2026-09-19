@@ -456,10 +456,10 @@ model Membrete {
   nombre    String   @unique
   /// Renglones centrados del membrete (máx. 8 en validación de app).
   lineas    String[]
-  /// `none` | `cefoa`
-  logoIzq   String   @default("cefoa")
-  /// `none` | `cefoa`
-  logoDer   String   @default("none")
+  /// `none` | `cefoa` | `ejercito`
+  logoIzq   String   @default("ejercito")
+  /// `none` | `cefoa` | `ejercito`
+  logoDer   String   @default("cefoa")
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

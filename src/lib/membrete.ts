@@ -1,4 +1,4 @@
-export const MEMBRETE_LOGO_KINDS = ["none", "cefoa"] as const;
+export const MEMBRETE_LOGO_KINDS = ["none", "cefoa", "ejercito"] as const;
 export type MembreteLogoKind = (typeof MEMBRETE_LOGO_KINDS)[number];
 
 export const MEMBRETE_NONE_ID = "none";

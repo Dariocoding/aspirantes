@@ -68,3 +68,22 @@ test("el import encuentra Cédula debajo de un membrete institucional", async ()
   assert.equal(parsed.rows.length, 1);
   assert.equal(parsed.rows[0]?.cedula, "21425976");
 });
+
+test("el membrete con escudos del Ejército y C.E.F.O.A. sigue importándose", async () => {
+  const buffer = await buildAspirantesCensoXlsxBuffer({
+    convocatoriaNombre: "CEFOA 46",
+    convocatoriaCodigo: "CEFOA-46",
+    anio: 2026,
+    rows: [sampleRow()],
+    columnIds: ["numero", "nombreCompleto", "cedula"],
+    generatedAt: new Date("2026-09-19T12:00:00Z"),
+    membrete: {
+      lineas: [...PLANTILLA_MEMBRETE_CEFOA45],
+      logoIzq: "ejercito",
+      logoDer: "cefoa",
+    },
+  });
+
+  const parsed = await parseAspirantesCensoXlsxBuffer(buffer);
+  assert.equal(parsed.rows[0]?.cedula, "21425976");
+});

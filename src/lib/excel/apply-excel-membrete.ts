@@ -1,11 +1,10 @@
 import "server-only";
 import ExcelJS from "exceljs";
-import type { MembreteLogoKind, MembreteSpec } from "@src/lib/membrete";
-import { readInstitutionLogoPngBuffer } from "@src/lib/pdf/institution-logo";
+import type { MembreteSpec } from "@src/lib/membrete";
+import { readMembreteLogoPngBuffer } from "@src/lib/pdf/institution-logo";
 
-function logoBuffer(kind: MembreteLogoKind): Buffer | null {
-  if (kind === "cefoa") return readInstitutionLogoPngBuffer();
-  return null;
+function logoBuffer(kind: MembreteSpec["logoIzq"]): Buffer | null {
+  return readMembreteLogoPngBuffer(kind);
 }
 
 /**

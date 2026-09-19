@@ -59,7 +59,7 @@ function LogoSelect({
       <Select
         value={value}
         onValueChange={(v) => {
-          if (v === "none" || v === "cefoa") onValueChange(v);
+          if (v === "none" || v === "cefoa" || v === "ejercito") onValueChange(v);
         }}
       >
         <SelectTrigger id={id} className="h-9 w-full min-w-0 shadow-xs">
@@ -67,6 +67,7 @@ function LogoSelect({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="none">Sin logo</SelectItem>
+          <SelectItem value="ejercito">Escudo del Ejército</SelectItem>
           <SelectItem value="cefoa">Escudo C.E.F.O.A.</SelectItem>
         </SelectContent>
       </Select>
@@ -84,8 +85,8 @@ export function MembretesView({ membretes, canWrite }: Props) {
   const [lineasTexto, setLineasTexto] = useState(
     selected ? membreteLineasToText(selected.lineas) : membreteLineasToText(PLANTILLA_MEMBRETE_CEFOA45),
   );
-  const [logoIzq, setLogoIzq] = useState<MembreteLogoKind>(selected?.logoIzq ?? "cefoa");
-  const [logoDer, setLogoDer] = useState<MembreteLogoKind>(selected?.logoDer ?? "none");
+  const [logoIzq, setLogoIzq] = useState<MembreteLogoKind>(selected?.logoIzq ?? "ejercito");
+  const [logoDer, setLogoDer] = useState<MembreteLogoKind>(selected?.logoDer ?? "cefoa");
   const [isDefault, setIsDefault] = useState(selected?.isDefault ?? membretes.length === 0);
 
   const [createState, createAction, createPending] = useActionState(
@@ -104,8 +105,8 @@ export function MembretesView({ membretes, canWrite }: Props) {
     if (isNew) {
       setNombre("");
       setLineasTexto(membreteLineasToText(PLANTILLA_MEMBRETE_CEFOA45));
-      setLogoIzq("cefoa");
-      setLogoDer("none");
+      setLogoIzq("ejercito");
+      setLogoDer("cefoa");
       setIsDefault(membretes.length === 0);
       return;
     }

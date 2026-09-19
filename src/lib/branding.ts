@@ -1,6 +1,9 @@
 /** Escudo heráldico del C.E.F.O.A. (PNG sobre campo negro). Para PDF ver `readInstitutionLogoPngBuffer`. */
 export const INSTITUTION_LOGO_SRC = "/images/cefoa-logo.png";
 
+/** Escudo del Ejército Bolivariano (PNG). Membrete: logo izquierdo. */
+export const EJERCITO_LOGO_SRC = "/images/ejercito-logo.png";
+
 export const INSTITUTION_SHORT_NAME = "C.E.F.O.A.";
 
 export const INSTITUTION_NAME =
