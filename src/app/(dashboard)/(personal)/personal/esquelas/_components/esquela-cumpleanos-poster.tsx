@@ -41,9 +41,9 @@ function GoldScriptLine({ text, sizeCqw }: { text: string; sizeCqw: string }) {
           WebkitBackgroundClip: "text",
           color: "transparent",
           WebkitTextFillColor: "transparent",
-          WebkitTextStroke: `0.022em ${CUMPLEANOS_GOLD.stroke}`,
+          WebkitTextStroke: `${CUMPLEANOS_LAYOUT.nameStrokeEm}em ${CUMPLEANOS_GOLD.stroke}`,
           paintOrder: "stroke fill",
-          filter: "drop-shadow(0 0.035em 0.05em rgba(28,18,6,0.32))",
+          filter: "drop-shadow(0 0.04em 0.05em rgba(40,24,6,0.28))",
         }}
       >
         {text}

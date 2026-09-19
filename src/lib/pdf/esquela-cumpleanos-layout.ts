@@ -6,13 +6,13 @@ export const CUMPLEANOS_PAGE_W = 595.28;
 export const CUMPLEANOS_PAGE_H = CUMPLEANOS_PAGE_W / CUMPLEANOS_POSTER_ASPECT;
 
 export const CUMPLEANOS_GOLD = {
-  fill: "#c9a227",
-  light: "#ddc06a",
-  dark: "#8a6414",
-  stroke: "#3a2a0c",
-  css: "linear-gradient(180deg, #ddc06a 0%, #c9a227 42%, #8a6414 100%)",
+  fill: "#e2bf3c",
+  light: "#f6e79a",
+  dark: "#c08a18",
+  stroke: "#3d280c",
+  css: "linear-gradient(180deg, #f6e79a 0%, #e2bf3c 40%, #c08a18 100%)",
   underCss:
-    "radial-gradient(ellipse at 50% 38%, #e6d392 0%, #c9a227 52%, #6e5214 100%)",
+    "radial-gradient(ellipse at 50% 38%, #f3e08a 0%, #e2bf3c 52%, #a87414 100%)",
 } as const;
 
 /**
@@ -20,15 +20,16 @@ export const CUMPLEANOS_GOLD = {
  * Ajustar juntas en PDF y en la vista previa HTML.
  */
 export const CUMPLEANOS_LAYOUT = {
-  nameTopPct: 0.228,
-  nameWidthPct: 0.92,
+  nameTopPct: 0.222,
+  nameWidthPct: 0.945,
   photoWidthPct: 0.28,
   photoHeightPct: 0.335,
   photoCenterYPct: 0.478,
   nameLetterSpacingPt: 0,
   nameLetterSpacingEm: "0em",
-  /** Relieve: un escalón hacia abajo, sin capas extra. */
-  nameDepthEm: 0.05,
+  /** Relieve tipo «Feliz Cumpleaños»: un peldaño pequeño. */
+  nameDepthEm: 0.032,
+  nameStrokeEm: 0.034,
 } as const;
 
 const PARTICULAS = new Set(["de", "del", "la", "las", "los", "y", "e", "da", "do", "dos", "das"]);
@@ -60,41 +61,52 @@ export type HonoreeNameLayout = {
   fontSize: number;
 };
 
-/** Great Vibes: caligrafía ancha (~0.50 em por carácter). */
+/** Great Vibes: los trazos se solapan; ~0.42 em por carácter. */
 function scriptWidth(text: string, fontSize: number): number {
-  return text.length * fontSize * 0.5;
+  return text.length * fontSize * 0.42;
 }
 
-function wrapWords(text: string, fontSize: number, maxWidth: number): string[] {
+function wrapBalanced(text: string, fontSize: number, maxWidth: number): string[] {
   const words = text.split(" ").filter(Boolean);
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const next = current ? `${current} ${word}` : word;
-    if (scriptWidth(next, fontSize) <= maxWidth || !current) {
-      current = next;
-    } else {
-      lines.push(current);
-      current = word;
+  if (words.length < 2 || scriptWidth(text, fontSize) <= maxWidth) return [text];
+
+  let best: string[] = [text];
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(" ");
+    const b = words.slice(i).join(" ");
+    const wa = scriptWidth(a, fontSize);
+    const wb = scriptWidth(b, fontSize);
+    if (wa > maxWidth || wb > maxWidth) continue;
+    const score = Math.abs(wa - wb) + Math.max(0, wb - wa) * 0.15;
+    if (score < bestScore) {
+      bestScore = score;
+      best = [a, b];
     }
   }
-  if (current) lines.push(current);
-  return lines.length ? lines : [text];
+  return best;
 }
 
 export function layoutHonoreeName(full: string, maxWidth = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.nameWidthPct): HonoreeNameLayout {
   const text = full.replace(/\s+/g, " ").trim();
-  let fontSize = text.length > 40 ? 26 : text.length > 32 ? 30 : 34;
+  let fontSize = 34;
 
-  while (fontSize > 18) {
-    const lines = wrapWords(text, fontSize, maxWidth);
+  while (fontSize >= 22) {
+    if (scriptWidth(text, fontSize) <= maxWidth) {
+      return { lines: [text], fontSize };
+    }
+    fontSize -= 1;
+  }
+
+  while (fontSize >= 18) {
+    const lines = wrapBalanced(text, fontSize, maxWidth);
     const longest = Math.max(...lines.map((l) => scriptWidth(l, fontSize)));
     if (longest <= maxWidth && lines.length <= 2) {
       return { lines, fontSize };
     }
     fontSize -= 1;
   }
-  return { lines: wrapWords(text, 18, maxWidth), fontSize: 18 };
+  return { lines: wrapBalanced(text, 18, maxWidth), fontSize: 18 };
 }
 
 export function honoreeScriptFontSize(nombre: string): number {

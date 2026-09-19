@@ -111,7 +111,7 @@ export async function exportCumpleanosJpegBlob(nombre: string, fotoSrc: string |
       ctx.miterLimit = 2;
       ctx.fillStyle = CUMPLEANOS_GOLD.dark;
       ctx.fillText(text, cx, y + depth, nameWidth);
-      ctx.lineWidth = Math.max(1, fontPx * 0.022);
+      ctx.lineWidth = Math.max(1.2, fontPx * CUMPLEANOS_LAYOUT.nameStrokeEm);
       ctx.strokeStyle = CUMPLEANOS_GOLD.stroke;
       ctx.strokeText(text, cx, y, nameWidth);
       ctx.fillStyle = grad;
