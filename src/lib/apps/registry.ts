@@ -14,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BookMarked,
   BookOpen,
+  CalendarClock,
   CalendarDays,
   FileSearch,
   Home,
@@ -61,7 +62,7 @@ export const APPS: Record<AppId, AppDefinition> = {
     name: "Gestión de personal",
     shortName: "Personal",
     description:
-      "Censo y administración de aspirantes, efemérides, esquelas y convocatorias del C.E.F.O.A.",
+      "Censo y administración de aspirantes, permisos, efemérides, esquelas y convocatorias del C.E.F.O.A.",
     homeHref: routes.personal.home,
     pathPrefixes: personalPathPrefixes,
     accessPermissions: [Permission.DASHBOARD_READ, Permission.ASPIRANTES_READ],
@@ -139,6 +140,7 @@ const personalMainLinks: AppNavLink[] = [
 ];
 
 const personalConfigLinks: AppNavLink[] = [
+  { href: routes.personal.permisos, label: "Permisos", icon: CalendarClock },
   { href: routes.personal.efemerides, label: "Efemérides", icon: CalendarDays },
   { href: routes.personal.esquelas, label: "Esquelas", icon: Medal },
   { href: routes.personal.membretes, label: "Membretes", icon: Stamp },

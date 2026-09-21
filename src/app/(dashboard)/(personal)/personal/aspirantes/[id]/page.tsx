@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Pencil, UserRound } from "lucide-react";
 import { notFound, unauthorized } from "next/navigation";
 import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
+import { AspiranteBoletaPermisoPdfLink } from "@dashboard/aspirantes/_components/boletas-permiso-download";
 import { AspirantePerfilView } from "@dashboard/aspirantes/_components/aspirante-perfil-view";
+import { AspirantePermisosCard } from "@dashboard/aspirantes/_components/aspirante-permisos-card";
 import { buttonVariants } from "@src/components/ui/button";
 import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -14,6 +16,7 @@ import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate } from "@src/lib/date";
 import { prisma } from "@src/lib/prisma";
 import { cn } from "@src/lib/utils";
+import type { PermisoTipoValue } from "@src/lib/permisos";
 
 export default async function AspirantePerfilPage({
   params,
@@ -35,6 +38,7 @@ export default async function AspirantePerfilPage({
       peloton: true,
       datosFisicos: true,
       contactos: { orderBy: { createdAt: "asc" }, take: 1 },
+      permisos: { orderBy: { fechaInicio: "desc" }, take: 12 },
     },
   });
   if (!a) notFound();
@@ -51,6 +55,7 @@ export default async function AspirantePerfilPage({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica" />
+          <AspiranteBoletaPermisoPdfLink aspiranteId={a.id} label="Boleta de permiso" />
           {write ? (
             <Link
               href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
@@ -162,6 +167,19 @@ export default async function AspirantePerfilPage({
           anioIngresoUniversidad: a.anioIngresoUniversidad,
           anioEgresoUniversidad: a.anioEgresoUniversidad,
         }}
+      />
+      <AspirantePermisosCard
+        aspiranteId={a.id}
+        canWrite={write}
+        permisos={a.permisos.map((p) => ({
+          id: p.id,
+          tipo: p.tipo as PermisoTipoValue,
+          fechaInicioIso: p.fechaInicio.toISOString(),
+          fechaFinIso: p.fechaFin.toISOString(),
+          motivo: p.motivo,
+          destino: p.destino,
+          anulado: p.anulado,
+        }))}
       />
     </div>
   );

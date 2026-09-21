@@ -138,6 +138,17 @@ enum TipoEsquela {
   EFEMERIDE
 }
 
+/// Motivo institucional del permiso de ausencia del aspirante.
+enum TipoPermisoPersonal {
+  SALIDA
+  PERNOCTA
+  FIN_DE_SEMANA
+  MEDICO
+  COMISION
+  FAMILIAR
+  OTRO
+}
+
 enum AreaInventario {
   RANCHO
 }
@@ -374,6 +385,7 @@ model Aspirante {
   datosFisicos          DatosFisicosMedicos?
   contactos             ContactoEmergencia[]
   esquelasGeneradas     Esquela[]
+  permisos              PermisoPersonal[]
   /// Revisión de expediente, prueba física y examen médico (estructura versionada; ver `src/lib/aspirantes/ficha-evaluacion.ts`).
   fichaEvaluacion       Json?
   /// Clave del objeto en S3/R2 (p. ej. aspirantes/{id}/foto.webp). Foto tipo carnet.
@@ -407,6 +419,29 @@ model Aspirante {
   @@index([calificacionAdmision])
   @@index([unidadPostulante])
   @@index([pelotonId])
+}
+
+/// Permiso de ausencia (salida) de un aspirante, con vigencia de / hasta.
+model PermisoPersonal {
+  id            String               @id @default(cuid())
+  aspiranteId   String
+  aspirante     Aspirante            @relation(fields: [aspiranteId], references: [id], onDelete: Cascade)
+  tipo          TipoPermisoPersonal
+  fechaInicio   DateTime
+  fechaFin      DateTime
+  motivo        String
+  destino       String?
+  autorizadoPor String?
+  observaciones String?
+  anulado       Boolean              @default(false)
+  anuladoMotivo String?
+  anuladoAt     DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([aspiranteId, fechaInicio])
+  @@index([fechaInicio, fechaFin])
+  @@index([anulado])
 }
 
 model ContactoEmergencia {
@@ -493,6 +528,20 @@ model Esquela {
   aspirante      Aspirante?  @relation(fields: [aspiranteId], references: [id], onDelete: SetNull)
   efemeride      Efemeride?  @relation(fields: [efemerideId], references: [id], onDelete: SetNull)
   createdAt      DateTime    @default(now())
+}
+
+/// Plantilla visual por tipo de esquela (fondo, corona y recuadros de foto/nombre).
+model EsquelaPlantilla {
+  id         String       @id @default(cuid())
+  tipo       TipoEsquela  @unique
+  nombre     String
+  /// Clave S3 del fondo; null usa `public/images/esquelas/cumpleanos-plantilla.jpg`.
+  fondoKey   String?
+  /// Clave S3 de la capa (corona); null usa `public/images/esquelas/corona-laurel.png`.
+  overlayKey String?
+  layout     Json
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 }
 
 model InventarioItem {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { BookMarked, CalendarDays, Medal, Users, type LucideIcon } from "lucide-react";
+import { BookMarked, CalendarClock, CalendarDays, Medal, Users, type LucideIcon } from "lucide-react";
 import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
@@ -33,6 +33,16 @@ export type PersonalHomePeloton = {
   count: number;
 };
 
+export type PersonalHomePermiso = {
+  id: string;
+  aspiranteId: string;
+  nombres: string;
+  apellidos: string;
+  fotoKey: string | null;
+  tipoLabel: string;
+  hastaLabel: string;
+};
+
 type Props = {
   fechaLarga: string;
   nombreMes: string;
@@ -45,6 +55,7 @@ type Props = {
   pelotones: PersonalHomePeloton[];
   cumpleanosDelMes: PersonalHomeBirthday[];
   proximasEfemerides: PersonalHomeEfemeride[];
+  permisosVigentes: PersonalHomePermiso[];
 };
 
 const PELOTON_TONES = ["#3b82f6", "#22c55e", "#38bdf8", "#84cc16", "#06b6d4"] as const;
@@ -70,6 +81,13 @@ const SHORTCUTS: { href: string; label: string; hint: string; icon: LucideIcon; 
     hint: "Calendario",
     icon: CalendarDays,
     tone: "bg-emerald-50 text-emerald-800",
+  },
+  {
+    href: routes.personal.permisos,
+    label: "Permisos",
+    hint: "Ausencias",
+    icon: CalendarClock,
+    tone: "bg-teal-50 text-teal-800",
   },
   {
     href: routes.personal.convocatorias,
@@ -129,6 +147,7 @@ export function PersonalHomeBoard({
   pelotones,
   cumpleanosDelMes,
   proximasEfemerides,
+  permisosVigentes,
 }: Props) {
   const pctHombres = total ? Math.round((masculinos / total) * 100) : 0;
   const pctMujeres = total ? Math.round((femeninos / total) * 100) : 0;
@@ -201,10 +220,18 @@ export function PersonalHomeBoard({
           <div className="min-w-36 flex-1">
             <Kpi label="Hoy" value={String(hoyCount)} hint="Cumpleaños" />
           </div>
+          <div className="min-w-36 flex-1">
+            <Kpi
+              label="De permiso"
+              value={String(permisosVigentes.length)}
+              hint="Vigentes ahora"
+              hintWarn={permisosVigentes.length > 0}
+            />
+          </div>
         </div>
       </section>
 
-      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Atajos">
+      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" aria-label="Atajos">
         {SHORTCUTS.map((item) => {
           const Icon = item.icon;
           return (
@@ -355,6 +382,37 @@ export function PersonalHomeBoard({
           )}
         </section>
       </div>
+
+      <section className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <PanelHeader
+          title="De permiso ahora"
+          aside={
+            <Link href={routes.personal.permisos} className="text-xs font-medium text-slate-500 hover:text-slate-900">
+              Control
+            </Link>
+          }
+        />
+        {permisosVigentes.length === 0 ? (
+          <p className="px-3 py-6 text-sm text-slate-500">Nadie del censo está de permiso en este momento.</p>
+        ) : (
+          <ul className="max-h-64 divide-y divide-slate-100 overflow-y-auto">
+            {permisosVigentes.map((p) => (
+              <li key={p.id} className="flex items-center gap-3 px-3 py-1.5">
+                <AspiranteIdentityLink
+                  aspiranteId={p.aspiranteId}
+                  fotoKey={p.fotoKey}
+                  nombre={`${p.nombres} ${p.apellidos}`}
+                  size="sm"
+                  className="min-w-0 flex-1"
+                >
+                  <span className="truncate text-[11px] text-slate-500">{p.tipoLabel}</span>
+                </AspiranteIdentityLink>
+                <span className="shrink-0 text-right text-[11px] text-slate-600">Hasta {p.hastaLabel}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

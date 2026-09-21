@@ -1,20 +1,32 @@
 "use client";
 
+import { CUMPLEANOS_PAGE_W, layoutHonoreeName } from "@src/lib/pdf/esquela-cumpleanos-layout";
 import {
-  CUMPLEANOS_GOLD,
-  CUMPLEANOS_LAYOUT,
-  layoutHonoreeName,
-} from "@src/lib/pdf/esquela-cumpleanos-layout";
+  DEFAULT_ESQUELA_PLANTILLA_LAYOUT,
+  goldGradientCss,
+  layoutNameMaxWidthPt,
+  pctBoxStyle,
+  type EsquelaPlantillaLayout,
+} from "@src/lib/pdf/esquela-plantilla-layout";
 
 const SCRIPT_FONT = "GreatVibesPoster, cursive";
+const PLAIN_FONT = "Urbanist, ui-sans-serif, system-ui, sans-serif";
 
-function GoldScriptLine({ text, sizeCqw }: { text: string; sizeCqw: string }) {
+function GoldScriptLine({
+  text,
+  sizeCqw,
+  layout,
+}: {
+  text: string;
+  sizeCqw: string;
+  layout: EsquelaPlantillaLayout;
+}) {
   const face = {
     fontFamily: SCRIPT_FONT,
     fontSize: `${sizeCqw}cqw`,
-    letterSpacing: CUMPLEANOS_LAYOUT.nameLetterSpacingEm,
+    letterSpacing: `${layout.nameLetterSpacingEm}em`,
     lineHeight: 1.28,
-    textAlign: "center" as const,
+    textAlign: layout.nameAlign,
     width: "100%",
     margin: 0,
   };
@@ -26,8 +38,8 @@ function GoldScriptLine({ text, sizeCqw }: { text: string; sizeCqw: string }) {
         className="pointer-events-none absolute inset-x-0 top-0 select-none"
         style={{
           ...face,
-          color: CUMPLEANOS_GOLD.dark,
-          transform: `translateY(${CUMPLEANOS_LAYOUT.nameDepthEm}em)`,
+          color: layout.gold.dark,
+          transform: `translateY(${layout.nameDepthEm}em)`,
         }}
       >
         {text}
@@ -36,12 +48,12 @@ function GoldScriptLine({ text, sizeCqw }: { text: string; sizeCqw: string }) {
         className="relative block"
         style={{
           ...face,
-          backgroundImage: CUMPLEANOS_GOLD.css,
+          backgroundImage: goldGradientCss(layout.gold),
           backgroundClip: "text",
           WebkitBackgroundClip: "text",
           color: "transparent",
           WebkitTextFillColor: "transparent",
-          WebkitTextStroke: `${CUMPLEANOS_LAYOUT.nameStrokeEm}em ${CUMPLEANOS_GOLD.stroke}`,
+          WebkitTextStroke: `${layout.nameStrokeEm}em ${layout.gold.stroke}`,
           paintOrder: "stroke fill",
           filter: "drop-shadow(0 0.04em 0.05em rgba(40,24,6,0.28))",
         }}
@@ -55,12 +67,21 @@ function GoldScriptLine({ text, sizeCqw }: { text: string; sizeCqw: string }) {
 export function EsquelaCumpleanosPoster({
   nombre,
   fotoSrc,
+  fondoSrc = "/images/esquelas/cumpleanos-plantilla.jpg",
+  overlaySrc = "/images/esquelas/corona-laurel.png",
+  layout = DEFAULT_ESQUELA_PLANTILLA_LAYOUT,
 }: {
   nombre: string;
   fotoSrc: string | null;
+  fondoSrc?: string;
+  overlaySrc?: string | null;
+  layout?: EsquelaPlantillaLayout;
 }) {
-  const { lines, fontSize } = layoutHonoreeName(nombre);
-  const sizeCqw = ((fontSize / 595.28) * 100).toFixed(3);
+  const { lines, fontSize } = layoutHonoreeName(nombre, layoutNameMaxWidthPt(layout), {
+    maxFontPt: layout.nameMaxFontPt,
+    minFontPt: layout.nameMinFontPt,
+  });
+  const sizeCqw = ((fontSize / CUMPLEANOS_PAGE_W) * 100).toFixed(3);
 
   return (
     <div className="@container relative aspect-3/4 w-full overflow-hidden bg-slate-900 shadow-lg ring-1 ring-black/10">
@@ -73,42 +94,63 @@ export function EsquelaCumpleanosPoster({
           font-display: swap;
         }
       `}</style>
-      {/* eslint-disable-next-line @next/next/no-img-element -- plantilla estática local */}
-      <img
-        src="/images/esquelas/cumpleanos-plantilla.jpg"
-        alt=""
-        className="absolute inset-0 z-0 h-full w-full object-cover"
-      />
+      {/* eslint-disable-next-line @next/next/no-img-element -- plantilla configurable */}
+      <img src={fondoSrc} alt="" className="absolute inset-0 z-0 h-full w-full object-cover" />
       {fotoSrc ? (
         // eslint-disable-next-line @next/next/no-img-element -- foto del aspirante vía API propia
         <img
           src={fotoSrc}
           alt=""
-          className="absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 object-contain"
+          className="absolute z-10"
           style={{
-            top: `${CUMPLEANOS_LAYOUT.photoCenterYPct * 100}%`,
-            width: `${CUMPLEANOS_LAYOUT.photoWidthPct * 100}%`,
-            height: `${CUMPLEANOS_LAYOUT.photoHeightPct * 100}%`,
+            ...pctBoxStyle(layout.photo),
+            objectFit: layout.photoFit,
           }}
         />
       ) : null}
-      {/* eslint-disable-next-line @next/next/no-img-element -- corona extraída de la plantilla */}
-      <img
-        src="/images/esquelas/corona-laurel.png"
-        alt=""
-        className="pointer-events-none absolute inset-0 z-20 h-full w-full object-cover"
-      />
+      {overlaySrc ? (
+        // eslint-disable-next-line @next/next/no-img-element -- corona / capa
+        <img
+          src={overlaySrc}
+          alt=""
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full object-cover"
+        />
+      ) : null}
       <div
-        className="absolute z-30 flex flex-col items-center"
+        className="absolute z-30 flex flex-col"
         style={{
-          top: `${CUMPLEANOS_LAYOUT.nameTopPct * 100}%`,
-          left: `${((1 - CUMPLEANOS_LAYOUT.nameWidthPct) / 2) * 100}%`,
-          width: `${CUMPLEANOS_LAYOUT.nameWidthPct * 100}%`,
+          left: `${layout.name.leftPct * 100}%`,
+          top: `${layout.name.topPct * 100}%`,
+          width: `${layout.name.widthPct * 100}%`,
+          alignItems:
+            layout.nameAlign === "left"
+              ? "flex-start"
+              : layout.nameAlign === "right"
+                ? "flex-end"
+                : "center",
         }}
       >
-        {lines.map((line) => (
-          <GoldScriptLine key={line} text={line} sizeCqw={sizeCqw} />
-        ))}
+        {layout.nameStyle === "plain"
+          ? lines.map((line) => (
+              <p
+                key={line}
+                className="m-0 w-full"
+                style={{
+                  fontFamily: PLAIN_FONT,
+                  fontSize: `${sizeCqw}cqw`,
+                  letterSpacing: `${layout.nameLetterSpacingEm}em`,
+                  lineHeight: 1.2,
+                  textAlign: layout.nameAlign,
+                  color: layout.nameColor,
+                  fontWeight: 700,
+                }}
+              >
+                {line}
+              </p>
+            ))
+          : lines.map((line) => (
+              <GoldScriptLine key={line} text={line} sizeCqw={sizeCqw} layout={layout} />
+            ))}
       </div>
     </div>
   );

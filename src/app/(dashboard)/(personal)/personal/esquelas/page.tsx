@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Cake, CalendarDays, Info, ScrollText } from "lucide-react";
+import { Cake, CalendarDays, Info, ScrollText, SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
 import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { createBirthdayEsquela, createEfemerideEsquela } from "@src/app/actions/esquelas";
-import { Button } from "@src/components/ui/button";
+import { Button, buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -18,6 +19,7 @@ import {
   sortByUpcomingBirthday,
 } from "@src/lib/date";
 import { prisma } from "@src/lib/prisma";
+import { routes } from "@src/lib/apps/routes";
 import { cn } from "@src/lib/utils";
 import { CalificacionAdmision, type Prisma } from "@src/generated/prisma";
 
@@ -66,7 +68,19 @@ export default async function EsquelasPage() {
               <ScrollText className="h-5 w-5 text-slate-800" aria-hidden />
             </div>
             <div className="min-w-0 space-y-1.5">
-              <h1 className="text-xl font-semibold tracking-tight text-slate-900">Generador de esquelas</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-semibold tracking-tight text-slate-900">Generador de esquelas</h1>
+                <Link
+                  href={routes.personal.esquelasPlantilla}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "h-7 gap-1.5 bg-white/90 shadow-sm",
+                  )}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+                  Plantilla
+                </Link>
+              </div>
               <p className="max-w-xl text-sm leading-relaxed text-slate-600">
                 Pulse generar para abrir el afiche. Solo se listan aspirantes{" "}
                 <span className="font-medium text-slate-800">apto</span> o{" "}

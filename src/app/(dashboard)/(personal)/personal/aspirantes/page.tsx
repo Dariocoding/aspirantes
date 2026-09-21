@@ -322,7 +322,7 @@ export default async function AspirantesPage({
               <CardDescription className="text-xs text-slate-600">
                 Listado paginado e identificación básica.
                 {write
-                  ? " Excel permite elegir columnas, exportar e importar por cédula; PDF exporta según los filtros actuales."
+                  ? " Excel permite elegir columnas, exportar e importar por cédula; PDF exporta censo y fichas; las boletas de permiso se descargan en Word (todas, filtradas o eligiendo personal)."
                   : " La exportación masiva (Excel/PDF) está reservada a operadores y administradores."}
               </CardDescription>
             </div>

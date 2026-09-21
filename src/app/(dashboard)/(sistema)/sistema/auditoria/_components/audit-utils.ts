@@ -17,13 +17,15 @@ const ACTION_LABELS: Record<string, string> = {
   CENSO_EXPORT_XLSX_EXAMENES: "Exportación Excel de exámenes médicos",
   CENSO_EXPORT_XLSX_LISTA_OFICIAL: "Exportación Excel de lista oficial",
   CENSO_EXPORT_XLSX_CUMPLEANOS: "Exportación Excel de cumpleaños",
-  CENSO_IMPORT_XLSX: "Importación Excel del censo",
+  PERMISO_CREATE: "Alta de permiso de personal",
+  PERMISO_UPDATE: "Actualización de permiso de personal",
+  PERMISO_ANULAR: "Anulación de permiso de personal",
 };
 
 const ENTITY_LABELS: Record<string, string> = {
   ASPIRANTE: "Aspirante",
   CONVOCATORIA: "Convocatoria",
-  CENSO: "Censo",
+  PERMISO: "Permiso",
 };
 
 export function auditActionLabel(action: string): string {

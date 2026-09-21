@@ -47,6 +47,9 @@
       "@dashboard/esquelas/*": [
         "./src/app/(dashboard)/(personal)/personal/esquelas/*"
       ],
+      "@dashboard/permisos/*": [
+        "./src/app/(dashboard)/(personal)/personal/permisos/*"
+      ],
       "@dashboard/convocatorias/*": [
         "./src/app/(dashboard)/(personal)/personal/convocatorias/*"
       ],

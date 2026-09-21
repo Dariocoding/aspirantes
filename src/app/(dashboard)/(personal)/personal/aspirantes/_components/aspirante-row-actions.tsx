@@ -3,9 +3,10 @@
 import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { EllipsisVertical, FileDown, Pencil, Sparkles, Trash2, UserRound } from "lucide-react";
+import { EllipsisVertical, FileBadge, FileDown, Pencil, Sparkles, Trash2, UserRound } from "lucide-react";
 import { deleteAspirante } from "@src/app/actions/aspirantes";
 import { aspiranteFichaTecnicaPdfUrl } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
+import { aspiranteBoletaPermisoPdfUrl } from "@dashboard/aspirantes/_components/boletas-permiso-download";
 import { Button } from "@src/components/ui/button";
 import {
   DropdownMenu,
@@ -33,6 +34,7 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQ
   const perfilHref = routes.personal.aspirante(aspiranteId);
   const editarHref = `${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(aspiranteId)}`;
   const pdfHref = aspiranteFichaTecnicaPdfUrl(aspiranteId);
+  const boletaHref = aspiranteBoletaPermisoPdfUrl(aspiranteId);
 
   const onCelebrateOpenChange = useCallback((open: boolean) => {
     setCelebrateOpen(open);
@@ -111,6 +113,14 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQ
             >
               <FileDown />
               Ficha técnica PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              nativeButton={false}
+              closeOnClick
+              render={<a href={boletaHref} target="_blank" rel="noopener noreferrer" />}
+            >
+              <FileBadge />
+              Boleta de permiso (Word)
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

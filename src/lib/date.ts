@@ -8,6 +8,41 @@ export function formatDate(date: Date) {
   return format(date, "dd 'de' MMMM 'de' yyyy", { locale: es });
 }
 
+export function formatDateTime(date: Date) {
+  return format(date, "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: es });
+}
+
+/** Valor `datetime-local` en calendario local (`YYYY-MM-DDTHH:mm`). */
+export function toDateTimeLocalValue(date: Date): string {
+  return format(date, "yyyy-MM-dd'T'HH:mm");
+}
+
+/**
+ * Interpreta `YYYY-MM-DDTHH:mm` (o con segundos) como fecha local.
+ */
+export function parseDateTimeInputLocal(value: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  const hour = Number(m[4]);
+  const minute = Number(m[5]);
+  const second = Number(m[6] ?? "0");
+  if (![y, month, day, hour, minute, second].every(Number.isFinite)) return null;
+  const date = new Date(y, month - 1, day, hour, minute, second, 0);
+  if (
+    date.getFullYear() !== y ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day ||
+    date.getHours() !== hour ||
+    date.getMinutes() !== minute
+  ) {
+    return null;
+  }
+  return date;
+}
+
 /**
  * Interpreta `YYYY-MM-DD` como calendario local a mediodía.
  * Evita el desfase de un día que produce `new Date("YYYY-MM-DD")` (UTC).

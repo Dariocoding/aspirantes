@@ -4,6 +4,11 @@ import { ChevronDown, FileDown, FileSpreadsheet, FileUp, Loader2 } from "lucide-
 import { useState } from "react";
 import { AspirantesExcelColumnsDialog } from "@dashboard/aspirantes/_components/aspirantes-excel-columns-dialog";
 import { AspirantesExcelImportDialog } from "@dashboard/aspirantes/_components/aspirantes-excel-import-dialog";
+import {
+  BoletasPermisoSelectDialog,
+  downloadBoletasPermisoPdf,
+  type BoletaPersonOption,
+} from "@dashboard/aspirantes/_components/boletas-permiso-download";
 import { Button } from "@src/components/ui/button";
 import {
   Dialog,
@@ -94,6 +99,10 @@ export function AspirantesExportLinks({
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [membreteId, setMembreteId] = useState(() => defaultMembreteOptionId(membretes));
+  const [boletaPickerOpen, setBoletaPickerOpen] = useState(false);
+  const [boletaPeople, setBoletaPeople] = useState<BoletaPersonOption[]>([]);
+  const [boletaListLoading, setBoletaListLoading] = useState(false);
+  const [boletaPickerError, setBoletaPickerError] = useState<string | null>(null);
 
   async function runDownload(url: string, fallbackName: string, label: string) {
     if (busyLabel) return;
@@ -125,6 +134,31 @@ export function AspirantesExportLinks({
   const fichasFiltrosUrl = `${base}?format=pdf&variant=fichas-tecnicas${suffix}`;
   const docsTodasUrl = `${base}?format=pdf&variant=documentos-academicos&scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
   const docsFiltrosUrl = `${base}?format=pdf&variant=documentos-academicos${suffix}`;
+  const boletasBase = "/api/aspirantes/boletas-permiso/pdf";
+  const boletasFiltrosUrl = `${boletasBase}?${exportQuery}`;
+  const boletasTodasUrl = `${boletasBase}?scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
+
+  async function openBoletaPicker() {
+    setBoletaPickerError(null);
+    setBoletaPickerOpen(true);
+    setBoletaListLoading(true);
+    try {
+      const res = await fetch(
+        `${boletasBase}?mode=directorio&scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`,
+        { credentials: "same-origin" },
+      );
+      const data = (await res.json().catch(() => null)) as
+        | { people?: BoletaPersonOption[]; message?: string }
+        | null;
+      if (!res.ok) throw new Error(data?.message ?? "No se pudo cargar el personal.");
+      setBoletaPeople(data?.people ?? []);
+    } catch (e) {
+      setBoletaPeople([]);
+      setBoletaPickerError(e instanceof Error ? e.message : "No se pudo cargar el personal.");
+    } finally {
+      setBoletaListLoading(false);
+    }
+  }
 
   return (
     <>
@@ -248,6 +282,17 @@ export function AspirantesExportLinks({
                   <span className="text-xs text-muted-foreground">Fondo, autenticación y notas</span>
                 </span>
               </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(boletasFiltrosUrl, "boletas-permiso.docx", "boletas con los filtros actuales")
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Boletas de permiso</span>
+                  <span className="text-xs text-muted-foreground">Carnet en Word, personal visible</span>
+                </span>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
@@ -285,6 +330,30 @@ export function AspirantesExportLinks({
                   <span className="text-xs text-muted-foreground">El mismo formato, todos los registros</span>
                 </span>
               </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={convocatoriaCount < 1 || Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(boletasTodasUrl, "boletas-permiso.docx", "boletas de toda la convocatoria")
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">
+                    Boletas de permiso
+                    {convocatoriaCount > 0 ? (
+                      <span className="ml-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                        {convocatoriaCount}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Todas las de la convocatoria</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={convocatoriaCount < 1 || Boolean(busyLabel)} onClick={() => void openBoletaPicker()}>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Elegir personal</span>
+                  <span className="text-xs text-muted-foreground">Marque quiénes descargan boleta</span>
+                </span>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -309,6 +378,24 @@ export function AspirantesExportLinks({
         open={importOpen}
         onOpenChange={setImportOpen}
         convocatoriaId={convocatoriaId}
+      />
+
+      <BoletasPermisoSelectDialog
+        open={boletaPickerOpen}
+        onOpenChange={setBoletaPickerOpen}
+        people={boletaPeople}
+        loading={boletaListLoading}
+        busy={Boolean(busyLabel)}
+        error={boletaPickerError}
+        onDownload={(ids) => {
+          setBoletaPickerOpen(false);
+          if (busyLabel) return;
+          setError(null);
+          setBusyLabel("las boletas seleccionadas");
+          void downloadBoletasPermisoPdf({ ids, fallbackName: "boletas-permiso.docx" })
+            .catch((e) => setError(e instanceof Error ? e.message : "No se pudo generar el archivo."))
+            .finally(() => setBusyLabel(null));
+        }}
       />
 
       <Dialog open={Boolean(busyLabel)} onOpenChange={() => {}}>

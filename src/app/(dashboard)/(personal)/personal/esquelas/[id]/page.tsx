@@ -9,6 +9,7 @@ import { aspiranteFotoUrl, pickFotoForEsquela } from "@src/lib/storage/aspirante
 import { auth } from "@src/auth";
 import { routes } from "@src/lib/apps/routes";
 import { honoreeDisplayName } from "@src/lib/pdf/esquela-cumpleanos-layout";
+import { resolveCumpleanosPlantilla } from "@src/lib/pdf/esquela-plantilla";
 import { prisma } from "@src/lib/prisma";
 import { cn } from "@src/lib/utils";
 import { TipoEsquela } from "@src/generated/prisma";
@@ -44,6 +45,7 @@ export default async function EsquelaDetallePage({
         )
       : null;
   const pdfHref = `/api/esquelas/${id}/pdf`;
+  const plantilla = esCumple ? await resolveCumpleanosPlantilla() : null;
 
   return (
     <div className="space-y-5">
@@ -55,11 +57,14 @@ export default async function EsquelaDetallePage({
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Volver a esquelas
         </Link>
-        {esCumple ? (
+        {esCumple && plantilla ? (
           <EsquelaCumpleanosDownloadButton
             nombre={nombre}
             fotoSrc={fotoSrc}
             fileName={`esquela-${id}.jpg`}
+            fondoSrc={plantilla.fondoSrc}
+            overlaySrc={plantilla.overlaySrc}
+            layout={plantilla.layout}
           />
         ) : (
           <EsquelaDetalleToolbar pdfHref={pdfHref} />
@@ -68,7 +73,13 @@ export default async function EsquelaDetallePage({
 
       {esCumple ? (
         <div className="mx-auto w-full max-w-md print:max-w-none">
-          <EsquelaCumpleanosPoster nombre={nombre} fotoSrc={fotoSrc} />
+          <EsquelaCumpleanosPoster
+            nombre={nombre}
+            fotoSrc={fotoSrc}
+            fondoSrc={plantilla?.fondoSrc}
+            overlaySrc={plantilla?.overlaySrc}
+            layout={plantilla?.layout}
+          />
         </div>
       ) : (
         <article className="mx-auto max-w-2xl space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm print:border-0 print:shadow-none">

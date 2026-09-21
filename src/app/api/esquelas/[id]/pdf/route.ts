@@ -7,9 +7,10 @@ import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { formatDate } from "@src/lib/date";
 import {
   loadFotoForCumpleanosPdf,
-  readCumpleanosPlantillaJpeg,
-  readLaurelOverlayPng,
+  loadCumpleanosFondoForPdf,
+  loadCumpleanosOverlayForPdf,
 } from "@src/lib/pdf/esquela-cumpleanos-assets";
+import { resolveCumpleanosPlantilla } from "@src/lib/pdf/esquela-plantilla";
 import { pickFotoForEsquela } from "@src/lib/storage/aspirante-foto";
 import { EsquelaCumpleanosPdfDocument } from "@src/lib/pdf/esquela-cumpleanos-document";
 import { honoreeDisplayName } from "@src/lib/pdf/esquela-cumpleanos-layout";
@@ -52,8 +53,9 @@ export async function GET(
 
   let buffer: Buffer;
   if (esquela.tipo === TipoEsquela.CUMPLEANOS) {
-    const plantillaJpeg = await readCumpleanosPlantillaJpeg();
-    if (!plantillaJpeg) {
+    const plantillaCfg = await resolveCumpleanosPlantilla();
+    const plantilla = await loadCumpleanosFondoForPdf(plantillaCfg.fondoKey);
+    if (!plantilla) {
       return NextResponse.json({ message: "Falta la plantilla de cumpleaños" }, { status: 500 });
     }
     const fotoSource = pickFotoForEsquela(
@@ -61,15 +63,18 @@ export async function GET(
       esquela.aspirante?.fotoKey,
     );
     const foto = await loadFotoForCumpleanosPdf(fotoSource?.key ?? null, fotoSource?.kind);
-    const laurelPng = await readLaurelOverlayPng();
+    const laurelPng = plantillaCfg.layout.overlayEnabled
+      ? await loadCumpleanosOverlayForPdf(plantillaCfg.overlayKey)
+      : null;
     const nombre = esquela.aspirante
       ? honoreeDisplayName(esquela.aspirante.nombres, esquela.aspirante.apellidos)
       : esquela.titulo;
     const doc = createElement(EsquelaCumpleanosPdfDocument, {
       nombre,
-      plantillaJpeg,
+      plantilla,
       foto,
       laurelPng,
+      layout: plantillaCfg.layout,
     });
     buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
   } else {

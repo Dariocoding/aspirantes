@@ -25,6 +25,24 @@ export function readEjercitoLogoPngBuffer(): Buffer | null {
   }
 }
 
+/** Escudo CEFOA del formato de boleta (fondo transparente). */
+export function readBoletaCefoaLogoPngBuffer(): Buffer | null {
+  try {
+    return readFileSync(path.join(process.cwd(), "public", "images", "boleta-cefoa.png"));
+  } catch {
+    return readInstitutionLogoPngBuffer();
+  }
+}
+
+/** Escudo del Ejército del formato de boleta (fondo transparente). */
+export function readBoletaEjercitoLogoPngBuffer(): Buffer | null {
+  try {
+    return readFileSync(path.join(process.cwd(), "public", "images", "boleta-ejercito.png"));
+  } catch {
+    return readEjercitoLogoPngBuffer();
+  }
+}
+
 export function readMembreteLogoPngBuffer(kind: MembreteLogoKind): Buffer | null {
   if (kind === "cefoa") return readInstitutionLogoPngBuffer();
   if (kind === "ejercito") return readEjercitoLogoPngBuffer();

@@ -1,7 +1,8 @@
 ﻿import { addDays, differenceInCalendarDays, format } from "date-fns";
 import { es } from "date-fns/locale";
 import { PersonalHomeBoard } from "./_components/personal-home-board";
-import { ageFromBirthDate, ageTurningOnBirthday, formatDate, hasRealBirthDate, isBirthdayThisMonth, isBirthdayToday } from "@src/lib/date";
+import { ageFromBirthDate, ageTurningOnBirthday, formatDate, formatDateTime, hasRealBirthDate, isBirthdayThisMonth, isBirthdayToday } from "@src/lib/date";
+import { labelTipoPermiso } from "@src/lib/permisos";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
 import { labelPeloton } from "@src/lib/pelotones";
 import { prisma } from "@src/lib/prisma";
@@ -9,7 +10,7 @@ import { prisma } from "@src/lib/prisma";
 export default async function PersonalDashboardPage() {
   const convocatoriaActiva = await getConvocatoriaActiva();
 
-  const [aspirantes, efemerides, pelotonesDb] = await Promise.all([
+  const [aspirantes, efemerides, pelotonesDb, permisosVigentesDb] = await Promise.all([
     convocatoriaActiva
       ? prisma.aspirante.findMany({
           where: { convocatoriaId: convocatoriaActiva.id },
@@ -39,6 +40,19 @@ export default async function PersonalDashboardPage() {
           },
         })
       : Promise.resolve([]),
+    prisma.permisoPersonal.findMany({
+      where: {
+        anulado: false,
+        fechaInicio: { lte: new Date() },
+        fechaFin: { gte: new Date() },
+        ...(convocatoriaActiva ? { aspirante: { convocatoriaId: convocatoriaActiva.id } } : {}),
+      },
+      orderBy: { fechaFin: "asc" },
+      take: 20,
+      include: {
+        aspirante: { select: { id: true, nombres: true, apellidos: true, fotoKey: true } },
+      },
+    }),
   ]);
 
   const hoy = new Date();
@@ -115,6 +129,15 @@ export default async function PersonalDashboardPage() {
       }))}
       cumpleanosDelMes={cumpleanosDelMes}
       proximasEfemerides={proximasEfemerides}
+      permisosVigentes={permisosVigentesDb.map((p) => ({
+        id: p.id,
+        aspiranteId: p.aspirante.id,
+        nombres: p.aspirante.nombres,
+        apellidos: p.aspirante.apellidos,
+        fotoKey: p.aspirante.fotoKey,
+        tipoLabel: labelTipoPermiso(p.tipo),
+        hastaLabel: formatDateTime(p.fechaFin),
+      }))}
     />
   );
 }

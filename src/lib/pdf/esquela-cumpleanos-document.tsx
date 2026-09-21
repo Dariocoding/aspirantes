@@ -1,25 +1,17 @@
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { CUMPLEANOS_PAGE_H, CUMPLEANOS_PAGE_W, layoutHonoreeName } from "@src/lib/pdf/esquela-cumpleanos-layout";
 import {
-  CUMPLEANOS_GOLD,
-  CUMPLEANOS_LAYOUT,
-  CUMPLEANOS_PAGE_H,
-  CUMPLEANOS_PAGE_W,
-  layoutHonoreeName,
-} from "@src/lib/pdf/esquela-cumpleanos-layout";
+  DEFAULT_ESQUELA_PLANTILLA_LAYOUT,
+  layoutNameMaxWidthPt,
+  type EsquelaPlantillaLayout,
+} from "@src/lib/pdf/esquela-plantilla-layout";
 import {
+  ESQUELA_PDF_FONT_FAMILY,
   ESQUELA_SCRIPT_FONT_FAMILY,
   registerEsquelaPdfFonts,
 } from "@src/lib/pdf/register-esquela-pdf-fonts";
 
 registerEsquelaPdfFonts();
-
-const photoW = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.photoWidthPct;
-const photoH = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.photoHeightPct;
-const photoLeft = (CUMPLEANOS_PAGE_W - photoW) / 2;
-const photoTop = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.photoCenterYPct - photoH / 2;
-const nameWidth = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.nameWidthPct;
-const nameLeft = (CUMPLEANOS_PAGE_W - nameWidth) / 2;
-const nameTop = CUMPLEANOS_PAGE_H * CUMPLEANOS_LAYOUT.nameTopPct;
 
 function fauxBoldOffsets(emPx: number): Array<[number, number]> {
   const r = emPx;
@@ -45,7 +37,7 @@ function pngSrc(data: Buffer) {
   return { data: Buffer.from(data), format: "png" as const };
 }
 
-const styles = StyleSheet.create({
+const pageStyles = StyleSheet.create({
   page: {
     padding: 0,
     margin: 0,
@@ -59,14 +51,6 @@ const styles = StyleSheet.create({
     width: CUMPLEANOS_PAGE_W,
     height: CUMPLEANOS_PAGE_H,
   },
-  photo: {
-    position: "absolute",
-    left: photoLeft,
-    top: photoTop,
-    width: photoW,
-    height: photoH,
-    objectFit: "contain",
-  },
   laurel: {
     position: "absolute",
     left: 0,
@@ -74,33 +58,43 @@ const styles = StyleSheet.create({
     width: CUMPLEANOS_PAGE_W,
     height: CUMPLEANOS_PAGE_H,
   },
-  nameWrap: {
-    position: "absolute",
-    left: nameLeft,
-    top: nameTop,
-    width: nameWidth,
-    alignItems: "center",
-  },
-  lineBox: {
-    width: nameWidth,
-    alignItems: "center",
-    marginBottom: 1,
-  },
 });
 
-function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
+function ScriptLine({
+  text,
+  fontSize,
+  width,
+  layout,
+}: {
+  text: string;
+  fontSize: number;
+  width: number;
+  layout: EsquelaPlantillaLayout;
+}) {
+  const gold = layout.gold;
+  const family = layout.nameStyle === "plain" ? ESQUELA_PDF_FONT_FAMILY : ESQUELA_SCRIPT_FONT_FAMILY;
+  const align = layout.nameAlign;
   const base = {
-    fontFamily: ESQUELA_SCRIPT_FONT_FAMILY,
+    fontFamily: family,
     fontSize,
-    textAlign: "center" as const,
-    width: nameWidth,
-    letterSpacing: CUMPLEANOS_LAYOUT.nameLetterSpacingPt,
+    textAlign: align,
+    width,
+    letterSpacing: layout.nameLetterSpacingEm * fontSize,
   };
-  const stroke = fontSize * CUMPLEANOS_LAYOUT.nameExportStrokeEm;
-  const bold = fontSize * CUMPLEANOS_LAYOUT.nameExportFauxBoldEm;
-  const shadowY = fontSize * CUMPLEANOS_LAYOUT.nameExportShadowYEm;
+
+  if (layout.nameStyle === "plain") {
+    return (
+      <View style={{ width, alignItems: align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center", marginBottom: 1 }}>
+        <Text style={{ ...base, color: layout.nameColor }}>{text}</Text>
+      </View>
+    );
+  }
+
+  const stroke = fontSize * layout.nameExportStrokeEm;
+  const bold = fontSize * layout.nameExportFauxBoldEm;
+  const shadowY = fontSize * layout.nameExportShadowYEm;
   return (
-    <View style={styles.lineBox}>
+    <View style={{ width, alignItems: "center", marginBottom: 1 }}>
       <Text
         style={{
           ...base,
@@ -116,10 +110,10 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
       <Text
         style={{
           ...base,
-          color: CUMPLEANOS_GOLD.dark,
+          color: gold.dark,
           position: "absolute",
           left: 0,
-          top: fontSize * CUMPLEANOS_LAYOUT.nameDepthEm,
+          top: fontSize * layout.nameDepthEm,
         }}
       >
         {text}
@@ -129,7 +123,7 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
           key={`s${x},${y}`}
           style={{
             ...base,
-            color: CUMPLEANOS_GOLD.stroke,
+            color: gold.stroke,
             position: "absolute",
             left: x,
             top: y,
@@ -143,7 +137,7 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
           key={`b${x},${y}`}
           style={{
             ...base,
-            color: CUMPLEANOS_GOLD.dark,
+            color: gold.dark,
             position: "absolute",
             left: x,
             top: y,
@@ -152,17 +146,33 @@ function ScriptLine({ text, fontSize }: { text: string; fontSize: number }) {
           {text}
         </Text>
       ))}
-      <Text style={{ ...base, color: CUMPLEANOS_GOLD.dark }}>{text}</Text>
+      <Text style={{ ...base, color: gold.dark }}>{text}</Text>
     </View>
   );
 }
 
-function HonoreeName({ nombre }: { nombre: string }) {
-  const { lines, fontSize } = layoutHonoreeName(nombre);
+function HonoreeName({ nombre, layout }: { nombre: string; layout: EsquelaPlantillaLayout }) {
+  const nameWidth = CUMPLEANOS_PAGE_W * layout.name.widthPct;
+  const nameLeft = CUMPLEANOS_PAGE_W * layout.name.leftPct;
+  const nameTop = CUMPLEANOS_PAGE_H * layout.name.topPct;
+  const { lines, fontSize } = layoutHonoreeName(nombre, layoutNameMaxWidthPt(layout), {
+    maxFontPt: layout.nameMaxFontPt,
+    minFontPt: layout.nameMinFontPt,
+  });
+  const alignItems =
+    layout.nameAlign === "left" ? "flex-start" : layout.nameAlign === "right" ? "flex-end" : "center";
   return (
-    <View style={styles.nameWrap}>
+    <View
+      style={{
+        position: "absolute",
+        left: nameLeft,
+        top: nameTop,
+        width: nameWidth,
+        alignItems,
+      }}
+    >
       {lines.map((line) => (
-        <ScriptLine key={line} text={line} fontSize={fontSize} />
+        <ScriptLine key={line} text={line} fontSize={fontSize} width={nameWidth} layout={layout} />
       ))}
     </View>
   );
@@ -170,34 +180,53 @@ function HonoreeName({ nombre }: { nombre: string }) {
 
 export type EsquelaCumpleanosPdfProps = {
   nombre: string;
-  plantillaJpeg: Buffer;
+  plantilla: { data: Buffer; format: "jpg" | "png" };
   foto: { data: Buffer; format: "jpg" | "png" } | null;
   laurelPng: Buffer | null;
+  layout?: EsquelaPlantillaLayout;
 };
 
 export function EsquelaCumpleanosPdfDocument({
   nombre,
-  plantillaJpeg,
+  plantilla,
   foto,
   laurelPng,
+  layout = DEFAULT_ESQUELA_PLANTILLA_LAYOUT,
 }: EsquelaCumpleanosPdfProps) {
+  const plantillaSrc =
+    plantilla.format === "jpg" ? jpegSrc(plantilla.data) : pngSrc(plantilla.data);
   const fotoSrc =
     foto?.format === "jpg" ? jpegSrc(foto.data) : foto ? pngSrc(foto.data) : null;
+  const photoW = CUMPLEANOS_PAGE_W * layout.photo.widthPct;
+  const photoH = CUMPLEANOS_PAGE_H * layout.photo.heightPct;
+  const photoLeft = CUMPLEANOS_PAGE_W * layout.photo.leftPct;
+  const photoTop = CUMPLEANOS_PAGE_H * layout.photo.topPct;
+
   return (
     <Document>
-      <Page size={{ width: CUMPLEANOS_PAGE_W, height: CUMPLEANOS_PAGE_H }} style={styles.page} wrap={false}>
-        <View style={styles.canvas}>
+      <Page size={{ width: CUMPLEANOS_PAGE_W, height: CUMPLEANOS_PAGE_H }} style={pageStyles.page} wrap={false}>
+        <View style={pageStyles.canvas}>
           {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image */}
-          <Image src={jpegSrc(plantillaJpeg)} style={styles.bg} />
+          <Image src={plantillaSrc} style={pageStyles.bg} />
           {fotoSrc ? (
             // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
-            <Image src={fotoSrc} style={styles.photo} />
+            <Image
+              src={fotoSrc}
+              style={{
+                position: "absolute",
+                left: photoLeft,
+                top: photoTop,
+                width: photoW,
+                height: photoH,
+                objectFit: layout.photoFit,
+              }}
+            />
           ) : null}
           {laurelPng ? (
             // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image
-            <Image src={pngSrc(laurelPng)} style={styles.laurel} />
+            <Image src={pngSrc(laurelPng)} style={pageStyles.laurel} />
           ) : null}
-          <HonoreeName nombre={nombre} />
+          <HonoreeName nombre={nombre} layout={layout} />
         </View>
       </Page>
     </Document>

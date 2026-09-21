@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const legacyRedirects = [
   { source: "/aspirantes", destination: "/personal/aspirantes" },
   { source: "/aspirantes/:path*", destination: "/personal/aspirantes/:path*" },
+  { source: "/permisos", destination: "/personal/permisos" },
+  { source: "/permisos/:path*", destination: "/personal/permisos/:path*" },
   { source: "/efemerides", destination: "/personal/efemerides" },
   { source: "/efemerides/:path*", destination: "/personal/efemerides/:path*" },
   { source: "/esquelas", destination: "/personal/esquelas" },

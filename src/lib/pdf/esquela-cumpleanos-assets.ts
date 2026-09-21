@@ -231,3 +231,32 @@ export async function loadFotoForCumpleanosPdf(
 export async function loadFotoCircularForEsquelaPdf(fotoKey: string | null): Promise<Buffer | null> {
   return loadFotoOvalForEsquelaPdf(fotoKey);
 }
+
+/** Fondo de plantilla: S3 si hay clave; si no, JPEG empaquetado. */
+export async function loadCumpleanosFondoForPdf(fondoKey: string | null): Promise<EsquelaPdfFoto | null> {
+  if (fondoKey) {
+    try {
+      const { body } = await getObjectBuffer(fondoKey);
+      return await toPdfSafeFoto(body);
+    } catch {
+      // Caemos al archivo empaquetado.
+    }
+  }
+  const bundled = await readCumpleanosPlantillaJpeg();
+  return bundled ? { data: bundled, format: "jpg" } : null;
+}
+
+/** Capa (corona): S3 si hay clave; si no, PNG empaquetado. */
+export async function loadCumpleanosOverlayForPdf(overlayKey: string | null): Promise<Buffer | null> {
+  if (overlayKey) {
+    try {
+      const { body } = await getObjectBuffer(overlayKey);
+      const format = (await sharp(body).metadata()).format;
+      if (format === "png") return Buffer.from(body);
+      return sharp(body).ensureAlpha().png().toBuffer();
+    } catch {
+      // Caemos al archivo empaquetado.
+    }
+  }
+  return readLaurelOverlayPng();
+}

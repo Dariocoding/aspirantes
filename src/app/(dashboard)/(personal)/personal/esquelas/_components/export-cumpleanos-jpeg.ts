@@ -1,9 +1,9 @@
+import { CUMPLEANOS_PAGE_W, layoutHonoreeName } from "@src/lib/pdf/esquela-cumpleanos-layout";
 import {
-  CUMPLEANOS_GOLD,
-  CUMPLEANOS_LAYOUT,
-  CUMPLEANOS_PAGE_W,
-  layoutHonoreeName,
-} from "@src/lib/pdf/esquela-cumpleanos-layout";
+  DEFAULT_ESQUELA_PLANTILLA_LAYOUT,
+  layoutNameMaxWidthPt,
+  type EsquelaPlantillaLayout,
+} from "@src/lib/pdf/esquela-plantilla-layout";
 
 /** Plantilla nativa 864×1152; se exporta a 3× para WhatsApp / impresión. */
 const NATIVE_W = 864;
@@ -12,9 +12,6 @@ const SCALE = 3;
 const CANVAS_W = NATIVE_W * SCALE;
 const CANVAS_H = NATIVE_H * SCALE;
 
-const PLANTILLA_SRC = "/images/esquelas/cumpleanos-plantilla.jpg";
-const LAUREL_SRC = "/images/esquelas/corona-laurel.png";
-
 async function loadBitmap(src: string): Promise<ImageBitmap> {
   const res = await fetch(src, { credentials: "same-origin" });
   if (!res.ok) throw new Error("No se pudo leer una imagen de la esquela.");
@@ -22,18 +19,27 @@ async function loadBitmap(src: string): Promise<ImageBitmap> {
   return createImageBitmap(blob);
 }
 
-function drawContained(
+function drawFitted(
   ctx: CanvasRenderingContext2D,
   img: ImageBitmap,
   x: number,
   y: number,
   boxW: number,
   boxH: number,
+  fit: "contain" | "cover",
 ): void {
-  const scale = Math.min(boxW / img.width, boxH / img.height);
+  const scale =
+    fit === "cover" ? Math.max(boxW / img.width, boxH / img.height) : Math.min(boxW / img.width, boxH / img.height);
   const dw = img.width * scale;
   const dh = img.height * scale;
-  ctx.drawImage(img, x + (boxW - dw) / 2, y + (boxH - dh) / 2, dw, dh);
+  const dx = x + (boxW - dw) / 2;
+  const dy = y + (boxH - dh) / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, boxW, boxH);
+  ctx.clip();
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
 }
 
 function fauxBoldOffsets(em: number): Array<[number, number]> {
@@ -51,20 +57,28 @@ function fauxBoldOffsets(em: number): Array<[number, number]> {
   ];
 }
 
+function canvasTextAlign(align: EsquelaPlantillaLayout["nameAlign"]): CanvasTextAlign {
+  if (align === "left") return "left";
+  if (align === "right") return "right";
+  return "center";
+}
+
 function drawExportGoldScript(
   ctx: CanvasRenderingContext2D,
   text: string,
-  cx: number,
+  x: number,
   y: number,
   fontPx: number,
   maxWidth: number,
   depth: number,
+  layout: EsquelaPlantillaLayout,
 ): void {
-  const strokeW = Math.max(2.4, fontPx * CUMPLEANOS_LAYOUT.nameExportStrokeEm);
-  const bold = fontPx * CUMPLEANOS_LAYOUT.nameExportFauxBoldEm;
-  const grad = ctx.createLinearGradient(cx, y, cx, y + fontPx);
-  grad.addColorStop(0, CUMPLEANOS_GOLD.fill);
-  grad.addColorStop(0.38, CUMPLEANOS_GOLD.dark);
+  const gold = layout.gold;
+  const strokeW = Math.max(2.4, fontPx * layout.nameExportStrokeEm);
+  const bold = fontPx * layout.nameExportFauxBoldEm;
+  const grad = ctx.createLinearGradient(x, y, x, y + fontPx);
+  grad.addColorStop(0, gold.fill);
+  grad.addColorStop(0.38, gold.dark);
   grad.addColorStop(1, "#8f6910");
 
   ctx.save();
@@ -73,29 +87,29 @@ function drawExportGoldScript(
   ctx.miterLimit = 2;
 
   ctx.shadowColor = "rgba(40, 24, 6, 0.62)";
-  ctx.shadowBlur = fontPx * CUMPLEANOS_LAYOUT.nameExportShadowBlurEm;
+  ctx.shadowBlur = fontPx * layout.nameExportShadowBlurEm;
   ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = fontPx * CUMPLEANOS_LAYOUT.nameExportShadowYEm;
-  ctx.fillStyle = CUMPLEANOS_GOLD.stroke;
-  ctx.fillText(text, cx, y, maxWidth);
+  ctx.shadowOffsetY = fontPx * layout.nameExportShadowYEm;
+  ctx.fillStyle = gold.stroke;
+  ctx.fillText(text, x, y, maxWidth);
 
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  ctx.fillStyle = CUMPLEANOS_GOLD.dark;
-  ctx.fillText(text, cx, y + depth, maxWidth);
+  ctx.fillStyle = gold.dark;
+  ctx.fillText(text, x, y + depth, maxWidth);
 
-  ctx.strokeStyle = CUMPLEANOS_GOLD.stroke;
+  ctx.strokeStyle = gold.stroke;
   ctx.lineWidth = strokeW;
-  ctx.strokeText(text, cx, y, maxWidth);
+  ctx.strokeText(text, x, y, maxWidth);
   for (const [dx, dy] of fauxBoldOffsets(bold)) {
-    ctx.strokeText(text, cx + dx, y + dy, maxWidth);
+    ctx.strokeText(text, x + dx, y + dy, maxWidth);
   }
 
   ctx.fillStyle = grad;
-  ctx.fillText(text, cx, y, maxWidth);
-  ctx.fillText(text, cx + bold * 0.35, y, maxWidth);
+  ctx.fillText(text, x, y, maxWidth);
+  ctx.fillText(text, x + bold * 0.35, y, maxWidth);
   ctx.restore();
 }
 
@@ -112,10 +126,24 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob>
   });
 }
 
-export async function exportCumpleanosJpegBlob(nombre: string, fotoSrc: string | null): Promise<Blob> {
-  const [plantilla, laurel, foto] = await Promise.all([
-    loadBitmap(PLANTILLA_SRC),
-    loadBitmap(LAUREL_SRC),
+export type ExportCumpleanosJpegInput = {
+  nombre: string;
+  fotoSrc: string | null;
+  fondoSrc?: string;
+  overlaySrc?: string | null;
+  layout?: EsquelaPlantillaLayout;
+};
+
+export async function exportCumpleanosJpegBlob({
+  nombre,
+  fotoSrc,
+  fondoSrc = "/images/esquelas/cumpleanos-plantilla.jpg",
+  overlaySrc = "/images/esquelas/corona-laurel.png",
+  layout = DEFAULT_ESQUELA_PLANTILLA_LAYOUT,
+}: ExportCumpleanosJpegInput): Promise<Blob> {
+  const [plantilla, overlay, foto] = await Promise.all([
+    loadBitmap(fondoSrc),
+    overlaySrc ? loadBitmap(overlaySrc).catch(() => null) : Promise.resolve(null),
     fotoSrc ? loadBitmap(fotoSrc).catch(() => null) : Promise.resolve(null),
   ]);
 
@@ -141,51 +169,72 @@ export async function exportCumpleanosJpegBlob(nombre: string, fotoSrc: string |
     ctx.drawImage(plantilla, 0, 0, CANVAS_W, CANVAS_H);
 
     if (foto) {
-      const photoW = CANVAS_W * CUMPLEANOS_LAYOUT.photoWidthPct;
-      const photoH = CANVAS_H * CUMPLEANOS_LAYOUT.photoHeightPct;
-      const photoLeft = (CANVAS_W - photoW) / 2;
-      const photoTop = CANVAS_H * CUMPLEANOS_LAYOUT.photoCenterYPct - photoH / 2;
-      drawContained(ctx, foto, photoLeft, photoTop, photoW, photoH);
+      drawFitted(
+        ctx,
+        foto,
+        CANVAS_W * layout.photo.leftPct,
+        CANVAS_H * layout.photo.topPct,
+        CANVAS_W * layout.photo.widthPct,
+        CANVAS_H * layout.photo.heightPct,
+        layout.photoFit,
+      );
     }
 
-    ctx.drawImage(laurel, 0, 0, CANVAS_W, CANVAS_H);
+    if (overlay) {
+      ctx.drawImage(overlay, 0, 0, CANVAS_W, CANVAS_H);
+    }
 
-    const { lines, fontSize } = layoutHonoreeName(nombre);
+    const { lines, fontSize } = layoutHonoreeName(nombre, layoutNameMaxWidthPt(layout), {
+      maxFontPt: layout.nameMaxFontPt,
+      minFontPt: layout.nameMinFontPt,
+    });
     const fontPx = (fontSize / CUMPLEANOS_PAGE_W) * CANVAS_W;
-    const nameWidth = CANVAS_W * CUMPLEANOS_LAYOUT.nameWidthPct;
-    const nameLeft = (CANVAS_W - nameWidth) / 2;
-    const nameTop = CANVAS_H * CUMPLEANOS_LAYOUT.nameTopPct;
-    const cx = nameLeft + nameWidth / 2;
+    const nameWidth = CANVAS_W * layout.name.widthPct;
+    const nameLeft = CANVAS_W * layout.name.leftPct;
+    const nameTop = CANVAS_H * layout.name.topPct;
+    const textX =
+      layout.nameAlign === "left"
+        ? nameLeft
+        : layout.nameAlign === "right"
+          ? nameLeft + nameWidth
+          : nameLeft + nameWidth / 2;
     const lineH = fontPx * 1.28;
-    const depth = fontPx * CUMPLEANOS_LAYOUT.nameDepthEm;
+    const depth = fontPx * layout.nameDepthEm;
 
-    ctx.font = `${fontPx}px GreatVibesPoster, cursive`;
-    ctx.textAlign = "center";
+    ctx.font =
+      layout.nameStyle === "plain"
+        ? `700 ${fontPx}px Urbanist, ui-sans-serif, system-ui, sans-serif`
+        : `${fontPx}px GreatVibesPoster, cursive`;
+    ctx.textAlign = canvasTextAlign(layout.nameAlign);
     ctx.textBaseline = "top";
-    ctx.letterSpacing = CUMPLEANOS_LAYOUT.nameLetterSpacingEm;
+    ctx.letterSpacing = `${layout.nameLetterSpacingEm}em`;
 
     lines.forEach((text, i) => {
-      drawExportGoldScript(ctx, text, cx, nameTop + i * lineH, fontPx, nameWidth, depth);
+      const y = nameTop + i * lineH;
+      if (layout.nameStyle === "plain") {
+        ctx.fillStyle = layout.nameColor;
+        ctx.fillText(text, textX, y, nameWidth);
+      } else {
+        drawExportGoldScript(ctx, text, textX, y, fontPx, nameWidth, depth, layout);
+      }
     });
 
     return await canvasToJpeg(canvas, 0.96);
   } finally {
     plantilla.close();
-    laurel.close();
+    overlay?.close();
     foto?.close();
   }
 }
 
 export async function downloadCumpleanosJpeg(
-  nombre: string,
-  fotoSrc: string | null,
-  fileName: string,
+  input: ExportCumpleanosJpegInput & { fileName: string },
 ): Promise<void> {
-  const blob = await exportCumpleanosJpegBlob(nombre, fotoSrc);
+  const blob = await exportCumpleanosJpegBlob(input);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = fileName;
+  a.download = input.fileName;
   a.rel = "noopener";
   document.body.appendChild(a);
   a.click();

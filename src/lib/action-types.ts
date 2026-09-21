@@ -100,3 +100,22 @@ export type InventarioActionState = {
 };
 
 export const inventarioInitialActionState: InventarioActionState = { ok: false, errors: {} };
+
+export type EsquelaPlantillaActionState = {
+  ok: boolean;
+  errors: Record<string, string>;
+  savedAt?: number;
+};
+
+export const esquelaPlantillaInitialActionState: EsquelaPlantillaActionState = {
+  ok: false,
+  errors: {},
+};
+
+export type PermisoActionState = {
+  ok: boolean;
+  errors: Record<string, string>;
+  id?: string;
+};
+
+export const permisoInitialActionState: PermisoActionState = { ok: false, errors: {} };

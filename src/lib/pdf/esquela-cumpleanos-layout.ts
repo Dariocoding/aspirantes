@@ -95,18 +95,25 @@ function wrapBalanced(text: string, fontSize: number, maxWidth: number): string[
   return best;
 }
 
-export function layoutHonoreeName(full: string, maxWidth = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.nameWidthPct): HonoreeNameLayout {
+export function layoutHonoreeName(
+  full: string,
+  maxWidth = CUMPLEANOS_PAGE_W * CUMPLEANOS_LAYOUT.nameWidthPct,
+  opts?: { maxFontPt?: number; minFontPt?: number },
+): HonoreeNameLayout {
   const text = full.replace(/\s+/g, " ").trim();
-  let fontSize = 34;
+  const maxFont = opts?.maxFontPt ?? 34;
+  const minFont = Math.min(maxFont, opts?.minFontPt ?? 18);
+  let fontSize = maxFont;
+  const wrapFloor = Math.max(minFont, Math.min(22, maxFont));
 
-  while (fontSize >= 22) {
+  while (fontSize >= wrapFloor) {
     if (scriptWidth(text, fontSize) <= maxWidth) {
       return { lines: [text], fontSize };
     }
     fontSize -= 1;
   }
 
-  while (fontSize >= 18) {
+  while (fontSize >= minFont) {
     const lines = wrapBalanced(text, fontSize, maxWidth);
     const longest = Math.max(...lines.map((l) => scriptWidth(l, fontSize)));
     if (longest <= maxWidth && lines.length <= 2) {
@@ -114,7 +121,7 @@ export function layoutHonoreeName(full: string, maxWidth = CUMPLEANOS_PAGE_W * C
     }
     fontSize -= 1;
   }
-  return { lines: wrapBalanced(text, 18, maxWidth), fontSize: 18 };
+  return { lines: wrapBalanced(text, minFont, maxWidth), fontSize: minFont };
 }
 
 export function honoreeScriptFontSize(nombre: string): number {
