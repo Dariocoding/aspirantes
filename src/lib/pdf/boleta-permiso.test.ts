@@ -6,6 +6,8 @@ import {
   formatBoletaSerial,
   formatTelefonoBoleta,
   formatVenceBoleta,
+  formatGrupoSanguineoBoleta,
+  formatRasgoBoleta,
   parseBoletaIdsParam,
 } from "@src/lib/pdf/boleta-permiso";
 
@@ -35,8 +37,19 @@ test("vence en julio del año de la convocatoria", () => {
   assert.equal(formatVenceBoleta(2026), "VENCE JULIO 2026");
 });
 
-test("formatea teléfonos venezolanos de 11 dígitos", () => {
-  assert.equal(formatTelefonoBoleta("04123968855"), "(0412) 396-8855");
+test("formatea teléfonos como en la plantilla", () => {
+  assert.equal(formatTelefonoBoleta("04123968855"), "0412-3968855");
+});
+
+test("el grupo sanguíneo de la boleta usa el formato ORH+", () => {
+  assert.equal(formatGrupoSanguineoBoleta("O", "POSITIVO"), "ORH+");
+  assert.equal(formatGrupoSanguineoBoleta("B", "NEGATIVO"), "BRH-");
+  assert.equal(formatGrupoSanguineoBoleta("AB", "POSITIVO"), "ABRH+");
+});
+
+test("el color de piel clara se imprime BLANCA", () => {
+  assert.equal(formatRasgoBoleta("Clara"), "BLANCA");
+  assert.equal(formatRasgoBoleta("Morena"), "MORENA");
 });
 
 test("parseBoletaIdsParam recorta duplicados", () => {

@@ -15,7 +15,6 @@ import {
   loadFotoForBoletaPdf,
   MAX_BOLETAS_PERMISO,
   parseBoletaIdsParam,
-  uniqueTelefonosBoleta,
   type BoletaPermisoCard,
 } from "@src/lib/pdf/boleta-permiso";
 import { mapWithConcurrency } from "@src/lib/pdf/ficha-tecnica-from-aspirante";
@@ -124,12 +123,9 @@ async function pdfResponse(
       ...rasgos,
       direccion: a.direccion?.trim() || "—",
       telefono: formatTelefonoBoleta(a.telefono) ?? a.telefono?.trim() ?? "—",
-      emergenciaDireccion: contacto?.direccion?.trim() || a.direccion?.trim() || "—",
-      emergenciaTelefonos: uniqueTelefonosBoleta([
-        contacto?.telefono,
-        ...a.contactos.slice(1).map((c) => c.telefono),
-        convocatoria.comandanteTelefono,
-      ]),
+      emergenciaDireccion: contacto?.direccion?.trim() || "—",
+      emergenciaTelefono:
+        formatTelefonoBoleta(contacto?.telefono) ?? contacto?.telefono?.trim() ?? "—",
       foto,
     };
   });

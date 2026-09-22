@@ -32,9 +32,19 @@ export type BoletaPermisoCard = {
   direccion: string;
   telefono: string;
   emergenciaDireccion: string;
-  emergenciaTelefonos: string[];
+  emergenciaTelefono: string;
   foto: { data: Buffer; format: "jpg" | "png" } | null;
 };
+
+/** Textos fijos de la plantilla autorizada (`boletas_permiso01.docx`). */
+export const BOLETA_DIRECTOR_CARGO =
+  "DIRECTOR DEL CURSO ESPECIAL DE FORMACIÓN DE OFICIALES EN LA CATEGORÍA DE ASIMILADOS";
+export const BOLETA_RECOMENDACION =
+  "A quien se recomienda le sean guardadas las consideraciones debidas a su grado";
+export const BOLETA_ARMAS =
+  "Este Aspirante a Oficial no está autorizado para portar armas de fuego";
+export const BOLETA_EMERGENCIA_INSTITUCIONAL =
+  "EN CASO DE EMERGENCIA FAVOR INFORMAR A LOS TELÉFONOS. (0412) 396-8855, (0416) 642-7379, (0416) 232-3997";
 
 export type BoletaPermisoConvocatoriaInfo = {
   nombre: string;
@@ -79,12 +89,32 @@ export function formatTelefonoBoleta(raw: string | null | undefined): string | n
   if (!raw?.trim()) return null;
   const digits = raw.replace(/\D/g, "");
   if (digits.length === 11 && digits.startsWith("0")) {
-    return `(${digits.slice(0, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
   }
   if (digits.length === 10 && digits.startsWith("4")) {
-    return `(0${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    return `0${digits.slice(0, 3)}-${digits.slice(3)}`;
   }
   return raw.trim();
+}
+
+/** Grupo sanguíneo como en la plantilla: ORH+, BRH+, ABRH-. */
+export function formatGrupoSanguineoBoleta(
+  grupo: string | null | undefined,
+  factorRh: string | null | undefined,
+): string {
+  const compact = formatTipoSangreHomologado(grupo, factorRh);
+  if (!compact) return "—";
+  const m = compact.match(/^(AB|A|B|O)([+-])$/);
+  if (!m) return compact.toUpperCase();
+  return `${m[1]}RH${m[2]}`;
+}
+
+export function formatRasgoBoleta(value: string): string {
+  const n = value.trim();
+  if (!n || n === "—") return "—";
+  const upper = n.toLocaleUpperCase("es");
+  if (upper === "CLARA") return "BLANCA";
+  return upper;
 }
 
 export function parseBoletaIdsParam(raw: unknown): string[] {
@@ -110,9 +140,7 @@ export function boletaConvocatoriaInfo(c: {
     anio: c.anio,
     cursoNro,
     directorNombre: (c.comandanteNombre ?? "").trim().toLocaleUpperCase("es"),
-    directorCargo: cursoNro
-      ? `DIRECTOR DEL C.E.F.O.A. ${cursoNro}`
-      : "DIRECTOR DEL C.E.F.O.A.",
+    directorCargo: BOLETA_DIRECTOR_CARGO,
     headerLines: [
       "República Bolivariana de Venezuela",
       "Ministerio del Poder Popular para la Defensa",
@@ -120,8 +148,8 @@ export function boletaConvocatoriaInfo(c: {
       "Dirección de Educación del Ejército",
       c.nombre.trim() ||
         (cursoNro
-          ? `Curso Especial de Formación de Oficiales Nro. ${cursoNro}`
-          : "Curso Especial de Formación de Oficiales"),
+          ? `Curso Especial de Formación de Oficiales en las Categoría de Asimilados Nro. ${cursoNro}`
+          : "Curso Especial de Formación de Oficiales en las Categoría de Asimilados"),
     ],
   };
 }
@@ -144,10 +172,10 @@ export function boletaRasgosFromDatos(datos: {
   colorPiel?: string | null;
 } | null): Pick<BoletaPermisoCard, "cabello" | "grupoSanguineo" | "ojos" | "colorPiel"> {
   return {
-    cabello: senaleticaLabel(datos?.colorCabello, COLOR_CABELLO_LABELS, isColorCabello),
-    grupoSanguineo: formatTipoSangreHomologado(datos?.tipoSangre, datos?.factorRh) ?? "—",
-    ojos: senaleticaLabel(datos?.colorOjos, COLOR_OJOS_LABELS, isColorOjos),
-    colorPiel: senaleticaLabel(datos?.colorPiel, COLOR_PIEL_LABELS, isColorPiel),
+    cabello: formatRasgoBoleta(senaleticaLabel(datos?.colorCabello, COLOR_CABELLO_LABELS, isColorCabello)),
+    grupoSanguineo: formatGrupoSanguineoBoleta(datos?.tipoSangre, datos?.factorRh),
+    ojos: formatRasgoBoleta(senaleticaLabel(datos?.colorOjos, COLOR_OJOS_LABELS, isColorOjos)),
+    colorPiel: formatRasgoBoleta(senaleticaLabel(datos?.colorPiel, COLOR_PIEL_LABELS, isColorPiel)),
   };
 }
 
@@ -166,18 +194,4 @@ export async function loadFotoForBoletaPdf(
   } catch {
     return null;
   }
-}
-
-export function uniqueTelefonosBoleta(values: Array<string | null | undefined>): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of values) {
-    const formatted = formatTelefonoBoleta(raw);
-    if (!formatted) continue;
-    const key = formatted.replace(/\D/g, "");
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(formatted);
-  }
-  return out.slice(0, 3);
 }
