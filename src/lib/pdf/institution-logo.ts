@@ -43,6 +43,15 @@ export function readBoletaEjercitoLogoPngBuffer(): Buffer | null {
   }
 }
 
+/** Franja vertical de la Bandera Nacional (anverso de la boleta). */
+export function readBoletaBanderaJpgBuffer(): Buffer | null {
+  try {
+    return readFileSync(path.join(process.cwd(), "public", "images", "bandera-de-venezuela.jpg"));
+  } catch {
+    return null;
+  }
+}
+
 export function readMembreteLogoPngBuffer(kind: MembreteLogoKind): Buffer | null {
   if (kind === "cefoa") return readInstitutionLogoPngBuffer();
   if (kind === "ejercito") return readEjercitoLogoPngBuffer();

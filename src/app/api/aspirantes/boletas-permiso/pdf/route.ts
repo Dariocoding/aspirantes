@@ -22,6 +22,7 @@ import {
 } from "@src/lib/pdf/boleta-permiso";
 import { mapWithConcurrency } from "@src/lib/pdf/ficha-tecnica-from-aspirante";
 import {
+  readBoletaBanderaJpgBuffer,
   readBoletaCefoaLogoPngBuffer,
   readBoletaEjercitoLogoPngBuffer,
 } from "@src/lib/pdf/institution-logo";
@@ -102,7 +103,7 @@ async function pdfResponse(
     );
   }
 
-  const [convocatoria, rankingPeople, logoCefoa, logoEjercito] = await Promise.all([
+  const [convocatoria, rankingPeople, logoCefoa, logoEjercito, bandera] = await Promise.all([
     prisma.convocatoria.findUniqueOrThrow({ where: { id: convocatoriaId } }),
     prisma.aspirante.findMany({
       where: { convocatoriaId },
@@ -110,6 +111,7 @@ async function pdfResponse(
     }),
     Promise.resolve(readBoletaCefoaLogoPngBuffer()),
     Promise.resolve(readBoletaEjercitoLogoPngBuffer()),
+    Promise.resolve(readBoletaBanderaJpgBuffer()),
   ]);
 
   const ranks = boletaRankByApellidos(rankingPeople);
@@ -142,6 +144,7 @@ async function pdfResponse(
     cards: ordered,
     logoCefoa,
     logoEjercito,
+    bandera,
   });
   const buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
 

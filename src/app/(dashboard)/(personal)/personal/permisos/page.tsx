@@ -1,6 +1,6 @@
 import { unauthorized } from "next/navigation";
-import { PermisosView, type PermisoListItem } from "@dashboard/permisos/_components/permisos-view";
-import type { PermisoAspiranteOption } from "@dashboard/permisos/_components/permiso-modals";
+import { PermisosView, type PermisoListItem } from "./_components/permisos-view";
+import type { PermisoAspiranteOption } from "./_components/permiso-modals";
 import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";

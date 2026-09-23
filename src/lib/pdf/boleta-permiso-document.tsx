@@ -1,4 +1,4 @@
-import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import {
   BOLETA_ARMAS,
   BOLETA_RECOMENDACION,
@@ -12,11 +12,17 @@ import {
 } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 
 registerFichaTecnicaPdfFonts();
+Font.registerHyphenationCallback((word) => [word]);
 
 const FONT = FICHA_TECNICA_PDF_FONT_FAMILY;
-const BLUE = "#1F4E79";
 const INK = "#000000";
 const GAP = 12;
+const PAGE_PAD = 72;
+const PAGE_W = 612;
+const INNER_W = PAGE_W - PAGE_PAD * 2;
+const CARD_H = (792 - PAGE_PAD * 2 - GAP) / 2;
+const FLAG_W = 18;
+const HALF_W = INNER_W / 2;
 
 function img(data: Buffer, format: "png" | "jpg") {
   return { data: Buffer.from(data), format };
@@ -26,7 +32,10 @@ const s = StyleSheet.create({
   page: {
     fontFamily: FONT,
     color: INK,
-    padding: 72,
+    paddingTop: PAGE_PAD,
+    paddingBottom: PAGE_PAD,
+    paddingLeft: PAGE_PAD,
+    paddingRight: PAGE_PAD,
     backgroundColor: "#FFFFFF",
   },
   stack: {
@@ -34,39 +43,65 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
   },
   card: {
-    width: "100%",
-    height: (792 - 144 - GAP) / 2,
+    width: INNER_W,
+    height: CARD_H,
     borderWidth: 1.4,
-    borderColor: BLUE,
+    borderColor: INK,
     flexDirection: "row",
   },
-  left: {
-    width: "54%",
+  reverso: {
+    width: HALF_W,
     height: "100%",
     paddingTop: 8,
     paddingBottom: 8,
     paddingLeft: 10,
     paddingRight: 8,
   },
-  right: {
-    width: "46%",
+  portada: {
+    width: HALF_W,
     height: "100%",
     borderLeftWidth: 1.2,
-    borderLeftColor: BLUE,
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingLeft: 8,
-    paddingRight: 10,
+    borderLeftColor: INK,
+    flexDirection: "column",
+    overflow: "hidden",
   },
-  grow: { flexGrow: 1 },
   header: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
+    alignItems: "flex-start",
+    paddingTop: 8,
+    paddingHorizontal: 8,
+    paddingBottom: 6,
+    marginBottom: 6,
+    minHeight: 72,
   },
-  logo: { width: 36, height: 44, objectFit: "contain" },
+  logo: { width: 42, height: 52, objectFit: "contain" },
   headerTexts: { flex: 1, paddingHorizontal: 4 },
-  hLine: { fontSize: 6.4, textAlign: "center", fontWeight: "bold", lineHeight: 1.2 },
+  hLine: { fontSize: 8, textAlign: "center", fontWeight: "bold", lineHeight: 1.18 },
+  bodyRow: {
+    flexGrow: 1,
+    flexDirection: "row",
+    minHeight: 0,
+  },
+  flagCol: {
+    width: FLAG_W,
+    height: "100%",
+    overflow: "hidden",
+  },
+  flag: {
+    width: FLAG_W,
+    height: "100%",
+    objectFit: "fill",
+  },
+  body: {
+    flexGrow: 1,
+    flexShrink: 1,
+    height: "100%",
+    paddingBottom: 8,
+    paddingLeft: 10,
+    paddingRight: 8,
+    overflow: "hidden",
+  },
+  grow: { flexGrow: 1 },
   ident: { flexDirection: "row", marginBottom: 6 },
   photoBox: {
     width: 72,
@@ -127,59 +162,17 @@ function BoletaCard({
   convocatoria,
   logoCefoa,
   logoEjercito,
+  bandera,
 }: {
   card: BoletaPermisoCard;
   convocatoria: BoletaPermisoConvocatoriaInfo;
   logoCefoa: Buffer | null;
   logoEjercito: Buffer | null;
+  bandera: Buffer | null;
 }) {
   return (
     <View style={s.card} wrap={false}>
-      <View style={s.left}>
-        <View style={s.header}>
-          {logoCefoa ? <Image src={img(logoCefoa, "png")} style={s.logo} /> : <View style={s.logo} />}
-          <View style={s.headerTexts}>
-            {convocatoria.headerLines.map((line) => (
-              <Text key={line} style={s.hLine}>
-                {line}
-              </Text>
-            ))}
-          </View>
-          {logoEjercito ? (
-            <Image src={img(logoEjercito, "png")} style={s.logo} />
-          ) : (
-            <View style={s.logo} />
-          )}
-        </View>
-
-        <View style={s.ident}>
-          <View style={s.photoBox}>
-            {card.foto ? (
-              <Image src={img(card.foto.data, card.foto.format)} style={s.photo} />
-            ) : (
-              <Text style={s.photoPh}>FOTO</Text>
-            )}
-          </View>
-          <View style={s.identCol}>
-            <Text style={s.identTitle}>ASPIRANTE A OFICIAL</Text>
-            <Text style={s.identLabel}>NOMBRES:</Text>
-            <Text style={s.identValue}>{card.nombres.toLocaleUpperCase("es")}</Text>
-            <Text style={s.identLabel}>APELLIDOS:</Text>
-            <Text style={s.identValue}>{card.apellidos.toLocaleUpperCase("es")}</Text>
-            <Text style={s.identValue}>C.I.V:  {card.cedula}</Text>
-          </View>
-        </View>
-
-        <Text style={s.vence}>{formatVenceBoleta(convocatoria.anio)}</Text>
-        <Field label="DIRECCIÓN DOMICILIARIA:" value={card.direccion} />
-        <Field label="TELEFONO:" value={card.telefono} />
-        <Field label="DIRECCIÓN DE EMERGENCIA:" value={card.emergenciaDireccion} />
-        <Field label="TELÉFONO DE EMERGENCIA:" value={card.emergenciaTelefono} />
-        <View style={s.grow} />
-        <Text style={s.rec}>{BOLETA_RECOMENDACION}</Text>
-      </View>
-
-      <View style={s.right}>
+      <View style={s.reverso}>
         <View style={s.titleBar}>
           <View style={s.serialCol}>
             <Text style={s.serial}>Serial:{card.serial}</Text>
@@ -226,6 +219,58 @@ function BoletaCard({
         <Text style={s.emerg}>(0412) 396-8855, (0416) 642-7379, (0416) 232-3997</Text>
         <Text style={s.armas}>{BOLETA_ARMAS}</Text>
       </View>
+
+      <View style={s.portada}>
+        <View style={s.header}>
+          {logoCefoa ? <Image src={img(logoCefoa, "png")} style={s.logo} /> : <View style={s.logo} />}
+          <View style={s.headerTexts}>
+            {convocatoria.headerLines.map((line) => (
+              <Text key={line} style={s.hLine}>
+                {line}
+              </Text>
+            ))}
+          </View>
+          {logoEjercito ? (
+            <Image src={img(logoEjercito, "png")} style={s.logo} />
+          ) : (
+            <View style={s.logo} />
+          )}
+        </View>
+        <View style={s.bodyRow}>
+          {bandera ? (
+            <View style={s.flagCol}>
+              <Image src={img(bandera, "jpg")} style={s.flag} />
+            </View>
+          ) : null}
+          <View style={s.body}>
+        <View style={s.ident}>
+          <View style={s.photoBox}>
+            {card.foto ? (
+              <Image src={img(card.foto.data, card.foto.format)} style={s.photo} />
+            ) : (
+              <Text style={s.photoPh}>FOTO</Text>
+            )}
+          </View>
+          <View style={s.identCol}>
+            <Text style={s.identTitle}>ASPIRANTE A OFICIAL</Text>
+            <Text style={s.identLabel}>NOMBRES:</Text>
+            <Text style={s.identValue}>{card.nombres.toLocaleUpperCase("es")}</Text>
+            <Text style={s.identLabel}>APELLIDOS:</Text>
+            <Text style={s.identValue}>{card.apellidos.toLocaleUpperCase("es")}</Text>
+            <Text style={s.identValue}>C.I.V:  {card.cedula}</Text>
+          </View>
+        </View>
+
+        <Text style={s.vence}>{formatVenceBoleta(convocatoria.anio)}</Text>
+        <Field label="DIRECCIÓN DOMICILIARIA:" value={card.direccion} />
+        <Field label="TELEFONO:" value={card.telefono} />
+        <Field label="DIRECCIÓN DE EMERGENCIA:" value={card.emergenciaDireccion} />
+        <Field label="TELÉFONO DE EMERGENCIA:" value={card.emergenciaTelefono} />
+        <View style={s.grow} />
+        <Text style={s.rec}>{BOLETA_RECOMENDACION}</Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -235,6 +280,7 @@ export type BoletasPermisoPdfProps = {
   cards: BoletaPermisoCard[];
   logoCefoa: Buffer | null;
   logoEjercito: Buffer | null;
+  bandera: Buffer | null;
 };
 
 export function BoletasPermisoPdfDocument({
@@ -242,6 +288,7 @@ export function BoletasPermisoPdfDocument({
   cards,
   logoCefoa,
   logoEjercito,
+  bandera,
 }: BoletasPermisoPdfProps) {
   const pages: Array<[BoletaPermisoCard, BoletaPermisoCard | null]> = [];
   for (let i = 0; i < cards.length; i += 2) {
@@ -258,6 +305,7 @@ export function BoletasPermisoPdfDocument({
               convocatoria={convocatoria}
               logoCefoa={logoCefoa}
               logoEjercito={logoEjercito}
+              bandera={bandera}
             />
             {bottom ? (
               <BoletaCard
@@ -265,9 +313,10 @@ export function BoletasPermisoPdfDocument({
                 convocatoria={convocatoria}
                 logoCefoa={logoCefoa}
                 logoEjercito={logoEjercito}
+                bandera={bandera}
               />
             ) : (
-              <View style={{ height: (792 - 144 - GAP) / 2 }} />
+              <View style={{ height: CARD_H }} />
             )}
           </View>
         </Page>

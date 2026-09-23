@@ -34,7 +34,7 @@ test("el número de curso sale del código de la convocatoria", () => {
 });
 
 test("vence en julio del año de la convocatoria", () => {
-  assert.equal(formatVenceBoleta(2026), "VENCE JULIO 2026");
+  assert.equal(formatVenceBoleta(2027), "VENCE JULIO 2027");
 });
 
 test("formatea teléfonos como en la plantilla", () => {
