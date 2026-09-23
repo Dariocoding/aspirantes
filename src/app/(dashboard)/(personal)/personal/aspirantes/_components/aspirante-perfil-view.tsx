@@ -118,6 +118,7 @@ export type AspirantePerfilSerializado = {
   contactoDireccion: string | null;
   fichaEvaluacion: unknown | null;
   fotoKey: string | null;
+  fotoBoletaKey?: string | null;
   fotoEsquelaKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
@@ -416,6 +417,20 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
                 nombre={nombreCompleto}
                 size="lg"
               />
+              {a.fotoBoletaKey ? (
+                <div className="flex flex-col items-center gap-1">
+                  <AspiranteFotoThumbnail
+                    aspiranteId={a.id}
+                    fotoKey={a.fotoBoletaKey}
+                    nombre={`${nombreCompleto} (boleta)`}
+                    size="lg"
+                    kind="boleta"
+                  />
+                  <span className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">
+                    Boleta
+                  </span>
+                </div>
+              ) : null}
               {a.fotoEsquelaKey ? (
                 <div className="flex flex-col items-center gap-1">
                   <AspiranteFotoThumbnail

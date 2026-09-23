@@ -330,6 +330,7 @@ export async function createAspirante(
 
     const fotoResult = await applyAspiranteFotosFromForm(formData, created.id, {
       fotoKey: null,
+      fotoBoletaKey: null,
       fotoEsquelaKey: null,
       fotoCedulaKey: null,
       fotoTituloKey: null,
@@ -379,6 +380,7 @@ export async function deleteAspirante(formData: FormData) {
       cedula: true,
       convocatoriaId: true,
       fotoKey: true,
+      fotoBoletaKey: true,
       fotoEsquelaKey: true,
       fotoCedulaKey: true,
       fotoTituloKey: true,
@@ -390,6 +392,7 @@ export async function deleteAspirante(formData: FormData) {
   await prisma.aspirante.delete({ where: { id } });
   await removeAllAspiranteFotos({
     fotoKey: row.fotoKey,
+    fotoBoletaKey: row.fotoBoletaKey,
     fotoEsquelaKey: row.fotoEsquelaKey,
     fotoCedulaKey: row.fotoCedulaKey,
     fotoTituloKey: row.fotoTituloKey,
@@ -580,6 +583,7 @@ export async function updateAspirante(
 
     const fotoResult = await applyAspiranteFotosFromForm(formData, aspiranteId, {
       fotoKey: existing.fotoKey,
+      fotoBoletaKey: existing.fotoBoletaKey,
       fotoEsquelaKey: existing.fotoEsquelaKey,
       fotoCedulaKey: existing.fotoCedulaKey,
       fotoTituloKey: existing.fotoTituloKey,
@@ -762,6 +766,7 @@ export async function updateAspiranteQuick(
 
     const fotoResult = await applyAspiranteFotosFromForm(formData, d.aspiranteId, {
       fotoKey: existing.fotoKey,
+      fotoBoletaKey: existing.fotoBoletaKey,
       fotoEsquelaKey: existing.fotoEsquelaKey,
       fotoCedulaKey: existing.fotoCedulaKey,
       fotoTituloKey: existing.fotoTituloKey,

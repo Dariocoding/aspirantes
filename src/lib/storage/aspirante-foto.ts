@@ -14,12 +14,20 @@ const EXTS_JPEG_PNG = new Set<AspiranteArchivoExt>(["jpg", "png"]);
 const EXTS_IMAGEN = new Set<AspiranteArchivoExt>(["jpg", "png", "webp", "gif"]);
 const EXTS_NOTAS = new Set<AspiranteArchivoExt>(["jpg", "png", "pdf"]);
 
-export type AspiranteFotoKind = "perfil" | "esquela" | "cedula" | "titulo" | "tituloAuth" | "notas";
+export type AspiranteFotoKind =
+  | "perfil"
+  | "boleta"
+  | "esquela"
+  | "cedula"
+  | "titulo"
+  | "tituloAuth"
+  | "notas";
 
-export type AspiranteDocumentoKind = Exclude<AspiranteFotoKind, "perfil" | "esquela">;
+export type AspiranteDocumentoKind = Exclude<AspiranteFotoKind, "perfil" | "boleta" | "esquela">;
 
 export const ASPIRANTE_FOTO_KINDS: readonly AspiranteFotoKind[] = [
   "perfil",
+  "boleta",
   "esquela",
   "cedula",
   "titulo",
@@ -36,6 +44,7 @@ export const ASPIRANTE_DOCUMENTO_KINDS: readonly AspiranteDocumentoKind[] = [
 
 export type AspiranteFotoDbField =
   | "fotoKey"
+  | "fotoBoletaKey"
   | "fotoEsquelaKey"
   | "fotoCedulaKey"
   | "fotoTituloKey"
@@ -44,6 +53,7 @@ export type AspiranteFotoDbField =
 
 const KIND_FILE: Record<AspiranteFotoKind, string> = {
   perfil: "foto",
+  boleta: "boleta",
   esquela: "esquela",
   cedula: "cedula",
   titulo: "titulo",
@@ -57,6 +67,7 @@ export const ASPIRANTE_FOTO_FORM: Record<
   { file: string; quitar: string; dbField: AspiranteFotoDbField }
 > = {
   perfil: { file: "imagen", quitar: "quitarImagen", dbField: "fotoKey" },
+  boleta: { file: "imagenBoleta", quitar: "quitarImagenBoleta", dbField: "fotoBoletaKey" },
   esquela: { file: "imagenEsquela", quitar: "quitarImagenEsquela", dbField: "fotoEsquelaKey" },
   cedula: { file: "imagenCedula", quitar: "quitarImagenCedula", dbField: "fotoCedulaKey" },
   titulo: { file: "imagenTitulo", quitar: "quitarImagenTitulo", dbField: "fotoTituloKey" },
@@ -173,6 +184,17 @@ export function aspiranteFotoKey(aspiranteId: string, ext: string): string {
 /** Ruta de la API de foto (usable en servidor y cliente). */
 export function isAspiranteFotoKind(v: string | null | undefined): v is AspiranteFotoKind {
   return Boolean(v && (ASPIRANTE_FOTO_KINDS as readonly string[]).includes(v));
+}
+
+/** Fuente de la foto en la boleta: la propia si existe; si no, carnet. */
+export function pickFotoForBoleta(
+  fotoBoletaKey: string | null | undefined,
+  fotoCarnetKey: string | null | undefined,
+): string | null {
+  const boleta = fotoBoletaKey?.trim();
+  if (boleta) return boleta;
+  const carnet = fotoCarnetKey?.trim();
+  return carnet || null;
 }
 
 /** Fuente de la foto en esquelas: ceremonial si existe; si no, carnet. */

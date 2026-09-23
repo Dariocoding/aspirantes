@@ -46,6 +46,7 @@ export async function GET(
     where: { id: aspiranteId },
     select: {
       fotoKey: true,
+      fotoBoletaKey: true,
       fotoEsquelaKey: true,
       fotoCedulaKey: true,
       fotoTituloKey: true,

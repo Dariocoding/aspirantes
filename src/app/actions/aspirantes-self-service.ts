@@ -338,6 +338,7 @@ export async function updateAspiranteSelfService(
 
   const fotoResult = await applyAspiranteFotosFromForm(formData, aspirante.id, {
     fotoKey: aspirante.fotoKey,
+    fotoBoletaKey: aspirante.fotoBoletaKey,
     fotoEsquelaKey: aspirante.fotoEsquelaKey,
     fotoCedulaKey: aspirante.fotoCedulaKey,
     fotoTituloKey: aspirante.fotoTituloKey,

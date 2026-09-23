@@ -50,6 +50,7 @@ import { cn } from "@src/lib/utils";
 export type AspirantesCensusRow = {
   id: string;
   fotoKey: string | null;
+  fotoBoletaKey: string | null;
   fotoEsquelaKey: string | null;
   fotoCedulaKey: string | null;
   fotoTituloKey: string | null;

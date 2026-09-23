@@ -152,6 +152,7 @@ export default async function AspirantesGestionPage({
         contactoDireccion: c?.direccion ?? null,
         fichaEvaluacion: a.fichaEvaluacion,
         fotoKey: a.fotoKey,
+        fotoBoletaKey: a.fotoBoletaKey,
         fotoEsquelaKey: a.fotoEsquelaKey,
         fotoCedulaKey: a.fotoCedulaKey,
         fotoTituloKey: a.fotoTituloKey,

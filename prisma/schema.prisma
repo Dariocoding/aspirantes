@@ -390,6 +390,8 @@ model Aspirante {
   fichaEvaluacion       Json?
   /// Clave del objeto en S3/R2 (p. ej. aspirantes/{id}/foto.webp). Foto tipo carnet.
   fotoKey               String?
+  /// Foto impresa en la boleta de permiso (S3/R2). Si falta, se usa `fotoKey`.
+  fotoBoletaKey         String?
   /// Foto ceremonial para esquelas (S3/R2). Si falta, se usa `fotoKey`.
   fotoEsquelaKey        String?
   /// Foto de la cédula de identidad (S3/R2).

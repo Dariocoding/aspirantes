@@ -16,6 +16,7 @@ import {
   formatBoletaSerial,
   formatTelefonoBoleta,
   loadFotoForBoletaPdf,
+  pickFotoForBoleta,
   MAX_BOLETAS_PERMISO,
   parseBoletaIdsParam,
   type BoletaPermisoCard,
@@ -119,7 +120,7 @@ async function pdfResponse(
 
   const cards = await mapWithConcurrency(aspirantes, 4, async (a): Promise<BoletaPermisoCard> => {
     const rasgos = boletaRasgosFromDatos(a.datosFisicos);
-    const foto = await loadFotoForBoletaPdf(a.fotoKey);
+    const foto = await loadFotoForBoletaPdf(pickFotoForBoleta(a.fotoBoletaKey, a.fotoKey));
     const contacto = a.contactos[0];
     return {
       id: a.id,

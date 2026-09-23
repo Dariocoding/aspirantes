@@ -101,13 +101,21 @@ export function AspiranteFotoThumbnail({
   size?: "sm" | "md" | "lg";
   kind?: AspiranteFotoKind;
 }) {
-  const box = THUMB_SIZE[size];
+  const isBoleta = kind === "boleta";
+  const box = isBoleta
+    ? size === "lg"
+      ? "h-28 w-[5.25rem]"
+      : size === "sm"
+        ? "h-9 w-7"
+        : "h-11 w-8"
+    : THUMB_SIZE[size];
 
   if (!fotoKey) {
     return (
       <div
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-full border border-slate-200 bg-linear-to-br from-slate-50 to-slate-100 text-slate-400",
+          "flex shrink-0 items-center justify-center border border-slate-200 bg-linear-to-br from-slate-50 to-slate-100 text-slate-400",
+          isBoleta ? "rounded-md" : "rounded-full",
           box,
         )}
         aria-hidden
@@ -123,6 +131,7 @@ export function AspiranteFotoThumbnail({
       alt={`Foto de ${nombre}`}
       className={box}
       iconSize={size === "lg" ? "lg" : size}
+      rounded={isBoleta ? "md" : "full"}
     />
   );
 }
@@ -176,6 +185,11 @@ const KIND_COPY: Record<
     title: "Foto de carnet",
     help: `Opcional. ${formatHelpForKind("perfil")}`,
     aria: "foto de carnet",
+  },
+  boleta: {
+    title: "Foto de boleta",
+    help: `Opcional. Es la foto que se imprime en la boleta de permiso. Si no hay, se usa la foto de carnet. ${formatHelpForKind("boleta")}`,
+    aria: "foto de boleta",
   },
   esquela: {
     title: "Foto de esquela",
@@ -300,9 +314,11 @@ export function AspiranteFotoField({
 
   const formNames = ASPIRANTE_FOTO_FORM[kind];
   const copy = KIND_COPY[kind];
-  const isDoc = kind !== "perfil" && kind !== "esquela";
-  const thumbClass = isDoc ? DOC_THUMB : THUMB_SIZE.lg;
-  const rounded = isDoc ? "md" : "full";
+  const isPortrait = kind === "boleta";
+  const isDoc = kind !== "perfil" && kind !== "boleta" && kind !== "esquela";
+  const radiusClass = isDoc || isPortrait ? "rounded-md" : "rounded-full";
+  const thumbClass = isDoc ? DOC_THUMB : isPortrait ? "h-28 w-[5.25rem]" : THUMB_SIZE.lg;
+  const rounded = isDoc || isPortrait ? "md" : "full";
 
   const hasStoredFoto = Boolean(fotoKey && !quitar);
   const remoteStoredUrl =
@@ -435,7 +451,7 @@ export function AspiranteFotoField({
   );
 
   if (layout === "compact") {
-    const compactThumb = isDoc ? "h-16 w-24" : "h-16 w-16";
+    const compactThumb = isDoc ? "h-16 w-24" : isPortrait ? "h-16 w-12" : "h-16 w-16";
     return (
       <div
         className={cn(
@@ -466,7 +482,7 @@ export function AspiranteFotoField({
             }}
             className={cn(
               "group relative flex shrink-0 items-center justify-center overflow-hidden",
-              isDoc ? "rounded-md" : "rounded-full",
+              radiusClass,
               compactThumb,
               "border border-slate-200 bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400",
             )}
@@ -493,7 +509,7 @@ export function AspiranteFotoField({
             <span
               className={cn(
                 "absolute inset-0 flex items-center justify-center bg-slate-900/50 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100",
-                isDoc ? "rounded-md" : "rounded-full",
+                radiusClass,
               )}
             >
               {canView ? "Ver" : "Subir"}
@@ -578,7 +594,7 @@ export function AspiranteFotoField({
           disabled={compressing || ordering}
           className={cn(
             "group relative flex shrink-0 items-center justify-center",
-            isDoc ? "rounded-md" : "rounded-full",
+            radiusClass,
             thumbClass,
             "ring-2 ring-offset-2 ring-offset-white transition-shadow focus-visible:outline-none",
             showUploadedStatus || showPendingReplace
@@ -599,7 +615,7 @@ export function AspiranteFotoField({
             <div
               className={cn(
                 "flex flex-col items-center justify-center gap-1.5 border border-slate-200 bg-linear-to-br from-slate-50 via-white to-slate-100 text-slate-600",
-                isDoc ? "rounded-md" : "rounded-full",
+                radiusClass,
                 thumbClass,
               )}
             >
@@ -610,7 +626,7 @@ export function AspiranteFotoField({
             <div
               className={cn(
                 "flex flex-col items-center justify-center gap-1.5 border border-emerald-200 bg-linear-to-br from-emerald-50 via-white to-emerald-50/80 text-emerald-700",
-                isDoc ? "rounded-md" : "rounded-full",
+                radiusClass,
                 thumbClass,
               )}
             >
@@ -623,7 +639,7 @@ export function AspiranteFotoField({
             <div
               className={cn(
                 "flex items-center justify-center border border-dashed border-slate-300 bg-linear-to-br from-slate-50 via-white to-slate-100 text-slate-400",
-                isDoc ? "rounded-md" : "rounded-full",
+                radiusClass,
                 thumbClass,
               )}
             >
@@ -638,7 +654,7 @@ export function AspiranteFotoField({
           <span
             className={cn(
               "absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-900/55 text-white opacity-0 transition-opacity",
-              isDoc ? "rounded-md" : "rounded-full",
+              radiusClass,
               "group-hover:opacity-100 group-focus-visible:opacity-100",
             )}
           >
@@ -666,7 +682,7 @@ export function AspiranteFotoField({
               Puede elegir varias fotos: se unen en un PDF. Una sola se queda como imagen. Si ya es
               PDF, puede cambiar el orden de las páginas.
             </p>
-          ) : (
+          ) : kind === "esquela" ? null : (
             <p className="mt-1 text-[11px] text-slate-400">
               Las imágenes se optimizan en el navegador antes de enviarse.
             </p>

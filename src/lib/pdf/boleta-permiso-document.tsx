@@ -23,6 +23,13 @@ const INNER_W = PAGE_W - PAGE_PAD * 2;
 const CARD_H = (792 - PAGE_PAD * 2 - GAP) / 2;
 const FLAG_W = 18;
 const HALF_W = INNER_W / 2;
+const LOGO_W = 34;
+const HEADER_PAD_X = 4;
+const HEADER_TEXT_W = HALF_W - HEADER_PAD_X * 2 - LOGO_W * 2 - 2;
+const BODY_PAD_X = 6;
+const PHOTO_W = 56;
+const BODY_W = HALF_W - FLAG_W - 2;
+const IDENT_TEXT_W = BODY_W - BODY_PAD_X * 2 - PHOTO_W - 6;
 
 function img(data: Buffer, format: "png" | "jpg") {
   return { data: Buffer.from(data), format };
@@ -66,17 +73,16 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   header: {
+    height: 62,
     flexDirection: "row",
-    alignItems: "flex-start",
-    paddingTop: 8,
-    paddingHorizontal: 8,
-    paddingBottom: 6,
-    marginBottom: 6,
-    minHeight: 72,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: HEADER_PAD_X,
+    overflow: "hidden",
   },
-  logo: { width: 42, height: 52, objectFit: "contain" },
-  headerTexts: { flex: 1, paddingHorizontal: 4 },
-  hLine: { fontSize: 8, textAlign: "center", fontWeight: "bold", lineHeight: 1.18 },
+  logo: { width: LOGO_W, height: 42, objectFit: "contain" },
+  headerTexts: { width: HEADER_TEXT_W },
+  hLine: { fontSize: 6, textAlign: "center", fontWeight: "bold", lineHeight: 1.15 },
   bodyRow: {
     flexGrow: 1,
     flexDirection: "row",
@@ -93,35 +99,34 @@ const s = StyleSheet.create({
     objectFit: "fill",
   },
   body: {
-    flexGrow: 1,
-    flexShrink: 1,
-    height: "100%",
-    paddingBottom: 8,
-    paddingLeft: 10,
-    paddingRight: 8,
+    width: BODY_W,
+    paddingTop: 4,
+    paddingBottom: 6,
+    paddingLeft: BODY_PAD_X,
+    paddingRight: BODY_PAD_X,
     overflow: "hidden",
   },
   grow: { flexGrow: 1 },
   ident: { flexDirection: "row", marginBottom: 6 },
   photoBox: {
-    width: 72,
-    height: 92,
+    width: PHOTO_W,
+    height: 72,
     borderWidth: 1,
     borderColor: INK,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
+    marginRight: 6,
   },
-  photo: { width: 70, height: 90, objectFit: "cover" },
+  photo: { width: PHOTO_W - 2, height: 70, objectFit: "cover" },
   photoPh: { fontSize: 9, fontWeight: "bold" },
-  identCol: { flex: 1, justifyContent: "center" },
-  identTitle: { fontSize: 8, fontWeight: "bold", marginBottom: 4 },
-  identLabel: { fontSize: 7, fontWeight: "bold", marginTop: 3 },
-  identValue: { fontSize: 8, fontWeight: "bold" },
+  identCol: { width: IDENT_TEXT_W, justifyContent: "center" },
+  identTitle: { fontSize: 7.5, fontWeight: "bold", marginBottom: 3 },
+  identLabel: { fontSize: 6.5, fontWeight: "bold", marginTop: 2 },
+  identValue: { fontSize: 7.5, fontWeight: "bold" },
   vence: { fontSize: 6.5, fontWeight: "bold", marginBottom: 6, marginTop: 2 },
   fieldLabel: { fontSize: 7, fontWeight: "bold", marginTop: 5 },
   fieldValue: { fontSize: 7, lineHeight: 1.25, marginTop: 1 },
-  rec: { fontSize: 6.8, textAlign: "center", lineHeight: 1.3 },
+  rec: { fontSize: 6.2, textAlign: "center", lineHeight: 1.25 },
   titleBar: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   serialCol: { width: 62 },
   serial: { fontSize: 7, fontWeight: "bold" },
@@ -242,7 +247,7 @@ function BoletaCard({
               <Image src={img(bandera, "jpg")} style={s.flag} />
             </View>
           ) : null}
-          <View style={s.body}>
+          <View style={[s.body, bandera ? null : { width: HALF_W - 2 }]}>
         <View style={s.ident}>
           <View style={s.photoBox}>
             {card.foto ? (

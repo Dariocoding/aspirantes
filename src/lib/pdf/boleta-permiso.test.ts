@@ -9,6 +9,7 @@ import {
   formatGrupoSanguineoBoleta,
   formatRasgoBoleta,
   parseBoletaIdsParam,
+  pickFotoForBoleta,
 } from "@src/lib/pdf/boleta-permiso";
 
 test("el serial del carnet va con tres dígitos", () => {
@@ -50,6 +51,13 @@ test("el grupo sanguíneo de la boleta usa el formato ORH+", () => {
 test("el color de piel clara se imprime BLANCA", () => {
   assert.equal(formatRasgoBoleta("Clara"), "BLANCA");
   assert.equal(formatRasgoBoleta("Morena"), "MORENA");
+});
+
+test("la boleta usa su foto y, si no hay, la de carnet", () => {
+  assert.equal(pickFotoForBoleta("aspirantes/1/boleta.webp", "aspirantes/1/foto.webp"), "aspirantes/1/boleta.webp");
+  assert.equal(pickFotoForBoleta(null, "aspirantes/1/foto.webp"), "aspirantes/1/foto.webp");
+  assert.equal(pickFotoForBoleta("  ", "aspirantes/1/foto.webp"), "aspirantes/1/foto.webp");
+  assert.equal(pickFotoForBoleta(null, null), null);
 });
 
 test("parseBoletaIdsParam recorta duplicados", () => {

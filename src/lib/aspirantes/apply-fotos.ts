@@ -22,7 +22,7 @@ export function unknownFotoSaveError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (
     code === "P2022" ||
-    /fotoNotasKey|fotoEsquelaKey|column .* does not exist|The column/i.test(msg)
+    /fotoNotasKey|fotoEsquelaKey|fotoBoletaKey|column .* does not exist|The column/i.test(msg)
   ) {
     return "La base de datos no está al día. Reinicie el contenedor para aplicar las migraciones (prisma migrate deploy).";
   }

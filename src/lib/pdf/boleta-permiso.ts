@@ -8,6 +8,7 @@ import {
   isColorOjos,
   isColorPiel,
 } from "@src/lib/aspirantes/senaletica";
+import { pickFotoForBoleta } from "@src/lib/storage/aspirante-foto";
 import { getObjectBuffer } from "@src/lib/storage/s3";
 
 export const MAX_BOLETAS_PERMISO = 250;
@@ -178,6 +179,8 @@ export function boletaRasgosFromDatos(datos: {
     colorPiel: formatRasgoBoleta(senaleticaLabel(datos?.colorPiel, COLOR_PIEL_LABELS, isColorPiel)),
   };
 }
+
+export { pickFotoForBoleta };
 
 export async function loadFotoForBoletaPdf(
   fotoKey: string | null,

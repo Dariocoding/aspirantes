@@ -48,6 +48,7 @@ function toCensusRow(
     nombres: a.nombres,
     apellidos: a.apellidos,
     cedula: a.cedula,
+    fotoBoletaKey: a.fotoBoletaKey,
     fotoEsquelaKey: a.fotoEsquelaKey,
     fotoCedulaKey: a.fotoCedulaKey,
     fotoTituloKey: a.fotoTituloKey,

@@ -259,6 +259,7 @@ export type AspiranteRegistroInitial = {
   /** JSON almacenado en BD (`fichaEvaluacion`); el cliente lo parsea con el catálogo actual. */
   fichaEvaluacion?: unknown | null;
   fotoKey?: string | null;
+  fotoBoletaKey?: string | null;
   fotoEsquelaKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
@@ -632,6 +633,13 @@ export function AspiranteRegistroForm({
               fotoKey={seed?.fotoKey ?? initial?.fotoKey}
               nombre={`${defaults.nombres} ${defaults.apellidos}`.trim() || "aspirante"}
               kind="perfil"
+            />
+            <AspiranteFotoField
+              id="aspirante-foto-boleta"
+              aspiranteId={seed?.id}
+              fotoKey={seed?.fotoBoletaKey ?? initial?.fotoBoletaKey}
+              nombre={`${defaults.nombres} ${defaults.apellidos}`.trim() || "aspirante"}
+              kind="boleta"
             />
             <AspiranteFotoField
               id="aspirante-foto-esquela"
