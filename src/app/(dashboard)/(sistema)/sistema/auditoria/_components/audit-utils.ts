@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<string, string> = {
   PERMISO_CREATE: "Alta de permiso de personal",
   PERMISO_UPDATE: "Actualización de permiso de personal",
   PERMISO_ANULAR: "Anulación de permiso de personal",
+  BOLETA_PERMISO_PDF: "Descarga de boleta de permiso (PDF)",
 };
 
 const ENTITY_LABELS: Record<string, string> = {

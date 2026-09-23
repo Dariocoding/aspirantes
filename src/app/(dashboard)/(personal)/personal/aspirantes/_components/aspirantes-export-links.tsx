@@ -285,12 +285,12 @@ export function AspirantesExportLinks({
               <DropdownMenuItem
                 disabled={Boolean(busyLabel)}
                 onClick={() =>
-                  void runDownload(boletasFiltrosUrl, "boletas-permiso.docx", "boletas con los filtros actuales")
+                  void runDownload(boletasFiltrosUrl, "boletas-permiso.pdf", "boletas con los filtros actuales")
                 }
               >
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">Boletas de permiso</span>
-                  <span className="text-xs text-muted-foreground">Carnet en Word, personal visible</span>
+                  <span className="text-xs text-muted-foreground">Carnet en PDF, personal visible</span>
                 </span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -333,7 +333,7 @@ export function AspirantesExportLinks({
               <DropdownMenuItem
                 disabled={convocatoriaCount < 1 || Boolean(busyLabel)}
                 onClick={() =>
-                  void runDownload(boletasTodasUrl, "boletas-permiso.docx", "boletas de toda la convocatoria")
+                  void runDownload(boletasTodasUrl, "boletas-permiso.pdf", "boletas de toda la convocatoria")
                 }
               >
                 <span className="flex min-w-0 flex-col gap-0.5">
@@ -392,7 +392,7 @@ export function AspirantesExportLinks({
           if (busyLabel) return;
           setError(null);
           setBusyLabel("las boletas seleccionadas");
-          void downloadBoletasPermisoPdf({ ids, fallbackName: "boletas-permiso.docx" })
+          void downloadBoletasPermisoPdf({ ids, fallbackName: "boletas-permiso.pdf" })
             .catch((e) => setError(e instanceof Error ? e.message : "No se pudo generar el archivo."))
             .finally(() => setBusyLabel(null));
         }}

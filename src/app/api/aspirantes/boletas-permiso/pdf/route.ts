@@ -1,3 +1,5 @@
+import { createElement } from "react";
+import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
 import { writeAuditLog } from "@src/lib/audit/log";
@@ -5,7 +7,8 @@ import { buildAspiranteCensusWhere } from "@src/lib/aspirantes/census";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
-import { buildBoletasPermisoDocx } from "@src/lib/docx/boleta-permiso-document";
+import { BoletasPermisoPdfDocument } from "@src/lib/pdf/boleta-permiso-document";
+import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 import {
   boletaConvocatoriaInfo,
   boletaRankByApellidos,
@@ -27,6 +30,8 @@ import type { Prisma } from "@src/generated/prisma";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+
+registerFichaTecnicaPdfFonts();
 
 const CENSUS_KEYS = ["q", "sexo", "sort", "peloton", "convocatoria"] as const;
 
@@ -132,17 +137,18 @@ async function pdfResponse(
 
   const ordered = [...cards].sort((a, b) => a.serial.localeCompare(b.serial, "es", { numeric: true }));
 
-  const buffer = await buildBoletasPermisoDocx({
+  const doc = createElement(BoletasPermisoPdfDocument, {
     convocatoria: info,
     cards: ordered,
     logoCefoa,
     logoEjercito,
   });
+  const buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
 
   await writeAuditLog({
     userId,
     userEmail,
-    action: "BOLETA_PERMISO_DOCX",
+    action: "BOLETA_PERMISO_PDF",
     entityType: "ASPIRANTE",
     entityId: ordered.length === 1 ? ordered[0]!.id : convocatoriaId,
     metadata: { count: ordered.length, convocatoriaId },
@@ -150,13 +156,13 @@ async function pdfResponse(
 
   const filename =
     ordered.length === 1
-      ? `boleta-permiso-${safeFilePart(ordered[0]!.cedula)}.docx`
-      : `boletas-permiso-${safeFilePart(convocatoria.codigo)}.docx`;
+      ? `boleta-permiso-${safeFilePart(ordered[0]!.cedula)}.pdf`
+      : `boletas-permiso-${safeFilePart(convocatoria.codigo)}.pdf`;
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildBoletasPermisoDocx } from "@src/lib/docx/boleta-permiso-document";
+import { createElement } from "react";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { BoletasPermisoPdfDocument } from "@src/lib/pdf/boleta-permiso-document";
 
-test("la boleta se genera como Word, dos aspirantes por hoja", async () => {
-  const buffer = await buildBoletasPermisoDocx({
+test("la boleta se genera como PDF, dos aspirantes por hoja", async () => {
+  const doc = createElement(BoletasPermisoPdfDocument, {
     convocatoria: {
       nombre: "Curso 45",
       codigo: "CEFOA-45",
@@ -26,10 +28,10 @@ test("la boleta se genera como Word, dos aspirantes por hoja", async () => {
         nombres: "ANA",
         apellidos: "PEREZ",
         cedula: "123",
-        cabello: "Negro",
-        grupoSanguineo: "O+",
-        ojos: "Café",
-        colorPiel: "Morena",
+        cabello: "NEGRO",
+        grupoSanguineo: "ORH+",
+        ojos: "CAFÉ",
+        colorPiel: "BLANCA",
         direccion: "Calle 1",
         telefono: "0412-0000000",
         emergenciaDireccion: "Calle 2",
@@ -42,10 +44,10 @@ test("la boleta se genera como Word, dos aspirantes por hoja", async () => {
         nombres: "LUIS",
         apellidos: "DIAZ",
         cedula: "456",
-        cabello: "Castaño oscuro",
+        cabello: "CASTAÑO OSCURO",
         grupoSanguineo: "ARH+",
-        ojos: "Café",
-        colorPiel: "Blanca",
+        ojos: "CAFÉ",
+        colorPiel: "BLANCA",
         direccion: "Calle 2",
         telefono: "0414-1111111",
         emergenciaDireccion: "Calle 3",
@@ -56,6 +58,7 @@ test("la boleta se genera como Word, dos aspirantes por hoja", async () => {
     logoCefoa: null,
     logoEjercito: null,
   });
-  assert.equal(buffer.subarray(0, 2).toString(), "PK");
-  assert.ok(buffer.length > 2000);
+  const buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
+  assert.equal(buffer.subarray(0, 4).toString(), "%PDF");
+  assert.ok(buffer.length > 1000);
 });

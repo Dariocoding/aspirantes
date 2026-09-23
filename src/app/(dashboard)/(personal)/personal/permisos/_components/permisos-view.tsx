@@ -119,8 +119,8 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
           setBoletaPickerOpen(false);
           setBoletaError(null);
           setBoletaBusy(true);
-          void downloadBoletasPermisoPdf({ ids, fallbackName: "boletas-permiso.docx" })
-            .catch((e) => setBoletaError(e instanceof Error ? e.message : "No se pudo generar el Word."))
+          void downloadBoletasPermisoPdf({ ids, fallbackName: "boletas-permiso.pdf" })
+            .catch((e) => setBoletaError(e instanceof Error ? e.message : "No se pudo generar el PDF."))
             .finally(() => setBoletaBusy(false));
         }}
       />
@@ -159,10 +159,10 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
                       setBoletaBusy(true);
                       void downloadBoletasPermisoPdf({
                         ids: aspirantes.map((a) => a.id),
-                        fallbackName: "boletas-permiso.docx",
+                        fallbackName: "boletas-permiso.pdf",
                       })
                         .catch((e) =>
-                          setBoletaError(e instanceof Error ? e.message : "No se pudo generar el Word."),
+                          setBoletaError(e instanceof Error ? e.message : "No se pudo generar el PDF."),
                         )
                         .finally(() => setBoletaBusy(false));
                     }}
@@ -328,7 +328,7 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
                           )}
                         >
                           <FileBadge className="h-3.5 w-3.5" aria-hidden />
-                          Word
+                          PDF
                         </a>
                       </TableCell>
                       {canWrite ? (

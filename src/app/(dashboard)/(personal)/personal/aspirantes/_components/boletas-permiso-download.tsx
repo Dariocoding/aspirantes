@@ -74,9 +74,9 @@ export async function downloadBoletasPermisoPdf(input: {
     : await fetch(input.url ?? "/api/aspirantes/boletas-permiso/pdf", { credentials: "same-origin" });
   if (!res.ok) {
     const data = (await res.json().catch(() => null)) as { message?: string } | null;
-    throw new Error(data?.message ?? `No se pudo generar el Word (${res.status}).`);
+    throw new Error(data?.message ?? `No se pudo generar el PDF (${res.status}).`);
   }
-  await saveBlob(res, input.fallbackName ?? "boletas-permiso.docx");
+  await saveBlob(res, input.fallbackName ?? "boletas-permiso.pdf");
 }
 
 export function AspiranteBoletaPermisoPdfLink({
@@ -107,7 +107,7 @@ export function AspiranteBoletaPermisoPdfLink({
           setBusy(true);
           void downloadBoletasPermisoPdf({
             ids: [aspiranteId],
-            fallbackName: "boleta-permiso.docx",
+            fallbackName: "boleta-permiso.pdf",
           })
             .catch((e) => setError(e instanceof Error ? e.message : "No se pudo descargar."))
             .finally(() => setBusy(false));
@@ -161,7 +161,7 @@ export function BoletasPermisoSelectDialog({
         <DialogHeader>
           <DialogTitle>Descargar boletas de permiso</DialogTitle>
           <DialogDescription>
-            Marque el personal. Se descarga un Word con frente y reverso; el serial sigue el orden de la convocatoria.
+            Marque el personal. Se descarga un PDF (carta, dos boletas por hoja); el serial sigue el orden de la convocatoria.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 px-5 pb-1">

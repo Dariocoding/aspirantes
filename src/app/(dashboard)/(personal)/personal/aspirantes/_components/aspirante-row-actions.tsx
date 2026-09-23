@@ -120,7 +120,7 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQ
               render={<a href={boletaHref} target="_blank" rel="noopener noreferrer" />}
             >
               <FileBadge />
-              Boleta de permiso (Word)
+              Boleta de permiso (PDF)
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

@@ -36,7 +36,7 @@ export type BoletaPermisoCard = {
   foto: { data: Buffer; format: "jpg" | "png" } | null;
 };
 
-/** Textos fijos de la plantilla autorizada (`boletas_permiso01.docx`). */
+/** Textos fijos de la plantilla autorizada de boleta de permiso. */
 export const BOLETA_DIRECTOR_CARGO =
   "DIRECTOR DEL CURSO ESPECIAL DE FORMACIÓN DE OFICIALES EN LA CATEGORÍA DE ASIMILADOS";
 export const BOLETA_RECOMENDACION =
