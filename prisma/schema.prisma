@@ -308,6 +308,8 @@ model Convocatoria {
   comandanteNombre     String?
   /// Teléfono del comandante de la convocatoria / curso.
   comandanteTelefono   String?
+  /// Año en que vence el curso. La boleta de permiso imprime «VENCE JULIO {año}».
+  anioVence            Int?
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
   aspirantes           Aspirante[]

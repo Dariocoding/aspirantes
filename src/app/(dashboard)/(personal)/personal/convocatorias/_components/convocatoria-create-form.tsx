@@ -70,6 +70,11 @@ export function ConvocatoriaCreateForm({ onSuccess }: ConvocatoriaCreateFormProp
         <Label htmlFor="conv-anio">Año</Label>
         <Input id="conv-anio" name="anio" type="number" required min={2000} max={2100} defaultValue={new Date().getFullYear()} />
       </div>
+      <div>
+        <Label htmlFor="conv-fin">Año en que vence</Label>
+        <Input id="conv-fin" name="anioVence" type="number" min={2000} max={2100} placeholder="2027" />
+        <p className="mt-1 text-xs text-slate-500">La boleta de permiso imprime «VENCE JULIO» y este año.</p>
+      </div>
       <div className="md:col-span-2">
         <Label htmlFor="conv-nombre">Nombre descriptivo</Label>
         <Input id="conv-nombre" name="nombre" required placeholder="Censo de aspirantes 2026 — segunda etapa" />

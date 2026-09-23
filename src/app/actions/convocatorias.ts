@@ -29,6 +29,7 @@ export async function createConvocatoria(
     anio: formData.get("anio"),
     comandanteNombre: formData.get("comandanteNombre"),
     comandanteTelefono: formData.get("comandanteTelefono"),
+    anioVence: formData.get("anioVence"),
     cantidadPelotones: formData.get("cantidadPelotones"),
     marcarActiva: formData.get("marcarActiva"),
   };
@@ -56,6 +57,7 @@ export async function createConvocatoria(
           activa: marcar,
           comandanteNombre: d.comandanteNombre ?? null,
           comandanteTelefono: d.comandanteTelefono ?? null,
+          anioVence: d.anioVence,
         },
         select: { id: true, codigo: true, nombre: true, activa: true },
       });
@@ -87,6 +89,7 @@ export async function createConvocatoria(
       nombre: created.nombre,
       anio: d.anio,
       activa: created.activa,
+      anioVence: d.anioVence,
       cantidadPelotones: d.cantidadPelotones,
     },
   });
@@ -112,6 +115,7 @@ export async function updateConvocatoria(
     anio: formData.get("anio"),
     comandanteNombre: formData.get("comandanteNombre"),
     comandanteTelefono: formData.get("comandanteTelefono"),
+    anioVence: formData.get("anioVence"),
     cantidadPelotones: formData.get("cantidadPelotones"),
   };
 
@@ -132,6 +136,7 @@ export async function updateConvocatoria(
           anio: d.anio,
           comandanteNombre: d.comandanteNombre ?? null,
           comandanteTelefono: d.comandanteTelefono ?? null,
+          anioVence: d.anioVence,
         },
       });
       const sync = await syncPelotonesConvocatoria(tx, d.id, d.cantidadPelotones);
@@ -163,6 +168,7 @@ export async function updateConvocatoria(
       codigo: d.codigo,
       nombre: d.nombre,
       anio: d.anio,
+      anioVence: d.anioVence,
       cantidadPelotones: d.cantidadPelotones,
     },
   });

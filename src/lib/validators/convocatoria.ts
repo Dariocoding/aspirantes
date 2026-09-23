@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { PELOTON_CANTIDAD_MAX, PELOTON_CANTIDAD_MIN } from "@src/lib/pelotones";
 
+function coerceAnioVence(v: unknown): number | null | unknown {
+  if (v === null || v === undefined || String(v).trim() === "") return null;
+  const n = Number(v);
+  return Number.isInteger(n) ? n : v;
+}
+
 const convocatoriaFields = {
   codigo: z
     .string()
@@ -18,6 +24,7 @@ const convocatoriaFields = {
     (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
     z.string().max(40).nullable(),
   ),
+  anioVence: z.preprocess(coerceAnioVence, z.number().int().min(2000).max(2100).nullable()),
   cantidadPelotones: z.coerce
     .number()
     .int("Indique un número entero de pelotones")

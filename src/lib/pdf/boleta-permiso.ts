@@ -51,6 +51,8 @@ export type BoletaPermisoConvocatoriaInfo = {
   nombre: string;
   codigo: string;
   anio: number;
+  anioVence: number | null;
+  vence: string;
   cursoNro: string;
   directorNombre: string;
   directorCargo: string;
@@ -82,8 +84,10 @@ export function cursoNroFromConvocatoria(c: { codigo: string; nombre: string }):
   return fromNombre?.[1] ?? "";
 }
 
-export function formatVenceBoleta(anio: number): string {
-  return `VENCE JULIO ${anio}`;
+/** «VENCE JULIO 2027». El año es el de vencimiento del curso, o el de la convocatoria si no está cargado. */
+export function formatVenceBoleta(anioVence: number | null | undefined, anio: number): string {
+  const year = anioVence != null && Number.isInteger(anioVence) ? anioVence : anio;
+  return `VENCE JULIO ${year}`;
 }
 
 export function formatTelefonoBoleta(raw: string | null | undefined): string | null {
@@ -132,13 +136,17 @@ export function boletaConvocatoriaInfo(c: {
   nombre: string;
   codigo: string;
   anio: number;
+  anioVence?: number | null;
   comandanteNombre: string | null;
 }): BoletaPermisoConvocatoriaInfo {
   const cursoNro = cursoNroFromConvocatoria(c);
+  const anioVence = c.anioVence ?? null;
   return {
     nombre: c.nombre,
     codigo: c.codigo,
     anio: c.anio,
+    anioVence,
+    vence: formatVenceBoleta(anioVence, c.anio),
     cursoNro,
     directorNombre: (c.comandanteNombre ?? "").trim().toLocaleUpperCase("es"),
     directorCargo: BOLETA_DIRECTOR_CARGO,

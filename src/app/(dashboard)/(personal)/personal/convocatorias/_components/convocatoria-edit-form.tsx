@@ -34,6 +34,7 @@ export type ConvocatoriaEditDefaults = {
   anio: number;
   comandanteNombre: string | null;
   comandanteTelefono: string | null;
+  anioVence: number | null;
   cantidadPelotones: number;
 };
 
@@ -100,6 +101,18 @@ export function ConvocatoriaEditForm({ defaults, onSuccess }: ConvocatoriaEditFo
           max={2100}
           defaultValue={defaults.anio}
         />
+      </div>
+      <div>
+        <Label htmlFor={`conv-edit-fin-${defaults.id}`}>Año en que vence</Label>
+        <Input
+          id={`conv-edit-fin-${defaults.id}`}
+          name="anioVence"
+          type="number"
+          min={2000}
+          max={2100}
+          defaultValue={defaults.anioVence ?? ""}
+        />
+        <p className="mt-1 text-xs text-slate-500">La boleta de permiso imprime «VENCE JULIO» y este año.</p>
       </div>
       <div className="md:col-span-2">
         <Label htmlFor={`conv-edit-nombre-${defaults.id}`}>Nombre descriptivo</Label>

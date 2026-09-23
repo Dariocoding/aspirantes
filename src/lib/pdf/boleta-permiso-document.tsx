@@ -2,7 +2,6 @@ import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/
 import {
   BOLETA_ARMAS,
   BOLETA_RECOMENDACION,
-  formatVenceBoleta,
   type BoletaPermisoCard,
   type BoletaPermisoConvocatoriaInfo,
 } from "@src/lib/pdf/boleta-permiso";
@@ -247,7 +246,7 @@ function BoletaCard({
               <Image src={img(bandera, "jpg")} style={s.flag} />
             </View>
           ) : null}
-          <View style={[s.body, bandera ? null : { width: HALF_W - 2 }]}>
+          <View style={bandera ? s.body : [s.body, { width: HALF_W - 2 }]}>
         <View style={s.ident}>
           <View style={s.photoBox}>
             {card.foto ? (
@@ -266,7 +265,7 @@ function BoletaCard({
           </View>
         </View>
 
-        <Text style={s.vence}>{formatVenceBoleta(convocatoria.anio)}</Text>
+        <Text style={s.vence}>{convocatoria.vence}</Text>
         <Field label="DIRECCIÓN DOMICILIARIA:" value={card.direccion} />
         <Field label="TELEFONO:" value={card.telefono} />
         <Field label="DIRECCIÓN DE EMERGENCIA:" value={card.emergenciaDireccion} />
