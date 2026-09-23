@@ -16,7 +16,6 @@ import {
 } from "docx";
 import {
   BOLETA_ARMAS,
-  BOLETA_EMERGENCIA_INSTITUCIONAL,
   BOLETA_RECOMENDACION,
   formatVenceBoleta,
   type BoletaPermisoCard,
@@ -25,24 +24,25 @@ import {
 
 const INK = "000000";
 const BLUE = "1F4E79";
-const FLAG_Y = "FFCC00";
-const FLAG_B = "0033A0";
-const FLAG_R = "CF142B";
 const NONE = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
 const noBorders = { top: NONE, bottom: NONE, left: NONE, right: NONE };
+const splitBorders = { ...noBorders, right: { style: BorderStyle.SINGLE, size: 12, color: BLUE, space: 0 } };
 
-/** Carta 8.5×11 in, márgenes 2,54 cm en los cuatro lados. */
+/** Carta 8.5×11 in, márgenes 2,54 cm. Dos boletas por hoja. */
 const TWIP_IN = 1440;
 const PAGE_W = Math.round(8.5 * TWIP_IN);
 const PAGE_H = Math.round(11 * TWIP_IN);
 const MARGIN = TWIP_IN;
-const GAP = 120;
+const GAP = 200;
 const CARD_W = PAGE_W - MARGIN * 2;
 const CARD_H = Math.floor((PAGE_H - MARGIN * 2 - GAP) / 2);
-const FLAG_W = 150;
-const BODY_W = CARD_W - FLAG_W;
-const LEFT_W = 4780;
-const RIGHT_W = BODY_W - LEFT_W;
+const LEFT_W = 5000;
+const RIGHT_W = CARD_W - LEFT_W;
+
+const H_HEADER = 1320;
+const H_ID = 2100;
+const H_MID = 1760;
+const H_FOOT = CARD_H - H_HEADER - H_ID - H_MID;
 
 type CellBorder = {
   style: (typeof BorderStyle)[keyof typeof BorderStyle];
@@ -72,12 +72,12 @@ function p(
 ) {
   return new Paragraph({
     alignment: opts.align ?? AlignmentType.LEFT,
-    spacing: { before: opts.before ?? 0, after: opts.after ?? 40, line: opts.line ?? 240 },
+    spacing: { before: opts.before ?? 0, after: opts.after ?? 20, line: opts.line ?? 230 },
     children,
   });
 }
 
-function run(text: string, size = 16, bold = false) {
+function run(text: string, size = 15, bold = false) {
   return new TextRun({ text, font: "Arial", size, bold, color: INK });
 }
 
@@ -88,18 +88,23 @@ function cell(
     fill?: string;
     borders?: CellBorders;
     align?: "top" | "center" | "bottom";
-    span?: number;
     margins?: { top: number; bottom: number; left: number; right: number };
   },
 ) {
   return new TableCell({
     width: { size: opts.width, type: WidthType.DXA },
-    columnSpan: opts.span,
     verticalAlign: opts.align ?? "top",
     shading: opts.fill ? { type: ShadingType.CLEAR, fill: opts.fill } : undefined,
     borders: opts.borders ?? noBorders,
-    margins: opts.margins ?? { top: 40, bottom: 40, left: 60, right: 60 },
+    margins: opts.margins ?? { top: 60, bottom: 40, left: 80, right: 70 },
     children: children.length ? children : [p([run(" ")])],
+  });
+}
+
+function row(height: number, children: TableCell[]) {
+  return new TableRow({
+    height: { value: height, rule: HeightRule.EXACT },
+    children,
   });
 }
 
@@ -111,287 +116,270 @@ function imagePara(data: Buffer, type: "png" | "jpg", width: number, height: num
   });
 }
 
-function headerBlock(
+function headerCell(
   convocatoria: BoletaPermisoConvocatoriaInfo,
   logoCefoa: Buffer | null,
   logoEjercito: Buffer | null,
 ) {
-  const logoW = 720;
+  const logoW = 700;
   const textW = LEFT_W - logoW * 2;
-  return new Table({
-    width: { size: LEFT_W, type: WidthType.DXA },
-    layout: TableLayoutType.FIXED,
-    columnWidths: [logoW, textW, logoW],
-    rows: [
-      new TableRow({
-        children: [
-          cell(logoCefoa ? [imagePara(logoCefoa, "png", 38, 46)] : [p([run(" ")])], {
-            width: logoW,
-            align: "center",
-            margins: { top: 40, bottom: 40, left: 20, right: 20 },
-          }),
-          cell(
-            convocatoria.headerLines.map((line) =>
-              p([run(line, 13, true)], { align: AlignmentType.CENTER, after: 16, line: 200 }),
-            ),
-            { width: textW, align: "center" },
-          ),
-          cell(logoEjercito ? [imagePara(logoEjercito, "png", 38, 46)] : [p([run(" ")])], {
-            width: logoW,
-            align: "center",
-            margins: { top: 40, bottom: 40, left: 20, right: 20 },
-          }),
-        ],
-      }),
-    ],
-  });
-}
-
-function fieldBlock(label: string, value: string) {
-  return [
-    p([run(label, 14, true)], { after: 16, before: 80 }),
-    p([run(value === "—" ? "" : value, 14, false)], { after: 24, line: 220 }),
-  ];
-}
-
-function leftColumn(
-  card: BoletaPermisoCard,
-  convocatoria: BoletaPermisoConvocatoriaInfo,
-  logoCefoa: Buffer | null,
-  logoEjercito: Buffer | null,
-) {
-  const photoW = 1400;
-  const identW = LEFT_W - photoW - 60;
-  const identity = new Table({
-    width: { size: LEFT_W, type: WidthType.DXA },
-    layout: TableLayoutType.FIXED,
-    columnWidths: [photoW, identW],
-    rows: [
-      new TableRow({
-        children: [
-          cell(
-            [
-              card.foto
-                ? imagePara(card.foto.data, card.foto.format === "png" ? "png" : "jpg", 62, 80)
-                : p([run("FOTO", 20, true)], { align: AlignmentType.CENTER }),
-            ],
-            {
-              width: photoW,
-              borders: box(INK, 12),
-              align: "center",
-              margins: { top: 80, bottom: 80, left: 80, right: 80 },
-            },
-          ),
-          cell(
-            [
-              p([run("ASPIRANTE A OFICIAL", 16, true)], { after: 40 }),
-              p([run("NOMBRES:", 14, true)], { after: 12 }),
-              p([run(card.nombres.toLocaleUpperCase("es"), 16, true)], { after: 40 }),
-              p([run("APELLIDOS:", 14, true)], { after: 12 }),
-              p([run(card.apellidos.toLocaleUpperCase("es"), 16, true)], { after: 40 }),
-              p([run("C.I.V:  ", 14, true), run(card.cedula, 16, true)]),
-            ],
-            { width: identW, align: "center", margins: { top: 20, bottom: 20, left: 80, right: 20 } },
-          ),
-        ],
-      }),
-    ],
-  });
-
   return cell(
     [
-      headerBlock(convocatoria, logoCefoa, logoEjercito),
-      identity,
-      p([run(formatVenceBoleta(convocatoria.anio), 12, true)], { before: 40, after: 40 }),
-      ...fieldBlock("DIRECCIÓN DOMICILIARIA:", card.direccion),
-      ...fieldBlock("TELEFONO:", card.telefono),
-      ...fieldBlock("DIRECCIÓN DE EMERGENCIA:", card.emergenciaDireccion),
-      ...fieldBlock("TELÉFONO DE EMERGENCIA:", card.emergenciaTelefono),
-      p([run(BOLETA_RECOMENDACION, 13, false)], { before: 80, align: AlignmentType.CENTER, line: 220 }),
-    ],
-    { width: LEFT_W, align: "top", margins: { top: 40, bottom: 40, left: 50, right: 50 } },
-  );
-}
-
-function traitLine(label: string, value: string, labelW: number, valueW: number) {
-  return new TableRow({
-    children: [
-      cell([p([run(label, 14, true)])], {
-        width: labelW,
-        margins: { top: 40, bottom: 40, left: 30, right: 30 },
-      }),
-      cell([p([run(value, 14, false)])], {
-        width: valueW,
-        margins: { top: 40, bottom: 40, left: 30, right: 30 },
-      }),
-    ],
-  });
-}
-
-function rightColumn(card: BoletaPermisoCard, convocatoria: BoletaPermisoConvocatoriaInfo) {
-  const serialW = 1100;
-  const ejbW = 720;
-  const titleW = RIGHT_W - serialW - ejbW;
-  const huellaW = 1300;
-  const traitsW = RIGHT_W - huellaW - 60;
-  const traitLabelW = Math.min(1700, Math.floor(traitsW * 0.58));
-  const traitValW = traitsW - traitLabelW;
-
-  const titleBar = new Table({
-    width: { size: RIGHT_W, type: WidthType.DXA },
-    layout: TableLayoutType.FIXED,
-    columnWidths: [serialW, titleW, ejbW],
-    rows: [
-      new TableRow({
-        children: [
-          cell(
-            [
-              p([run("Serial:", 13, true), run(card.serial, 16, true)]),
-              p([run("CEFOA", 13, true)]),
-            ],
-            { width: serialW },
-          ),
-          cell([p([run("ASPIRANTE A OFICIAL", 16, true)], { align: AlignmentType.CENTER })], {
-            width: titleW,
-            align: "center",
-          }),
-          cell([p([run("EJB", 18, true)], { align: AlignmentType.CENTER })], {
-            width: ejbW,
-            align: "center",
-          }),
-        ],
-      }),
-    ],
-  });
-
-  const mid = new Table({
-    width: { size: RIGHT_W, type: WidthType.DXA },
-    layout: TableLayoutType.FIXED,
-    columnWidths: [huellaW, traitsW],
-    rows: [
-      new TableRow({
-        height: { value: 1680, rule: HeightRule.ATLEAST },
-        children: [
-          cell(
-            [
-              p([run(" ")], { after: 0 }),
-              p([run("Huella dactilar", 12, false)], { align: AlignmentType.CENTER }),
-            ],
-            {
-              width: huellaW,
-              borders: box(INK, 12),
-              align: "bottom",
-              margins: { top: 80, bottom: 80, left: 40, right: 40 },
-            },
-          ),
-          cell(
-            [
-              new Table({
-                width: { size: traitsW, type: WidthType.DXA },
-                layout: TableLayoutType.FIXED,
-                columnWidths: [traitLabelW, traitValW],
-                rows: [
-                  traitLine("CABELLO:", card.cabello, traitLabelW, traitValW),
-                  traitLine("GRUPO SANGUÍNEO:", card.grupoSanguineo, traitLabelW, traitValW),
-                  traitLine("OJOS:", card.ojos, traitLabelW, traitValW),
-                  traitLine("COLOR DE PIEL:", card.colorPiel, traitLabelW, traitValW),
-                ],
+      new Table({
+        width: { size: LEFT_W - 160, type: WidthType.DXA },
+        layout: TableLayoutType.FIXED,
+        columnWidths: [logoW, textW, logoW],
+        rows: [
+          new TableRow({
+            children: [
+              cell(logoCefoa ? [imagePara(logoCefoa, "png", 40, 48)] : [p([run(" ")])], {
+                width: logoW,
+                align: "center",
+                margins: { top: 20, bottom: 20, left: 10, right: 10 },
+              }),
+              cell(
+                convocatoria.headerLines.map((line) =>
+                  p([run(line, 12, true)], { align: AlignmentType.CENTER, after: 8, line: 200 }),
+                ),
+                { width: textW, align: "center", margins: { top: 20, bottom: 20, left: 20, right: 20 } },
+              ),
+              cell(logoEjercito ? [imagePara(logoEjercito, "png", 40, 48)] : [p([run(" ")])], {
+                width: logoW,
+                align: "center",
+                margins: { top: 20, bottom: 20, left: 10, right: 10 },
               }),
             ],
-            { width: traitsW, align: "center" },
-          ),
+          }),
         ],
       }),
     ],
-  });
-
-  const cargo = convocatoria.directorCargo;
-  const cargoMid = cargo.indexOf("FORMACIÓN");
-  const cargo1 = cargoMid >= 0 ? cargo.slice(0, cargoMid + "FORMACIÓN".length).trim() : cargo;
-  const cargo2 = cargoMid >= 0 ? cargo.slice(cargoMid + "FORMACIÓN".length).trim() : "";
-
-  return cell(
-    [
-      titleBar,
-      mid,
-      p([run(" ")], { before: 40 }),
-      p([run("________________________________", 14, false)], { align: AlignmentType.CENTER, after: 20 }),
-      p([run(convocatoria.directorNombre || " ", 14, true)], { align: AlignmentType.CENTER, after: 20 }),
-      p([run(cargo1, 13, true)], { align: AlignmentType.CENTER, after: 0 }),
-      cargo2 ? p([run(cargo2, 13, true)], { align: AlignmentType.CENTER, after: 40 }) : p([run(" ")]),
-      p([run(BOLETA_EMERGENCIA_INSTITUCIONAL, 12, true)], {
-        align: AlignmentType.CENTER,
-        before: 80,
-        line: 220,
-      }),
-      p([run(BOLETA_ARMAS, 13, false)], { align: AlignmentType.CENTER, before: 80, line: 220 }),
-    ],
-    {
-      width: RIGHT_W,
-      align: "top",
-      borders: { ...noBorders, left: line(BLUE, 12) },
-      margins: { top: 40, bottom: 40, left: 50, right: 50 },
-    },
+    { width: LEFT_W, borders: splitBorders, align: "center" },
   );
 }
 
-function flagStripe() {
-  return new Table({
-    width: { size: FLAG_W, type: WidthType.DXA },
-    layout: TableLayoutType.FIXED,
-    columnWidths: [FLAG_W],
-    rows: [
-      new TableRow({
-        height: { value: 2000, rule: HeightRule.EXACT },
-        children: [cell([p([run(" ")])], { width: FLAG_W, fill: FLAG_Y, margins: { top: 0, bottom: 0, left: 0, right: 0 } })],
-      }),
-      new TableRow({
-        height: { value: 2000, rule: HeightRule.EXACT },
-        children: [cell([p([run(" ")])], { width: FLAG_W, fill: FLAG_B, margins: { top: 0, bottom: 0, left: 0, right: 0 } })],
-      }),
-      new TableRow({
-        height: { value: 2000, rule: HeightRule.EXACT },
-        children: [cell([p([run(" ")])], { width: FLAG_W, fill: FLAG_R, margins: { top: 0, bottom: 0, left: 0, right: 0 } })],
+function serialCell(card: BoletaPermisoCard) {
+  const serialW = 1300;
+  const ejbW = 800;
+  const titleW = RIGHT_W - serialW - ejbW - 160;
+  return cell(
+    [
+      new Table({
+        width: { size: RIGHT_W - 160, type: WidthType.DXA },
+        layout: TableLayoutType.FIXED,
+        columnWidths: [serialW, titleW, ejbW],
+        rows: [
+          new TableRow({
+            children: [
+              cell(
+                [
+                  p([run("Serial:", 13, true), run(card.serial, 16, true)]),
+                  p([run("CEFOA", 13, true)]),
+                ],
+                { width: serialW, margins: { top: 20, bottom: 20, left: 20, right: 20 } },
+              ),
+              cell([p([run("ASPIRANTE A OFICIAL", 16, true)], { align: AlignmentType.CENTER })], {
+                width: titleW,
+                align: "center",
+              }),
+              cell([p([run("EJB", 16, true)], { align: AlignmentType.CENTER })], {
+                width: ejbW,
+                align: "center",
+              }),
+            ],
+          }),
+        ],
       }),
     ],
-  });
+    { width: RIGHT_W, align: "center" },
+  );
 }
 
-function boletaPage(
+function identityCell(card: BoletaPermisoCard) {
+  const photoW = 1500;
+  const identW = LEFT_W - photoW - 180;
+  return cell(
+    [
+      new Table({
+        width: { size: LEFT_W - 160, type: WidthType.DXA },
+        layout: TableLayoutType.FIXED,
+        columnWidths: [photoW, identW],
+        rows: [
+          new TableRow({
+            children: [
+              cell(
+                [
+                  card.foto
+                    ? imagePara(card.foto.data, card.foto.format === "png" ? "png" : "jpg", 68, 88)
+                    : p([run("FOTO", 18, true)], { align: AlignmentType.CENTER }),
+                ],
+                {
+                  width: photoW,
+                  borders: box(INK, 10),
+                  align: "center",
+                  margins: { top: 40, bottom: 40, left: 40, right: 40 },
+                },
+              ),
+              cell(
+                [
+                  p([run("ASPIRANTE A OFICIAL", 15, true)], { after: 30 }),
+                  p([run("NOMBRES:", 13, true)], { after: 8 }),
+                  p([run(card.nombres.toLocaleUpperCase("es"), 15, true)], { after: 30 }),
+                  p([run("APELLIDOS:", 13, true)], { after: 8 }),
+                  p([run(card.apellidos.toLocaleUpperCase("es"), 15, true)], { after: 30 }),
+                  p([run("C.I.V:  ", 13, true), run(card.cedula, 15, true)]),
+                ],
+                { width: identW, align: "center", margins: { top: 20, bottom: 20, left: 80, right: 20 } },
+              ),
+            ],
+          }),
+        ],
+      }),
+    ],
+    { width: LEFT_W, borders: splitBorders, align: "center" },
+  );
+}
+
+function traitsCell(card: BoletaPermisoCard) {
+  const huellaW = 1400;
+  const traitsW = RIGHT_W - huellaW - 200;
+  const labelW = 1750;
+  const valueW = traitsW - labelW;
+  const trait = (label: string, value: string) =>
+    new TableRow({
+      children: [
+        cell([p([run(label, 13, true)])], {
+          width: labelW,
+          margins: { top: 50, bottom: 50, left: 40, right: 20 },
+        }),
+        cell([p([run(value, 13, false)])], {
+          width: valueW,
+          margins: { top: 50, bottom: 50, left: 20, right: 20 },
+        }),
+      ],
+    });
+
+  return cell(
+    [
+      new Table({
+        width: { size: RIGHT_W - 160, type: WidthType.DXA },
+        layout: TableLayoutType.FIXED,
+        columnWidths: [huellaW, traitsW],
+        rows: [
+          new TableRow({
+            children: [
+              cell(
+                [
+                  p([run(" ")], { after: 0 }),
+                  p([run("Huella dactilar", 11, false)], { align: AlignmentType.CENTER, after: 0 }),
+                ],
+                {
+                  width: huellaW,
+                  borders: box(INK, 10),
+                  align: "bottom",
+                  margins: { top: 40, bottom: 40, left: 30, right: 30 },
+                },
+              ),
+              cell(
+                [
+                  new Table({
+                    width: { size: traitsW, type: WidthType.DXA },
+                    layout: TableLayoutType.FIXED,
+                    columnWidths: [labelW, valueW],
+                    rows: [
+                      trait("CABELLO:", card.cabello),
+                      trait("GRUPO SANGUÍNEO:", card.grupoSanguineo),
+                      trait("OJOS:", card.ojos),
+                      trait("COLOR DE PIEL:", card.colorPiel),
+                    ],
+                  }),
+                ],
+                { width: traitsW, align: "center", margins: { top: 20, bottom: 20, left: 40, right: 10 } },
+              ),
+            ],
+          }),
+        ],
+      }),
+    ],
+    { width: RIGHT_W, align: "center" },
+  );
+}
+
+function addressCell(card: BoletaPermisoCard, convocatoria: BoletaPermisoConvocatoriaInfo) {
+  return cell(
+    [
+      p([run(formatVenceBoleta(convocatoria.anio), 11, true)], { after: 40 }),
+      p([run("DIRECCIÓN DOMICILIARIA:", 12, true)], { after: 8 }),
+      p([run(card.direccion === "—" ? "" : card.direccion, 12, false)], { after: 40, line: 220 }),
+      p([run("TELEFONO:", 12, true)], { after: 8 }),
+      p([run(card.telefono === "—" ? "" : card.telefono, 12, false)], { after: 40 }),
+      p([run("DIRECCIÓN DE EMERGENCIA:", 12, true)], { after: 8 }),
+      p([run(card.emergenciaDireccion === "—" ? "" : card.emergenciaDireccion, 12, false)], { after: 40, line: 220 }),
+      p([run("TELÉFONO DE EMERGENCIA:", 12, true)], { after: 8 }),
+      p([run(card.emergenciaTelefono === "—" ? "" : card.emergenciaTelefono, 12, false)]),
+    ],
+    { width: LEFT_W, borders: splitBorders },
+  );
+}
+
+function directorCell(convocatoria: BoletaPermisoConvocatoriaInfo) {
+  const cargo = convocatoria.directorCargo;
+  const at = cargo.indexOf("FORMACIÓN");
+  const cargo1 = at >= 0 ? cargo.slice(0, at + "FORMACIÓN".length).trim() : cargo;
+  const cargo2 = at >= 0 ? cargo.slice(at + "FORMACIÓN".length).trim() : "";
+  return cell(
+    [
+      p([run(" ")], { after: 20 }),
+      p([run("______________________________", 14, false)], { align: AlignmentType.CENTER, after: 16 }),
+      p([run(convocatoria.directorNombre || " ", 13, true)], { align: AlignmentType.CENTER, after: 16 }),
+      p([run(cargo1, 12, true)], { align: AlignmentType.CENTER, after: 0 }),
+      cargo2
+        ? p([run(cargo2, 12, true)], { align: AlignmentType.CENTER, after: 0 })
+        : p([run(" ")]),
+    ],
+    { width: RIGHT_W, align: "center" },
+  );
+}
+
+function recCell() {
+  return cell(
+    [p([run(BOLETA_RECOMENDACION, 12, false)], { align: AlignmentType.CENTER, line: 220 })],
+    { width: LEFT_W, borders: splitBorders, align: "center" },
+  );
+}
+
+function legalCell() {
+  return cell(
+    [
+      p([run("EN CASO DE EMERGENCIA FAVOR INFORMAR A LOS TELÉFONOS.", 11, true)], {
+        align: AlignmentType.CENTER,
+        after: 12,
+        line: 210,
+      }),
+      p([run("(0412) 396-8855, (0416) 642-7379, (0416) 232-3997", 11, true)], {
+        align: AlignmentType.CENTER,
+        after: 40,
+      }),
+      p([run(BOLETA_ARMAS, 12, false)], { align: AlignmentType.CENTER, line: 210 }),
+    ],
+    { width: RIGHT_W, align: "center" },
+  );
+}
+
+function boletaCard(
   card: BoletaPermisoCard,
   convocatoria: BoletaPermisoConvocatoriaInfo,
   logoCefoa: Buffer | null,
   logoEjercito: Buffer | null,
 ) {
-  const body = new Table({
-    width: { size: BODY_W, type: WidthType.DXA },
-    layout: TableLayoutType.FIXED,
-    columnWidths: [LEFT_W, RIGHT_W],
-    rows: [
-      new TableRow({
-        children: [
-          leftColumn(card, convocatoria, logoCefoa, logoEjercito),
-          rightColumn(card, convocatoria),
-        ],
-      }),
-    ],
-  });
-
   const inner = new Table({
     width: { size: CARD_W, type: WidthType.DXA },
     layout: TableLayoutType.FIXED,
-    columnWidths: [FLAG_W, BODY_W],
+    columnWidths: [LEFT_W, RIGHT_W],
     rows: [
-      new TableRow({
-        children: [
-          cell([flagStripe()], {
-            width: FLAG_W,
-            align: "center",
-            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-          }),
-          cell([body], { width: BODY_W, margins: { top: 0, bottom: 0, left: 0, right: 0 } }),
-        ],
-      }),
+      row(H_HEADER, [headerCell(convocatoria, logoCefoa, logoEjercito), serialCell(card)]),
+      row(H_ID, [identityCell(card), traitsCell(card)]),
+      row(H_MID, [addressCell(card, convocatoria), directorCell(convocatoria)]),
+      row(H_FOOT, [recCell(), legalCell()]),
     ],
   });
 
@@ -401,10 +389,11 @@ function boletaPage(
     columnWidths: [CARD_W],
     rows: [
       new TableRow({
+        height: { value: CARD_H, rule: HeightRule.EXACT },
         children: [
           cell([inner], {
             width: CARD_W,
-            borders: box(BLUE, 18),
+            borders: box(BLUE, 16),
             margins: { top: 0, bottom: 0, left: 0, right: 0 },
           }),
         ],
@@ -420,24 +409,19 @@ function pageOfTwo(
   logoCefoa: Buffer | null,
   logoEjercito: Buffer | null,
 ) {
-  const topCell = cell([boletaPage(top, convocatoria, logoCefoa, logoEjercito)], {
-    width: CARD_W,
-    margins: { top: 0, bottom: 0, left: 0, right: 0 },
-  });
-  const bottomCell = cell(
-    bottom
-      ? [boletaPage(bottom, convocatoria, logoCefoa, logoEjercito)]
-      : [p([run(" ")])],
-    { width: CARD_W, margins: { top: 0, bottom: 0, left: 0, right: 0 } },
-  );
   return new Table({
     width: { size: CARD_W, type: WidthType.DXA },
     layout: TableLayoutType.FIXED,
     columnWidths: [CARD_W],
     rows: [
       new TableRow({
-        height: { value: CARD_H, rule: HeightRule.ATLEAST },
-        children: [topCell],
+        height: { value: CARD_H, rule: HeightRule.EXACT },
+        children: [
+          cell([boletaCard(top, convocatoria, logoCefoa, logoEjercito)], {
+            width: CARD_W,
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+          }),
+        ],
       }),
       new TableRow({
         height: { value: GAP, rule: HeightRule.EXACT },
@@ -449,8 +433,15 @@ function pageOfTwo(
         ],
       }),
       new TableRow({
-        height: { value: CARD_H, rule: HeightRule.ATLEAST },
-        children: [bottomCell],
+        height: { value: CARD_H, rule: HeightRule.EXACT },
+        children: [
+          cell(
+            bottom
+              ? [boletaCard(bottom, convocatoria, logoCefoa, logoEjercito)]
+              : [p([run(" ")])],
+            { width: CARD_W, margins: { top: 0, bottom: 0, left: 0, right: 0 } },
+          ),
+        ],
       }),
     ],
   });
@@ -476,17 +467,14 @@ export async function buildBoletasPermisoDocx(input: {
     styles: {
       default: {
         document: {
-          run: { font: "Arial", size: 16 },
+          run: { font: "Arial", size: 15 },
         },
       },
     },
     sections: pairs.map(([top, bottom]) => ({
       properties: {
         page: {
-          size: {
-            width: PAGE_W,
-            height: PAGE_H,
-          },
+          size: { width: PAGE_W, height: PAGE_H },
           margin: { top: "2.54cm", right: "2.54cm", bottom: "2.54cm", left: "2.54cm" },
         },
       },
