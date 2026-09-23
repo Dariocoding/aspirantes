@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildBoletasPermisoDocx } from "@src/lib/docx/boleta-permiso-document";
 
-test("la boleta se genera como archivo Word (docx)", async () => {
+test("la boleta se genera como Word, dos aspirantes por hoja", async () => {
   const buffer = await buildBoletasPermisoDocx({
     convocatoria: {
       nombre: "Curso 45",
@@ -34,6 +34,22 @@ test("la boleta se genera como archivo Word (docx)", async () => {
         telefono: "0412-0000000",
         emergenciaDireccion: "Calle 2",
         emergenciaTelefono: "0416-1111111",
+        foto: null,
+      },
+      {
+        id: "a2",
+        serial: "002",
+        nombres: "LUIS",
+        apellidos: "DIAZ",
+        cedula: "456",
+        cabello: "Castaño oscuro",
+        grupoSanguineo: "ARH+",
+        ojos: "Café",
+        colorPiel: "Blanca",
+        direccion: "Calle 2",
+        telefono: "0414-1111111",
+        emergenciaDireccion: "Calle 3",
+        emergenciaTelefono: "0416-2222222",
         foto: null,
       },
     ],
