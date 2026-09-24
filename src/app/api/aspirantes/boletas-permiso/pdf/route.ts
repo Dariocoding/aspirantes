@@ -1,5 +1,6 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
+import { PDFDocument } from "pdf-lib";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
 import { writeAuditLog } from "@src/lib/audit/log";
@@ -25,9 +26,9 @@ import { mapWithConcurrency } from "@src/lib/pdf/ficha-tecnica-from-aspirante";
 import { formatDuracionPermiso, labelTipoPermiso } from "@src/lib/permisos";
 import { format } from "date-fns";
 import {
-  readBoletaBanderaJpgBuffer,
-  readBoletaCefoaLogoPngBuffer,
-  readBoletaEjercitoLogoPngBuffer,
+  boletaBanderaUri,
+  boletaCefoaLogoUri,
+  boletaEjercitoLogoUri,
 } from "@src/lib/pdf/institution-logo";
 import { prisma } from "@src/lib/prisma";
 import type { Prisma } from "@src/generated/prisma";
@@ -38,6 +39,40 @@ export const maxDuration = 300;
 registerFichaTecnicaPdfFonts();
 
 const CENSUS_KEYS = ["q", "sexo", "sort", "peloton", "convocatoria"] as const;
+const BOLETA_RENDER_CHUNK = 20;
+
+async function renderBoletasChunk(
+  props: Omit<Parameters<typeof BoletasPermisoPdfDocument>[0], "part"> & {
+    part: "all" | "boletas" | "control";
+  },
+) {
+  const doc = createElement(BoletasPermisoPdfDocument, props);
+  return renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
+}
+
+async function renderBoletasPdf(
+  props: Omit<Parameters<typeof BoletasPermisoPdfDocument>[0], "part">,
+) {
+  if (props.cards.length <= BOLETA_RENDER_CHUNK) {
+    return renderBoletasChunk({ ...props, part: "all" });
+  }
+
+  const merged = await PDFDocument.create();
+  const append = async (part: "boletas" | "control", cards: typeof props.cards) => {
+    const bytes = await renderBoletasChunk({ ...props, cards, part });
+    const src = await PDFDocument.load(bytes);
+    const pages = await merged.copyPages(src, src.getPageIndices());
+    for (const page of pages) merged.addPage(page);
+  };
+
+  for (let i = 0; i < props.cards.length; i += BOLETA_RENDER_CHUNK) {
+    await append("boletas", props.cards.slice(i, i + BOLETA_RENDER_CHUNK));
+  }
+  for (let i = 0; i < props.cards.length; i += BOLETA_RENDER_CHUNK) {
+    await append("control", props.cards.slice(i, i + BOLETA_RENDER_CHUNK));
+  }
+  return Buffer.from(await merged.save());
+}
 
 function parseSp(searchParams: URLSearchParams): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {};
@@ -111,16 +146,16 @@ async function pdfResponse(
     );
   }
 
-  const [convocatoria, rankingPeople, logoCefoa, logoEjercito, bandera] = await Promise.all([
+  const [convocatoria, rankingPeople] = await Promise.all([
     prisma.convocatoria.findUniqueOrThrow({ where: { id: convocatoriaId } }),
     prisma.aspirante.findMany({
       where: { convocatoriaId },
       select: { id: true, nombres: true, apellidos: true, cedula: true },
     }),
-    Promise.resolve(readBoletaCefoaLogoPngBuffer()),
-    Promise.resolve(readBoletaEjercitoLogoPngBuffer()),
-    Promise.resolve(readBoletaBanderaJpgBuffer()),
   ]);
+  const logoCefoa = boletaCefoaLogoUri();
+  const logoEjercito = boletaEjercitoLogoUri();
+  const bandera = boletaBanderaUri();
 
   const ranks = boletaRankByApellidos(rankingPeople);
   const info = boletaConvocatoriaInfo(convocatoria);
@@ -153,14 +188,22 @@ async function pdfResponse(
 
   const ordered = [...cards].sort((a, b) => a.serial.localeCompare(b.serial, "es", { numeric: true }));
 
-  const doc = createElement(BoletasPermisoPdfDocument, {
-    convocatoria: info,
-    cards: ordered,
-    logoCefoa,
-    logoEjercito,
-    bandera,
-  });
-  const buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
+  let buffer: Buffer;
+  try {
+    buffer = await renderBoletasPdf({
+      convocatoria: info,
+      cards: ordered,
+      logoCefoa,
+      logoEjercito,
+      bandera,
+    });
+  } catch (err) {
+    console.error("BOLETA_PERMISO_PDF", err);
+    return NextResponse.json(
+      { message: "No se pudo generar el PDF de boletas. Intente de nuevo." },
+      { status: 500 },
+    );
+  }
 
   await writeAuditLog({
     userId,

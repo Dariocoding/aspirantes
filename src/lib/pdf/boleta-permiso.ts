@@ -204,10 +204,10 @@ export async function loadFotoForBoletaPdf(
   if (!fotoKey) return null;
   try {
     const { body } = await getObjectBuffer(fotoKey);
-    const jpeg = await sharp(body)
+    const jpeg = await sharp(body, { failOn: "none", limitInputPixels: 24_000_000 })
       .rotate()
-      .resize(360, 460, { fit: "cover", position: "centre" })
-      .jpeg({ quality: 86 })
+      .resize(180, 230, { fit: "cover", position: "centre" })
+      .jpeg({ quality: 72 })
       .toBuffer();
     return { data: Buffer.from(jpeg), format: "jpg" };
   } catch {

@@ -34,8 +34,12 @@ const PHOTO_W = 56;
 const BODY_W = HALF_W - FLAG_W - 2;
 const IDENT_TEXT_W = BODY_W - BODY_PAD_X * 2 - PHOTO_W - 6;
 
-function img(data: Buffer, format: "png" | "jpg") {
-  return { data: Buffer.from(data), format };
+export type BoletaPdfAsset = Buffer | string | null;
+
+function assetSrc(asset: BoletaPdfAsset, format: "png" | "jpg") {
+  if (!asset) return null;
+  if (typeof asset === "string") return { uri: asset };
+  return { data: asset, format };
 }
 
 const s = StyleSheet.create({
@@ -294,9 +298,9 @@ function BoletaCard({
 }: {
   card: BoletaPermisoCard;
   convocatoria: BoletaPermisoConvocatoriaInfo;
-  logoCefoa: Buffer | null;
-  logoEjercito: Buffer | null;
-  bandera: Buffer | null;
+  logoCefoa: BoletaPdfAsset;
+  logoEjercito: BoletaPdfAsset;
+  bandera: BoletaPdfAsset;
 }) {
   return (
     <View style={s.card} wrap={false}>
@@ -354,8 +358,8 @@ function BoletaCard({
 
       <View style={s.portada}>
         <View style={s.header}>
-          {logoEjercito ? (
-            <Image src={img(logoEjercito, "png")} style={s.logoEjercito} />
+          {assetSrc(logoEjercito, "png") ? (
+            <Image src={assetSrc(logoEjercito, "png")!} style={s.logoEjercito} />
           ) : (
             <View style={s.logoEjercito} />
           )}
@@ -366,23 +370,23 @@ function BoletaCard({
               </Text>
             ))}
           </View>
-          {logoCefoa ? (
-            <Image src={img(logoCefoa, "png")} style={s.logoCefoa} />
+          {assetSrc(logoCefoa, "png") ? (
+            <Image src={assetSrc(logoCefoa, "png")!} style={s.logoCefoa} />
           ) : (
             <View style={s.logoCefoa} />
           )}
         </View>
         <View style={s.bodyRow}>
-          {bandera ? (
+          {assetSrc(bandera, "jpg") ? (
             <View style={s.flagCol}>
-              <Image src={img(bandera, "jpg")} style={s.flag} />
+              <Image src={assetSrc(bandera, "jpg")!} style={s.flag} />
             </View>
           ) : null}
           <View style={bandera ? s.body : [s.body, { width: HALF_W - 2 }]}>
         <View style={s.ident}>
           <View style={s.photoBox}>
             {card.foto ? (
-              <Image src={img(card.foto.data, card.foto.format)} style={s.photo} />
+              <Image src={{ data: card.foto.data, format: card.foto.format }} style={s.photo} />
             ) : (
               <Text style={s.photoPh}>FOTO</Text>
             )}
@@ -413,9 +417,11 @@ function BoletaCard({
 export type BoletasPermisoPdfProps = {
   convocatoria: BoletaPermisoConvocatoriaInfo;
   cards: BoletaPermisoCard[];
-  logoCefoa: Buffer | null;
-  logoEjercito: Buffer | null;
-  bandera: Buffer | null;
+  logoCefoa: BoletaPdfAsset;
+  logoEjercito: BoletaPdfAsset;
+  bandera: BoletaPdfAsset;
+  /** `boletas` o `control` permiten armar el PDF por tandas sin retener toda la convocatoria. */
+  part?: "all" | "boletas" | "control";
 };
 
 export function BoletasPermisoPdfDocument({
@@ -424,15 +430,20 @@ export function BoletasPermisoPdfDocument({
   logoCefoa,
   logoEjercito,
   bandera,
+  part = "all",
 }: BoletasPermisoPdfProps) {
   const pages: Array<[BoletaPermisoCard, BoletaPermisoCard | null]> = [];
   for (let i = 0; i < cards.length; i += 2) {
     pages.push([cards[i]!, cards[i + 1] ?? null]);
   }
 
+  const showBoletas = part !== "control";
+  const showControl = part === "control" || (part === "all" && cards.length > 1);
+
   return (
     <Document>
-      {pages.map(([top, bottom]) => (
+      {showBoletas
+        ? pages.map(([top, bottom]) => (
         <Page key={top.id} size="LETTER" style={s.page}>
           <View style={s.stack}>
             <BoletaCard
@@ -455,8 +466,9 @@ export function BoletasPermisoPdfDocument({
             )}
           </View>
         </Page>
-      ))}
-      {cards.length > 1
+      ))
+        : null}
+      {showControl
         ? cards.flatMap((card) => {
             const chunks = controlPagesFor(card);
             return chunks.map((rows, pageIndex) => (
