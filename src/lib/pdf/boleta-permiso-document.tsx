@@ -264,7 +264,7 @@ function ControlPermisoTable({ card }: { card: BoletaPermisoCard }) {
           {CONTROL_COLS.map((col, colIndex) => (
             <View
               key={col.key}
-              style={[s.th, { width: col.width }, colIndex === CONTROL_COLS.length - 1 ? { borderRightWidth: 0 } : null]}
+              style={[s.th, { width: col.width }, colIndex === CONTROL_COLS.length - 1 ? { borderRightWidth: 0 } : {}]}
             >
               <Text style={s.thText}>{col.label}</Text>
             </View>
