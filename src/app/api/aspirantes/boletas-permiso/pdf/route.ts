@@ -68,9 +68,6 @@ async function renderBoletasPdf(
   for (let i = 0; i < props.cards.length; i += BOLETA_RENDER_CHUNK) {
     await append("boletas", props.cards.slice(i, i + BOLETA_RENDER_CHUNK));
   }
-  for (let i = 0; i < props.cards.length; i += BOLETA_RENDER_CHUNK) {
-    await append("control", props.cards.slice(i, i + BOLETA_RENDER_CHUNK));
-  }
   return Buffer.from(await merged.save());
 }
 

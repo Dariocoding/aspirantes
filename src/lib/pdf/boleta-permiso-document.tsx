@@ -16,11 +16,17 @@ Font.registerHyphenationCallback((word) => [word]);
 
 const FONT = FICHA_TECNICA_PDF_FONT_FAMILY;
 const INK = "#000000";
-const GAP = 12;
+const GAP = 10;
 const PAGE_PAD = 72;
 const PAGE_W = 612;
 const INNER_W = PAGE_W - PAGE_PAD * 2;
-const CARD_H = (792 - PAGE_PAD * 2 - GAP) / 2;
+const SLOT_H = (792 - PAGE_PAD * 2 - GAP) / 2;
+const CONTROL_ROWS = 5;
+const CONTROL_TITLE_H = 11;
+const CONTROL_HEADER_H = 16;
+const CONTROL_ROW_H = 11;
+const TABLE_BLOCK = CONTROL_TITLE_H + CONTROL_HEADER_H + CONTROL_ROWS * CONTROL_ROW_H + 4;
+const CARD_H = SLOT_H - TABLE_BLOCK;
 const FLAG_W = 18;
 const HALF_W = INNER_W / 2;
 const HEADER_PAD_X = 4;
@@ -159,84 +165,52 @@ const s = StyleSheet.create({
   cargo: { fontSize: 7.5, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   emerg: { fontSize: 6.2, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   armas: { fontSize: 6.6, textAlign: "center", marginTop: 6, lineHeight: 1.25 },
-  controlPage: {
-    fontFamily: FONT,
-    color: INK,
-    paddingTop: 28,
-    paddingBottom: 24,
-    paddingLeft: 28,
-    paddingRight: 28,
-    backgroundColor: "#FFFFFF",
-  },
-  controlTitle: { fontSize: 12, fontWeight: "bold", textAlign: "center", marginBottom: 4 },
-  controlWho: { fontSize: 8, fontWeight: "bold", textAlign: "center", marginBottom: 8 },
-  table: { borderWidth: 1, borderColor: INK, borderRightWidth: 0, borderBottomWidth: 0 },
+  controlTitle: { fontSize: 7, fontWeight: "bold", textAlign: "center", marginBottom: 2, height: CONTROL_TITLE_H },
+  table: { borderWidth: 0.8, borderColor: INK, borderRightWidth: 0, borderBottomWidth: 0 },
   tr: { flexDirection: "row" },
   th: {
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
+    borderRightWidth: 0.8,
+    borderBottomWidth: 0.8,
     borderColor: INK,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 2,
-    paddingVertical: 3,
-    minHeight: 36,
+    paddingHorizontal: 1,
+    height: CONTROL_HEADER_H,
   },
   td: {
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
+    borderRightWidth: 0.8,
+    borderBottomWidth: 0.8,
     borderColor: INK,
     justifyContent: "center",
-    paddingHorizontal: 3,
-    minHeight: 32,
+    paddingHorizontal: 1,
+    height: CONTROL_ROW_H,
   },
-  thText: { fontSize: 6, fontWeight: "bold", textAlign: "center", lineHeight: 1.15 },
-  tdText: { fontSize: 7.5, textAlign: "center" },
+  thText: { fontSize: 4.2, fontWeight: "bold", textAlign: "center", lineHeight: 1.05 },
+  tdText: { fontSize: 5.5, textAlign: "center" },
 });
 
 const CONTROL_COLS = [
-  { key: "n", label: "N°", width: 28 },
-  { key: "tipo", label: "TIPO DE PERMISO", width: 78 },
-  { key: "dur", label: "DURACIÓN", width: 52 },
-  { key: "desde", label: "DESDE", width: 64 },
-  { key: "hasta", label: "HASTA", width: 64 },
-  { key: "fp", label: "FIRMA DEL CMDTE DE PELOTÓN", width: 112 },
-  { key: "fc", label: "FIRMA DEL CMDTE DEL CUERPO DEL CEFOA", width: 113 },
-  { key: "fs", label: "FIRMA DEL SUB-DIRECTOR DEL CEFOA", width: 112 },
-  { key: "fd", label: "FIRMA DEL DIRECTOR DEL CEFOA", width: 113 },
+  { key: "n", label: "N°", width: "4%" },
+  { key: "tipo", label: "TIPO DE PERMISO", width: "12%" },
+  { key: "dur", label: "DURACIÓN", width: "9%" },
+  { key: "desde", label: "DESDE", width: "9%" },
+  { key: "hasta", label: "HASTA", width: "9%" },
+  { key: "fp", label: "FIRMA DEL CMDTE DE PELOTÓN", width: "14.25%" },
+  { key: "fc", label: "FIRMA DEL CMDTE DEL CUERPO DEL CEFOA", width: "14.25%" },
+  { key: "fs", label: "FIRMA DEL SUB-DIRECTOR DEL CEFOA", width: "14.25%" },
+  { key: "fd", label: "FIRMA DEL DIRECTOR DEL CEFOA", width: "14.25%" },
 ] as const;
 
-const CONTROL_ROWS = 10;
-
-function controlPagesFor(card: BoletaPermisoCard): BoletaControlFila[][] {
+function controlRowsFor(card: BoletaPermisoCard): BoletaControlFila[] {
   const filled = card.control ?? [];
-  const total = Math.max(CONTROL_ROWS, filled.length);
-  const pages: BoletaControlFila[][] = [];
-  for (let i = 0; i < total; i += CONTROL_ROWS) {
-    const slice: BoletaControlFila[] = [];
-    for (let r = 0; r < CONTROL_ROWS && i + r < total; r++) {
-      slice.push(filled[i + r] ?? { tipo: "", duracion: "", desde: "", hasta: "" });
-    }
-    pages.push(slice);
-  }
-  return pages;
+  return Array.from({ length: CONTROL_ROWS }, (_, index) => filled[index] ?? { tipo: "", duracion: "", desde: "", hasta: "" });
 }
 
-function ControlPermisoPage({
-  card,
-  rows,
-  startAt,
-}: {
-  card: BoletaPermisoCard;
-  rows: BoletaControlFila[];
-  startAt: number;
-}) {
+function ControlPermisoTable({ card }: { card: BoletaPermisoCard }) {
+  const rows = controlRowsFor(card);
   return (
-    <Page size="LETTER" orientation="landscape" style={s.controlPage}>
+    <View style={{ width: INNER_W, marginTop: 4 }}>
       <Text style={s.controlTitle}>CONTROL DE PERMISO</Text>
-      <Text style={s.controlWho}>
-        {`Serial ${card.serial}  ·  ${card.apellidos.toLocaleUpperCase("es")}, ${card.nombres.toLocaleUpperCase("es")}  ·  C.I. ${card.cedula}`}
-      </Text>
       <View style={s.table}>
         <View style={s.tr}>
           {CONTROL_COLS.map((col) => (
@@ -246,21 +220,21 @@ function ControlPermisoPage({
           ))}
         </View>
         {rows.map((row, index) => (
-          <View key={`${card.id}-${startAt + index}`} style={s.tr}>
+          <View key={`${card.id}-control-${index}`} style={s.tr}>
             <View style={[s.td, { width: CONTROL_COLS[0]!.width }]}>
-              <Text style={s.tdText}>{String(startAt + index + 1)}</Text>
+              <Text style={s.tdText}>{row.tipo ? String(index + 1) : " "}</Text>
             </View>
             <View style={[s.td, { width: CONTROL_COLS[1]!.width }]}>
-              <Text style={s.tdText}>{row.tipo}</Text>
+              <Text style={s.tdText}>{row.tipo || " "}</Text>
             </View>
             <View style={[s.td, { width: CONTROL_COLS[2]!.width }]}>
-              <Text style={s.tdText}>{row.duracion}</Text>
+              <Text style={s.tdText}>{row.duracion || " "}</Text>
             </View>
             <View style={[s.td, { width: CONTROL_COLS[3]!.width }]}>
-              <Text style={s.tdText}>{row.desde}</Text>
+              <Text style={s.tdText}>{row.desde || " "}</Text>
             </View>
             <View style={[s.td, { width: CONTROL_COLS[4]!.width }]}>
-              <Text style={s.tdText}>{row.hasta}</Text>
+              <Text style={s.tdText}>{row.hasta || " "}</Text>
             </View>
             <View style={[s.td, { width: CONTROL_COLS[5]!.width }]} />
             <View style={[s.td, { width: CONTROL_COLS[6]!.width }]} />
@@ -269,7 +243,7 @@ function ControlPermisoPage({
           </View>
         ))}
       </View>
-    </Page>
+    </View>
   );
 }
 
@@ -437,50 +411,40 @@ export function BoletasPermisoPdfDocument({
     pages.push([cards[i]!, cards[i + 1] ?? null]);
   }
 
-  const showBoletas = part !== "control";
-  const showControl = part === "control" || (part === "all" && cards.length > 1);
-
   return (
     <Document>
-      {showBoletas
-        ? pages.map(([top, bottom]) => (
+      {part === "control"
+        ? null
+        : pages.map(([top, bottom]) => (
         <Page key={top.id} size="LETTER" style={s.page}>
           <View style={s.stack}>
-            <BoletaCard
-              card={top}
-              convocatoria={convocatoria}
-              logoCefoa={logoCefoa}
-              logoEjercito={logoEjercito}
-              bandera={bandera}
-            />
-            {bottom ? (
+            <View style={{ height: SLOT_H }}>
               <BoletaCard
-                card={bottom}
+                card={top}
                 convocatoria={convocatoria}
                 logoCefoa={logoCefoa}
                 logoEjercito={logoEjercito}
                 bandera={bandera}
               />
+              <ControlPermisoTable card={top} />
+            </View>
+            {bottom ? (
+              <View style={{ height: SLOT_H }}>
+                <BoletaCard
+                  card={bottom}
+                  convocatoria={convocatoria}
+                  logoCefoa={logoCefoa}
+                  logoEjercito={logoEjercito}
+                  bandera={bandera}
+                />
+                <ControlPermisoTable card={bottom} />
+              </View>
             ) : (
-              <View style={{ height: CARD_H }} />
+              <View style={{ height: SLOT_H }} />
             )}
           </View>
         </Page>
-      ))
-        : null}
-      {showControl
-        ? cards.flatMap((card) => {
-            const chunks = controlPagesFor(card);
-            return chunks.map((rows, pageIndex) => (
-              <ControlPermisoPage
-                key={`${card.id}-control-${pageIndex}`}
-                card={card}
-                rows={rows}
-                startAt={pageIndex * CONTROL_ROWS}
-              />
-            ));
-          })
-        : null}
+      ))}
     </Document>
   );
 }
