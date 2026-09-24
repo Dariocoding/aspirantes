@@ -39,7 +39,7 @@ export type BoletaPermisoCard = {
 
 /** Textos fijos de la plantilla autorizada de boleta de permiso. */
 export const BOLETA_DIRECTOR_CARGO =
-  "DIRECTOR DEL CURSO ESPECIAL DE FORMACIÓN DE OFICIALES EN LA CATEGORÍA DE ASIMILADOS";
+  "DIRECTOR DEL CURSO ESPECIAL DE FORMACION DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO";
 export const BOLETA_RECOMENDACION =
   "A quien se recomienda le sean guardadas las consideraciones debidas a su grado";
 export const BOLETA_ARMAS =

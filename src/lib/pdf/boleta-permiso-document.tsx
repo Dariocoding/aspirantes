@@ -222,8 +222,12 @@ function BoletaCard({
         <View style={s.directorBlock}>
           <Text style={s.line}>______________________________</Text>
           <Text style={s.director}>{convocatoria.directorNombre || " "}</Text>
-          <Text style={s.cargo}>DIRECTOR DEL CURSO ESPECIAL DE FORMACIÓN</Text>
-          <Text style={s.cargo}>DE OFICIALES EN LA CATEGORÍA DE ASIMILADOS</Text>
+          <Text style={s.cargo}>DIRECTOR DEL CURSO ESPECIAL DE FORMACION</Text>
+          <Text style={s.cargo}>
+            {convocatoria.cursoNro
+              ? `DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO N°${convocatoria.cursoNro}`
+              : "DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO"}
+          </Text>
         </View>
         <View style={s.grow} />
         <Text style={s.emerg}>EN CASO DE EMERGENCIA FAVOR INFORMAR A LOS TELÉFONOS.</Text>
