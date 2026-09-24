@@ -122,7 +122,7 @@ const s = StyleSheet.create({
   identTitle: { fontSize: 7.5, fontWeight: "bold", marginBottom: 3 },
   identLabel: { fontSize: 6.5, fontWeight: "bold", marginTop: 2 },
   identValue: { fontSize: 7.5, fontWeight: "bold" },
-  vence: { fontSize: 6.5, fontWeight: "bold", marginBottom: 6, marginTop: 2 },
+  vence: { fontSize: 7, fontWeight: "bold", marginBottom: 6, marginTop: 2 },
   fieldLabel: { fontSize: 7, fontWeight: "bold", marginTop: 5 },
   fieldValue: { fontSize: 7, lineHeight: 1.25, marginTop: 1 },
   rec: { fontSize: 6.2, textAlign: "center", lineHeight: 1.25 },
@@ -146,8 +146,8 @@ const s = StyleSheet.create({
   traitVal: { fontSize: 7, width: "42%" },
   directorBlock: { marginBottom: 8, alignItems: "center" },
   line: { fontSize: 8, textAlign: "center", marginBottom: 3 },
-  director: { fontSize: 7.5, fontWeight: "bold", textAlign: "center" },
-  cargo: { fontSize: 6.6, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
+  director: { fontSize: 8.5, fontWeight: "bold", textAlign: "center" },
+  cargo: { fontSize: 7.5, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   emerg: { fontSize: 6.2, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   armas: { fontSize: 6.6, textAlign: "center", marginTop: 6, lineHeight: 1.25 },
 });
@@ -159,6 +159,13 @@ function Field({ label, value }: { label: string; value: string }) {
       <Text style={s.fieldValue}>{value === "—" ? " " : value}</Text>
     </View>
   );
+}
+
+function telefonosEnUno(principal: string, emergencia: string): string {
+  const parts = [principal, emergencia]
+    .map((v) => v.trim())
+    .filter((v) => v && v !== "—");
+  return [...new Set(parts)].join(", ");
 }
 
 function BoletaCard({
@@ -226,7 +233,11 @@ function BoletaCard({
 
       <View style={s.portada}>
         <View style={s.header}>
-          {logoCefoa ? <Image src={img(logoCefoa, "png")} style={s.logo} /> : <View style={s.logo} />}
+          {logoEjercito ? (
+            <Image src={img(logoEjercito, "png")} style={s.logo} />
+          ) : (
+            <View style={s.logo} />
+          )}
           <View style={s.headerTexts}>
             {convocatoria.headerLines.map((line) => (
               <Text key={line} style={s.hLine}>
@@ -234,11 +245,7 @@ function BoletaCard({
               </Text>
             ))}
           </View>
-          {logoEjercito ? (
-            <Image src={img(logoEjercito, "png")} style={s.logo} />
-          ) : (
-            <View style={s.logo} />
-          )}
+          {logoCefoa ? <Image src={img(logoCefoa, "png")} style={s.logo} /> : <View style={s.logo} />}
         </View>
         <View style={s.bodyRow}>
           {bandera ? (
@@ -267,9 +274,8 @@ function BoletaCard({
 
         <Text style={s.vence}>{convocatoria.vence}</Text>
         <Field label="DIRECCIÓN DOMICILIARIA:" value={card.direccion} />
-        <Field label="TELEFONO:" value={card.telefono} />
         <Field label="DIRECCIÓN DE EMERGENCIA:" value={card.emergenciaDireccion} />
-        <Field label="TELÉFONO DE EMERGENCIA:" value={card.emergenciaTelefono} />
+        <Field label="TELÉFONO:" value={telefonosEnUno(card.telefono, card.emergenciaTelefono)} />
         <View style={s.grow} />
         <Text style={s.rec}>{BOLETA_RECOMENDACION}</Text>
           </View>

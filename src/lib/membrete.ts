@@ -9,7 +9,7 @@ export const PLANTILLA_MEMBRETE_CEFOA45: readonly string[] = [
   "Ministerio del Poder Popular para la Defensa",
   "Ejército Bolivariano",
   "Dirección de Educación del Ejército",
-  "Curso Especial de Formación de Oficiales en las Categoría de Asimilado y Asimilado Técnico Nro. 46",
+  "Curso Especial de Formación de Oficiales en la Categoría de Asimilado y Asimilado Técnico Nro. 46",
 ];
 
 export type MembreteSpec = {

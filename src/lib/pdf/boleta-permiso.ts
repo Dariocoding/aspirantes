@@ -155,10 +155,9 @@ export function boletaConvocatoriaInfo(c: {
       "Ministerio del Poder Popular para la Defensa",
       "Ejército Bolivariano",
       "Dirección de Educación del Ejército",
-      c.nombre.trim() ||
-        (cursoNro
-          ? `Curso Especial de Formación de Oficiales en las Categoría de Asimilados Nro. ${cursoNro}`
-          : "Curso Especial de Formación de Oficiales en las Categoría de Asimilados"),
+      cursoNro
+        ? `CURSO ESPECIAL DE FORMACION DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO N°${cursoNro}`
+        : "CURSO ESPECIAL DE FORMACION DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO",
     ],
   };
 }
