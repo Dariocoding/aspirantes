@@ -58,7 +58,7 @@ async function renderBoletasPdf(
   }
 
   const merged = await PDFDocument.create();
-  const append = async (part: "boletas" | "control", cards: typeof props.cards) => {
+  const append = async (part: "all" | "boletas" | "control", cards: typeof props.cards) => {
     const bytes = await renderBoletasChunk({ ...props, cards, part });
     const src = await PDFDocument.load(bytes);
     const pages = await merged.copyPages(src, src.getPageIndices());
@@ -66,7 +66,7 @@ async function renderBoletasPdf(
   };
 
   for (let i = 0; i < props.cards.length; i += BOLETA_RENDER_CHUNK) {
-    await append("boletas", props.cards.slice(i, i + BOLETA_RENDER_CHUNK));
+    await append("all", props.cards.slice(i, i + BOLETA_RENDER_CHUNK));
   }
   return Buffer.from(await merged.save());
 }

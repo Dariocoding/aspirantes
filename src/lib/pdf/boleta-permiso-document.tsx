@@ -2,6 +2,7 @@ import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/
 import {
   BOLETA_ARMAS,
   BOLETA_RECOMENDACION,
+  formatCedulaBoleta,
   type BoletaControlFila,
   type BoletaPermisoCard,
   type BoletaPermisoConvocatoriaInfo,
@@ -16,25 +17,23 @@ Font.registerHyphenationCallback((word) => [word]);
 
 const FONT = FICHA_TECNICA_PDF_FONT_FAMILY;
 const INK = "#000000";
-const GAP = 10;
+const GAP = 28;
 const PAGE_PAD = 72;
 const PAGE_W = 612;
 const INNER_W = PAGE_W - PAGE_PAD * 2;
-const SLOT_H = (792 - PAGE_PAD * 2 - GAP) / 2;
-const CONTROL_ROWS = 5;
-const CONTROL_TITLE_H = 11;
-const CONTROL_HEADER_H = 16;
-const CONTROL_ROW_H = 11;
-const TABLE_BLOCK = CONTROL_TITLE_H + CONTROL_HEADER_H + CONTROL_ROWS * CONTROL_ROW_H + 4;
-const CARD_H = SLOT_H - TABLE_BLOCK;
+const CARD_H = (792 - PAGE_PAD * 2 - GAP) / 2;
+const CONTROL_ROWS = 10;
+const CONTROL_FRAME = 1.4;
+const CONTROL_INNER_H = CARD_H - CONTROL_FRAME * 2;
+const CONTROL_TITLE_H = 18;
+const CONTROL_HEADER_H = 28;
+const CONTROL_ROW_H = (CONTROL_INNER_H - CONTROL_TITLE_H - CONTROL_HEADER_H) / CONTROL_ROWS;
 const FLAG_W = 18;
 const HALF_W = INNER_W / 2;
-const HEADER_PAD_X = 4;
 /** Alto común. El ancho sale de la proporción real de cada PNG (608×900 y 500×500). */
-const LOGO_H = 50;
+const LOGO_H = 44;
 const LOGO_EJERCITO_W = Math.round(((LOGO_H * 608) / 900) * 10) / 10;
 const LOGO_CEFOA_W = LOGO_H;
-const HEADER_TEXT_W = HALF_W - HEADER_PAD_X * 2 - LOGO_EJERCITO_W - LOGO_CEFOA_W - 4;
 const BODY_PAD_X = 6;
 const PHOTO_W = 56;
 const BODY_W = HALF_W - FLAG_W - 2;
@@ -59,8 +58,7 @@ const s = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   stack: {
-    flex: 1,
-    justifyContent: "space-between",
+    height: CARD_H * 2 + GAP,
   },
   card: {
     width: INNER_W,
@@ -86,17 +84,17 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   header: {
-    height: 62,
+    height: 78,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: HEADER_PAD_X,
+    paddingHorizontal: 2,
     overflow: "hidden",
   },
   logoEjercito: { width: LOGO_EJERCITO_W, height: LOGO_H, objectFit: "contain" },
   logoCefoa: { width: LOGO_CEFOA_W, height: LOGO_H, objectFit: "contain" },
-  headerTexts: { width: HEADER_TEXT_W },
-  hLine: { fontSize: 6, textAlign: "center", fontWeight: "bold", lineHeight: 1.15 },
+  headerTexts: { flex: 1, minWidth: 0, paddingHorizontal: 3 },
+  hLine: { fontSize: 4.4, textAlign: "center", fontWeight: "bold", lineHeight: 1.12 },
   bodyRow: {
     flexGrow: 1,
     flexDirection: "row",
@@ -145,7 +143,6 @@ const s = StyleSheet.create({
   serialCol: { width: 62 },
   serial: { fontSize: 7, fontWeight: "bold" },
   titleMid: { flex: 1, fontSize: 8, fontWeight: "bold", textAlign: "center" },
-  ejb: { width: 28, fontSize: 9, fontWeight: "bold", textAlign: "center" },
   mid: { flexDirection: "row", marginBottom: 10 },
   huellaCol: { width: 64, marginRight: 8 },
   huellaBox: {
@@ -156,17 +153,27 @@ const s = StyleSheet.create({
   },
   huellaCap: { fontSize: 6, textAlign: "center", marginTop: 3 },
   traits: { flex: 1, justifyContent: "space-between", paddingVertical: 2 },
-  traitRow: { flexDirection: "row", justifyContent: "space-between" },
-  traitLabel: { fontSize: 7, fontWeight: "bold", width: "58%" },
-  traitVal: { fontSize: 7, width: "42%" },
+  traitLine: { fontSize: 7 },
   directorBlock: { marginBottom: 8, alignItems: "center" },
   line: { fontSize: 8, textAlign: "center", marginBottom: 3 },
   director: { fontSize: 8.5, fontWeight: "bold", textAlign: "center" },
   cargo: { fontSize: 7.5, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   emerg: { fontSize: 6.2, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   armas: { fontSize: 6.6, textAlign: "center", marginTop: 6, lineHeight: 1.25 },
-  controlTitle: { fontSize: 7, fontWeight: "bold", textAlign: "center", marginBottom: 2, height: CONTROL_TITLE_H },
-  table: { borderWidth: 0.8, borderColor: INK, borderRightWidth: 0, borderBottomWidth: 0 },
+  controlFrame: {
+    width: INNER_W,
+    height: CARD_H,
+    borderWidth: CONTROL_FRAME,
+    borderColor: INK,
+  },
+  controlTitleRow: {
+    height: CONTROL_TITLE_H,
+    borderBottomWidth: 0.8,
+    borderColor: INK,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  controlTitle: { fontSize: 8, fontWeight: "bold", textAlign: "center" },
   tr: { flexDirection: "row" },
   th: {
     borderRightWidth: 0.8,
@@ -185,8 +192,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 1,
     height: CONTROL_ROW_H,
   },
-  thText: { fontSize: 4.2, fontWeight: "bold", textAlign: "center", lineHeight: 1.05 },
-  tdText: { fontSize: 5.5, textAlign: "center" },
+  thText: { fontSize: 6, fontWeight: "bold", textAlign: "center", lineHeight: 1.05 },
+  tdText: { fontSize: 8, textAlign: "center" },
 });
 
 const CONTROL_COLS = [
@@ -201,6 +208,45 @@ const CONTROL_COLS = [
   { key: "fd", label: "FIRMA DEL DIRECTOR DEL CEFOA", width: "14.25%" },
 ] as const;
 
+function CutGuide() {
+  const mid = GAP / 2;
+  return (
+    <View style={{ height: GAP }}>
+      <View
+        style={{
+          position: "absolute",
+          left: -54,
+          right: -54,
+          top: mid,
+          borderTopWidth: 0.8,
+          borderTopColor: INK,
+          borderStyle: "dashed",
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: -54,
+          top: mid - 7,
+          height: 14,
+          borderLeftWidth: 0.8,
+          borderLeftColor: INK,
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          right: -54,
+          top: mid - 7,
+          height: 14,
+          borderRightWidth: 0.8,
+          borderRightColor: INK,
+        }}
+      />
+    </View>
+  );
+}
+
 function controlRowsFor(card: BoletaPermisoCard): BoletaControlFila[] {
   const filled = card.control ?? [];
   return Array.from({ length: CONTROL_ROWS }, (_, index) => filled[index] ?? { tipo: "", duracion: "", desde: "", hasta: "" });
@@ -209,12 +255,17 @@ function controlRowsFor(card: BoletaPermisoCard): BoletaControlFila[] {
 function ControlPermisoTable({ card }: { card: BoletaPermisoCard }) {
   const rows = controlRowsFor(card);
   return (
-    <View style={{ width: INNER_W, marginTop: 4 }}>
-      <Text style={s.controlTitle}>CONTROL DE PERMISO</Text>
-      <View style={s.table}>
+    <View style={s.controlFrame}>
+      <View>
+        <View style={s.controlTitleRow}>
+          <Text style={s.controlTitle}>CONTROL DE PERMISO</Text>
+        </View>
         <View style={s.tr}>
-          {CONTROL_COLS.map((col) => (
-            <View key={col.key} style={[s.th, { width: col.width }]}>
+          {CONTROL_COLS.map((col, colIndex) => (
+            <View
+              key={col.key}
+              style={[s.th, { width: col.width }, colIndex === CONTROL_COLS.length - 1 ? { borderRightWidth: 0 } : null]}
+            >
               <Text style={s.thText}>{col.label}</Text>
             </View>
           ))}
@@ -222,7 +273,7 @@ function ControlPermisoTable({ card }: { card: BoletaPermisoCard }) {
         {rows.map((row, index) => (
           <View key={`${card.id}-control-${index}`} style={s.tr}>
             <View style={[s.td, { width: CONTROL_COLS[0]!.width }]}>
-              <Text style={s.tdText}>{row.tipo ? String(index + 1) : " "}</Text>
+              <Text style={s.tdText}>{String(index + 1)}</Text>
             </View>
             <View style={[s.td, { width: CONTROL_COLS[1]!.width }]}>
               <Text style={s.tdText}>{row.tipo || " "}</Text>
@@ -239,7 +290,7 @@ function ControlPermisoTable({ card }: { card: BoletaPermisoCard }) {
             <View style={[s.td, { width: CONTROL_COLS[5]!.width }]} />
             <View style={[s.td, { width: CONTROL_COLS[6]!.width }]} />
             <View style={[s.td, { width: CONTROL_COLS[7]!.width }]} />
-            <View style={[s.td, { width: CONTROL_COLS[8]!.width }]} />
+            <View style={[s.td, { width: CONTROL_COLS[8]!.width, borderRightWidth: 0 }]} />
           </View>
         ))}
       </View>
@@ -284,32 +335,35 @@ function BoletaCard({
             <Text style={s.serial}>Serial:{card.serial}</Text>
             <Text style={s.serial}>CEFOA</Text>
           </View>
-          <Text style={s.titleMid}>ASPIRANTE A OFICIAL</Text>
-          <Text style={s.ejb}>EJB</Text>
+          <Text style={s.titleMid} wrap={false}>
+            ASPIRANTE A OFICIAL EJB
+          </Text>
         </View>
 
         <View style={s.mid}>
           <View style={s.huellaCol}>
             <View style={s.huellaBox} />
-            <Text style={s.huellaCap}>Huella dactilar</Text>
+            <Text style={s.huellaCap} wrap={false}>
+              Huella dactilar
+            </Text>
           </View>
           <View style={s.traits}>
-            <View style={s.traitRow}>
-              <Text style={s.traitLabel}>CABELLO:</Text>
-              <Text style={s.traitVal}>{card.cabello}</Text>
-            </View>
-            <View style={s.traitRow}>
-              <Text style={s.traitLabel}>GRUPO SANGUÍNEO:</Text>
-              <Text style={s.traitVal}>{card.grupoSanguineo}</Text>
-            </View>
-            <View style={s.traitRow}>
-              <Text style={s.traitLabel}>OJOS:</Text>
-              <Text style={s.traitVal}>{card.ojos}</Text>
-            </View>
-            <View style={s.traitRow}>
-              <Text style={s.traitLabel}>COLOR DE PIEL:</Text>
-              <Text style={s.traitVal}>{card.colorPiel}</Text>
-            </View>
+            <Text style={s.traitLine} wrap={false}>
+              <Text style={{ fontWeight: "bold" }}>CABELLO: </Text>
+              {card.cabello}
+            </Text>
+            <Text style={s.traitLine} wrap={false}>
+              <Text style={{ fontWeight: "bold" }}>GRUPO SANGUÍNEO: </Text>
+              {card.grupoSanguineo}
+            </Text>
+            <Text style={s.traitLine} wrap={false}>
+              <Text style={{ fontWeight: "bold" }}>OJOS: </Text>
+              {card.ojos}
+            </Text>
+            <Text style={s.traitLine} wrap={false}>
+              <Text style={{ fontWeight: "bold" }}>COLOR DE PIEL: </Text>
+              {card.colorPiel}
+            </Text>
           </View>
         </View>
 
@@ -317,7 +371,7 @@ function BoletaCard({
         <View style={s.directorBlock}>
           <Text style={s.line}>______________________________</Text>
           <Text style={s.director}>{convocatoria.directorNombre || " "}</Text>
-          <Text style={s.cargo}>DIRECTOR DEL CURSO ESPECIAL DE FORMACION</Text>
+          <Text style={s.cargo}>DIRECTOR DEL CURSO ESPECIAL DE FORMACIÓN</Text>
           <Text style={s.cargo}>
             {convocatoria.cursoNro
               ? `DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO N°${convocatoria.cursoNro}`
@@ -339,7 +393,7 @@ function BoletaCard({
           )}
           <View style={s.headerTexts}>
             {convocatoria.headerLines.map((line) => (
-              <Text key={line} style={s.hLine}>
+              <Text key={line} style={s.hLine} wrap={false}>
                 {line}
               </Text>
             ))}
@@ -371,7 +425,9 @@ function BoletaCard({
             <Text style={s.identValue}>{card.nombres.toLocaleUpperCase("es")}</Text>
             <Text style={s.identLabel}>APELLIDOS:</Text>
             <Text style={s.identValue}>{card.apellidos.toLocaleUpperCase("es")}</Text>
-            <Text style={s.identValue}>C.I.V:  {card.cedula}</Text>
+            <Text style={s.identValue} wrap={false}>
+              C.I.V: {formatCedulaBoleta(card.cedula)}
+            </Text>
           </View>
         </View>
 
@@ -410,41 +466,53 @@ export function BoletasPermisoPdfDocument({
   for (let i = 0; i < cards.length; i += 2) {
     pages.push([cards[i]!, cards[i + 1] ?? null]);
   }
+  const showBoletas = part !== "control";
+  const showControl = part !== "boletas";
 
   return (
     <Document>
-      {part === "control"
-        ? null
-        : pages.map(([top, bottom]) => (
-        <Page key={top.id} size="LETTER" style={s.page}>
-          <View style={s.stack}>
-            <View style={{ height: SLOT_H }}>
-              <BoletaCard
-                card={top}
-                convocatoria={convocatoria}
-                logoCefoa={logoCefoa}
-                logoEjercito={logoEjercito}
-                bandera={bandera}
-              />
-              <ControlPermisoTable card={top} />
-            </View>
-            {bottom ? (
-              <View style={{ height: SLOT_H }}>
+      {pages.flatMap(([top, bottom]) => {
+        const sheet = [];
+        if (showBoletas) {
+          sheet.push(
+            <Page key={`${top.id}-frente`} size="LETTER" style={s.page}>
+              <View style={s.stack}>
                 <BoletaCard
-                  card={bottom}
+                  card={top}
                   convocatoria={convocatoria}
                   logoCefoa={logoCefoa}
                   logoEjercito={logoEjercito}
                   bandera={bandera}
                 />
-                <ControlPermisoTable card={bottom} />
+                <CutGuide />
+                {bottom ? (
+                  <BoletaCard
+                    card={bottom}
+                    convocatoria={convocatoria}
+                    logoCefoa={logoCefoa}
+                    logoEjercito={logoEjercito}
+                    bandera={bandera}
+                  />
+                ) : (
+                  <View style={{ height: CARD_H }} />
+                )}
               </View>
-            ) : (
-              <View style={{ height: SLOT_H }} />
-            )}
-          </View>
-        </Page>
-      ))}
+            </Page>,
+          );
+        }
+        if (showControl) {
+          sheet.push(
+            <Page key={`${top.id}-reverso`} size="LETTER" style={s.page}>
+              <View style={s.stack}>
+                <ControlPermisoTable card={top} />
+                <CutGuide />
+                {bottom ? <ControlPermisoTable card={bottom} /> : <View style={{ height: CARD_H }} />}
+              </View>
+            </Page>,
+          );
+        }
+        return sheet;
+      })}
     </Document>
   );
 }

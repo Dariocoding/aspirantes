@@ -48,7 +48,7 @@ export type BoletaControlFila = {
 
 /** Textos fijos de la plantilla autorizada de boleta de permiso. */
 export const BOLETA_DIRECTOR_CARGO =
-  "DIRECTOR DEL CURSO ESPECIAL DE FORMACION DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO";
+  "DIRECTOR DEL CURSO ESPECIAL DE FORMACIÓN DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO";
 export const BOLETA_RECOMENDACION =
   "A quien se recomienda le sean guardadas las consideraciones debidas a su grado";
 export const BOLETA_ARMAS =
@@ -111,16 +111,21 @@ export function formatTelefonoBoleta(raw: string | null | undefined): string | n
   return raw.trim();
 }
 
-/** Grupo sanguíneo como en la plantilla: ORH+, BRH+, ABRH-. */
+/** Grupo sanguíneo directo: A+, B-, AB+, O+. */
 export function formatGrupoSanguineoBoleta(
   grupo: string | null | undefined,
   factorRh: string | null | undefined,
 ): string {
   const compact = formatTipoSangreHomologado(grupo, factorRh);
   if (!compact) return "—";
-  const m = compact.match(/^(AB|A|B|O)([+-])$/);
-  if (!m) return compact.toUpperCase();
-  return `${m[1]}RH${m[2]}`;
+  return compact.toUpperCase();
+}
+
+/** Cédula con separación de millares: 31227201 → 31.227.201. */
+export function formatCedulaBoleta(cedula: string): string {
+  const digits = cedula.replace(/\D/g, "");
+  if (!digits) return cedula.trim() || "—";
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export function formatRasgoBoleta(value: string): string {
@@ -160,14 +165,13 @@ export function boletaConvocatoriaInfo(c: {
     directorNombre: (c.comandanteNombre ?? "").trim().toLocaleUpperCase("es"),
     directorCargo: BOLETA_DIRECTOR_CARGO,
     headerLines: [
-      "República Bolivariana de Venezuela",
-      "Ministerio del Poder Popular para la Defensa",
-      "Ejército Bolivariano",
-      "Dirección de Educación del Ejército",
-      cursoNro
-        ? `CURSO ESPECIAL DE FORMACION DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO N°${cursoNro}`
-        : "CURSO ESPECIAL DE FORMACION DE OFICIALES ASIMILADO Y ASIMILADO TÉCNICO",
-    ],
+      "REPÚBLICA BOLIVARIANA DE VENEZUELA",
+      "MINISTERIO DEL PODER POPULAR PARA LA DEFENSA",
+      "EJÉRCITO BOLIVARIANO",
+      "DIRECCIÓN DE EDUCACIÓN DEL EJÉRCITO BOLIVARIANO",
+      "CURSO ESPECIAL DE FORMACIÓN DE OFICIALES ASIMILADO",
+      cursoNro ? `Y ASIMILADO TÉCNICO N°${cursoNro}` : "Y ASIMILADO TÉCNICO",
+    ].filter(Boolean),
   };
 }
 

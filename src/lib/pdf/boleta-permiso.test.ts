@@ -6,6 +6,7 @@ import {
   formatBoletaSerial,
   formatTelefonoBoleta,
   formatVenceBoleta,
+  formatCedulaBoleta,
   formatGrupoSanguineoBoleta,
   formatRasgoBoleta,
   parseBoletaIdsParam,
@@ -43,10 +44,17 @@ test("formatea teléfonos como en la plantilla", () => {
   assert.equal(formatTelefonoBoleta("04123968855"), "0412-3968855");
 });
 
-test("el grupo sanguíneo de la boleta usa el formato ORH+", () => {
-  assert.equal(formatGrupoSanguineoBoleta("O", "POSITIVO"), "ORH+");
-  assert.equal(formatGrupoSanguineoBoleta("B", "NEGATIVO"), "BRH-");
-  assert.equal(formatGrupoSanguineoBoleta("AB", "POSITIVO"), "ABRH+");
+test("el grupo sanguíneo de la boleta va directo, sin RH", () => {
+  assert.equal(formatGrupoSanguineoBoleta("O", "POSITIVO"), "O+");
+  assert.equal(formatGrupoSanguineoBoleta("A", "POSITIVO"), "A+");
+  assert.equal(formatGrupoSanguineoBoleta("B", "NEGATIVO"), "B-");
+  assert.equal(formatGrupoSanguineoBoleta("AB", "POSITIVO"), "AB+");
+});
+
+test("la cédula de la boleta separa los millares con punto", () => {
+  assert.equal(formatCedulaBoleta("31227201"), "31.227.201");
+  assert.equal(formatCedulaBoleta("31.227.201"), "31.227.201");
+  assert.equal(formatCedulaBoleta("1234567"), "1.234.567");
 });
 
 test("el color de piel clara se imprime BLANCA", () => {
