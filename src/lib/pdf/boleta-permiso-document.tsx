@@ -279,7 +279,7 @@ function BoletaCard({
         <Text style={s.vence}>{convocatoria.vence}</Text>
         <Field label="DIRECCIÓN DOMICILIARIA:" value={card.direccion} />
         <Field label="DIRECCIÓN DE EMERGENCIA:" value={card.emergenciaDireccion} />
-        <Field label="TELÉFONO:" value={telefonosEnUno(card.telefono, card.emergenciaTelefono)} />
+        <Field label="TELÉFONOS:" value={telefonosEnUno(card.telefono, card.emergenciaTelefono)} />
         <View style={s.grow} />
         <Text style={s.rec}>{BOLETA_RECOMENDACION}</Text>
           </View>
