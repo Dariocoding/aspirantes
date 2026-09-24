@@ -3,6 +3,7 @@ export const CENSUS_COLUMN_GROUPS = ["Identidad", "Postulación", "Contacto", "E
 export type CensusColumnGroup = (typeof CENSUS_COLUMN_GROUPS)[number];
 
 export type CensusOptionalColumnId =
+  | "fotoPermiso"
   | "documentos"
   | "unidad"
   | "carrera"
@@ -43,6 +44,14 @@ export type CensusOptionalColumn = {
 
 /** Columnas opcionales. Nombre, cédula y acciones no figuran aquí: siempre visibles. */
 export const CENSUS_OPTIONAL_COLUMNS: readonly CensusOptionalColumn[] = [
+  {
+    id: "fotoPermiso",
+    label: "Foto de permiso",
+    group: "Identidad",
+    defaultVisible: true,
+    headClassName: "w-[6.5rem]",
+    minWidthRem: 6.5,
+  },
   {
     id: "documentos",
     label: "Documentos",
@@ -178,7 +187,7 @@ export const CENSUS_DEFAULT_VISIBLE_IDS: CensusOptionalColumnId[] = CENSUS_OPTIO
 
 const OPTIONAL_ID_SET = new Set<string>(CENSUS_OPTIONAL_COLUMN_IDS);
 
-export const CENSUS_COLUMNS_STORAGE_KEY = "personal.aspirantes.census.columns.v3";
+export const CENSUS_COLUMNS_STORAGE_KEY = "personal.aspirantes.census.columns.v4";
 
 export function isCensusOptionalColumnId(value: string): value is CensusOptionalColumnId {
   return OPTIONAL_ID_SET.has(value);

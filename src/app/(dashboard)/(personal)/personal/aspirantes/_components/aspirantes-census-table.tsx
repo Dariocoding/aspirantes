@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Check, Columns3, Mars, RotateCcw, Search, Venus } from "lucide-react";
-import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
+import { AspiranteFotoThumbnail, AspiranteIdentityLink, aspiranteFotoUrl } from "@dashboard/aspirantes/_components/aspirante-foto";
 import {
   AspiranteDocumentoViewer,
   CENSUS_DOCUMENTO_META,
@@ -11,6 +11,13 @@ import {
 import { AspiranteRowActions } from "@dashboard/aspirantes/_components/aspirante-row-actions";
 import { AspiranteQuickDialog } from "@dashboard/aspirantes/_components/aspirante-quick-dialog";
 import { Button, buttonVariants } from "@src/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@src/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -215,9 +222,75 @@ function DocUploadCheck({
   );
 }
 
+type FotoPermisoPreview = {
+  aspiranteId: string;
+  nombre: string;
+  kind: "boleta" | "perfil";
+  usaCarnet: boolean;
+};
+
+function fotoPermisoDe(a: AspirantesCensusRow): Pick<FotoPermisoPreview, "kind" | "usaCarnet"> | null {
+  if (a.fotoBoletaKey) return { kind: "boleta", usaCarnet: false };
+  if (a.fotoKey) return { kind: "perfil", usaCarnet: true };
+  return null;
+}
+
+function FotoPermisoCell({
+  row,
+  nombre,
+  onOpen,
+}: {
+  row: AspirantesCensusRow;
+  nombre: string;
+  onOpen: (preview: FotoPermisoPreview) => void;
+}) {
+  const source = fotoPermisoDe(row);
+  if (!source) {
+    return (
+      <AspiranteFotoThumbnail
+        aspiranteId={row.id}
+        fotoKey={null}
+        nombre={nombre}
+        size="sm"
+        kind="boleta"
+      />
+    );
+  }
+
+  const fotoKey = source.kind === "boleta" ? row.fotoBoletaKey : row.fotoKey;
+  return (
+    <button
+      type="button"
+      title={source.usaCarnet ? "Sin foto de boleta: se usa la de carnet. Pulse para verla." : "Foto de la boleta de permiso. Pulse para verla."}
+      aria-label={`Ver foto de permiso de ${nombre}`}
+      onClick={() =>
+        onOpen({
+          aspiranteId: row.id,
+          nombre,
+          kind: source.kind,
+          usaCarnet: source.usaCarnet,
+        })
+      }
+      className="inline-flex flex-col items-center gap-0.5 rounded-md p-0.5 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-sky-500/50"
+    >
+      <AspiranteFotoThumbnail
+        aspiranteId={row.id}
+        fotoKey={fotoKey}
+        nombre={nombre}
+        size="sm"
+        kind={source.kind}
+      />
+      {source.usaCarnet ? (
+        <span className="text-[9px] font-semibold tracking-wide text-slate-400 uppercase">Carnet</span>
+      ) : null}
+    </button>
+  );
+}
+
 function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): ReactNode {
   const fecha = birthDate(a.fechaNacimientoIso);
   switch (col.id) {
+    case "fotoPermiso":
     case "documentos":
       return null;
     case "unidad":
@@ -337,6 +410,7 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
 
 function cellAlignClass(id: CensusOptionalColumnId): string {
   if (
+    id === "fotoPermiso" ||
     id === "documentos" ||
     id === "sexo" ||
     id === "edad" ||
@@ -369,6 +443,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
     nombreCompleto: string;
     kind: CensusDocumentoKind;
   } | null>(null);
+  const [fotoPermiso, setFotoPermiso] = useState<FotoPermisoPreview | null>(null);
 
   const visibleSet = useMemo(() => new Set(visibleIds), [visibleIds]);
   const visibleColumns = useMemo(
@@ -666,6 +741,8 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
                                 />
                               ))}
                             </div>
+                          ) : col.id === "fotoPermiso" ? (
+                            <FotoPermisoCell row={a} nombre={nombreCompleto} onOpen={setFotoPermiso} />
                           ) : (
                             renderOptionalCell(col, a)
                           )}
@@ -695,6 +772,27 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
           </TableBody>
         </Table>
       </div>
+      <Dialog open={Boolean(fotoPermiso)} onOpenChange={(open) => { if (!open) setFotoPermiso(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="pr-10">
+            <DialogTitle>Foto de permiso</DialogTitle>
+            <DialogDescription>
+              {fotoPermiso?.nombre}
+              {fotoPermiso?.usaCarnet ? " · se usa la foto de carnet porque no hay foto de boleta." : null}
+            </DialogDescription>
+          </DialogHeader>
+          {fotoPermiso ? (
+            <div className="flex justify-center bg-slate-50 px-5 py-6">
+              {/* eslint-disable-next-line @next/next/no-img-element -- URL firmada vía redirect en API propia */}
+              <img
+                src={aspiranteFotoUrl(fotoPermiso.aspiranteId, fotoPermiso.kind)}
+                alt={`Foto de permiso de ${fotoPermiso.nombre}`}
+                className="max-h-[70vh] w-auto max-w-full rounded-md border border-slate-200 object-contain shadow-sm"
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
       {viewer ? (
         <AspiranteDocumentoViewer
           open

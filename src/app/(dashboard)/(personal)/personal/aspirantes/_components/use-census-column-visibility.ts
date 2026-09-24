@@ -10,8 +10,9 @@ import {
 } from "@src/lib/aspirantes/census-table-columns";
 
 const LEGACY_STORAGE_KEYS = [
-  "personal.aspirantes.census.columns.v1",
+  "personal.aspirantes.census.columns.v3",
   "personal.aspirantes.census.columns.v2",
+  "personal.aspirantes.census.columns.v1",
 ] as const;
 const CHANGE_EVENT = "aspirantes-census-columns-change";
 
@@ -25,7 +26,7 @@ function readRawFromLocalStorage(): string | null {
     for (const key of LEGACY_STORAGE_KEYS) {
       const legacy = window.localStorage.getItem(key);
       if (legacy == null) continue;
-      const migrated = JSON.stringify(withDocumentosIfMissing(parseStoredIds(legacy)));
+      const migrated = JSON.stringify(migrateLegacyIds(legacy, key));
       window.localStorage.setItem(CENSUS_COLUMNS_STORAGE_KEY, migrated);
       window.localStorage.removeItem(key);
       return migrated;
@@ -39,6 +40,19 @@ function readRawFromLocalStorage(): string | null {
 function withDocumentosIfMissing(ids: CensusOptionalColumnId[]): CensusOptionalColumnId[] {
   if (ids.includes("documentos")) return ids;
   return ["documentos", ...ids];
+}
+
+function withFotoPermisoIfMissing(ids: CensusOptionalColumnId[]): CensusOptionalColumnId[] {
+  if (ids.includes("fotoPermiso")) return ids;
+  return ["fotoPermiso", ...ids];
+}
+
+function migrateLegacyIds(raw: string, key: string): CensusOptionalColumnId[] {
+  let ids = parseStoredIds(raw);
+  if (key.endsWith(".v1") || key.endsWith(".v2")) {
+    ids = withDocumentosIfMissing(ids);
+  }
+  return withFotoPermisoIfMissing(ids);
 }
 
 function parseStoredIds(raw: string | null): CensusOptionalColumnId[] {
