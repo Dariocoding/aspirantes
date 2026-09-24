@@ -22,6 +22,8 @@ import {
   type BoletaPermisoCard,
 } from "@src/lib/pdf/boleta-permiso";
 import { mapWithConcurrency } from "@src/lib/pdf/ficha-tecnica-from-aspirante";
+import { formatDuracionPermiso, labelTipoPermiso } from "@src/lib/permisos";
+import { format } from "date-fns";
 import {
   readBoletaBanderaJpgBuffer,
   readBoletaCefoaLogoPngBuffer,
@@ -64,6 +66,11 @@ const boletaInclude = {
     orderBy: { createdAt: "asc" as const },
     take: 3,
     select: { telefono: true, direccion: true },
+  },
+  permisos: {
+    where: { anulado: false },
+    orderBy: { fechaInicio: "asc" as const },
+    select: { tipo: true, fechaInicio: true, fechaFin: true },
   },
 } satisfies Prisma.AspiranteInclude;
 
@@ -135,6 +142,12 @@ async function pdfResponse(
       emergenciaTelefono:
         formatTelefonoBoleta(contacto?.telefono) ?? contacto?.telefono?.trim() ?? "—",
       foto,
+      control: a.permisos.map((p) => ({
+        tipo: labelTipoPermiso(p.tipo),
+        duracion: formatDuracionPermiso(p.fechaInicio, p.fechaFin),
+        desde: format(p.fechaInicio, "dd/MM/yyyy"),
+        hasta: format(p.fechaFin, "dd/MM/yyyy"),
+      })),
     };
   });
 

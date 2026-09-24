@@ -35,6 +35,15 @@ export type BoletaPermisoCard = {
   emergenciaDireccion: string;
   emergenciaTelefono: string;
   foto: { data: Buffer; format: "jpg" | "png" } | null;
+  /** Filas ya registradas para la hoja «CONTROL DE PERMISO». Las firmas se dejan en blanco. */
+  control?: BoletaControlFila[];
+};
+
+export type BoletaControlFila = {
+  tipo: string;
+  duracion: string;
+  desde: string;
+  hasta: string;
 };
 
 /** Textos fijos de la plantilla autorizada de boleta de permiso. */

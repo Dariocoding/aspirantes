@@ -2,6 +2,7 @@ import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/
 import {
   BOLETA_ARMAS,
   BOLETA_RECOMENDACION,
+  type BoletaControlFila,
   type BoletaPermisoCard,
   type BoletaPermisoConvocatoriaInfo,
 } from "@src/lib/pdf/boleta-permiso";
@@ -22,9 +23,12 @@ const INNER_W = PAGE_W - PAGE_PAD * 2;
 const CARD_H = (792 - PAGE_PAD * 2 - GAP) / 2;
 const FLAG_W = 18;
 const HALF_W = INNER_W / 2;
-const LOGO_W = 34;
 const HEADER_PAD_X = 4;
-const HEADER_TEXT_W = HALF_W - HEADER_PAD_X * 2 - LOGO_W * 2 - 2;
+/** Alto común. El ancho sale de la proporción real de cada PNG (608×900 y 500×500). */
+const LOGO_H = 50;
+const LOGO_EJERCITO_W = Math.round(((LOGO_H * 608) / 900) * 10) / 10;
+const LOGO_CEFOA_W = LOGO_H;
+const HEADER_TEXT_W = HALF_W - HEADER_PAD_X * 2 - LOGO_EJERCITO_W - LOGO_CEFOA_W - 4;
 const BODY_PAD_X = 6;
 const PHOTO_W = 56;
 const BODY_W = HALF_W - FLAG_W - 2;
@@ -79,7 +83,8 @@ const s = StyleSheet.create({
     paddingHorizontal: HEADER_PAD_X,
     overflow: "hidden",
   },
-  logo: { width: LOGO_W, height: 42, objectFit: "contain" },
+  logoEjercito: { width: LOGO_EJERCITO_W, height: LOGO_H, objectFit: "contain" },
+  logoCefoa: { width: LOGO_CEFOA_W, height: LOGO_H, objectFit: "contain" },
   headerTexts: { width: HEADER_TEXT_W },
   hLine: { fontSize: 6, textAlign: "center", fontWeight: "bold", lineHeight: 1.15 },
   bodyRow: {
@@ -150,7 +155,119 @@ const s = StyleSheet.create({
   cargo: { fontSize: 7.5, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   emerg: { fontSize: 6.2, fontWeight: "bold", textAlign: "center", lineHeight: 1.25 },
   armas: { fontSize: 6.6, textAlign: "center", marginTop: 6, lineHeight: 1.25 },
+  controlPage: {
+    fontFamily: FONT,
+    color: INK,
+    paddingTop: 28,
+    paddingBottom: 24,
+    paddingLeft: 28,
+    paddingRight: 28,
+    backgroundColor: "#FFFFFF",
+  },
+  controlTitle: { fontSize: 12, fontWeight: "bold", textAlign: "center", marginBottom: 4 },
+  controlWho: { fontSize: 8, fontWeight: "bold", textAlign: "center", marginBottom: 8 },
+  table: { borderWidth: 1, borderColor: INK, borderRightWidth: 0, borderBottomWidth: 0 },
+  tr: { flexDirection: "row" },
+  th: {
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: INK,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 2,
+    paddingVertical: 3,
+    minHeight: 36,
+  },
+  td: {
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: INK,
+    justifyContent: "center",
+    paddingHorizontal: 3,
+    minHeight: 32,
+  },
+  thText: { fontSize: 6, fontWeight: "bold", textAlign: "center", lineHeight: 1.15 },
+  tdText: { fontSize: 7.5, textAlign: "center" },
 });
+
+const CONTROL_COLS = [
+  { key: "n", label: "N°", width: 28 },
+  { key: "tipo", label: "TIPO DE PERMISO", width: 78 },
+  { key: "dur", label: "DURACIÓN", width: 52 },
+  { key: "desde", label: "DESDE", width: 64 },
+  { key: "hasta", label: "HASTA", width: 64 },
+  { key: "fp", label: "FIRMA DEL CMDTE DE PELOTÓN", width: 112 },
+  { key: "fc", label: "FIRMA DEL CMDTE DEL CUERPO DEL CEFOA", width: 113 },
+  { key: "fs", label: "FIRMA DEL SUB-DIRECTOR DEL CEFOA", width: 112 },
+  { key: "fd", label: "FIRMA DEL DIRECTOR DEL CEFOA", width: 113 },
+] as const;
+
+const CONTROL_ROWS = 10;
+
+function controlPagesFor(card: BoletaPermisoCard): BoletaControlFila[][] {
+  const filled = card.control ?? [];
+  const total = Math.max(CONTROL_ROWS, filled.length);
+  const pages: BoletaControlFila[][] = [];
+  for (let i = 0; i < total; i += CONTROL_ROWS) {
+    const slice: BoletaControlFila[] = [];
+    for (let r = 0; r < CONTROL_ROWS && i + r < total; r++) {
+      slice.push(filled[i + r] ?? { tipo: "", duracion: "", desde: "", hasta: "" });
+    }
+    pages.push(slice);
+  }
+  return pages;
+}
+
+function ControlPermisoPage({
+  card,
+  rows,
+  startAt,
+}: {
+  card: BoletaPermisoCard;
+  rows: BoletaControlFila[];
+  startAt: number;
+}) {
+  return (
+    <Page size="LETTER" orientation="landscape" style={s.controlPage}>
+      <Text style={s.controlTitle}>CONTROL DE PERMISO</Text>
+      <Text style={s.controlWho}>
+        {`Serial ${card.serial}  ·  ${card.apellidos.toLocaleUpperCase("es")}, ${card.nombres.toLocaleUpperCase("es")}  ·  C.I. ${card.cedula}`}
+      </Text>
+      <View style={s.table}>
+        <View style={s.tr}>
+          {CONTROL_COLS.map((col) => (
+            <View key={col.key} style={[s.th, { width: col.width }]}>
+              <Text style={s.thText}>{col.label}</Text>
+            </View>
+          ))}
+        </View>
+        {rows.map((row, index) => (
+          <View key={`${card.id}-${startAt + index}`} style={s.tr}>
+            <View style={[s.td, { width: CONTROL_COLS[0]!.width }]}>
+              <Text style={s.tdText}>{String(startAt + index + 1)}</Text>
+            </View>
+            <View style={[s.td, { width: CONTROL_COLS[1]!.width }]}>
+              <Text style={s.tdText}>{row.tipo}</Text>
+            </View>
+            <View style={[s.td, { width: CONTROL_COLS[2]!.width }]}>
+              <Text style={s.tdText}>{row.duracion}</Text>
+            </View>
+            <View style={[s.td, { width: CONTROL_COLS[3]!.width }]}>
+              <Text style={s.tdText}>{row.desde}</Text>
+            </View>
+            <View style={[s.td, { width: CONTROL_COLS[4]!.width }]}>
+              <Text style={s.tdText}>{row.hasta}</Text>
+            </View>
+            <View style={[s.td, { width: CONTROL_COLS[5]!.width }]} />
+            <View style={[s.td, { width: CONTROL_COLS[6]!.width }]} />
+            <View style={[s.td, { width: CONTROL_COLS[7]!.width }]} />
+            <View style={[s.td, { width: CONTROL_COLS[8]!.width }]} />
+          </View>
+        ))}
+      </View>
+    </Page>
+  );
+}
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -238,9 +355,9 @@ function BoletaCard({
       <View style={s.portada}>
         <View style={s.header}>
           {logoEjercito ? (
-            <Image src={img(logoEjercito, "png")} style={s.logo} />
+            <Image src={img(logoEjercito, "png")} style={s.logoEjercito} />
           ) : (
-            <View style={s.logo} />
+            <View style={s.logoEjercito} />
           )}
           <View style={s.headerTexts}>
             {convocatoria.headerLines.map((line) => (
@@ -249,7 +366,11 @@ function BoletaCard({
               </Text>
             ))}
           </View>
-          {logoCefoa ? <Image src={img(logoCefoa, "png")} style={s.logo} /> : <View style={s.logo} />}
+          {logoCefoa ? (
+            <Image src={img(logoCefoa, "png")} style={s.logoCefoa} />
+          ) : (
+            <View style={s.logoCefoa} />
+          )}
         </View>
         <View style={s.bodyRow}>
           {bandera ? (
@@ -335,6 +456,19 @@ export function BoletasPermisoPdfDocument({
           </View>
         </Page>
       ))}
+      {cards.length > 1
+        ? cards.flatMap((card) => {
+            const chunks = controlPagesFor(card);
+            return chunks.map((rows, pageIndex) => (
+              <ControlPermisoPage
+                key={`${card.id}-control-${pageIndex}`}
+                card={card}
+                rows={rows}
+                startAt={pageIndex * CONTROL_ROWS}
+              />
+            ));
+          })
+        : null}
     </Document>
   );
 }

@@ -25,22 +25,20 @@ export function readEjercitoLogoPngBuffer(): Buffer | null {
   }
 }
 
-/** Escudo CEFOA del formato de boleta (fondo transparente). */
+/**
+ * Escudo CEFOA de la boleta. Se usa el PNG institucional (500×500, fondo
+ * transparente): `boleta-cefoa.png` estaba estirado en vertical.
+ */
 export function readBoletaCefoaLogoPngBuffer(): Buffer | null {
-  try {
-    return readFileSync(path.join(process.cwd(), "public", "images", "boleta-cefoa.png"));
-  } catch {
-    return readInstitutionLogoPngBuffer();
-  }
+  return readInstitutionLogoPngBuffer();
 }
 
-/** Escudo del Ejército del formato de boleta (fondo transparente). */
+/**
+ * Escudo del Ejército de la boleta. Se usa el PNG institucional (608×900,
+ * fondo transparente): `boleta-ejercito.png` estaba comprimido en horizontal.
+ */
 export function readBoletaEjercitoLogoPngBuffer(): Buffer | null {
-  try {
-    return readFileSync(path.join(process.cwd(), "public", "images", "boleta-ejercito.png"));
-  } catch {
-    return readEjercitoLogoPngBuffer();
-  }
+  return readEjercitoLogoPngBuffer();
 }
 
 /** Franja vertical de la Bandera Nacional (anverso de la boleta). */
