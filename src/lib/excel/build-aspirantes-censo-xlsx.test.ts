@@ -69,6 +69,31 @@ test("el import encuentra Cédula debajo de un membrete institucional", async ()
   assert.equal(parsed.rows[0]?.cedula, "21425976");
 });
 
+test("el contacto de emergencia sale con el teléfono en formato 04xx-xxxxxxx", async () => {
+  const row = sampleRow();
+  row.telefono = "04262672790";
+  row.contactoNombre = "MARIA OSUNA";
+  row.contactoParentesco = "Mama";
+  row.contactoTelefono = "4243321795";
+
+  const buffer = await buildAspirantesCensoXlsxBuffer({
+    convocatoriaNombre: "CEFOA 46",
+    convocatoriaCodigo: "CEFOA-46",
+    anio: 2026,
+    rows: [row],
+    columnIds: ["numero", "nombreCompleto", "cedula", "telefono", "contactoEmergencia"],
+    generatedAt: new Date("2026-09-19T12:00:00Z"),
+    membrete: null,
+  });
+
+  const parsed = await parseAspirantesCensoXlsxBuffer(buffer);
+  assert.ok(parsed.columnIds.includes("contactoEmergencia"));
+  assert.ok(parsed.columnIds.includes("contactoTelefono"));
+  assert.equal(parsed.rows[0]?.values.telefono, "0426-2672790");
+  assert.equal(parsed.rows[0]?.values.contactoTelefono, "0424-3321795");
+  assert.equal(parsed.rows[0]?.values.contactoEmergencia, "MARIA OSUNA · Mama · 0424-3321795");
+});
+
 test("el membrete con escudos del Ejército y C.E.F.O.A. sigue importándose", async () => {
   const buffer = await buildAspirantesCensoXlsxBuffer({
     convocatoriaNombre: "CEFOA 46",

@@ -3,8 +3,10 @@ import {
   examenIdFromExportColumn,
   getCensusExportColumn,
   isExamExportColumnId,
+  withContactoTelefonoColumn,
   type CensusExportColumn,
 } from "@src/lib/aspirantes/census-export-columns";
+import { formatTelefonoVenezolano } from "@src/lib/aspirantes/telefono";
 import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/census";
 import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
@@ -106,10 +108,15 @@ function optionalNumber(value: number | null | undefined): string | number {
   return value;
 }
 
+function formatTelefonoExport(raw: string | null | undefined): string {
+  const formatted = formatTelefonoVenezolano(raw);
+  return formatted?.trim() ? formatted : "—";
+}
+
 function formatContacto(r: AspiranteCensoExportRow): string {
   const nombre = r.contactoNombre?.trim();
   const parentesco = r.contactoParentesco?.trim();
-  const tel = r.contactoTelefono?.trim();
+  const tel = formatTelefonoVenezolano(r.contactoTelefono);
   const parts = [nombre, parentesco, tel].filter(Boolean);
   return parts.length ? parts.join(" · ") : "—";
 }
@@ -165,7 +172,7 @@ function cellValue(
     case "peloton":
       return dash(r.pelotonLabel);
     case "telefono":
-      return dash(r.telefono);
+      return formatTelefonoExport(r.telefono);
     case "correo":
       return dash(r.correo);
     case "direccion":
@@ -180,6 +187,8 @@ function cellValue(
       return r.hijosCantidad;
     case "contactoEmergencia":
       return formatContacto(r);
+    case "contactoTelefono":
+      return formatTelefonoExport(r.contactoTelefono);
     case "universidad":
       return dash(r.nombreUniversidad);
     case "paisUniversidad":
@@ -220,7 +229,8 @@ function cellValue(
 }
 
 export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCensoXlsxParams): Promise<Buffer> {
-  const { rows, columnIds, generatedAt } = params;
+  const { rows, generatedAt } = params;
+  const columnIds = withContactoTelefonoColumn(params.columnIds);
   const columns = columnIds.map((id) => getCensusExportColumn(id)).filter((c): c is CensusExportColumn => Boolean(c));
   if (!columns.length) {
     throw new Error("Seleccione al menos una columna para exportar.");
@@ -291,6 +301,9 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
         const text = String(value);
         cell.numFmt = "@";
         cell.value = { richText: [{ font: { name: "Arial", size: 12, bold: true }, text }] };
+      } else if (col.id === "telefono" || col.id === "contactoTelefono") {
+        cell.numFmt = "@";
+        cell.value = String(value);
       } else if (col.id === "estatura" && typeof value === "number") {
         cell.numFmt = "0.00";
         cell.value = value;

@@ -82,8 +82,11 @@ export function AspirantesExcelColumnsDialog({
   function toggle(id: string, checked: boolean) {
     if (!checked && REQUIRED_EXPORT_IDS.has(id)) return;
     setIds((prev) => {
-      if (checked) return prev.includes(id) ? prev : [...prev, id];
-      return prev.filter((x) => x !== id);
+      if (!checked) return prev.filter((x) => x !== id);
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      if (id === "contactoEmergencia" && !next.includes("contactoTelefono")) next.push("contactoTelefono");
+      return next;
     });
   }
 

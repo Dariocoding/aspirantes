@@ -42,6 +42,11 @@ test("vence en julio del año en que termina el curso", () => {
 
 test("formatea teléfonos como en la plantilla", () => {
   assert.equal(formatTelefonoBoleta("04123968855"), "0412-3968855");
+  assert.equal(formatTelefonoBoleta("04262672790"), "0426-2672790");
+  assert.equal(formatTelefonoBoleta("4243321795"), "0424-3321795");
+  assert.equal(formatTelefonoBoleta("04243321795"), "0424-3321795");
+  assert.equal(formatTelefonoBoleta("+58 412-3904112"), "0412-3904112");
+  assert.equal(formatTelefonoBoleta("04262644401/04121370104"), "0426-2644401, 0412-1370104");
 });
 
 test("el grupo sanguíneo de la boleta va directo, sin RH", () => {

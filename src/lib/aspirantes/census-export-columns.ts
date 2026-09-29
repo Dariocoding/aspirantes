@@ -42,6 +42,7 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "deporte", label: "Deporte", group: "Contacto", width: 18, align: "left" },
   { id: "hijos", label: "Hijos", group: "Contacto", width: 8, align: "center" },
   { id: "contactoEmergencia", label: "Contacto de emergencia", group: "Contacto", width: 28, align: "left" },
+  { id: "contactoTelefono", label: "Teléfono de emergencia", group: "Contacto", width: 18, align: "center" },
   { id: "universidad", label: "Universidad", group: "Estudios", width: 24, align: "left" },
   { id: "paisUniversidad", label: "País de estudio", group: "Estudios", width: 16, align: "left" },
   { id: "tipoSangre", label: "Tipo de sangre", group: "Datos físicos", width: 12, align: "center" },
@@ -138,6 +139,9 @@ HEADER_TO_COLUMN_ID.set("gruposanguineo", "tipoSangre");
 HEADER_TO_COLUMN_ID.set("gruposangre", "tipoSangre");
 HEADER_TO_COLUMN_ID.set("rh", "tipoSangre");
 HEADER_TO_COLUMN_ID.set("factorrh", "tipoSangre");
+HEADER_TO_COLUMN_ID.set("telefonoemergencia", "contactoTelefono");
+HEADER_TO_COLUMN_ID.set("telefonodeemergencia", "contactoTelefono");
+HEADER_TO_COLUMN_ID.set("contactodeemergencia", "contactoEmergencia");
 
 export function censusExportColumnIdFromHeader(header: string): string | undefined {
   const folded = foldCensusHeader(header);
@@ -157,6 +161,15 @@ export function parseCensusExportColumnIds(raw: unknown): string[] | null {
   const ids = raw.filter((v): v is string => typeof v === "string").filter((id) => COLUMN_BY_ID.has(id));
   const unique = Array.from(new Set(ids));
   return unique.length ? unique : null;
+}
+
+/** Si se exporta el contacto, el teléfono de emergencia sale en la columna siguiente. */
+export function withContactoTelefonoColumn(ids: string[]): string[] {
+  const index = ids.indexOf("contactoEmergencia");
+  if (index < 0 || ids.includes("contactoTelefono")) return ids;
+  const next = [...ids];
+  next.splice(index + 1, 0, "contactoTelefono");
+  return next;
 }
 
 export function moveCensusExportColumn(ids: string[], from: number, to: number): string[] {

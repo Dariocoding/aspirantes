@@ -188,6 +188,11 @@ function splitNombreCompletoNew(full: string): { nombres: string; apellidos: str
   return { nombres: words.slice(0, mid).join(" "), apellidos: words.slice(mid).join(" ") };
 }
 
+function telefonoEmergenciaImport(ids: Set<string>, values: Record<string, string>): string | undefined {
+  if (!hasColumn(ids, "contactoTelefono")) return undefined;
+  return blankToNull(values.contactoTelefono) ?? "—";
+}
+
 function parseContacto(raw: string | null): { nombre: string; parentesco: string; telefono: string } | null {
   if (raw == null) return null;
   const t = raw.trim();
@@ -197,6 +202,17 @@ function parseContacto(raw: string | null): { nombre: string; parentesco: string
   if (parts.length === 1) return { nombre: parts[0]!, parentesco: "Por definir", telefono: "—" };
   if (parts.length === 2) return { nombre: parts[0]!, parentesco: "Por definir", telefono: parts[1]! };
   return { nombre: parts[0]!, parentesco: parts[1] || "Por definir", telefono: parts[2] || "—" };
+}
+
+function contactoDesdeFila(
+  ids: Set<string>,
+  values: Record<string, string>,
+): { nombre: string; parentesco: string; telefono: string } | null {
+  if (!hasColumn(ids, "contactoEmergencia")) return null;
+  const contacto = parseContacto(blankToNull(values.contactoEmergencia));
+  if (!contacto) return null;
+  const tel = telefonoEmergenciaImport(ids, values);
+  return tel === undefined ? contacto : { ...contacto, telefono: tel };
 }
 
 function matchPeloton(
@@ -375,9 +391,7 @@ export async function applyCensusXlsxImport(
               },
             },
           });
-          const contacto = hasColumn(ids, "contactoEmergencia")
-            ? parseContacto(blankToNull(v.contactoEmergencia))
-            : null;
+          const contacto = contactoDesdeFila(ids, v);
           if (contacto) {
             await tx.contactoEmergencia.create({
               data: {
@@ -530,7 +544,13 @@ export async function applyCensusXlsxImport(
         }
 
         const hasAspirantePatch = Object.keys(data).length > 0;
-        if (!hasAspirantePatch && !fisicoChanged && !hasColumn(ids, "contactoEmergencia") && !examIds.length) {
+        if (
+          !hasAspirantePatch &&
+          !fisicoChanged &&
+          !hasColumn(ids, "contactoEmergencia") &&
+          !hasColumn(ids, "contactoTelefono") &&
+          !examIds.length
+        ) {
           unchanged += 1;
           continue;
         }
@@ -548,7 +568,7 @@ export async function applyCensusXlsxImport(
         }
 
         if (hasColumn(ids, "contactoEmergencia")) {
-          const parsedContacto = parseContacto(blankToNull(v.contactoEmergencia));
+          const parsedContacto = contactoDesdeFila(ids, v);
           const existingContacto = current.contactos[0];
           if (parsedContacto) {
             if (existingContacto) {

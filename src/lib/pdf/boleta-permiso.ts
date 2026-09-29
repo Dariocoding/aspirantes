@@ -99,17 +99,7 @@ export function formatVenceBoleta(anioVence: number | null | undefined, anio: nu
   return `VENCE JULIO ${year}`;
 }
 
-export function formatTelefonoBoleta(raw: string | null | undefined): string | null {
-  if (!raw?.trim()) return null;
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length === 11 && digits.startsWith("0")) {
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-  }
-  if (digits.length === 10 && digits.startsWith("4")) {
-    return `0${digits.slice(0, 3)}-${digits.slice(3)}`;
-  }
-  return raw.trim();
-}
+export { formatTelefonoVenezolano as formatTelefonoBoleta } from "@src/lib/aspirantes/telefono";
 
 /** Grupo sanguíneo directo: A+, B-, AB+, O+. */
 export function formatGrupoSanguineoBoleta(
