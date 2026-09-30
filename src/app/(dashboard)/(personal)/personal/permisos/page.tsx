@@ -23,7 +23,9 @@ export default async function PermisosPage({
   const write = canWrite(ctx);
   const convocatoriaActiva = await getConvocatoriaActiva();
 
-  const aspiranteWhere = convocatoriaActiva ? { convocatoriaId: convocatoriaActiva.id } : {};
+  const aspiranteWhere = convocatoriaActiva
+    ? { convocatoriaId: convocatoriaActiva.id, deletedAt: null }
+    : { deletedAt: null };
 
   const [aspirantesDb, permisosDb] = await Promise.all([
     prisma.aspirante.findMany({
@@ -33,8 +35,8 @@ export default async function PermisosPage({
     }),
     prisma.permisoPersonal.findMany({
       where: convocatoriaActiva
-        ? { aspirante: { convocatoriaId: convocatoriaActiva.id } }
-        : {},
+        ? { aspirante: { convocatoriaId: convocatoriaActiva.id, deletedAt: null } }
+        : { aspirante: { deletedAt: null } },
       orderBy: [{ fechaInicio: "desc" }],
       include: {
         aspirante: {

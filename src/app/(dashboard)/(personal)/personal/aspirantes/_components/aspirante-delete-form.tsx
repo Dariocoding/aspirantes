@@ -21,7 +21,7 @@ export function AspiranteDeleteForm({ aspiranteId, nombreCompleto }: Props) {
   const submit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const msg = `¿Eliminar del censo a «${nombreCompleto}»? Esta acción no se puede deshacer.`;
+      const msg = `¿Eliminar del censo a «${nombreCompleto}»? Dejará de aparecer en el listado. Puede recuperarlo desde la papelera.`;
       if (!confirm(msg)) return;
       const fd = new FormData(e.currentTarget);
       startTransition(async () => {
@@ -44,7 +44,7 @@ export function AspiranteDeleteForm({ aspiranteId, nombreCompleto }: Props) {
         onOpenChange={onCelebrateOpenChange}
         variant="deleted"
         title="Aspirante eliminado del censo"
-        description="El registro se eliminó de forma permanente."
+        description="Ya no aparece en el listado. Si fue un error, puede recuperarlo en la papelera."
       />
       <form onSubmit={submit} className="inline-flex justify-end">
         <input type="hidden" name="id" value={aspiranteId} />

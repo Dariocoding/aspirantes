@@ -358,7 +358,7 @@ export async function createAspirante(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return {
         ok: false,
-        errors: { cedula: "Esta cédula ya figura en la convocatoria activa." },
+        errors: { cedula: await mensajeCedulaDuplicada(d.cedula, convocatoria.id) },
       };
     }
     throw e;
@@ -370,12 +370,84 @@ export async function createAspirante(
   return { ok: true, errors: {} };
 }
 
+async function mensajeCedulaDuplicada(cedula: string, convocatoriaId: string) {
+  const enPapelera = await prisma.aspirante.findFirst({
+    where: { cedula, convocatoriaId, deletedAt: { not: null } },
+    select: { id: true },
+  });
+  return enPapelera
+    ? "Esta cédula está en la papelera de esta convocatoria. Restáurela desde allí o elimínela por completo."
+    : "Esta cédula ya figura en la convocatoria activa.";
+}
+
+function revalidateTrasBorradoAspirante(id: string) {
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.home);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.personal.papelera);
+  revalidatePath(routes.personal.permisos);
+  revalidatePath(routes.personal.esquelas);
+  revalidatePath(routes.personal.aspirante(id));
+}
+
 export async function deleteAspirante(formData: FormData) {
   const session = await requireWriter();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  const row = await prisma.aspirante.findUnique({
+  const row = await prisma.aspirante.findFirst({
+    where: { id, deletedAt: null },
+    select: { cedula: true, convocatoriaId: true },
+  });
+  if (!row) return;
+  await prisma.aspirante.update({
     where: { id },
+    data: {
+      deletedAt: new Date(),
+      deletedByEmail: session.user.email ?? null,
+    },
+  });
+  await writeAuditLog({
+    userId: session.user.id,
+    userEmail: session.user.email,
+    action: "ASPIRANTE_DELETE",
+    entityType: "ASPIRANTE",
+    entityId: id,
+    metadata: { cedula: row.cedula, convocatoriaId: row.convocatoriaId, papelera: true },
+  });
+  revalidateTrasBorradoAspirante(id);
+}
+
+export async function restoreAspirante(formData: FormData) {
+  const session = await requireWriter();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const row = await prisma.aspirante.findFirst({
+    where: { id, deletedAt: { not: null } },
+    select: { cedula: true, convocatoriaId: true },
+  });
+  if (!row) return;
+  await prisma.aspirante.update({
+    where: { id },
+    data: { deletedAt: null, deletedByEmail: null },
+  });
+  await writeAuditLog({
+    userId: session.user.id,
+    userEmail: session.user.email,
+    action: "ASPIRANTE_RESTORE",
+    entityType: "ASPIRANTE",
+    entityId: id,
+    metadata: { cedula: row.cedula, convocatoriaId: row.convocatoriaId },
+  });
+  revalidateTrasBorradoAspirante(id);
+}
+
+export async function purgeAspirante(formData: FormData) {
+  const session = await requireWriter();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const row = await prisma.aspirante.findFirst({
+    where: { id, deletedAt: { not: null } },
     select: {
       cedula: true,
       convocatoriaId: true,
@@ -402,15 +474,12 @@ export async function deleteAspirante(formData: FormData) {
   await writeAuditLog({
     userId: session.user.id,
     userEmail: session.user.email,
-    action: "ASPIRANTE_DELETE",
+    action: "ASPIRANTE_PURGE",
     entityType: "ASPIRANTE",
     entityId: id,
     metadata: { cedula: row.cedula, convocatoriaId: row.convocatoriaId },
   });
-  revalidatePath(routes.hub);
-  revalidatePath(routes.personal.aspirantes);
-  revalidatePath(routes.personal.aspirantesGestion);
-  revalidatePath(routes.personal.aspirante(id));
+  revalidateTrasBorradoAspirante(id);
 }
 
 export async function updateAspirante(
@@ -606,7 +675,7 @@ export async function updateAspirante(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return {
         ok: false,
-        errors: { cedula: "Esta cédula ya figura en la convocatoria activa." },
+        errors: { cedula: await mensajeCedulaDuplicada(d.cedula, convocatoria.id) },
       };
     }
     throw e;
@@ -789,7 +858,7 @@ export async function updateAspiranteQuick(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return {
         ok: false,
-        errors: { cedula: "Esta cédula ya figura en la convocatoria activa." },
+        errors: { cedula: await mensajeCedulaDuplicada(d.cedula, convocatoria.id) },
       };
     }
     throw e;

@@ -184,7 +184,7 @@ export function ConvocatoriasView({ convocatorias }: Props) {
                           ) : (
                             <span
                               className="inline-flex"
-                              title="No se puede eliminar mientras haya aspirantes registrados en esta convocatoria."
+                              title="No se puede eliminar mientras haya aspirantes en el censo o en la papelera de esta convocatoria."
                             >
                               <Button type="button" size="sm" variant="outline" disabled className="opacity-45">
                                 Eliminar

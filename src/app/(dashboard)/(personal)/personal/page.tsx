@@ -36,7 +36,6 @@ export default async function PersonalDashboardPage() {
             id: true,
             numero: true,
             nombre: true,
-            _count: { select: { aspirantes: true } },
           },
         })
       : Promise.resolve([]),
@@ -45,7 +44,9 @@ export default async function PersonalDashboardPage() {
         anulado: false,
         fechaInicio: { lte: new Date() },
         fechaFin: { gte: new Date() },
-        ...(convocatoriaActiva ? { aspirante: { convocatoriaId: convocatoriaActiva.id } } : {}),
+        ...(convocatoriaActiva
+          ? { aspirante: { convocatoriaId: convocatoriaActiva.id, deletedAt: null } }
+          : { aspirante: { deletedAt: null } }),
       },
       orderBy: { fechaFin: "asc" },
       take: 20,
@@ -125,7 +126,7 @@ export default async function PersonalDashboardPage() {
       pelotones={pelotonesDb.map((p) => ({
         id: p.id,
         label: labelPeloton(p),
-        count: p._count.aspirantes,
+        count: aspirantes.filter((a) => a.pelotonId === p.id).length,
       }))}
       cumpleanosDelMes={cumpleanosDelMes}
       proximasEfemerides={proximasEfemerides}

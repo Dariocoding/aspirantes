@@ -192,12 +192,19 @@ export async function deleteConvocatoria(
     return { ok: false, errors: { _form: "Solicitud inválida." } };
   }
 
-  const inscritos = await prisma.aspirante.count({ where: { convocatoriaId: id } });
-  if (inscritos > 0) {
+  const [inscritos, enPapelera] = await Promise.all([
+    prisma.aspirante.count({ where: { convocatoriaId: id } }),
+    prisma.aspirante.count({ where: { convocatoriaId: id, deletedAt: { not: null } } }),
+  ]);
+  if (inscritos + enPapelera > 0) {
+    const partes = [
+      inscritos > 0 ? `${inscritos} en el censo` : null,
+      enPapelera > 0 ? `${enPapelera} en la papelera` : null,
+    ].filter(Boolean);
     return {
       ok: false,
       errors: {
-        _form: `No se puede eliminar: hay ${inscritos} aspirante(s) registrados en esta convocatoria.`,
+        _form: `No se puede eliminar: hay aspirantes en esta convocatoria (${partes.join(" y ")}).`,
       },
     };
   }

@@ -33,13 +33,15 @@ export const manualUsuarioSections: ManualUsuarioSection[] = [
     id: "operador",
     title: "Rol: Operador",
     paragraphs: [
-      "Incluye todo lo del rol Solo consulta, y además puede dar de alta, modificar y eliminar aspirantes (registro y actualización), registrar y anular permisos de ausencia (de/hasta), exportar el censo en formato XLSX o PDF según los filtros aplicados, y crear o editar efemérides y esquelas.",
+      "Incluye todo lo del rol Solo consulta, y además puede dar de alta, modificar y eliminar aspirantes (registro y actualización). Eliminar los envía a la papelera: dejan de verse en el censo y desde allí se pueden restaurar o borrar por completo. También puede registrar y anular permisos de ausencia (de/hasta), exportar el censo en formato XLSX o PDF según los filtros aplicados, y crear o editar efemérides y esquelas.",
       "No gestiona convocatorias ni cuentas de usuario, y no ve el listado de auditoría.",
     ],
     bullets: [
       "Alta de aspirante — auditado como ASPIRANTE_CREATE (cédula y convocatoria en metadatos).",
       "Actualización de aspirante — ASPIRANTE_UPDATE.",
-      "Eliminación de aspirante — ASPIRANTE_DELETE.",
+      "Enviar aspirante a la papelera — ASPIRANTE_DELETE.",
+      "Restaurar aspirante desde la papelera — ASPIRANTE_RESTORE.",
+      "Eliminar aspirante por completo desde la papelera — ASPIRANTE_PURGE.",
       "Alta, edición o anulación de permiso de personal — PERMISO_CREATE, PERMISO_UPDATE o PERMISO_ANULAR.",
       "Exportación de censo XLSX o PDF — CENSO_EXPORT_XLSX o CENSO_EXPORT_PDF (convocatoria, formato y cantidad de filas).",
       "Exportación masiva de fichas técnicas PDF — CENSO_EXPORT_PDF_FICHAS_TECNICAS (un PDF con una página por aspirante: todas las de la convocatoria, o las que coincidan con los filtros del censo).",

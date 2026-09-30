@@ -262,14 +262,26 @@ export async function applyCensusXlsxImport(
     select: { id: true, numero: true, nombre: true },
   });
 
-  const existing = await db.aspirante.findMany({
-    where: { convocatoriaId, cedula: { in: parsed.rows.map((r) => r.cedula) } },
-    include: {
-      datosFisicos: true,
-      contactos: { orderBy: { createdAt: "asc" }, take: 1 },
-    },
-  });
+  const cedulasImportadas = parsed.rows.map((r) => r.cedula);
+  const [existing, enPapelera] = await Promise.all([
+    db.aspirante.findMany({
+      where: { convocatoriaId, cedula: { in: cedulasImportadas } },
+      include: {
+        datosFisicos: true,
+        contactos: { orderBy: { createdAt: "asc" }, take: 1 },
+      },
+    }),
+    db.aspirante.findMany({
+      where: {
+        convocatoriaId,
+        cedula: { in: cedulasImportadas },
+        deletedAt: { not: null },
+      },
+      select: { cedula: true },
+    }),
+  ]);
   const byCedula = new Map(existing.map((a) => [a.cedula, a]));
+  const cedulasPapelera = new Set(enPapelera.map((a) => a.cedula));
 
   // Neon + pooler: cada fila son 1–3 roundtrips. El timeout por defecto (5 s)
   // aborta el lote entero, Prisma lanza P2028 y la ruta responde 500.
@@ -325,6 +337,15 @@ export async function applyCensusXlsxImport(
           : undefined;
 
         if (!current) {
+          if (cedulasPapelera.has(row.cedula)) {
+            errors.push({
+              excelRow: row.excelRow,
+              cedula: row.cedula,
+              message:
+                "Está en la papelera. Restáurelo o elimínelo por completo antes de importarlo de nuevo.",
+            });
+            continue;
+          }
           const fromParts = hasColumn(ids, "nombres") || hasColumn(ids, "apellidos");
           const fromFull = hasColumn(ids, "nombreCompleto") ? splitNombreCompletoNew(v.nombreCompleto ?? "") : null;
           const nombres = (fromParts ? blankToNull(v.nombres) : fromFull?.nombres)?.trim() ?? "";

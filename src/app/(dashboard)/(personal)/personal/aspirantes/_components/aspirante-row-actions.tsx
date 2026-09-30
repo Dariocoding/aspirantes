@@ -41,7 +41,7 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQ
   }, []);
 
   const onEliminar = useCallback(() => {
-    const msg = `¿Eliminar del censo a «${nombreCompleto}»? Esta acción no se puede deshacer.`;
+    const msg = `¿Eliminar del censo a «${nombreCompleto}»? Dejará de aparecer en el listado. Puede recuperarlo desde la papelera.`;
     if (!confirm(msg)) return;
     const fd = new FormData();
     fd.set("id", aspiranteId);
@@ -59,7 +59,7 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQ
         onOpenChange={onCelebrateOpenChange}
         variant="deleted"
         title="Aspirante eliminado del censo"
-        description="El registro se eliminó de forma permanente."
+        description="Ya no aparece en el listado. Si fue un error, puede recuperarlo en la papelera."
       />
       <DropdownMenu>
         <DropdownMenuTrigger

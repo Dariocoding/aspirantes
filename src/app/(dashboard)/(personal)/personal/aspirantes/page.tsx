@@ -1,5 +1,5 @@
 ﻿import Link from "next/link";
-import { ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardList, Trash2 } from "lucide-react";
 import { AspirantesCensusTable, type AspirantesCensusRow } from "@dashboard/aspirantes/_components/aspirantes-census-table";
 import { AspirantesExportLinks } from "@dashboard/aspirantes/_components/aspirantes-export-links";
 import { AspiranteQuickRegisterButton } from "@dashboard/aspirantes/_components/aspirante-quick-dialog";
@@ -31,6 +31,27 @@ import type { Prisma } from "@src/generated/prisma";
 import { labelPeloton } from "@src/lib/pelotones";
 
 const PAGE_SIZE = 10;
+
+function PapeleraLink({ count }: { count: number }) {
+  return (
+    <Link
+      href={routes.personal.papelera}
+      prefetch={false}
+      className={cn(
+        buttonVariants({ variant: "outline", size: "sm" }),
+        "h-9 gap-1.5 border-slate-200 bg-white shadow-sm",
+      )}
+    >
+      <Trash2 className="h-3.5 w-3.5" aria-hidden />
+      Papelera
+      {count > 0 ? (
+        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-slate-900 px-1.5 text-[10px] font-semibold tabular-nums text-white">
+          {count}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
 
 function toCensusRow(
   a: Prisma.AspiranteGetPayload<{
@@ -149,6 +170,9 @@ export default async function AspirantesPage({
   });
 
   if (!convocatorias.length) {
+    const papeleraCount = write
+      ? await prisma.aspirante.count({ where: { deletedAt: { not: null } } })
+      : 0;
     return (
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -156,6 +180,7 @@ export default async function AspirantesPage({
             <ClipboardList className="h-5 w-5 shrink-0 text-slate-800" aria-hidden />
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">Censo de aspirantes</h1>
           </div>
+          {write ? <PapeleraLink count={papeleraCount} /> : null}
         </div>
         <SinConvocatoriasPanel showConvocatoriasLink={showConvocatoriasLink} context="censo" />
       </div>
@@ -179,7 +204,7 @@ export default async function AspirantesPage({
   const groupByReligion = isCensusReligionGroupSort(sp.sort);
   const sortInMemory = groupByNacimientoMes || groupByGrado;
 
-  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones, membreteRows] =
+  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones, membreteRows, papeleraCount] =
     await Promise.all([
     sortInMemory
       ? Promise.resolve(0)
@@ -233,6 +258,9 @@ export default async function AspirantesPage({
         console.error("membrete.findMany", err);
         return [];
       }),
+    write
+      ? prisma.aspirante.count({ where: { deletedAt: { not: null } } })
+      : Promise.resolve(0),
   ]);
 
   const aspirantesOrdenados = groupByNacimientoMes
@@ -328,6 +356,7 @@ export default async function AspirantesPage({
               </CardDescription>
             </div>
             <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
+              {write ? <PapeleraLink count={papeleraCount} /> : null}
               {write ? (
                 <AspirantesExportLinks
                   exportQuery={censusQueryString(qsBase, {})}

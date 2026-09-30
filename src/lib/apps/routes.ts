@@ -7,6 +7,7 @@ export const routes = {
     home: "/personal",
     aspirantes: "/personal/aspirantes",
     aspirantesGestion: "/personal/aspirantes/gestion",
+    papelera: "/personal/aspirantes/papelera",
     aspirante: (id: string) => `/personal/aspirantes/${encodeURIComponent(id)}`,
     efemerides: "/personal/efemerides",
     esquelas: "/personal/esquelas",

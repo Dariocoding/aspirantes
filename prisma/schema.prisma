@@ -418,11 +418,16 @@ model Aspirante {
   anioIngresoUniversidad   Int?
   /// Año de egreso de la universidad / TSU.
   anioEgresoUniversidad    Int?
+  /// Borrado lógico. Null = visible en el censo. Con fecha = en la papelera.
+  deletedAt                DateTime?
+  /// Correo de quien lo envió a la papelera.
+  deletedByEmail           String?
 
   @@unique([cedula, convocatoriaId])
   @@index([calificacionAdmision])
   @@index([unidadPostulante])
   @@index([pelotonId])
+  @@index([deletedAt])
 }
 
 /// Permiso de ausencia (salida) de un aspirante, con vigencia de / hasta.
