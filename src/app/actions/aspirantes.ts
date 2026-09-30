@@ -418,6 +418,45 @@ export async function deleteAspirante(formData: FormData) {
   revalidateTrasBorradoAspirante(id);
 }
 
+export async function deleteAspirantesSeleccion(formData: FormData) {
+  const session = await requireWriter();
+  const ids = [...new Set(formData.getAll("id").map((value) => String(value).trim()).filter(Boolean))].slice(0, 100);
+  if (!ids.length) return { ok: false as const, deleted: 0 };
+  const rows = await prisma.aspirante.findMany({
+    where: { id: { in: ids }, deletedAt: null },
+    select: { id: true, cedula: true, convocatoriaId: true },
+  });
+  if (!rows.length) return { ok: false as const, deleted: 0 };
+  await prisma.aspirante.updateMany({
+    where: { id: { in: rows.map((row) => row.id) }, deletedAt: null },
+    data: {
+      deletedAt: new Date(),
+      deletedByEmail: session.user.email ?? null,
+    },
+  });
+  await Promise.all(
+    rows.map((row) =>
+      writeAuditLog({
+        userId: session.user.id,
+        userEmail: session.user.email,
+        action: "ASPIRANTE_DELETE",
+        entityType: "ASPIRANTE",
+        entityId: row.id,
+        metadata: { cedula: row.cedula, convocatoriaId: row.convocatoriaId, papelera: true, seleccion: true },
+      }),
+    ),
+  );
+  revalidatePath(routes.hub);
+  revalidatePath(routes.personal.home);
+  revalidatePath(routes.personal.aspirantes);
+  revalidatePath(routes.personal.aspirantesGestion);
+  revalidatePath(routes.personal.papelera);
+  revalidatePath(routes.personal.permisos);
+  revalidatePath(routes.personal.esquelas);
+  for (const row of rows) revalidatePath(routes.personal.aspirante(row.id));
+  return { ok: true as const, deleted: rows.length };
+}
+
 export async function restoreAspirante(formData: FormData) {
   const session = await requireWriter();
   const id = String(formData.get("id") ?? "");

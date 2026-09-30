@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Check, Columns3, Mars, RotateCcw, Search, Venus } from "lucide-react";
 import { AspiranteFotoThumbnail, AspiranteIdentityLink, aspiranteFotoUrl } from "@dashboard/aspirantes/_components/aspirante-foto";
 import {
@@ -9,6 +9,7 @@ import {
   type CensusDocumentoKind,
 } from "@dashboard/aspirantes/_components/aspirante-documento-viewer";
 import { AspiranteRowActions } from "@dashboard/aspirantes/_components/aspirante-row-actions";
+import { CensusBulkActions } from "@dashboard/aspirantes/_components/census-bulk-actions";
 import { AspiranteQuickDialog } from "@dashboard/aspirantes/_components/aspirante-quick-dialog";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import {
@@ -444,6 +445,8 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
     kind: CensusDocumentoKind;
   } | null>(null);
   const [fotoPermiso, setFotoPermiso] = useState<FotoPermisoPreview | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   const visibleSet = useMemo(() => new Set(visibleIds), [visibleIds]);
   const visibleColumns = useMemo(
@@ -452,8 +455,45 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
   );
 
   const isDefault = sameCensusColumnIds(visibleIds, CENSUS_DEFAULT_VISIBLE_IDS);
-  const colSpan = 3 + visibleColumns.length;
-  const minWidthRem = 16 + 7 + 3.5 + visibleColumns.reduce((sum, c) => sum + c.minWidthRem, 0);
+  const colSpan = 3 + (canWrite ? 1 : 0) + visibleColumns.length;
+  const minWidthRem = 16 + 7 + 3.5 + (canWrite ? 2.25 : 0) + visibleColumns.reduce((sum, c) => sum + c.minWidthRem, 0);
+  const pageIds = useMemo(() => rows.map((row) => row.id), [rows]);
+  const selectedOnPage = pageIds.filter((id) => selectedIds.has(id));
+  const allOnPageSelected = pageIds.length > 0 && selectedOnPage.length === pageIds.length;
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const allowed = new Set(pageIds);
+      const next = new Set([...prev].filter((id) => allowed.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [pageIds]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate = selectedOnPage.length > 0 && !allOnPageSelected;
+  }, [allOnPageSelected, selectedOnPage.length]);
+
+  function toggleAllOnPage() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) {
+        for (const id of pageIds) next.delete(id);
+      } else {
+        for (const id of pageIds) next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const q = columnQuery.trim().toLowerCase();
   const filteredByGroup = useMemo(() => {
@@ -471,7 +511,9 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
     <>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-4 py-2">
         <p className="text-[11px] text-slate-500">
-          Nombre completo y cédula siempre visibles. El resto se guarda en este navegador.
+          {canWrite
+            ? "Marque las casillas para dar permiso, generar boletas o eliminar. El resto de columnas se guarda en este navegador."
+            : "Nombre completo y cédula siempre visibles. El resto se guarda en este navegador."}
         </p>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -570,10 +612,35 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
         </DropdownMenu>
       </div>
 
+      {canWrite ? (
+        <CensusBulkActions
+          people={rows
+            .filter((row) => selectedIds.has(row.id))
+            .map((row) => ({
+              id: row.id,
+              nombreCompleto: `${row.nombres} ${row.apellidos}`.trim(),
+            }))}
+          onClear={() => setSelectedIds(new Set())}
+        />
+      ) : null}
+
       <div className="-mx-4 min-w-0 overflow-x-auto border-y border-slate-200/90 bg-white sm:mx-0 sm:rounded-b-none sm:border-x sm:border-t-0">
         <Table className="table-fixed" style={{ minWidth: `${minWidthRem}rem` }}>
           <TableHeader className="[&_tr]:border-slate-200 [&_tr]:hover:bg-transparent">
             <TableRow className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90">
+              {canWrite ? (
+                <TableHead className="h-9 w-10 px-2 text-center">
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    className="size-4 accent-slate-900"
+                    checked={allOnPageSelected}
+                    onChange={toggleAllOnPage}
+                    aria-label="Seleccionar los aspirantes de esta página"
+                    disabled={rows.length === 0}
+                  />
+                </TableHead>
+              ) : null}
               <TableHead className="h-9 w-[16rem] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
                 Nombre completo
               </TableHead>
@@ -703,6 +770,17 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones }: P
 
                   bodyRows.push(
                     <TableRow key={a.id} className="border-slate-100 transition-colors">
+                      {canWrite ? (
+                        <TableCell className="px-2 py-2 text-center">
+                          <input
+                            type="checkbox"
+                            className="size-4 accent-slate-900"
+                            checked={selectedIds.has(a.id)}
+                            onChange={() => toggleRow(a.id)}
+                            aria-label={`Seleccionar a ${nombreCompleto}`}
+                          />
+                        </TableCell>
+                      ) : null}
                       <TableCell className="px-3 py-2 font-medium text-slate-900">
                         <AspiranteIdentityLink
                           aspiranteId={a.id}

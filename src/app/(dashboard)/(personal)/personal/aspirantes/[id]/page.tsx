@@ -14,6 +14,7 @@ import { routes } from "@src/lib/apps/routes";
 import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate } from "@src/lib/date";
+import { aspiranteIdIncluyendoPapelera } from "@src/lib/aspirantes/papelera";
 import { prisma } from "@src/lib/prisma";
 import { cn } from "@src/lib/utils";
 import type { PermisoTipoValue } from "@src/lib/permisos";
@@ -31,8 +32,8 @@ export default async function AspirantePerfilPage({
   }
 
   const { id } = await params;
-  const a = await prisma.aspirante.findUnique({
-    where: { id },
+  const a = await prisma.aspirante.findFirst({
+    where: aspiranteIdIncluyendoPapelera(id),
     include: {
       convocatoria: true,
       peloton: true,
@@ -44,7 +45,8 @@ export default async function AspirantePerfilPage({
   if (!a) notFound();
 
   const c = a.contactos[0];
-  const write = canWrite(ctx);
+  const enPapelera = a.deletedAt != null;
+  const write = canWrite(ctx) && !enPapelera;
 
   return (
     <div className="space-y-5">
@@ -54,8 +56,12 @@ export default async function AspirantePerfilPage({
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">Perfil del aspirante</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica" />
-          <AspiranteBoletaPermisoPdfLink aspiranteId={a.id} label="Boleta de permiso" />
+          {enPapelera ? null : (
+            <>
+              <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica" />
+              <AspiranteBoletaPermisoPdfLink aspiranteId={a.id} label="Boleta de permiso" />
+            </>
+          )}
           {write ? (
             <Link
               href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
@@ -70,17 +76,27 @@ export default async function AspirantePerfilPage({
             </Link>
           ) : null}
           <Link
-            href={routes.personal.aspirantes}
+            href={enPapelera ? routes.personal.papelera : routes.personal.aspirantes}
             prefetch={false}
             className={cn(
               buttonVariants({ variant: "outline", size: "sm" }),
               "h-9 border-slate-200 bg-white shadow-sm",
             )}
           >
-            Volver al censo
+            {enPapelera ? "Volver a la papelera" : "Volver al censo"}
           </Link>
         </div>
       </div>
+
+      {enPapelera ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Este aspirante está en la papelera
+          {a.deletedAt
+            ? ` desde el ${a.deletedAt.toLocaleString("es-VE", { dateStyle: "medium", timeStyle: "short" })}`
+            : ""}
+          . El perfil es solo de consulta.
+        </p>
+      ) : null}
 
       <AspirantePerfilView
         a={{

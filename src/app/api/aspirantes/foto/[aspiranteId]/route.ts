@@ -4,6 +4,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { toHonoreeCutoutPng, toHonoreeOvalPng } from "@src/lib/pdf/esquela-cumpleanos-assets";
+import { aspiranteIdIncluyendoPapelera } from "@src/lib/aspirantes/papelera";
 import { prisma } from "@src/lib/prisma";
 import {
   isDocumentoFotoKind,
@@ -42,8 +43,8 @@ export async function GET(
   const proxy = search.get("proxy") === "1";
   const dbField = ASPIRANTE_FOTO_FORM[kind].dbField;
 
-  const aspirante = await prisma.aspirante.findUnique({
-    where: { id: aspiranteId },
+  const aspirante = await prisma.aspirante.findFirst({
+    where: aspiranteIdIncluyendoPapelera(aspiranteId),
     select: {
       fotoKey: true,
       fotoBoletaKey: true,

@@ -21,8 +21,7 @@ function optionalText(max: number) {
     .transform((v) => (v ? v : null));
 }
 
-const fields = z.object({
-  aspiranteId: z.string().trim().min(1, "Seleccione al personal."),
+const permisoDatosSchema = z.object({
   tipo: z.enum(TIPO, { message: "Tipo no válido" }),
   fechaInicio: z.string().trim().min(1, "Indique desde cuándo."),
   fechaFin: z.string().trim().min(1, "Indique hasta cuándo."),
@@ -32,7 +31,11 @@ const fields = z.object({
   observaciones: optionalText(1000),
 });
 
-function withRange<T extends z.infer<typeof fields>>(data: T, ctx: z.RefinementCtx) {
+const fields = permisoDatosSchema.extend({
+  aspiranteId: z.string().trim().min(1, "Seleccione al personal."),
+});
+
+function withRange<T extends { fechaInicio: string; fechaFin: string }>(data: T, ctx: z.RefinementCtx) {
   const inicio = parseDateTimeInputLocal(data.fechaInicio);
   const fin = parseDateTimeInputLocal(data.fechaFin);
   if (!inicio) {
@@ -62,6 +65,22 @@ export const permisoCreateSchema = fields.superRefine((data, ctx) => {
 export const permisoUpdateSchema = fields
   .extend({
     id: z.string().trim().min(1, "Identificador obligatorio"),
+  })
+  .superRefine((data, ctx) => {
+    withRange(data, ctx);
+  })
+  .transform((data) => {
+    const inicio = parseDateTimeInputLocal(data.fechaInicio)!;
+    const fin = parseDateTimeInputLocal(data.fechaFin)!;
+    return { ...data, fechaInicioDate: inicio, fechaFinDate: fin };
+  });
+
+export const permisoSeleccionSchema = permisoDatosSchema
+  .extend({
+    aspiranteIds: z
+      .array(z.string().trim().min(1))
+      .min(1, "Seleccione al menos un aspirante.")
+      .max(100, "Seleccione como máximo 100 aspirantes."),
   })
   .superRefine((data, ctx) => {
     withRange(data, ctx);

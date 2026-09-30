@@ -43,7 +43,7 @@ export default async function PapeleraPage() {
           <div className="min-w-0">
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">Papelera</h1>
             <p className="text-sm text-slate-600">
-              Aspirantes que ya no aparecen en el censo. Puede restaurarlos o eliminarlos por completo.
+              Aspirantes que ya no aparecen en el censo. Puede ver su perfil, restaurarlos o eliminarlos por completo.
             </p>
           </div>
         </div>
@@ -91,7 +91,15 @@ export default async function PapeleraPage() {
                     const nombre = `${row.nombres} ${row.apellidos}`.trim();
                     return (
                       <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                        <td className="px-4 py-3 font-medium text-slate-900">{nombre}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          <Link
+                            href={routes.personal.aspirante(row.id)}
+                            prefetch={false}
+                            className="underline-offset-2 hover:underline"
+                          >
+                            {nombre}
+                          </Link>
+                        </td>
                         <td className="px-4 py-3 tabular-nums text-slate-700">{row.cedula}</td>
                         <td className="px-4 py-3 text-slate-700">
                           {row.convocatoria.nombre}
