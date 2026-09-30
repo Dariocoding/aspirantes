@@ -48,6 +48,19 @@ function blankToNull(raw: string | undefined): string | null {
   return t || null;
 }
 
+function parsePatriaText(raw: string | null): string | null | undefined {
+  if (raw == null) return null;
+  if (raw.length > 40) return undefined;
+  return raw;
+}
+
+function parseCuentaBanfanb(raw: string | null): string | null | undefined {
+  if (raw == null) return null;
+  const s = raw.replace(/\s+/g, "");
+  if (!/^[0-9]{10,22}$/.test(s)) return undefined;
+  return s;
+}
+
 function hasColumn(ids: Set<string>, id: string) {
   return ids.has(id);
 }
@@ -340,6 +353,30 @@ export async function applyCensusXlsxImport(
           });
           continue;
         }
+        if (hasColumn(ids, "carnetPatriaCodigo") && parsePatriaText(blankToNull(v.carnetPatriaCodigo)) === undefined) {
+          errors.push({
+            excelRow: row.excelRow,
+            cedula: row.cedula,
+            message: "Código del carnet de la patria: máximo 40 caracteres.",
+          });
+          continue;
+        }
+        if (hasColumn(ids, "carnetPatriaSerial") && parsePatriaText(blankToNull(v.carnetPatriaSerial)) === undefined) {
+          errors.push({
+            excelRow: row.excelRow,
+            cedula: row.cedula,
+            message: "Serial del carnet de la patria: máximo 40 caracteres.",
+          });
+          continue;
+        }
+        if (hasColumn(ids, "cuentaNominaBanfanb") && parseCuentaBanfanb(blankToNull(v.cuentaNominaBanfanb)) === undefined) {
+          errors.push({
+            excelRow: row.excelRow,
+            cedula: row.cedula,
+            message: "Cuenta nómina BANFANB: solo dígitos, entre 10 y 22.",
+          });
+          continue;
+        }
 
         const pelotonId = hasColumn(ids, "peloton")
           ? (matchPeloton(blankToNull(v.peloton), pelotones) as { ok: true; id: string | null }).id
@@ -389,6 +426,15 @@ export async function applyCensusXlsxImport(
               telefono: hasColumn(ids, "telefono") ? blankToNull(v.telefono) : null,
               correo: hasColumn(ids, "correo") ? blankToNull(v.correo) : null,
               direccion: hasColumn(ids, "direccion") ? blankToNull(v.direccion) : null,
+              carnetPatriaCodigo: hasColumn(ids, "carnetPatriaCodigo")
+                ? (parsePatriaText(blankToNull(v.carnetPatriaCodigo)) ?? null)
+                : null,
+              carnetPatriaSerial: hasColumn(ids, "carnetPatriaSerial")
+                ? (parsePatriaText(blankToNull(v.carnetPatriaSerial)) ?? null)
+                : null,
+              cuentaNominaBanfanb: hasColumn(ids, "cuentaNominaBanfanb")
+                ? (parseCuentaBanfanb(blankToNull(v.cuentaNominaBanfanb)) ?? null)
+                : null,
               estadoCivil: hasColumn(ids, "estadoCivil") ? (parseEstadoCivil(blankToNull(v.estadoCivil)) ?? null) : null,
               religion: hasColumn(ids, "religion") ? blankToNull(v.religion) : null,
               deporte: hasColumn(ids, "deporte") ? blankToNull(v.deporte) : null,
@@ -497,6 +543,15 @@ export async function applyCensusXlsxImport(
         if (hasColumn(ids, "telefono")) data.telefono = blankToNull(v.telefono);
         if (hasColumn(ids, "correo")) data.correo = blankToNull(v.correo);
         if (hasColumn(ids, "direccion")) data.direccion = blankToNull(v.direccion);
+        if (hasColumn(ids, "carnetPatriaCodigo")) {
+          data.carnetPatriaCodigo = parsePatriaText(blankToNull(v.carnetPatriaCodigo)) ?? null;
+        }
+        if (hasColumn(ids, "carnetPatriaSerial")) {
+          data.carnetPatriaSerial = parsePatriaText(blankToNull(v.carnetPatriaSerial)) ?? null;
+        }
+        if (hasColumn(ids, "cuentaNominaBanfanb")) {
+          data.cuentaNominaBanfanb = parseCuentaBanfanb(blankToNull(v.cuentaNominaBanfanb)) ?? null;
+        }
         if (hasColumn(ids, "estadoCivil")) data.estadoCivil = parseEstadoCivil(blankToNull(v.estadoCivil)) ?? null;
         if (hasColumn(ids, "religion")) data.religion = blankToNull(v.religion);
         if (hasColumn(ids, "deporte")) data.deporte = blankToNull(v.deporte);

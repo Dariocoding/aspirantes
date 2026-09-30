@@ -25,6 +25,9 @@ export type AspiranteCensoExportRow = {
   tituloUniversidad: string | null;
   tipoEstudio: string | null;
   cedula: string;
+  carnetPatriaCodigo: string | null;
+  carnetPatriaSerial: string | null;
+  cuentaNominaBanfanb: string | null;
   sexo: string;
   edad: number;
   fechaNacimiento: Date;
@@ -157,6 +160,12 @@ function cellValue(
       return r.apellidos.trim();
     case "cedula":
       return r.cedula;
+    case "carnetPatriaCodigo":
+      return dash(r.carnetPatriaCodigo);
+    case "carnetPatriaSerial":
+      return dash(r.carnetPatriaSerial);
+    case "cuentaNominaBanfanb":
+      return dash(r.cuentaNominaBanfanb);
     case "sexo":
       return sexoEtiqueta(r.sexo);
     case "edad":

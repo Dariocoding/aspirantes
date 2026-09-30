@@ -26,6 +26,9 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "nombres", label: "Nombres", group: "Identidad", width: 22, align: "left" },
   { id: "apellidos", label: "Apellidos", group: "Identidad", width: 22, align: "left" },
   { id: "cedula", label: "Cédula", group: "Identidad", width: 14, align: "center" },
+  { id: "carnetPatriaCodigo", label: "Código del carnet de la patria", group: "Identidad", width: 22, align: "center" },
+  { id: "carnetPatriaSerial", label: "Serial del carnet de la patria", group: "Identidad", width: 22, align: "center" },
+  { id: "cuentaNominaBanfanb", label: "Cuenta nómina BANFANB", group: "Identidad", width: 24, align: "center" },
   { id: "sexo", label: "Sexo", group: "Identidad", width: 12, align: "center" },
   { id: "edad", label: "Edad", group: "Identidad", width: 8, align: "center" },
   { id: "nacimiento", label: "Nacimiento", group: "Identidad", width: 13, align: "center" },
@@ -130,6 +133,13 @@ HEADER_TO_COLUMN_ID.set("zapatos", "tallaCalzado");
 HEADER_TO_COLUMN_ID.set("tallauniformepatriota", "tallaUniformePatriota");
 HEADER_TO_COLUMN_ID.set("uniformepatriota", "tallaUniformePatriota");
 HEADER_TO_COLUMN_ID.set("patriota", "tallaUniformePatriota");
+HEADER_TO_COLUMN_ID.set("codigopatria", "carnetPatriaCodigo");
+HEADER_TO_COLUMN_ID.set("codigodelapatria", "carnetPatriaCodigo");
+HEADER_TO_COLUMN_ID.set("serialpatria", "carnetPatriaSerial");
+HEADER_TO_COLUMN_ID.set("serialdelapatria", "carnetPatriaSerial");
+HEADER_TO_COLUMN_ID.set("cuentabanfanb", "cuentaNominaBanfanb");
+HEADER_TO_COLUMN_ID.set("cuentanomina", "cuentaNominaBanfanb");
+HEADER_TO_COLUMN_ID.set("numerodecuentabanfanb", "cuentaNominaBanfanb");
 HEADER_TO_COLUMN_ID.set("condicion", "condicion");
 HEADER_TO_COLUMN_ID.set("condicionmilitar", "condicion");
 HEADER_TO_COLUMN_ID.set("religion", "religion");
