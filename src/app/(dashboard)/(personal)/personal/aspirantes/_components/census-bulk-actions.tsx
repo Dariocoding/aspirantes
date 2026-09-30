@@ -47,9 +47,11 @@ function defaultRange() {
 
 export function CensusBulkActions({
   people,
+  elsewhereCount = 0,
   onClear,
 }: {
   people: CensusSelectionPerson[];
+  elsewhereCount?: number;
   onClear: () => void;
 }) {
   const router = useRouter();
@@ -72,7 +74,7 @@ export function CensusBulkActions({
   const onEliminar = useCallback(() => {
     const msg =
       count === 1
-        ? `¿Eliminar del censo a «${people[0]?.nombreCompleto ?? "este aspirante"}»? Dejará de aparecer en el listado. Puede recuperarlo desde la papelera.`
+        ? `¿Eliminar del censo a «${people[0]?.nombreCompleto.trim() || "este aspirante"}»? Dejará de aparecer en el listado. Puede recuperarlo desde la papelera.`
         : `¿Eliminar del censo a ${count} aspirantes? Dejarán de aparecer en el listado. Puede recuperarlos desde la papelera.`;
     if (!confirm(msg)) return;
     const fd = new FormData();
@@ -153,7 +155,14 @@ export function CensusBulkActions({
       />
       {count ? (
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 bg-slate-900 px-4 py-2 text-white">
-        <span className="text-sm font-medium tabular-nums">{count} seleccionados</span>
+        <span className="text-sm font-medium tabular-nums">
+          {count} seleccionados
+          {elsewhereCount > 0 ? (
+            <span className="ml-2 font-normal text-slate-300">
+              {elsewhereCount} en otras páginas
+            </span>
+          ) : null}
+        </span>
         <Button
           type="button"
           size="sm"

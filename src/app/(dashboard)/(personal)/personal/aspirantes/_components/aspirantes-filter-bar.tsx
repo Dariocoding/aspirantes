@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { applySelectionParam, useCensusNavigate } from "@dashboard/aspirantes/_components/census-selection";
 import {
   useEffect,
   useLayoutEffect,
@@ -9,6 +10,7 @@ import {
   useState,
   type ComponentProps,
   type FormEvent,
+  type MouseEvent,
   type ReactNode,
 } from "react";
 import {
@@ -55,15 +57,12 @@ type FilterValues = {
   convocatoria?: string;
 };
 
+type PelotonOption = PelotonResumen & { convocatoriaId: string };
+
 type Props = {
-  q: string;
-  sexo: string | undefined;
-  sort: string | undefined;
-  peloton: string | undefined;
-  pelotones: PelotonResumen[];
+  pelotones: PelotonOption[];
   convocatorias: ConvocatoriaOption[];
-  convocatoriaId: string | undefined;
-  defaultConvocatoriaId: string | undefined;
+  defaultConvocatoriaId: string;
 };
 
 const SORT_LABEL: Record<string, string> = {
@@ -119,9 +118,11 @@ function sortKeyOf(sort: string | undefined) {
 function SortRail({
   sort,
   hrefFor,
+  go,
 }: {
   sort: string | undefined;
   hrefFor: (sortValue: string) => string;
+  go: (href: string, dropSelection?: boolean) => void;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -192,6 +193,7 @@ function SortRail({
               option={opt}
               selected={activeKey === opt.key}
               onPick={() => setPendingKey(opt.key)}
+              go={go}
             />
           ))}
 
@@ -207,6 +209,7 @@ function SortRail({
               option={opt}
               selected={activeKey === opt.key}
               onPick={() => setPendingKey(opt.key)}
+              go={go}
             />
           ))}
         </div>
@@ -215,11 +218,26 @@ function SortRail({
   );
 }
 
+function followWithSelection(
+  event: MouseEvent<HTMLAnchorElement>,
+  href: string,
+  dropSelection: boolean,
+  go: (href: string, dropSelection?: boolean) => void,
+) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+    event.currentTarget.href = applySelectionParam(href, dropSelection);
+    return;
+  }
+  event.preventDefault();
+  go(href, dropSelection);
+}
+
 function SortChip({
   href,
   option,
   selected,
   onPick,
+  go,
 }: {
   href: string;
   option: {
@@ -230,6 +248,7 @@ function SortChip({
   };
   selected: boolean;
   onPick: () => void;
+  go: (href: string, dropSelection?: boolean) => void;
 }) {
   const Icon = option.icon;
   return (
@@ -240,7 +259,10 @@ function SortChip({
       role="radio"
       aria-checked={selected}
       title={option.hint}
-      onClick={onPick}
+      onClick={(event) => {
+        onPick();
+        followWithSelection(event, href, false, go);
+      }}
       className={cn(
         "relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors duration-200",
         selected ? "text-white" : "text-slate-600 hover:text-slate-900",
@@ -305,16 +327,28 @@ function OptionItem({
   href,
   selected,
   children,
+  dropSelection = false,
+  go,
 }: {
   href: string;
   selected: boolean;
   children: ReactNode;
+  dropSelection?: boolean;
+  go: (href: string, dropSelection?: boolean) => void;
 }) {
   return (
     <DropdownMenuItem
       nativeButton={false}
       className="gap-2 py-1.5"
-      render={<Link href={href} prefetch={false} />}
+      render={
+        <Link
+          href={href}
+          prefetch={false}
+          onClick={(event) => {
+            followWithSelection(event, href, dropSelection, go);
+          }}
+        />
+      }
     >
       <Check className={cn("size-3.5", selected ? "opacity-100" : "opacity-0")} aria-hidden />
       <span className="min-w-0 flex-1 truncate">{children}</span>
@@ -322,17 +356,23 @@ function OptionItem({
   );
 }
 
-export function AspirantesFilterBar({
-  q,
-  sexo,
-  sort,
-  peloton,
-  pelotones,
-  convocatorias,
-  convocatoriaId,
-  defaultConvocatoriaId,
-}: Props) {
-  const router = useRouter();
+export function AspirantesFilterBar({ pelotones, convocatorias, defaultConvocatoriaId }: Props) {
+  const { go } = useCensusNavigate();
+  const sp = useSearchParams();
+  const q = sp.get("q") ?? "";
+  const sexo = sp.get("sexo") ?? undefined;
+  const sort = sp.get("sort") ?? undefined;
+  const paramC = sp.get("convocatoria")?.trim();
+  const convocatoriaId =
+    paramC && convocatorias.some((c) => c.id === paramC) ? paramC : defaultConvocatoriaId;
+  const pelotonesVisibles = pelotones.filter((p) => p.convocatoriaId === convocatoriaId);
+  const pelotonParam = sp.get("peloton")?.trim();
+  const peloton =
+    pelotonParam &&
+    pelotonParam !== "TODOS" &&
+    (pelotonParam === "SIN_ASIGNAR" || pelotonesVisibles.some((p) => p.id === pelotonParam))
+      ? pelotonParam
+      : undefined;
   const [query, setQuery] = useState(q);
 
   useEffect(() => {
@@ -360,17 +400,18 @@ export function AspirantesFilterBar({
   const pelotonActual =
     peloton === "SIN_ASIGNAR"
       ? "Sin asignar"
-      : pelotones.find((p) => p.id === peloton)
-        ? labelPeloton(pelotones.find((p) => p.id === peloton)!)
+      : pelotonesVisibles.find((p) => p.id === peloton)
+        ? labelPeloton(pelotonesVisibles.find((p) => p.id === peloton)!)
         : undefined;
 
-  const chips: { key: string; label: string; href: string }[] = [];
+  const chips: { key: string; label: string; href: string; dropSelection?: boolean }[] = [];
   if (q.trim()) chips.push({ key: "q", label: `Buscar: ${q.trim()}`, href: href({ q: "" }) });
   if (convocatoriaActiva && convocatoriaActual) {
     chips.push({
       key: "convocatoria",
       label: `Convocatoria: ${convocatoriaActual.codigo}`,
       href: href({ convocatoria: defaultConvocatoriaId, peloton: "" }),
+      dropSelection: true,
     });
   }
   if (pelotonActivo && pelotonActual) {
@@ -389,7 +430,7 @@ export function AspirantesFilterBar({
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
-    router.push(href({ q: query.trim() }));
+    go(href({ q: query.trim() }));
   }
 
   const resetHref = routes.personal.aspirantes;
@@ -419,7 +460,7 @@ export function AspirantesFilterBar({
               aria-label="Borrar búsqueda"
               onClick={() => {
                 setQuery("");
-                router.push(href({ q: "" }));
+                go(href({ q: "" }));
               }}
             >
               <X className="size-3.5" aria-hidden />
@@ -432,7 +473,7 @@ export function AspirantesFilterBar({
         </Button>
       </form>
 
-      <SortRail sort={sort} hrefFor={(value) => href({ sort: value })} />
+      <SortRail sort={sort} hrefFor={(value) => href({ sort: value })} go={go} />
 
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 scrollbar-thin">
         {convocatorias.length ? (
@@ -450,10 +491,11 @@ export function AspirantesFilterBar({
             <DropdownMenuContent align="start" className="min-w-64">
               <DropdownMenuGroup>
                 {convocatorias.map((c) => (
-                  <OptionItem
+                  <OptionItem go={go}
                     key={c.id}
                     href={href({ convocatoria: c.id, peloton: "" })}
                     selected={c.id === convocatoriaId}
+                    dropSelection={c.id !== convocatoriaId}
                   >
                     {c.codigo}
                     {c.activa ? " · activa" : ""} — {c.nombre}
@@ -477,14 +519,14 @@ export function AspirantesFilterBar({
           />
           <DropdownMenuContent align="start" className="min-w-52">
             <DropdownMenuGroup>
-              <OptionItem href={href({ peloton: "TODOS" })} selected={!pelotonActivo}>
+              <OptionItem go={go} href={href({ peloton: "TODOS" })} selected={!pelotonActivo}>
                 Todos
               </OptionItem>
-              <OptionItem href={href({ peloton: "SIN_ASIGNAR" })} selected={peloton === "SIN_ASIGNAR"}>
+              <OptionItem go={go} href={href({ peloton: "SIN_ASIGNAR" })} selected={peloton === "SIN_ASIGNAR"}>
                 Sin asignar
               </OptionItem>
-              {pelotones.map((p) => (
-                <OptionItem key={p.id} href={href({ peloton: p.id })} selected={peloton === p.id}>
+              {pelotonesVisibles.map((p) => (
+                <OptionItem go={go} key={p.id} href={href({ peloton: p.id })} selected={peloton === p.id}>
                   {labelPeloton(p)}
                 </OptionItem>
               ))}
@@ -505,13 +547,13 @@ export function AspirantesFilterBar({
           />
           <DropdownMenuContent align="start" className="min-w-40">
             <DropdownMenuGroup>
-              <OptionItem href={href({ sexo: "TODOS" })} selected={!sexoActivo}>
+              <OptionItem go={go} href={href({ sexo: "TODOS" })} selected={!sexoActivo}>
                 Todos
               </OptionItem>
-              <OptionItem href={href({ sexo: "MASCULINO" })} selected={sexo === "MASCULINO"}>
+              <OptionItem go={go} href={href({ sexo: "MASCULINO" })} selected={sexo === "MASCULINO"}>
                 Masculino
               </OptionItem>
-              <OptionItem href={href({ sexo: "FEMENINO" })} selected={sexo === "FEMENINO"}>
+              <OptionItem go={go} href={href({ sexo: "FEMENINO" })} selected={sexo === "FEMENINO"}>
                 Femenino
               </OptionItem>
             </DropdownMenuGroup>
@@ -526,6 +568,9 @@ export function AspirantesFilterBar({
               key={chip.key}
               href={chip.href}
               prefetch={false}
+              onClick={(event) =>
+                followWithSelection(event, chip.href, Boolean(chip.dropSelection), go)
+              }
               className="inline-flex h-7 max-w-full items-center gap-1 rounded-full border border-slate-200 bg-slate-50 pl-2.5 pr-1 text-xs text-slate-800 hover:border-slate-300 hover:bg-white"
             >
               <span className="min-w-0 truncate">{chip.label}</span>
@@ -537,6 +582,9 @@ export function AspirantesFilterBar({
           <Link
             href={resetHref}
             prefetch={false}
+            onClick={(event) =>
+              followWithSelection(event, resetHref, convocatoriaActiva, go)
+            }
             className="inline-flex h-7 items-center rounded-full px-2 text-xs font-medium text-slate-500 hover:text-slate-900"
           >
             Restablecer

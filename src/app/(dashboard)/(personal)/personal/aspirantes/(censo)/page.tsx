@@ -1,13 +1,10 @@
 ﻿import Link from "next/link";
-import { ChevronLeft, ChevronRight, ClipboardList, Trash2 } from "lucide-react";
+import { ClipboardList, Trash2 } from "lucide-react";
 import { AspirantesCensusTable, type AspirantesCensusRow } from "@dashboard/aspirantes/_components/aspirantes-census-table";
-import { AspirantesExportLinks } from "@dashboard/aspirantes/_components/aspirantes-export-links";
-import { AspiranteQuickRegisterButton } from "@dashboard/aspirantes/_components/aspirante-quick-dialog";
-import { AspirantesFilterBar } from "@dashboard/aspirantes/_components/aspirantes-filter-bar";
+import { CensusPager } from "@dashboard/aspirantes/_components/census-pager";
 import { SinConvocatoriasPanel } from "@dashboard/aspirantes/_components/sin-convocatorias-panel";
 import { buttonVariants } from "@src/components/ui/button";
 import { cn } from "@src/lib/utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { auth } from "@src/auth";
 import {
   buildAspiranteCensusWhere,
@@ -193,9 +190,6 @@ export default async function AspirantesPage({
   const convocatoriaFiltroId =
     paramC && convocatorias.some((c) => c.id === paramC) ? paramC : defaultConvocatoriaId;
 
-  const convocatoriaActual =
-    convocatorias.find((c) => c.id === convocatoriaFiltroId) ?? convocatorias[0]!;
-
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
   const sort = censusOrderBy(sp.sort);
   const groupByCarrera = isCensusCarreraGroupSort(sp.sort);
@@ -204,12 +198,10 @@ export default async function AspirantesPage({
   const groupByReligion = isCensusReligionGroupSort(sp.sort);
   const sortInMemory = groupByNacimientoMes || groupByGrado;
 
-  const [totalCount, convocatoriaAspiranteCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones, membreteRows, papeleraCount] =
-    await Promise.all([
+  const [totalCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones] = await Promise.all([
     sortInMemory
       ? Promise.resolve(0)
       : prisma.aspirante.count({ where }),
-    prisma.aspirante.count({ where: { convocatoriaId: convocatoriaFiltroId } }),
     sortInMemory
       ? prisma.aspirante.findMany({
           where,
@@ -249,18 +241,6 @@ export default async function AspirantesPage({
       orderBy: { numero: "asc" },
       select: { id: true, numero: true, nombre: true },
     }),
-    prisma.membrete
-      .findMany({
-        orderBy: [{ isDefault: "desc" }, { nombre: "asc" }],
-        select: { id: true, nombre: true, isDefault: true },
-      })
-      .catch((err) => {
-        console.error("membrete.findMany", err);
-        return [];
-      }),
-    write
-      ? prisma.aspirante.count({ where: { deletedAt: { not: null } } })
-      : Promise.resolve(0),
   ]);
 
   const aspirantesOrdenados = groupByNacimientoMes
@@ -327,138 +307,37 @@ export default async function AspirantesPage({
   if (convocatoriaFiltroId) qsBase.convocatoria = convocatoriaFiltroId;
 
   return (
-    <div className="space-y-5">
-      <div className="flex min-w-0 flex-col gap-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <ClipboardList className="h-5 w-5 shrink-0 text-slate-800" aria-hidden />
-          <h1 className="min-w-0 text-xl font-semibold tracking-tight text-slate-900">Censo de aspirantes</h1>
-        </div>
-        <p className="min-w-0 pl-7 text-sm text-slate-600">
-          Convocatoria:{" "}
-          <strong className="font-bold text-slate-900">
-            {convocatoriaActual.nombre}
-            {" · "}
-            {convocatoriaActual.anio}
-          </strong>
-        </p>
-      </div>
-
-      <Card className="shadow-sm shadow-slate-900/5 ring-slate-200/80">
-        <CardHeader className="border-b border-slate-200/80 bg-linear-to-br from-slate-50 to-white py-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <CardTitle className="text-base font-semibold text-slate-900">Directorio del censo</CardTitle>
-              <CardDescription className="text-xs text-slate-600">
-                Listado paginado e identificación básica.
-                {write
-                  ? " Excel permite elegir columnas, exportar e importar por cédula; PDF exporta censo, fichas y boletas de permiso (todas, filtradas o eligiendo personal)."
-                  : " La exportación masiva (Excel/PDF) está reservada a operadores y administradores."}
-              </CardDescription>
-            </div>
-            <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-              {write ? <PapeleraLink count={papeleraCount} /> : null}
-              {write ? (
-                <AspirantesExportLinks
-                  exportQuery={censusQueryString(qsBase, {})}
-                  convocatoriaId={convocatoriaFiltroId}
-                  convocatoriaCount={convocatoriaAspiranteCount}
-                  membretes={membreteRows}
-                />
-              ) : null}
-              {write ? <AspiranteQuickRegisterButton pelotones={pelotones} /> : null}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-0 p-0">
-          <div className="border-b border-slate-200/90 bg-slate-50/60 px-4 py-3">
-            <AspirantesFilterBar
-              q={sp.q ?? ""}
-              sexo={sp.sexo}
-              sort={sp.sort}
-              peloton={pelotonFiltroActivo ? pelotonFiltro : undefined}
-              pelotones={pelotones}
-              convocatorias={convocatorias.map((c) => ({
-                id: c.id,
-                codigo: c.codigo,
-                nombre: c.nombre,
-                activa: c.activa,
-              }))}
-              convocatoriaId={convocatoriaFiltroId}
-              defaultConvocatoriaId={defaultConvocatoriaId}
-            />
-            <p className="mt-3 text-xs text-slate-600">
-              <span className="font-medium tabular-nums text-slate-800">{aspirantes.length}</span>
-              {" de "}
-              <span className="font-medium tabular-nums text-slate-800">{total}</span>
-              {" en esta página · página "}
-              <span className="font-medium tabular-nums text-slate-800">
-                {page} / {totalPages}
-              </span>
-            </p>
-          </div>
-          <AspirantesCensusTable
-            rows={censusRows}
-            grouping={censusGrouping}
-            canWrite={write}
-            pelotones={pelotones}
-          />
-
-          <div className="flex flex-col gap-3 border-t border-slate-200/90 bg-slate-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-500">
-              Página <span className="font-semibold tabular-nums text-slate-800">{page}</span> de{" "}
-              <span className="font-semibold tabular-nums text-slate-800">{totalPages}</span>
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {page > 1 ? (
-                <Link
-                  href={`${routes.personal.aspirantes}?${censusQueryString(qsBase, { page: String(page - 1) })}`}
-                  prefetch={false}
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "sm" }),
-                    "h-9 gap-1 border-slate-200 bg-white pr-3 pl-2.5 shadow-sm",
-                  )}
-                >
-                  <ChevronLeft className="h-4 w-4" aria-hidden />
-                  Anterior
-                </Link>
-              ) : (
-                <span
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "sm" }),
-                    "pointer-events-none h-9 gap-1 border-slate-100 bg-slate-100/50 pr-3 pl-2.5 text-slate-400 opacity-60",
-                  )}
-                >
-                  <ChevronLeft className="h-4 w-4" aria-hidden />
-                  Anterior
-                </span>
-              )}
-              {page < totalPages ? (
-                <Link
-                  href={`${routes.personal.aspirantes}?${censusQueryString(qsBase, { page: String(page + 1) })}`}
-                  prefetch={false}
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "sm" }),
-                    "h-9 gap-1 border-slate-200 bg-white pl-3 pr-2.5 shadow-sm",
-                  )}
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </Link>
-              ) : (
-                <span
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "sm" }),
-                    "pointer-events-none h-9 gap-1 border-slate-100 bg-slate-100/50 pl-3 pr-2.5 text-slate-400 opacity-60",
-                  )}
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </span>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      <p className="border-b border-slate-200/90 px-4 py-2 text-xs text-slate-600">
+        <span className="font-medium tabular-nums text-slate-800">{aspirantes.length}</span>
+        {" de "}
+        <span className="font-medium tabular-nums text-slate-800">{total}</span>
+        {" en esta página · página "}
+        <span className="font-medium tabular-nums text-slate-800">
+          {page} / {totalPages}
+        </span>
+      </p>
+      <AspirantesCensusTable
+        rows={censusRows}
+        grouping={censusGrouping}
+        canWrite={write}
+        pelotones={pelotones}
+        selectionScope={convocatoriaFiltroId}
+      />
+      <CensusPager
+        page={page}
+        totalPages={totalPages}
+        prevHref={
+          page > 1
+            ? `${routes.personal.aspirantes}?${censusQueryString(qsBase, { page: String(page - 1) })}`
+            : null
+        }
+        nextHref={
+          page < totalPages
+            ? `${routes.personal.aspirantes}?${censusQueryString(qsBase, { page: String(page + 1) })}`
+            : null
+        }
+      />
+    </>
   );
 }
