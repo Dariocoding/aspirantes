@@ -3,6 +3,7 @@ import { CensusFilters, CensusTitle, CensusToolbar, ConvocatoriaLine } from "@da
 import { auth } from "@src/auth";
 import { Card, CardContent } from "@src/components/ui/card";
 import { authContextFromSession } from "@src/lib/auth/from-session";
+import type { CondicionCensusCounts } from "@src/lib/aspirantes/condicion-militar";
 import { canWrite } from "@src/lib/auth/roles";
 import { prisma } from "@src/lib/prisma";
 
@@ -18,7 +19,7 @@ export default async function CensoLayout({ children }: { children: React.ReactN
   const ctx = authContextFromSession(session);
   const write = canWrite(ctx);
   const ids = convocatorias.map((c) => c.id);
-  const [pelotones, membretes, papeleraCount, counts] = await Promise.all([
+  const [pelotones, membretes, papeleraCount, counts, condicionGrupos] = await Promise.all([
     prisma.peloton.findMany({
       where: { convocatoriaId: { in: ids } },
       orderBy: { numero: "asc" },
@@ -36,6 +37,11 @@ export default async function CensoLayout({ children }: { children: React.ReactN
       where: { convocatoriaId: { in: ids } },
       _count: { _all: true },
     }),
+    prisma.aspirante.groupBy({
+      by: ["convocatoriaId", "condicionMilitar"],
+      where: { convocatoriaId: { in: ids } },
+      _count: { _all: true },
+    }),
   ]);
 
   const opciones = convocatorias.map((c) => ({
@@ -47,6 +53,15 @@ export default async function CensoLayout({ children }: { children: React.ReactN
   }));
   const defaultConvocatoriaId = convocatorias[0]!.id;
   const countByConvocatoria = Object.fromEntries(counts.map((row) => [row.convocatoriaId, row._count._all]));
+  const condicionCounts: Record<string, CondicionCensusCounts> = {};
+  for (const id of ids) condicionCounts[id] = { soldado: 0, sargento: 0, sin: 0 };
+  for (const row of condicionGrupos) {
+    const bucket = condicionCounts[row.convocatoriaId] ?? { soldado: 0, sargento: 0, sin: 0 };
+    if (row.condicionMilitar === "SOLDADO_ACTIVO") bucket.soldado += row._count._all;
+    else if (row.condicionMilitar === "SARGENTO_ACTIVO") bucket.sargento += row._count._all;
+    else bucket.sin += row._count._all;
+    condicionCounts[row.convocatoriaId] = bucket;
+  }
 
   return (
     <div className="space-y-5">
@@ -74,6 +89,7 @@ export default async function CensoLayout({ children }: { children: React.ReactN
               convocatorias={opciones}
               defaultConvocatoriaId={defaultConvocatoriaId}
               pelotones={pelotones}
+              condicionCounts={condicionCounts}
             />
           </Suspense>
           {children}

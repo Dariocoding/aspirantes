@@ -12,6 +12,11 @@ import type { AspiranteActionState } from "@src/lib/action-types";
 import { aspiranteInitialActionState } from "@src/lib/action-types";
 import { ESTADO_CIVIL_LABELS, ESTADO_CIVIL_VALUES, isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import {
+  CONDICION_MILITAR_LABELS,
+  CONDICION_MILITAR_VALUES,
+  isCondicionMilitarValue,
+} from "@src/lib/aspirantes/condicion-militar";
+import {
   COLOR_CABELLO_LABELS,
   COLOR_CABELLO_VALUES,
   COLOR_OJOS_LABELS,
@@ -93,11 +98,13 @@ function seedFromForm(
   const estadoCivilRaw = formStr(fd, "estadoCivil");
   const calificacionRaw = formStr(fd, "calificacionAdmision");
   const sexoRaw = formStr(fd, "sexo");
+  const condicionRaw = formStr(fd, "condicionMilitar");
   const hijos = formNumOrNull(fd, "hijosCantidad");
 
   return {
     ...prev,
     unidadPostulante: formStr(fd, "unidadPostulante"),
+    condicionMilitar: isCondicionMilitarValue(condicionRaw) ? condicionRaw : null,
     calificacionAdmision:
       calificacionRaw === "APTO" ||
       calificacionRaw === "NO_APTO" ||
@@ -199,6 +206,7 @@ type ConvocatoriaResumen = { codigo: string; nombre: string };
 export type AspiranteRegistroInitial = {
   id: string;
   unidadPostulante: string;
+  condicionMilitar?: "SOLDADO_ACTIVO" | "SARGENTO_ACTIVO" | null;
   calificacionAdmision: "APTO" | "NO_APTO" | "EN_EVALUACION";
   nombres: string;
   apellidos: string;
@@ -359,6 +367,7 @@ export function AspiranteRegistroForm({
   const defaults = useMemo(
     () => ({
       unidadPostulante: seed?.unidadPostulante ?? "",
+      condicionMilitar: seed?.condicionMilitar ?? "",
       calificacionAdmision: seed?.calificacionAdmision ?? "EN_EVALUACION",
       nombres: seed?.nombres ?? "",
       apellidos: seed?.apellidos ?? "",
@@ -743,6 +752,24 @@ export function AspiranteRegistroForm({
                 placeholder="Ej.: 12 BRIGADA, COMANDO AV, CGEB..."
                 autoComplete="organization"
               />
+            </div>
+            <div>
+              <Label>Condición militar</Label>
+              <select
+                name="condicionMilitar"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={defaults.condicionMilitar}
+              >
+                <option value="">Sin clasificar</option>
+                {CONDICION_MILITAR_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {CONDICION_MILITAR_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Permite separar el censo entre soldados activos y sargentos activos.
+              </p>
             </div>
             <div className="md:col-span-2">
               <Label>Pelotón del curso</Label>

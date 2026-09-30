@@ -12,6 +12,7 @@ import {
   censusQueryString,
   gradoEducativoGroupKey,
   isCensusCarreraGroupSort,
+  isCensusCondicionGroupSort,
   isCensusGradoGroupSort,
   isCensusNacimientoMesSort,
   isCensusReligionGroupSort,
@@ -19,6 +20,7 @@ import {
   sortAspirantesByGradoEducativo,
   sortAspirantesByNacimientoMes,
 } from "@src/lib/aspirantes/census";
+import { parseCondicionCensusFilter } from "@src/lib/aspirantes/condicion-militar";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
@@ -78,6 +80,7 @@ function toCensusRow(
     hasFotoNotas: Boolean(a.fotoNotasKey),
     notasIsPdf: Boolean(a.fotoNotasKey?.toLowerCase().endsWith(".pdf")),
     unidadPostulante: a.unidadPostulante ?? "",
+    condicionMilitar: a.condicionMilitar,
     tituloUniversidad: a.tituloUniversidad,
     tipoEstudio: a.tipoEstudio,
     sexo: a.sexo,
@@ -196,9 +199,10 @@ export default async function AspirantesPage({
   const groupByNacimientoMes = isCensusNacimientoMesSort(sp.sort);
   const groupByGrado = isCensusGradoGroupSort(sp.sort);
   const groupByReligion = isCensusReligionGroupSort(sp.sort);
+  const groupByCondicion = isCensusCondicionGroupSort(sp.sort);
   const sortInMemory = groupByNacimientoMes || groupByGrado;
 
-  const [totalCount, aspirantesRaw, carreraGrupos, religionGrupos, pelotones] = await Promise.all([
+  const [totalCount, aspirantesRaw, carreraGrupos, religionGrupos, condicionGrupos, pelotones] = await Promise.all([
     sortInMemory
       ? Promise.resolve(0)
       : prisma.aspirante.count({ where }),
@@ -236,6 +240,13 @@ export default async function AspirantesPage({
           _count: { _all: true },
         })
       : Promise.resolve([] as { religion: string | null; _count: { _all: number } }[]),
+    groupByCondicion
+      ? prisma.aspirante.groupBy({
+          by: ["condicionMilitar"],
+          where,
+          _count: { _all: true },
+        })
+      : Promise.resolve([] as { condicionMilitar: string | null; _count: { _all: number } }[]),
     prisma.peloton.findMany({
       where: { convocatoriaId: convocatoriaFiltroId },
       orderBy: { numero: "asc" },
@@ -258,6 +269,9 @@ export default async function AspirantesPage({
   );
   const countByReligion = new Map(
     religionGrupos.map((g) => [g.religion ?? "", g._count._all]),
+  );
+  const countByCondicion = new Map(
+    condicionGrupos.map((g) => [g.condicionMilitar ?? "", g._count._all]),
   );
 
   const countByNacimientoMes = new Map<number, number>();
@@ -282,8 +296,10 @@ export default async function AspirantesPage({
     groupByNacimientoMes,
     groupByGrado,
     groupByReligion,
+    groupByCondicion,
     countByCarrera: Object.fromEntries(countByCarrera),
     countByReligion: Object.fromEntries(countByReligion),
+    countByCondicion: Object.fromEntries(countByCondicion),
     countByNacimientoMes: Object.fromEntries(
       [...countByNacimientoMes.entries()].map(([k, v]) => [String(k), v]),
     ),
@@ -303,6 +319,7 @@ export default async function AspirantesPage({
     sexo: sp.sexo,
     sort: sp.sort,
     peloton: pelotonFiltroActivo ? pelotonFiltro : undefined,
+    condicion: parseCondicionCensusFilter(sp.condicion) ?? undefined,
   };
   if (convocatoriaFiltroId) qsBase.convocatoria = convocatoriaFiltroId;
 

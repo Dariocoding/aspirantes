@@ -23,6 +23,10 @@ import { Textarea } from "@src/components/ui/textarea";
 import { SuccessCelebrationDialog } from "@src/components/ui/success-celebration-dialog";
 import { aspiranteInitialActionState } from "@src/lib/action-types";
 import { routes } from "@src/lib/apps/routes";
+import {
+  CONDICION_MILITAR_LABELS,
+  CONDICION_MILITAR_VALUES,
+} from "@src/lib/aspirantes/condicion-militar";
 import { hasRealBirthDate } from "@src/lib/date";
 import { labelPeloton, type PelotonResumen } from "@src/lib/pelotones";
 import { ASPIRANTE_FOTO_FORM } from "@src/lib/storage/aspirante-foto";
@@ -73,6 +77,7 @@ export type AspiranteQuickInitial = {
   sexo: "MASCULINO" | "FEMENINO";
   fechaNacimientoIso: string;
   lugarNacimiento: string;
+  condicionMilitar?: "SOLDADO_ACTIVO" | "SARGENTO_ACTIVO" | null;
   telefono: string | null;
   correo: string | null;
   direccion: string | null;
@@ -391,6 +396,23 @@ function AspiranteQuickForm({
                   defaultValue={initial?.lugarNacimiento ?? ""}
                   className="h-8"
                 />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-condicion">Condición militar</Label>
+                <select
+                  id="quick-condicion"
+                  name="condicionMilitar"
+                  defaultValue={initial?.condicionMilitar ?? ""}
+                  className={selectClass}
+                >
+                  <option value="">Sin clasificar</option>
+                  {CONDICION_MILITAR_VALUES.map((value) => (
+                    <option key={value} value={value}>
+                      {CONDICION_MILITAR_LABELS[value]}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={state.errors.condicionMilitar} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="quick-peloton">Pelotón</Label>

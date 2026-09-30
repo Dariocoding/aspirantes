@@ -38,7 +38,7 @@ export const maxDuration = 300;
 
 registerFichaTecnicaPdfFonts();
 
-const CENSUS_KEYS = ["q", "sexo", "sort", "peloton", "convocatoria"] as const;
+const CENSUS_KEYS = ["q", "sexo", "sort", "peloton", "convocatoria", "condicion"] as const;
 const BOLETA_RENDER_CHUNK = 20;
 
 async function renderBoletasChunk(

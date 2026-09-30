@@ -89,6 +89,7 @@ export default async function AspirantesGestionPage({
       registroInitial = {
         id: a.id,
         unidadPostulante: a.unidadPostulante,
+        condicionMilitar: a.condicionMilitar,
         calificacionAdmision: a.calificacionAdmision,
         nombres: a.nombres,
         apellidos: a.apellidos,

@@ -9,6 +9,7 @@ function sampleRow(): AspiranteCensoExportRow {
     nombres: "JUNIOR ALBANIS",
     apellidos: "CAÑIZALES ROSALES",
     unidadPostulante: "Unidad",
+    condicionMilitar: null,
     tituloUniversidad: null,
     tipoEstudio: null,
     cedula: "21425976",

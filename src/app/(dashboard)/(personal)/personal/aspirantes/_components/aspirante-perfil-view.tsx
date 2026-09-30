@@ -7,6 +7,7 @@ import {
 } from "@src/lib/aspirantes/ficha-evaluacion";
 import { calificacionAdmisionEtiqueta } from "@src/lib/aspirantes/census";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
+import { labelCondicionMilitar } from "@src/lib/aspirantes/condicion-militar";
 import {
   COLOR_CABELLO_LABELS,
   COLOR_OJOS_LABELS,
@@ -61,6 +62,7 @@ export type AspirantePerfilSerializado = {
   fechaNacimientoLabel: string;
   lugarNacimiento: string;
   unidadPostulante: string;
+  condicionMilitar: string | null;
   pelotonLabel: string | null;
   calificacionAdmision: string;
   direccion: string | null;
@@ -556,6 +558,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             <Separator className="my-3" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Campo label="Unidad postulante" value={a.unidadPostulante} />
+              <Campo label="Condición militar" value={labelCondicionMilitar(a.condicionMilitar)} />
               <Campo label="Pelotón" value={a.pelotonLabel} />
               <Campo label="Fecha de nacimiento" value={a.fechaNacimientoLabel} />
               <Campo label="Lugar de nacimiento" value={a.lugarNacimiento} />

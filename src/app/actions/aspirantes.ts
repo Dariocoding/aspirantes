@@ -15,6 +15,7 @@ import {
   Sexo,
   TallaUniformeOliva,
   TallaUniformePatriota,
+  CondicionMilitar,
 } from "@src/generated/prisma";
 import { composeRedSocial, homologarDatosSangre } from "@src/lib/aspirantes/senaletica";
 import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
@@ -64,6 +65,12 @@ function fichaEvaluacionPayloadFromFormData(formData: FormData): object | null |
 function emptyToNull(v: unknown) {
   const s = String(v ?? "").trim();
   return s.length ? s : null;
+}
+
+function condicionMilitarWrite(value: string | null | undefined) {
+  if (value === "SOLDADO_ACTIVO") return CondicionMilitar.SOLDADO_ACTIVO;
+  if (value === "SARGENTO_ACTIVO") return CondicionMilitar.SARGENTO_ACTIVO;
+  return null;
 }
 
 function formSenaletica(formData: FormData) {
@@ -206,6 +213,7 @@ export async function createAspirante(
 
   const raw = {
     unidadPostulante: formData.get("unidadPostulante"),
+    condicionMilitar: emptyToNull(formData.get("condicionMilitar")),
     calificacionAdmision: formData.get("calificacionAdmision"),
     nombres: formData.get("nombres"),
     apellidos: formData.get("apellidos"),
@@ -279,6 +287,7 @@ export async function createAspirante(
     const created = await prisma.aspirante.create({
       data: {
         unidadPostulante: d.unidadPostulante,
+        condicionMilitar: condicionMilitarWrite(d.condicionMilitar),
         calificacionAdmision:
           d.calificacionAdmision === "APTO"
             ? CalificacionAdmision.APTO
@@ -530,6 +539,7 @@ export async function updateAspirante(
   const raw = {
     aspiranteId: formData.get("aspiranteId"),
     unidadPostulante: formData.get("unidadPostulante"),
+    condicionMilitar: emptyToNull(formData.get("condicionMilitar")),
     calificacionAdmision: formData.get("calificacionAdmision"),
     nombres: formData.get("nombres"),
     apellidos: formData.get("apellidos"),
@@ -617,6 +627,7 @@ export async function updateAspirante(
         where: { id: aspiranteId },
         data: {
           unidadPostulante: d.unidadPostulante,
+          condicionMilitar: condicionMilitarWrite(d.condicionMilitar),
           calificacionAdmision:
             d.calificacionAdmision === "APTO"
               ? CalificacionAdmision.APTO
@@ -741,6 +752,7 @@ export async function updateAspiranteQuick(
     sexo: formData.get("sexo"),
     fechaNacimiento: formData.get("fechaNacimiento"),
     lugarNacimiento: formData.get("lugarNacimiento"),
+    condicionMilitar: emptyToNull(formData.get("condicionMilitar")),
     telefono: emptyToNull(formData.get("telefono")),
     correo: emptyToNull(formData.get("correo")),
     direccion: emptyToNull(formData.get("direccion")),
@@ -817,6 +829,7 @@ export async function updateAspiranteQuick(
                 : existing.sexo,
           fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
           lugarNacimiento: d.lugarNacimiento,
+          condicionMilitar: condicionMilitarWrite(d.condicionMilitar),
           telefono: d.telefono ?? null,
           correo: d.correo ?? null,
           direccion: d.direccion ?? null,

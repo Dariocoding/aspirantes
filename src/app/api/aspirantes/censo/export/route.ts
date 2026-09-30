@@ -36,6 +36,7 @@ function parseSp(searchParams: URLSearchParams): Record<string, string | undefin
     "sort",
     "peloton",
     "convocatoria",
+    "condicion",
   ];
   const out: Record<string, string | undefined> = {};
   for (const k of keys) {
@@ -177,6 +178,7 @@ export async function GET(request: Request) {
       nombres: a.nombres,
       apellidos: a.apellidos,
       unidadPostulante: a.unidadPostulante,
+      condicionMilitar: a.condicionMilitar,
       tituloUniversidad: a.tituloUniversidad,
       tipoEstudio: a.tipoEstudio,
       cedula: a.cedula,

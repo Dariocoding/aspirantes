@@ -2,11 +2,12 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useState, useTransition } from "react";
-import { CalendarClock, FileBadge, Loader2, Trash2, X } from "lucide-react";
+import { CalendarClock, FileBadge, GraduationCap, Loader2, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { deleteAspirantesSeleccion } from "@src/app/actions/aspirantes";
 import { createPermisosSeleccion, type PermisoSeleccionResult } from "@src/app/actions/permisos";
 import { downloadBoletasPermisoPdf } from "@dashboard/aspirantes/_components/boletas-permiso-download";
+import { downloadConstanciaEstudiosPdf } from "@dashboard/aspirantes/_components/constancia-estudios-download";
 import { Button } from "@src/components/ui/button";
 import {
   Dialog,
@@ -58,12 +59,14 @@ export function CensusBulkActions({
   const [permisoOpen, setPermisoOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [boletasBusy, setBoletasBusy] = useState(false);
+  const [constanciaBusy, setConstanciaBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [omitted, setOmitted] = useState<PermisoSeleccionResult["omitted"]>([]);
   const [celebrate, setCelebrate] = useState<"permiso" | "deleted" | null>(null);
   const [celebrateTitle, setCelebrateTitle] = useState("");
   const [celebrateDetail, setCelebrateDetail] = useState("");
   const [boletasError, setBoletasError] = useState<string | null>(null);
+  const [constanciaError, setConstanciaError] = useState<string | null>(null);
   const range = defaultRange();
   const count = people.length;
 
@@ -137,6 +140,17 @@ export function CensusBulkActions({
       .finally(() => setBoletasBusy(false));
   }, [people]);
 
+  const onConstancia = useCallback(() => {
+    setConstanciaError(null);
+    setConstanciaBusy(true);
+    void downloadConstanciaEstudiosPdf({
+      ids: people.map((person) => person.id),
+      fallbackName: "constancias-estudios.pdf",
+    })
+      .catch((error) => setConstanciaError(error instanceof Error ? error.message : "No se pudo descargar."))
+      .finally(() => setConstanciaBusy(false));
+  }, [people]);
+
   return (
     <>
       <SuccessCelebrationDialog
@@ -168,7 +182,7 @@ export function CensusBulkActions({
           size="sm"
           variant="outline"
           className="h-8 border-white/20 bg-white text-slate-900 hover:bg-slate-100"
-          disabled={pending || boletasBusy}
+          disabled={pending || boletasBusy || constanciaBusy}
           onClick={() => {
             setFormError(null);
             setOmitted([]);
@@ -183,7 +197,7 @@ export function CensusBulkActions({
           size="sm"
           variant="outline"
           className="h-8 border-white/20 bg-transparent text-white hover:bg-white/10"
-          disabled={pending || boletasBusy}
+          disabled={pending || boletasBusy || constanciaBusy}
           onClick={onBoletas}
         >
           {boletasBusy ? (
@@ -196,9 +210,24 @@ export function CensusBulkActions({
         <Button
           type="button"
           size="sm"
+          variant="outline"
+          className="h-8 border-white/20 bg-transparent text-white hover:bg-white/10"
+          disabled={pending || boletasBusy || constanciaBusy}
+          onClick={onConstancia}
+        >
+          {constanciaBusy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : (
+            <GraduationCap className="h-3.5 w-3.5" aria-hidden />
+          )}
+          Constancia
+        </Button>
+        <Button
+          type="button"
+          size="sm"
           variant="destructive"
           className="h-8"
-          disabled={pending || boletasBusy}
+          disabled={pending || boletasBusy || constanciaBusy}
           onClick={onEliminar}
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -215,6 +244,11 @@ export function CensusBulkActions({
         {boletasError ? (
           <p className="basis-full text-xs text-rose-200" role="alert">
             {boletasError}
+          </p>
+        ) : null}
+        {constanciaError ? (
+          <p className="basis-full text-xs text-rose-200" role="alert">
+            {constanciaError}
           </p>
         ) : null}
       </div>

@@ -19,7 +19,9 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
+  ChevronsUp,
   Church,
+  CircleDashed,
   Clock3,
   GraduationCap,
   Hash,
@@ -43,6 +45,13 @@ import {
 import { Input } from "@src/components/ui/input";
 import { Label } from "@src/components/ui/label";
 import { censusQueryString, sexoEtiqueta } from "@src/lib/aspirantes/census";
+import {
+  condicionCensusTotal,
+  labelCondicionCensusFilter,
+  parseCondicionCensusFilter,
+  type CondicionCensusCounts,
+  type CondicionCensusFilter,
+} from "@src/lib/aspirantes/condicion-militar";
 import { routes } from "@src/lib/apps/routes";
 import { labelPeloton, type PelotonResumen } from "@src/lib/pelotones";
 import { cn } from "@src/lib/utils";
@@ -55,6 +64,7 @@ type FilterValues = {
   sort?: string;
   peloton?: string;
   convocatoria?: string;
+  condicion?: string;
 };
 
 type PelotonOption = PelotonResumen & { convocatoriaId: string };
@@ -63,7 +73,10 @@ type Props = {
   pelotones: PelotonOption[];
   convocatorias: ConvocatoriaOption[];
   defaultConvocatoriaId: string;
+  condicionCounts: Record<string, CondicionCensusCounts>;
 };
+
+const EMPTY_CONDICION_COUNTS: CondicionCensusCounts = { soldado: 0, sargento: 0, sin: 0 };
 
 const SORT_LABEL: Record<string, string> = {
   cedula: "Cédula",
@@ -76,6 +89,7 @@ const SORT_LABEL: Record<string, string> = {
   carrera: "Por carrera",
   grado: "Por grado",
   religion: "Por religión",
+  condicion: "Por condición",
 };
 
 const SORT_OPTIONS = [
@@ -88,6 +102,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 const GROUP_OPTIONS = [
+  { value: "condicion", key: "condicion", label: "Condición", hint: "Soldado o sargento activo", icon: Shield },
   { value: "carrera", key: "carrera", label: "Carrera", hint: "Agrupa por título universitario", icon: Hash },
   { value: "grado", key: "grado", label: "Grado", hint: "Nivel educativo", icon: Layers },
   { value: "nacimiento-mes", key: "nacimiento-mes", label: "Mes", hint: "Ene → Dic", icon: CalendarDays },
@@ -100,6 +115,7 @@ const ACTIVE_SORTS = new Set([
   "titulo",
   "carrera",
   "grado",
+  "condicion",
   "nacimiento",
   "nacimiento-mes",
   "religion",
@@ -213,6 +229,109 @@ function SortRail({
             />
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const CONDICION_OPTIONS = [
+  {
+    param: "",
+    key: "todos",
+    label: "Todos",
+    hint: "Quitar el filtro de condición",
+    icon: Users,
+    countOf: (counts: CondicionCensusCounts) => condicionCensusTotal(counts),
+  },
+  {
+    param: "SOLDADO_ACTIVO",
+    key: "soldado",
+    label: "Soldado activo",
+    hint: "Ver solo soldados activos",
+    icon: Shield,
+    countOf: (counts: CondicionCensusCounts) => counts.soldado,
+  },
+  {
+    param: "SARGENTO_ACTIVO",
+    key: "sargento",
+    label: "Sargento activo",
+    hint: "Ver solo sargentos activos",
+    icon: ChevronsUp,
+    countOf: (counts: CondicionCensusCounts) => counts.sargento,
+  },
+  {
+    param: "SIN",
+    key: "sin",
+    label: "Sin clasificar",
+    hint: "Aún sin condición militar",
+    icon: CircleDashed,
+    countOf: (counts: CondicionCensusCounts) => counts.sin,
+  },
+] as const;
+
+function CondicionFilter({
+  value,
+  counts,
+  hrefFor,
+  go,
+}: {
+  value: CondicionCensusFilter | null;
+  counts: CondicionCensusCounts;
+  hrefFor: (next: string) => string;
+  go: (href: string, dropSelection?: boolean) => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-sm shadow-slate-900/4">
+      <div className="flex items-baseline justify-between gap-3 px-2 pt-1 pb-1.5">
+        <p className="text-[10px] font-semibold tracking-[0.16em] text-slate-400 uppercase">
+          Condición militar
+        </p>
+        <p className="text-[10px] text-slate-400">Totales de la convocatoria</p>
+      </div>
+      <div
+        role="radiogroup"
+        aria-label="Filtrar por condición militar"
+        className="grid grid-cols-2 gap-1 sm:grid-cols-4"
+      >
+        {CONDICION_OPTIONS.map((opt) => {
+          const selected = opt.param === "" ? value == null : value === opt.param;
+          const href = hrefFor(opt.param);
+          const count = opt.countOf(counts);
+          const Icon = opt.icon;
+          return (
+            <Link
+              key={opt.key}
+              href={href}
+              prefetch={false}
+              role="radio"
+              aria-checked={selected}
+              title={opt.hint}
+              onClick={(event) => followWithSelection(event, href, false, go)}
+              className={cn(
+                "flex min-h-17 flex-col justify-between rounded-xl px-3 py-2.5 outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2",
+                selected
+                  ? "bg-slate-900 text-white shadow-[0_10px_24px_-16px_rgb(15_23_42/0.9)]"
+                  : "text-slate-700 hover:bg-slate-50",
+              )}
+            >
+              <span className="flex items-center gap-1.5 text-[11px] font-medium leading-none">
+                <Icon
+                  className={cn("size-3.5 shrink-0", selected ? "text-white" : "text-slate-400")}
+                  aria-hidden
+                />
+                <span className="truncate">{opt.label}</span>
+              </span>
+              <span
+                className={cn(
+                  "mt-2 text-[1.35rem] font-semibold leading-none tabular-nums tracking-tight",
+                  selected ? "text-white" : count === 0 ? "text-slate-300" : "text-slate-900",
+                )}
+              >
+                {count}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
@@ -356,7 +475,12 @@ function OptionItem({
   );
 }
 
-export function AspirantesFilterBar({ pelotones, convocatorias, defaultConvocatoriaId }: Props) {
+export function AspirantesFilterBar({
+  pelotones,
+  convocatorias,
+  defaultConvocatoriaId,
+  condicionCounts,
+}: Props) {
   const { go } = useCensusNavigate();
   const sp = useSearchParams();
   const q = sp.get("q") ?? "";
@@ -373,6 +497,8 @@ export function AspirantesFilterBar({ pelotones, convocatorias, defaultConvocato
     (pelotonParam === "SIN_ASIGNAR" || pelotonesVisibles.some((p) => p.id === pelotonParam))
       ? pelotonParam
       : undefined;
+  const condicion = parseCondicionCensusFilter(sp.get("condicion"));
+  const counts = condicionCounts[convocatoriaId] ?? EMPTY_CONDICION_COUNTS;
   const [query, setQuery] = useState(q);
 
   useEffect(() => {
@@ -385,6 +511,7 @@ export function AspirantesFilterBar({ pelotones, convocatorias, defaultConvocato
     sort: isActiveSort(sort) ? sort : undefined,
     peloton,
     convocatoria: convocatoriaId,
+    condicion: condicion ?? undefined,
   };
 
   const href = (patch: FilterValues) => filterHref(current, patch);
@@ -427,6 +554,13 @@ export function AspirantesFilterBar({ pelotones, convocatorias, defaultConvocato
       href: href({ sort: "" }),
     });
   }
+  if (condicion) {
+    chips.push({
+      key: "condicion",
+      label: `Condición: ${labelCondicionCensusFilter(condicion)}`,
+      href: href({ condicion: "" }),
+    });
+  }
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
@@ -437,6 +571,13 @@ export function AspirantesFilterBar({ pelotones, convocatorias, defaultConvocato
 
   return (
     <div className="flex flex-col gap-3">
+      <CondicionFilter
+        value={condicion}
+        counts={counts}
+        hrefFor={(next) => href({ condicion: next })}
+        go={go}
+      />
+
       <form onSubmit={onSearch} className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Label htmlFor="q" className="sr-only">

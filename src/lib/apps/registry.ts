@@ -13,7 +13,6 @@ import type { AuthContext } from "@src/lib/auth/session";
 import type { LucideIcon } from "lucide-react";
 import {
   BookMarked,
-  BookOpen,
   CalendarClock,
   CalendarDays,
   FileSearch,
@@ -136,7 +135,6 @@ const personalMainLinks: AppNavLink[] = [
     label: "Censo de Aspirantes",
     icon: Users,
   },
-  { href: routes.personal.manual, label: "Manual de usuario", icon: BookOpen },
 ];
 
 const personalConfigLinks: AppNavLink[] = [

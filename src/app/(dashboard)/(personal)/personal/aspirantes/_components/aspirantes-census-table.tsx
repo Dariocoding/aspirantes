@@ -46,12 +46,14 @@ import {
 import { useCensusColumnVisibility } from "@dashboard/aspirantes/_components/use-census-column-visibility";
 import {
   calificacionAdmisionEtiqueta,
+  condicionMilitarGroupLabel,
   gradoEducativoGroupKey,
   gradoEducativoGroupLabel,
   nacimientoMesGroupKey,
   nacimientoMesGroupLabel,
 } from "@src/lib/aspirantes/census";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
+import { labelCondicionMilitar, type CondicionMilitarValue } from "@src/lib/aspirantes/condicion-militar";
 import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
 import { formatEstaturaM } from "@src/lib/aspirantes/medidas";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
@@ -78,6 +80,7 @@ export type AspirantesCensusRow = {
   hasFotoNotas: boolean;
   notasIsPdf: boolean;
   unidadPostulante: string;
+  condicionMilitar: CondicionMilitarValue | null;
   tituloUniversidad: string | null;
   tipoEstudio: string | null;
   sexo: "MASCULINO" | "FEMENINO";
@@ -147,10 +150,12 @@ export type AspirantesCensusGrouping = {
   groupByNacimientoMes: boolean;
   groupByGrado: boolean;
   groupByReligion: boolean;
+  groupByCondicion: boolean;
   countByCarrera: Record<string, number>;
   countByNacimientoMes: Record<string, number>;
   countByGrado: Record<string, number>;
   countByReligion: Record<string, number>;
+  countByCondicion: Record<string, number>;
 };
 
 type Props = {
@@ -303,6 +308,8 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
       return null;
     case "unidad":
       return <TextCell value={a.unidadPostulante} clamp />;
+    case "condicion":
+      return <TextCell value={labelCondicionMilitar(a.condicionMilitar)} />;
     case "carrera": {
       const carrera = (a.tituloUniversidad ?? "").trim();
       const nivel = labelTipoEstudioNivel(a.tipoEstudio);
@@ -499,7 +506,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones, sel
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-4 py-2">
         <p className="text-[11px] text-slate-500">
           {canWrite
-            ? "Marque las casillas para dar permiso, generar boletas o eliminar. La selección queda en la dirección y se conserva al cambiar de página."
+            ? "Marque las casillas para dar permiso, generar boletas o constancias, o eliminar. La selección queda en la dirección y se conserva al cambiar de página."
             : "Nombre completo y cédula siempre visibles. El resto se guarda en este navegador."}
         </p>
         <DropdownMenu>
@@ -665,6 +672,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones, sel
                 let prevNacimientoMesKey: number | null = null;
                 let prevGradoKey: number | null = null;
                 let prevReligionKey: string | null = null;
+                let prevCondicionKey: string | null = null;
 
                     for (const aRaw of rows) {
                       const a = {
@@ -676,6 +684,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones, sel
                   const nacimientoMesKey = nacimientoMesGroupKey(birthDate(a.fechaNacimientoIso));
                   const gradoKey = gradoEducativoGroupKey(a.tipoEstudio);
                   const religionKey = a.religion ?? "";
+                  const condicionKey = a.condicionMilitar ?? "";
 
                   if (grouping.groupByCarrera && carreraKey !== prevCarreraKey) {
                     prevCarreraKey = carreraKey;
@@ -724,6 +733,24 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones, sel
                         <TableCell colSpan={colSpan} className="px-3 py-2 text-sm font-semibold text-slate-800">
                           <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                             <span>{religionKey.trim() || "Sin religión"}</span>
+                            <span className="text-xs font-medium tabular-nums text-slate-500">({grupoCount})</span>
+                          </span>
+                        </TableCell>
+                      </TableRow>,
+                    );
+                  }
+
+                  if (grouping.groupByCondicion && condicionKey !== prevCondicionKey) {
+                    prevCondicionKey = condicionKey;
+                    const grupoCount = grouping.countByCondicion[condicionKey] ?? 0;
+                    bodyRows.push(
+                      <TableRow
+                        key={`grupo-condicion-${condicionKey || "_sin"}`}
+                        className="border-slate-200 bg-slate-100/90 hover:bg-slate-100/90"
+                      >
+                        <TableCell colSpan={colSpan} className="px-3 py-2 text-sm font-semibold text-slate-800">
+                          <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                            <span>{condicionMilitarGroupLabel(condicionKey)}</span>
                             <span className="text-xs font-medium tabular-nums text-slate-500">({grupoCount})</span>
                           </span>
                         </TableCell>

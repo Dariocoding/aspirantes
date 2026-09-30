@@ -11,8 +11,6 @@ const legacyRedirects = [
   { source: "/esquelas/:path*", destination: "/personal/esquelas/:path*" },
   { source: "/convocatorias", destination: "/personal/convocatorias" },
   { source: "/convocatorias/:path*", destination: "/personal/convocatorias/:path*" },
-  { source: "/manual", destination: "/personal/manual" },
-  { source: "/manual/:path*", destination: "/personal/manual/:path*" },
   { source: "/usuarios", destination: "/sistema/usuarios" },
   { source: "/usuarios/:path*", destination: "/sistema/usuarios/:path*" },
   { source: "/auditoria", destination: "/sistema/auditoria" },

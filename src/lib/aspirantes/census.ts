@@ -1,4 +1,8 @@
 import type { Prisma } from "@src/generated/prisma";
+import {
+  condicionMilitarGroupLabel,
+  parseCondicionCensusFilter,
+} from "@src/lib/aspirantes/condicion-militar";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { hasRealBirthDate } from "@src/lib/date";
 import { MESES_TITULO } from "@src/lib/meses";
@@ -42,6 +46,12 @@ export function buildAspiranteCensusWhere(
       filters.push({ pelotonId: peloton });
     }
   }
+  const condicion = parseCondicionCensusFilter(sp.condicion);
+  if (condicion === "SOLDADO_ACTIVO" || condicion === "SARGENTO_ACTIVO") {
+    filters.push({ condicionMilitar: condicion });
+  } else if (condicion === "SIN") {
+    filters.push({ condicionMilitar: null });
+  }
 
   return filters.length ? { AND: filters } : {};
 }
@@ -59,6 +69,9 @@ export function censusOrderBy(
   if (sort === "religion") {
     return [{ religion: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
   }
+  if (sort === "condicion") {
+    return [{ condicionMilitar: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
+  }
   if (sort === "reciente") return { createdAt: "desc" };
   if (sort === "nacimiento") return { fechaNacimiento: "asc" };
   // `nacimiento-mes` se ordena en memoria por mes/día (ver sortAspirantesByNacimientoMes).
@@ -74,6 +87,13 @@ export function isCensusCarreraGroupSort(sort: string | undefined) {
 export function isCensusReligionGroupSort(sort: string | undefined) {
   return sort === "religion";
 }
+
+/** Agrupa soldados activos, sargentos activos y quien aún no tiene condición. */
+export function isCensusCondicionGroupSort(sort: string | undefined) {
+  return sort === "condicion";
+}
+
+export { condicionMilitarGroupLabel };
 
 /** Orden por mes del calendario (ene→dic), no por año. */
 export function isCensusNacimientoMesSort(sort: string | undefined) {

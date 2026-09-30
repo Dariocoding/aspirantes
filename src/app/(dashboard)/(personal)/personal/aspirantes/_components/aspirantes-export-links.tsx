@@ -137,6 +137,9 @@ export function AspirantesExportLinks({
   const boletasBase = "/api/aspirantes/boletas-permiso/pdf";
   const boletasFiltrosUrl = `${boletasBase}?${exportQuery}`;
   const boletasTodasUrl = `${boletasBase}?scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
+  const constanciaBase = "/api/aspirantes/constancia-estudios/pdf";
+  const constanciaFiltrosUrl = exportQuery ? `${constanciaBase}?${exportQuery}` : constanciaBase;
+  const constanciaTodasUrl = `${constanciaBase}?scope=convocatoria&convocatoria=${encodeURIComponent(convocatoriaId)}`;
 
   async function openBoletaPicker() {
     setBoletaPickerError(null);
@@ -293,6 +296,21 @@ export function AspirantesExportLinks({
                   <span className="text-xs text-muted-foreground">Carnet en PDF, personal visible</span>
                 </span>
               </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(
+                    constanciaFiltrosUrl,
+                    "constancias-estudios.pdf",
+                    "constancias de estudios con los filtros actuales",
+                  )
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Constancia de estudios</span>
+                  <span className="text-xs text-muted-foreground">Una hoja por aspirante visible</span>
+                </span>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
@@ -352,6 +370,24 @@ export function AspirantesExportLinks({
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">Elegir personal</span>
                   <span className="text-xs text-muted-foreground">Marque quiénes descargan boleta</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={convocatoriaCount < 1 || Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(constanciaTodasUrl, "constancias-estudios.pdf", "constancias de toda la convocatoria")
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">
+                    Constancia de estudios
+                    {convocatoriaCount > 0 ? (
+                      <span className="ml-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                        {convocatoriaCount}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Todas las de la convocatoria</span>
                 </span>
               </DropdownMenuItem>
             </DropdownMenuGroup>

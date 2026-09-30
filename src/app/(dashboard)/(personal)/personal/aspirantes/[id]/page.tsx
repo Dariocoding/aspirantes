@@ -60,6 +60,15 @@ export default async function AspirantePerfilPage({
             <>
               <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica" />
               <AspiranteBoletaPermisoPdfLink aspiranteId={a.id} label="Boleta de permiso" />
+              <a
+                href={`/api/aspirantes/constancia-estudios/pdf?ids=${encodeURIComponent(a.id)}`}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "gap-1.5 border-slate-200 bg-white shadow-sm",
+                )}
+              >
+                Constancia de estudios
+              </a>
             </>
           )}
           {write ? (
@@ -109,6 +118,7 @@ export default async function AspirantePerfilPage({
           fechaNacimientoLabel: a.fechaNacimiento.toLocaleDateString("es-VE"),
           lugarNacimiento: a.lugarNacimiento,
           unidadPostulante: a.unidadPostulante,
+          condicionMilitar: a.condicionMilitar,
           pelotonLabel: a.peloton ? a.peloton.nombre : null,
           calificacionAdmision: a.calificacionAdmision,
           direccion: a.direccion,

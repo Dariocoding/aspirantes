@@ -9,6 +9,10 @@ import { AspirantesFilterBar } from "@dashboard/aspirantes/_components/aspirante
 import { buttonVariants } from "@src/components/ui/button";
 import { CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { censusQueryString } from "@src/lib/aspirantes/census";
+import {
+  parseCondicionCensusFilter,
+  type CondicionCensusCounts,
+} from "@src/lib/aspirantes/condicion-militar";
 import { routes } from "@src/lib/apps/routes";
 import type { MembreteOption } from "@src/lib/membrete";
 import type { PelotonResumen } from "@src/lib/pelotones";
@@ -99,6 +103,7 @@ export function CensusToolbar({
       peloton !== "TODOS" &&
       (peloton === "SIN_ASIGNAR" || pelotonesVisibles.some((p) => p.id === peloton)),
   );
+  const condicion = parseCondicionCensusFilter(sp.get("condicion"));
   const exportQuery = censusQueryString(
     {
       q: sp.get("q") ?? undefined,
@@ -106,6 +111,7 @@ export function CensusToolbar({
       sort: sp.get("sort") ?? undefined,
       peloton: pelotonActivo ? peloton : undefined,
       convocatoria: convocatoriaId,
+      condicion: condicion ?? undefined,
     },
     {},
   );
@@ -118,7 +124,7 @@ export function CensusToolbar({
           <CardDescription className="text-xs text-slate-600">
             Listado paginado e identificación básica.
             {write
-              ? " Excel permite elegir columnas, exportar e importar por cédula; PDF exporta censo, fichas y boletas de permiso (todas, filtradas o eligiendo personal)."
+              ? " Excel permite elegir columnas, exportar e importar por cédula; PDF exporta censo, fichas, boletas de permiso y constancias de estudios."
               : " La exportación masiva (Excel/PDF) está reservada a operadores y administradores."}
           </CardDescription>
         </div>
@@ -143,10 +149,12 @@ export function CensusFilters({
   convocatorias,
   defaultConvocatoriaId,
   pelotones,
+  condicionCounts,
 }: {
   convocatorias: ConvocatoriaOption[];
   defaultConvocatoriaId: string;
   pelotones: PelotonOption[];
+  condicionCounts: Record<string, CondicionCensusCounts>;
 }) {
   return (
     <div className="border-b border-slate-200/90 bg-slate-50/60 px-4 py-3">
@@ -154,6 +162,7 @@ export function CensusFilters({
         pelotones={pelotones}
         convocatorias={convocatorias}
         defaultConvocatoriaId={defaultConvocatoriaId}
+        condicionCounts={condicionCounts}
       />
     </div>
   );

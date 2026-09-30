@@ -10,6 +10,7 @@ import { formatTelefonoVenezolano } from "@src/lib/aspirantes/telefono";
 import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/census";
 import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
+import { labelCondicionMilitar } from "@src/lib/aspirantes/condicion-militar";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
 import { TALLA_UNIFORME_PATRIOTA_LABELS, isTallaUniformePatriota } from "@src/lib/aspirantes/tallas-familia";
@@ -20,6 +21,7 @@ export type AspiranteCensoExportRow = {
   nombres: string;
   apellidos: string;
   unidadPostulante: string;
+  condicionMilitar: string | null;
   tituloUniversidad: string | null;
   tipoEstudio: string | null;
   cedula: string;
@@ -165,6 +167,8 @@ function cellValue(
       return dash(r.lugarNacimiento);
     case "unidad":
       return dash(r.unidadPostulante);
+    case "condicion":
+      return dash(labelCondicionMilitar(r.condicionMilitar) ?? undefined);
     case "carrera":
       return formatCarreraConNivel(r.tituloUniversidad, r.tipoEstudio);
     case "calificacion":

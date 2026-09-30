@@ -25,6 +25,12 @@ enum CalificacionAdmision {
   EN_EVALUACION
 }
 
+/// Condición militar del aspirante, para separar el censo.
+enum CondicionMilitar {
+  SOLDADO_ACTIVO
+  SARGENTO_ACTIVO
+}
+
 /// Nivel / grado educativo del aspirante (TSU o superior).
 enum TipoEstudioAspirante {
   TSU
@@ -347,6 +353,8 @@ model Aspirante {
   lugarNacimiento       String
   /// Brigada, comando u otra unidad desde la que postula el personal.
   unidadPostulante      String               @default("")
+  /// Soldado activo o sargento activo. Null = aún sin clasificar.
+  condicionMilitar      CondicionMilitar?
   calificacionAdmision  CalificacionAdmision @default(EN_EVALUACION)
   direccion             String?
   telefono              String?
@@ -426,6 +434,7 @@ model Aspirante {
   @@unique([cedula, convocatoriaId])
   @@index([calificacionAdmision])
   @@index([unidadPostulante])
+  @@index([condicionMilitar])
   @@index([pelotonId])
   @@index([deletedAt])
 }

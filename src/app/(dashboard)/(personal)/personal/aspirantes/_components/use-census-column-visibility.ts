@@ -10,6 +10,7 @@ import {
 } from "@src/lib/aspirantes/census-table-columns";
 
 const LEGACY_STORAGE_KEYS = [
+  "personal.aspirantes.census.columns.v4",
   "personal.aspirantes.census.columns.v3",
   "personal.aspirantes.census.columns.v2",
   "personal.aspirantes.census.columns.v1",
@@ -47,12 +48,21 @@ function withFotoPermisoIfMissing(ids: CensusOptionalColumnId[]): CensusOptional
   return ["fotoPermiso", ...ids];
 }
 
+function withCondicionIfMissing(ids: CensusOptionalColumnId[]): CensusOptionalColumnId[] {
+  if (ids.includes("condicion")) return ids;
+  const unidad = ids.indexOf("unidad");
+  if (unidad < 0) return ["condicion", ...ids];
+  const next = [...ids];
+  next.splice(unidad + 1, 0, "condicion");
+  return next;
+}
+
 function migrateLegacyIds(raw: string, key: string): CensusOptionalColumnId[] {
   let ids = parseStoredIds(raw);
   if (key.endsWith(".v1") || key.endsWith(".v2")) {
     ids = withDocumentosIfMissing(ids);
   }
-  return withFotoPermisoIfMissing(ids);
+  return withCondicionIfMissing(withFotoPermisoIfMissing(ids));
 }
 
 function parseStoredIds(raw: string | null): CensusOptionalColumnId[] {
