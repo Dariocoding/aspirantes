@@ -11,12 +11,11 @@ Font.registerHyphenationCallback((word) => [word]);
 const FONT = FICHA_TECNICA_PDF_FONT_FAMILY;
 const INK = "#000000";
 
-/** Carta US: 612 × 792 pt */
+/** Carta US: 612 × 792 pt. Márgenes ~2.54 cm (APA). */
 const PAGE_W = 612;
-const MARGIN_X = 42;
-const MARGIN_TOP = 28;
-const MARGIN_BOTTOM = 22;
-const BORDER_INSET = 18;
+const MARGIN_X = 72;
+const MARGIN_TOP = 54;
+const MARGIN_BOTTOM = 40;
 
 const MESES = [
   "Enero",
@@ -81,7 +80,7 @@ export type ConstanciaEstudiosPerson = {
 };
 
 const WATERMARK_SIZE = 340;
-const WATERMARK_TOP = 185;
+const WATERMARK_TOP = 200;
 
 const styles = StyleSheet.create({
   page: {
@@ -93,15 +92,6 @@ const styles = StyleSheet.create({
     paddingBottom: MARGIN_BOTTOM,
     paddingHorizontal: MARGIN_X,
     position: "relative",
-  },
-  border: {
-    position: "absolute",
-    top: BORDER_INSET,
-    left: BORDER_INSET,
-    right: BORDER_INSET,
-    bottom: BORDER_INSET,
-    borderWidth: 0.9,
-    borderColor: "#9ca3af",
   },
   watermark: {
     position: "absolute",
@@ -117,29 +107,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 6,
   },
   logoEjercito: {
-    width: 62,
+    width: 58,
   },
   logoDireccion: {
-    width: 78,
+    width: 74,
   },
   headerText: {
     flex: 1,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     alignItems: "center",
   },
   headerLine: {
-    fontSize: 7.4,
-    lineHeight: 1.18,
+    fontSize: 7.5,
+    lineHeight: 1.2,
     textAlign: "center",
     textTransform: "uppercase",
     fontWeight: "bold",
   },
   titleWrap: {
-    marginTop: 28,
-    marginBottom: 22,
+    marginTop: 32,
+    marginBottom: 24,
     alignItems: "center",
   },
   title: {
@@ -147,37 +136,37 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     textDecoration: "underline",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   body: {
-    fontSize: 11.5,
+    fontSize: 12,
     lineHeight: 1.5,
-    textAlign: "center",
-    marginBottom: 16,
+    textAlign: "justify",
+    marginBottom: 14,
   },
   mark: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: "bold",
   },
   footer: {
     position: "absolute",
     left: MARGIN_X,
     right: MARGIN_X,
-    bottom: MARGIN_BOTTOM + 6,
+    bottom: MARGIN_BOTTOM,
     alignItems: "center",
   },
   dios: {
-    marginBottom: 28,
-    fontSize: 12.5,
+    marginBottom: 26,
+    fontSize: 12,
     fontWeight: "bold",
     textAlign: "center",
-    letterSpacing: 0.9,
+    letterSpacing: 0.8,
   },
   signName: {
     fontSize: 11.5,
     fontWeight: "bold",
     textAlign: "center",
-    letterSpacing: 0.35,
+    letterSpacing: 0.3,
   },
   signRank: {
     marginTop: 1,
@@ -190,7 +179,7 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 1.2,
+    lineHeight: 1.22,
   },
   resolucion: {
     marginTop: 6,
@@ -199,31 +188,31 @@ const styles = StyleSheet.create({
   },
   motto: {
     marginTop: 1,
-    fontSize: 8.2,
+    fontSize: 8,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 1.18,
+    lineHeight: 1.2,
   },
   mottoFirst: {
     marginTop: 10,
-    fontSize: 8.2,
+    fontSize: 8,
+    fontWeight: "bold",
+    textAlign: "center",
+    lineHeight: 1.2,
+  },
+  address: {
+    marginTop: 1,
+    fontSize: 7,
     fontWeight: "bold",
     textAlign: "center",
     lineHeight: 1.18,
   },
-  address: {
-    marginTop: 1,
-    fontSize: 7.2,
-    fontWeight: "bold",
-    textAlign: "center",
-    lineHeight: 1.15,
-  },
   addressFirst: {
     marginTop: 8,
-    fontSize: 7.2,
+    fontSize: 7,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 1.15,
+    lineHeight: 1.18,
   },
 });
 
@@ -295,7 +284,6 @@ function ConstanciaPage({
 
   return (
     <Page size="LETTER" style={styles.page}>
-      <View style={styles.border} fixed />
       {marcaAgua ? <Image src={marcaAgua} style={styles.watermark} fixed /> : null}
 
       <View style={styles.content}>
