@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { CalendarClock, FileBadge, GraduationCap, Loader2, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { deleteAspirantesSeleccion } from "@src/app/actions/aspirantes";
@@ -23,6 +23,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@src/components/ui/select";
@@ -69,6 +70,17 @@ export function CensusBulkActions({
   const [constanciaError, setConstanciaError] = useState<string | null>(null);
   const range = defaultRange();
   const count = people.length;
+  const busy = pending || boletasBusy || constanciaBusy;
+  const actionError = boletasError ?? constanciaError;
+
+  useEffect(() => {
+    if (!count) return;
+    const previous = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = "5.5rem";
+    return () => {
+      document.body.style.paddingBottom = previous;
+    };
+  }, [count]);
 
   const onCelebrateOpenChange = useCallback((open: boolean) => {
     if (!open) setCelebrate(null);
@@ -168,90 +180,88 @@ export function CensusBulkActions({
         description={celebrateDetail}
       />
       {count ? (
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 bg-slate-900 px-4 py-2 text-white">
-        <span className="text-sm font-medium tabular-nums">
-          {count} seleccionados
-          {elsewhereCount > 0 ? (
-            <span className="ml-2 font-normal text-slate-300">
-              {elsewhereCount} en otras páginas
-            </span>
-          ) : null}
-        </span>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 border-white/20 bg-white text-slate-900 hover:bg-slate-100"
-          disabled={pending || boletasBusy || constanciaBusy}
-          onClick={() => {
-            setFormError(null);
-            setOmitted([]);
-            setPermisoOpen(true);
-          }}
-        >
-          <CalendarClock className="h-3.5 w-3.5" aria-hidden />
-          Dar permiso
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 border-white/20 bg-transparent text-white hover:bg-white/10"
-          disabled={pending || boletasBusy || constanciaBusy}
-          onClick={onBoletas}
-        >
-          {boletasBusy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <FileBadge className="h-3.5 w-3.5" aria-hidden />
-          )}
-          Boletas
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 border-white/20 bg-transparent text-white hover:bg-white/10"
-          disabled={pending || boletasBusy || constanciaBusy}
-          onClick={onConstancia}
-        >
-          {constanciaBusy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <GraduationCap className="h-3.5 w-3.5" aria-hidden />
-          )}
-          Constancia
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="destructive"
-          className="h-8"
-          disabled={pending || boletasBusy || constanciaBusy}
-          onClick={onEliminar}
-        >
-          <Trash2 className="h-3.5 w-3.5" aria-hidden />
-          {pending ? "Eliminando…" : "Eliminar"}
-        </Button>
-        <button
-          type="button"
-          className="ml-auto inline-flex items-center gap-1 text-xs text-slate-300 hover:text-white"
-          onClick={onClear}
-        >
-          <X className="h-3.5 w-3.5" aria-hidden />
-          Quitar selección
-        </button>
-        {boletasError ? (
-          <p className="basis-full text-xs text-rose-200" role="alert">
-            {boletasError}
-          </p>
-        ) : null}
-        {constanciaError ? (
-          <p className="basis-full text-xs text-rose-200" role="alert">
-            {constanciaError}
-          </p>
-        ) : null}
-      </div>
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 md:left-60 print:hidden">
+          <div className="pointer-events-auto flex w-full max-w-xl flex-col gap-2">
+            {actionError ? (
+              <p
+                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 shadow-sm"
+                role="alert"
+              >
+                {actionError}
+              </p>
+            ) : null}
+            <div
+              role="region"
+              aria-label="Selección del censo"
+              className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white/95 px-3 py-2 shadow-[0_18px_40px_-20px_rgba(15,23,42,0.55)] ring-1 ring-slate-900/5 backdrop-blur-md"
+            >
+              <span className="h-9 w-1 shrink-0 rounded-full bg-[#c4a35a]" aria-hidden />
+              <p className="min-w-0 flex-1 text-sm leading-tight text-slate-900">
+                <span className="font-semibold tabular-nums">
+                  {count === 1 ? "1 seleccionado" : `${count} seleccionados`}
+                </span>
+                {elsewhereCount > 0 ? (
+                  <span className="mt-0.5 block text-[11px] font-normal text-slate-500">
+                    {elsewhereCount === 1 ? "1 en otra página" : `${elsewhereCount} en otras páginas`}
+                  </span>
+                ) : null}
+              </p>
+              <Select
+                value={null}
+                modal={false}
+                disabled={busy}
+                onValueChange={(value) => {
+                  if (value === "permiso") {
+                    setFormError(null);
+                    setOmitted([]);
+                    setPermisoOpen(true);
+                  } else if (value === "boletas") {
+                    onBoletas();
+                  } else if (value === "constancia") {
+                    onConstancia();
+                  } else if (value === "eliminar") {
+                    onEliminar();
+                  }
+                }}
+              >
+                <SelectTrigger
+                  aria-label="Acciones para la selección"
+                  className="h-9 min-w-40 border-slate-200 bg-slate-900 text-white shadow-none hover:bg-slate-800 data-placeholder:text-white [&_svg]:text-white"
+                >
+                  {busy ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : null}
+                  <SelectValue placeholder={busy ? "Trabajando…" : "Acciones"} />
+                </SelectTrigger>
+                <SelectContent side="top" align="end" className="min-w-48">
+                  <SelectItem value="permiso">
+                    <CalendarClock aria-hidden />
+                    Dar permiso
+                  </SelectItem>
+                  <SelectItem value="boletas">
+                    <FileBadge aria-hidden />
+                    Boletas
+                  </SelectItem>
+                  <SelectItem value="constancia">
+                    <GraduationCap aria-hidden />
+                    Constancia
+                  </SelectItem>
+                  <SelectSeparator />
+                  <SelectItem value="eliminar" className="text-red-700 focus:bg-red-50 focus:text-red-800">
+                    <Trash2 aria-hidden />
+                    Eliminar
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <button
+                type="button"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                aria-label="Quitar selección"
+                onClick={onClear}
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       <Dialog open={permisoOpen && count > 0} onOpenChange={setPermisoOpen}>

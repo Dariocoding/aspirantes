@@ -1,6 +1,6 @@
 ﻿import Link from "next/link";
-import { ClipboardList, UserRound, UserPlus } from "lucide-react";
-import { AspiranteRegistroForm, type AspiranteRegistroInitial } from "@dashboard/aspirantes/_components/aspirante-forms";
+import { ClipboardList, UserPlus } from "lucide-react";
+import { AspiranteRegistroForm } from "@dashboard/aspirantes/_components/aspirante-forms";
 import { SinConvocatoriasPanel } from "@dashboard/aspirantes/_components/sin-convocatorias-panel";
 import { buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
@@ -12,15 +12,7 @@ import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
 import { redirect, unauthorized } from "next/navigation";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
-import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
-import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
-import { toDateInputValue } from "@src/lib/date-input";
 import { prisma } from "@src/lib/prisma";
-
-function fechaNacimientoParaFormulario(d: Date): string {
-  const v = toDateInputValue(d);
-  return v === "1900-01-01" ? "" : v;
-}
 
 export default async function AspirantesGestionPage({
   searchParams,
@@ -36,6 +28,7 @@ export default async function AspirantesGestionPage({
   const spRaw = await searchParams;
   const editParam = spRaw.edit;
   const editId = typeof editParam === "string" ? editParam.trim() : "";
+  if (editId) redirect(routes.personal.aspirante(editId));
 
   const totalConvocatorias = await prisma.convocatoria.count();
   if (totalConvocatorias === 0) {
@@ -44,7 +37,7 @@ export default async function AspirantesGestionPage({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-2">
             <UserPlus className="h-5 w-5 shrink-0 text-slate-800" aria-hidden />
-            <h1 className="text-xl font-semibold tracking-tight text-slate-900">Registro y actualización</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900">Registro de aspirantes</h1>
           </div>
           <Link
             href={routes.personal.aspirantes}
@@ -75,113 +68,12 @@ export default async function AspirantesGestionPage({
       })
     : [];
 
-  let registroInitial: AspiranteRegistroInitial | null = null;
-  if (editId && convocatoriaActiva) {
-    const a = await prisma.aspirante.findFirst({
-      where: { id: editId, convocatoriaId: convocatoriaActiva.id },
-      include: {
-        datosFisicos: true,
-        contactos: { orderBy: { createdAt: "asc" }, take: 1 },
-      },
-    });
-    if (a) {
-      const c = a.contactos[0];
-      registroInitial = {
-        id: a.id,
-        unidadPostulante: a.unidadPostulante,
-        condicionMilitar: a.condicionMilitar,
-        calificacionAdmision: a.calificacionAdmision,
-        nombres: a.nombres,
-        apellidos: a.apellidos,
-        cedula: a.cedula,
-        sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
-        fechaNacimiento: fechaNacimientoParaFormulario(a.fechaNacimiento),
-        lugarNacimiento: a.lugarNacimiento,
-        direccion: a.direccion,
-        telefono: a.telefono,
-        correo: a.correo,
-        hijosCantidad: a.hijosCantidad,
-        estadoCivil: isEstadoCivilValue(a.estadoCivil) ? a.estadoCivil : null,
-        religion: a.religion,
-        deporte: a.deporte,
-        pelotonId: a.pelotonId,
-        estaturaCm: a.datosFisicos?.estaturaCm ?? null,
-        pesoKg: a.datosFisicos?.pesoKg ?? null,
-        tensionArterial: a.datosFisicos?.tensionArterial ?? null,
-        tipoSangre: a.datosFisicos?.tipoSangre ?? null,
-        factorRh: a.datosFisicos?.factorRh ?? null,
-        colorCabello: a.datosFisicos?.colorCabello ?? null,
-        formaLabios: a.datosFisicos?.formaLabios ?? null,
-        formaNariz: a.datosFisicos?.formaNariz ?? null,
-        colorOjos: a.datosFisicos?.colorOjos ?? null,
-        colorPiel: a.datosFisicos?.colorPiel ?? null,
-        senaParticular: a.datosFisicos?.senaParticular ?? null,
-        instagram: a.instagram,
-        twitter: a.twitter,
-        facebook: a.facebook,
-        padresVenezolanos: a.padresVenezolanos,
-        madreNombres: a.madreNombres,
-        madreApellidos: a.madreApellidos,
-        madreCedula: a.madreCedula,
-        madreFechaNacimiento: a.madreFechaNacimiento
-          ? fechaNacimientoParaFormulario(a.madreFechaNacimiento)
-          : "",
-        padreNombres: a.padreNombres,
-        padreApellidos: a.padreApellidos,
-        padreCedula: a.padreCedula,
-        padreFechaNacimiento: a.padreFechaNacimiento
-          ? fechaNacimientoParaFormulario(a.padreFechaNacimiento)
-          : "",
-        poseeVehiculoPropio: a.poseeVehiculoPropio,
-        poseeViviendaPropia: a.poseeViviendaPropia,
-        carnetPatriaSerial: a.carnetPatriaSerial,
-        carnetPatriaCodigo: a.carnetPatriaCodigo,
-        cuentaNominaBanfanb: a.cuentaNominaBanfanb,
-        tallaGorra: a.datosFisicos?.tallaGorra ?? null,
-        tallaCamisa: a.datosFisicos?.tallaCamisa ?? null,
-        tallaPantalon: a.datosFisicos?.tallaPantalon ?? null,
-        tallaCalzado: a.datosFisicos?.tallaCalzado ?? null,
-        tallaUniformePatriota: a.datosFisicos?.tallaUniformePatriota ?? null,
-        tallaUniformeOliva: a.datosFisicos?.tallaUniformeOliva ?? null,
-        alergias: a.datosFisicos?.alergias ?? null,
-        condicionesMedicas: a.datosFisicos?.condicionesMedicas ?? null,
-        discapacidad: a.datosFisicos?.discapacidad ?? null,
-        observaciones: a.datosFisicos?.observaciones ?? null,
-        contactoNombre: c?.nombre ?? "",
-        contactoParentesco: c?.parentesco ?? "",
-        contactoTelefono: c?.telefono ?? "",
-        contactoDireccion: c?.direccion ?? null,
-        fichaEvaluacion: a.fichaEvaluacion,
-        fotoKey: a.fotoKey,
-        fotoBoletaKey: a.fotoBoletaKey,
-        fotoEsquelaKey: a.fotoEsquelaKey,
-        fotoCedulaKey: a.fotoCedulaKey,
-        fotoTituloKey: a.fotoTituloKey,
-        fotoTituloAutenticacionKey: a.fotoTituloAutenticacionKey,
-        fotoNotasKey: a.fotoNotasKey,
-        tipoEstudio: normalizeTipoEstudio(a.tipoEstudio),
-        nombreUniversidad: a.nombreUniversidad,
-        tituloUniversidad: a.tituloUniversidad,
-        paisUniversidad: a.paisUniversidad,
-        nucleoUniversidad: a.nucleoUniversidad,
-        anioIngresoUniversidad: a.anioIngresoUniversidad,
-        anioEgresoUniversidad: a.anioEgresoUniversidad,
-      };
-    }
-  }
-
-  const modoEdicion = Boolean(registroInitial);
-  const tituloCard = modoEdicion ? "Editar aspirante" : "Registrar aspirante";
-  const descCard = modoEdicion
-    ? "Mismos pasos que el alta: revise cada sección y guarde los cambios."
-    : "Puede registrar con nombres, apellidos y cédula; el resto de datos es opcional y se puede completar después.";
-
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <UserPlus className="h-5 w-5 shrink-0 text-slate-800" aria-hidden />
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Registro y actualización de aspirantes</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Registro de aspirantes</h1>
         </div>
         <Link
           href={routes.personal.aspirantes}
@@ -195,15 +87,6 @@ export default async function AspirantesGestionPage({
         </Link>
       </div>
 
-      {editId && !registroInitial ? (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            No se encontró el aspirante en la convocatoria activa.{" "}
-          <Link href={routes.personal.aspirantesGestion} className="font-medium text-amber-950 underline underline-offset-2">
-            Volver al registro nuevo
-          </Link>
-        </p>
-      ) : null}
-
       <Card className="shadow-sm shadow-slate-900/5 ring-slate-200/80">
         <CardHeader className="border-b border-slate-200/80 bg-linear-to-br from-slate-50 to-white py-3">
           <div className="flex flex-wrap items-start gap-3">
@@ -212,34 +95,11 @@ export default async function AspirantesGestionPage({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 gap-y-1">
-                <CardTitle className="text-base font-semibold text-slate-900">{tituloCard}</CardTitle>
-                {modoEdicion ? (
-                  <>
-                    <Link
-                      href={routes.personal.aspirante(registroInitial!.id)}
-                      prefetch={false}
-                      className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
-                        "h-7 gap-1 border-slate-200 bg-white text-xs shadow-sm",
-                      )}
-                    >
-                      <UserRound className="h-3.5 w-3.5" aria-hidden />
-                      Ver ficha
-                    </Link>
-                    <Link
-                      href={routes.personal.aspirantesGestion}
-                      prefetch={false}
-                      className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
-                        "h-7 border-slate-200 bg-white text-xs shadow-sm",
-                      )}
-                    >
-                      Nuevo registro
-                    </Link>
-                  </>
-                ) : null}
+                <CardTitle className="text-base font-semibold text-slate-900">Registrar aspirante</CardTitle>
               </div>
-              <CardDescription className="text-xs text-slate-600">{descCard}</CardDescription>
+              <CardDescription className="text-xs text-slate-600">
+                Puede registrar con nombres, apellidos y cédula; el resto de datos es opcional y se puede completar después.
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -248,7 +108,6 @@ export default async function AspirantesGestionPage({
             canWrite
             convocatoriaActiva={convocatoriaResumen}
             pelotones={pelotones}
-            initial={registroInitial}
           />
         </CardContent>
       </Card>

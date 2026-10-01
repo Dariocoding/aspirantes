@@ -18,7 +18,6 @@ import {
   ChevronDown,
   ChevronsUp,
   Church,
-  CircleDashed,
   Clock3,
   GraduationCap,
   Hash,
@@ -143,14 +142,6 @@ const CONDICION_OPTIONS = [
     hint: "Ver solo sargentos activos",
     icon: ChevronsUp,
     countOf: (counts: CondicionCensusCounts) => counts.sargento,
-  },
-  {
-    param: "SIN",
-    key: "sin",
-    label: "Sin clasificar",
-    hint: "Aún sin condición militar",
-    icon: CircleDashed,
-    countOf: (counts: CondicionCensusCounts) => counts.sin,
   },
 ] as const;
 

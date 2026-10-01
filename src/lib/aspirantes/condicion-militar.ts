@@ -11,8 +11,8 @@ export function isCondicionMilitarValue(v: string | null | undefined): v is Cond
   return v === "SOLDADO_ACTIVO" || v === "SARGENTO_ACTIVO";
 }
 
-/** Filtro del censo. `SIN` = aún sin clasificar. */
-export const CONDICION_CENSUS_FILTERS = ["SOLDADO_ACTIVO", "SARGENTO_ACTIVO", "SIN"] as const;
+/** Filtro del censo: soldado activo o sargento activo. */
+export const CONDICION_CENSUS_FILTERS = ["SOLDADO_ACTIVO", "SARGENTO_ACTIVO"] as const;
 
 export type CondicionCensusFilter = (typeof CONDICION_CENSUS_FILTERS)[number];
 
@@ -25,12 +25,11 @@ export type CondicionCensusCounts = {
 export function parseCondicionCensusFilter(
   raw: string | null | undefined,
 ): CondicionCensusFilter | null {
-  if (raw === "SIN" || isCondicionMilitarValue(raw)) return raw;
+  if (isCondicionMilitarValue(raw)) return raw;
   return null;
 }
 
 export function labelCondicionCensusFilter(v: CondicionCensusFilter): string {
-  if (v === "SIN") return "Sin clasificar";
   return CONDICION_MILITAR_LABELS[v];
 }
 

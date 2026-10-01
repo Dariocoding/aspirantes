@@ -50,8 +50,6 @@ export function buildAspiranteCensusWhere(
   const condicion = parseCondicionCensusFilter(sp.condicion);
   if (condicion === "SOLDADO_ACTIVO" || condicion === "SARGENTO_ACTIVO") {
     filters.push({ condicionMilitar: condicion });
-  } else if (condicion === "SIN") {
-    filters.push({ condicionMilitar: null });
   }
 
   return filters.length ? { AND: filters } : {};

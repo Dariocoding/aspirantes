@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Pencil, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { notFound, unauthorized } from "next/navigation";
 import { AspiranteFichaTecnicaPdfLink } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
 import { AspiranteBoletaPermisoPdfLink } from "@dashboard/aspirantes/_components/boletas-permiso-download";
+import { AspirantePerfilEditButton } from "@dashboard/aspirantes/_components/aspirante-perfil-edit-button";
 import { AspirantePerfilView } from "@dashboard/aspirantes/_components/aspirante-perfil-view";
 import { AspirantePermisosCard } from "@dashboard/aspirantes/_components/aspirante-permisos-card";
 import { buttonVariants } from "@src/components/ui/button";
@@ -11,6 +12,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
 import { routes } from "@src/lib/apps/routes";
+import { isCondicionMilitarValue } from "@src/lib/aspirantes/condicion-militar";
 import { isEstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import { normalizeTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate } from "@src/lib/date";
@@ -47,6 +49,13 @@ export default async function AspirantePerfilPage({
   const c = a.contactos[0];
   const enPapelera = a.deletedAt != null;
   const write = canWrite(ctx) && !enPapelera;
+  const pelotones = write
+    ? await prisma.peloton.findMany({
+        where: { convocatoriaId: a.convocatoriaId },
+        orderBy: { numero: "asc" },
+        select: { id: true, numero: true, nombre: true },
+      })
+    : [];
 
   return (
     <div className="space-y-5">
@@ -72,17 +81,79 @@ export default async function AspirantePerfilPage({
             </>
           )}
           {write ? (
-            <Link
-              href={`${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(a.id)}`}
-              prefetch={false}
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "gap-1.5 border-slate-200 bg-white shadow-sm",
-              )}
-            >
-              <Pencil className="h-3.5 w-3.5" aria-hidden />
-              Editar
-            </Link>
+            <AspirantePerfilEditButton
+              pelotones={pelotones}
+              initial={{
+                id: a.id,
+                nombres: a.nombres,
+                apellidos: a.apellidos,
+                cedula: a.cedula,
+                sexo: a.sexo === "FEMENINO" ? "FEMENINO" : "MASCULINO",
+                fechaNacimientoIso: a.fechaNacimiento.toISOString(),
+                lugarNacimiento: a.lugarNacimiento ?? "",
+                condicionMilitar: isCondicionMilitarValue(a.condicionMilitar) ? a.condicionMilitar : null,
+                telefono: a.telefono,
+                correo: a.correo,
+                direccion: a.direccion,
+                pelotonId: a.pelotonId,
+                contactoNombre: c?.nombre ?? null,
+                contactoParentesco: c?.parentesco ?? null,
+                contactoTelefono: c?.telefono ?? null,
+                contactoDireccion: c?.direccion ?? null,
+                estaturaCm: a.datosFisicos?.estaturaCm ?? null,
+                pesoKg: a.datosFisicos?.pesoKg ?? null,
+                tipoSangre: a.datosFisicos?.tipoSangre ?? null,
+                factorRh: a.datosFisicos?.factorRh ?? null,
+                colorCabello: a.datosFisicos?.colorCabello ?? null,
+                formaLabios: a.datosFisicos?.formaLabios ?? null,
+                formaNariz: a.datosFisicos?.formaNariz ?? null,
+                colorOjos: a.datosFisicos?.colorOjos ?? null,
+                colorPiel: a.datosFisicos?.colorPiel ?? null,
+                senaParticular: a.datosFisicos?.senaParticular ?? null,
+                instagram: a.instagram,
+                twitter: a.twitter,
+                facebook: a.facebook,
+                padresVenezolanos: a.padresVenezolanos,
+                madreNombres: a.madreNombres,
+                madreApellidos: a.madreApellidos,
+                madreCedula: a.madreCedula,
+                madreFechaNacimientoIso: a.madreFechaNacimiento?.toISOString() ?? null,
+                padreNombres: a.padreNombres,
+                padreApellidos: a.padreApellidos,
+                padreCedula: a.padreCedula,
+                padreFechaNacimientoIso: a.padreFechaNacimiento?.toISOString() ?? null,
+                poseeVehiculoPropio: a.poseeVehiculoPropio,
+                poseeViviendaPropia: a.poseeViviendaPropia,
+                carnetPatriaSerial: a.carnetPatriaSerial,
+                carnetPatriaCodigo: a.carnetPatriaCodigo,
+                cuentaNominaBanfanb: a.cuentaNominaBanfanb,
+                tallaGorra: a.datosFisicos?.tallaGorra ?? null,
+                tallaCamisa: a.datosFisicos?.tallaCamisa ?? null,
+                tallaPantalon: a.datosFisicos?.tallaPantalon ?? null,
+                tallaCalzado: a.datosFisicos?.tallaCalzado ?? null,
+                tallaUniformePatriota: a.datosFisicos?.tallaUniformePatriota ?? null,
+                tallaUniformeOliva: a.datosFisicos?.tallaUniformeOliva ?? null,
+                tensionArterial: a.datosFisicos?.tensionArterial ?? null,
+                alergias: a.datosFisicos?.alergias ?? null,
+                condicionesMedicas: a.datosFisicos?.condicionesMedicas ?? null,
+                discapacidad: a.datosFisicos?.discapacidad ?? null,
+                observaciones: a.datosFisicos?.observaciones ?? null,
+                fotoKey: a.fotoKey,
+                fotoBoletaKey: a.fotoBoletaKey,
+                fotoEsquelaKey: a.fotoEsquelaKey,
+                fotoCedulaKey: a.fotoCedulaKey,
+                fotoTituloKey: a.fotoTituloKey,
+                fotoTituloAutenticacionKey: a.fotoTituloAutenticacionKey,
+                fotoNotasKey: a.fotoNotasKey,
+                tipoEstudio: normalizeTipoEstudio(a.tipoEstudio),
+                nombreUniversidad: a.nombreUniversidad,
+                tituloUniversidad: a.tituloUniversidad,
+                paisUniversidad: a.paisUniversidad,
+                nucleoUniversidad: a.nucleoUniversidad,
+                anioIngresoUniversidad: a.anioIngresoUniversidad,
+                anioEgresoUniversidad: a.anioEgresoUniversidad,
+              }}
+            />
           ) : null}
           <Link
             href={enPapelera ? routes.personal.papelera : routes.personal.aspirantes}

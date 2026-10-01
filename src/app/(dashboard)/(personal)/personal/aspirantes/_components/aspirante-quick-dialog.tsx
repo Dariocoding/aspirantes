@@ -270,10 +270,6 @@ function AspiranteQuickForm({
     if (next) setTab(next);
   }, [state.errors, state.ok]);
 
-  const fichaHref = initial?.id
-    ? `${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(initial.id)}`
-    : routes.personal.aspirantesGestion;
-
   return (
     <>
       <form
@@ -1057,14 +1053,16 @@ function AspiranteQuickForm({
           </fieldset>
         </div>
 
-        <DialogFooter className="gap-2 px-4 py-2.5 sm:justify-between">
-          <Link
-            href={fichaHref}
-            prefetch={false}
-            className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-8 justify-start text-slate-600")}
-          >
-            {isEdit ? "Abrir ficha completa" : "Registro completo"}
-          </Link>
+        <DialogFooter className={cn("gap-2 px-4 py-2.5", isEdit ? "sm:justify-end" : "sm:justify-between")}>
+          {isEdit ? null : (
+            <Link
+              href={routes.personal.aspirantesGestion}
+              prefetch={false}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "h-8 justify-start text-slate-600")}
+            >
+              Registro completo
+            </Link>
+          )}
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="h-8" disabled={pending} onClick={onClose}>
               Cancelar
@@ -1119,7 +1117,7 @@ export function AspiranteQuickDialog({ open, onOpenChange, mode, pelotones, init
           key={isEdit ? initial?.id ?? "edit" : "create"}
         >
           <DialogHeader className="px-4 py-3">
-            <DialogTitle>{isEdit ? "Edición rápida" : "Registro rápido"}</DialogTitle>
+            <DialogTitle>{isEdit ? "Editar aspirante" : "Registro rápido"}</DialogTitle>
             <DialogDescription>
               {isEdit
                 ? "Nombres, apellidos y cédula son obligatorios; el resto es opcional."

@@ -3,7 +3,7 @@
 import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { EllipsisVertical, FileBadge, FileDown, GraduationCap, Pencil, Sparkles, Trash2, UserRound } from "lucide-react";
+import { EllipsisVertical, FileBadge, FileDown, GraduationCap, Pencil, Trash2, UserRound } from "lucide-react";
 import { deleteAspirante } from "@src/app/actions/aspirantes";
 import { aspiranteFichaTecnicaPdfUrl } from "@dashboard/aspirantes/_components/aspirante-ficha-tecnica-pdf-link";
 import { aspiranteBoletaPermisoPdfUrl } from "@dashboard/aspirantes/_components/boletas-permiso-download";
@@ -33,7 +33,6 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQ
   const [celebrateOpen, setCelebrateOpen] = useState(false);
 
   const perfilHref = routes.personal.aspirante(aspiranteId);
-  const editarHref = `${routes.personal.aspirantesGestion}?edit=${encodeURIComponent(aspiranteId)}`;
   const pdfHref = aspiranteFichaTecnicaPdfUrl(aspiranteId);
   const boletaHref = aspiranteBoletaPermisoPdfUrl(aspiranteId);
   const constanciaHref = constanciaEstudiosPdfUrl(aspiranteId);
@@ -81,17 +80,8 @@ export function AspiranteRowActions({ aspiranteId, nombreCompleto, canWrite, onQ
           <DropdownMenuGroup>
             {canWrite && onQuickEdit ? (
               <DropdownMenuItem onClick={onQuickEdit}>
-                <Sparkles />
-                Edición rápida
-              </DropdownMenuItem>
-            ) : null}
-            {canWrite ? (
-              <DropdownMenuItem
-                nativeButton={false}
-                render={<Link href={editarHref} prefetch={false} />}
-              >
                 <Pencil />
-                Ficha completa
+                Editar
               </DropdownMenuItem>
             ) : null}
             {canWrite ? (
