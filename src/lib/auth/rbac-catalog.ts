@@ -93,24 +93,6 @@ export const RBAC_MODULES: RbacModuleSeed[] = [
       { key: "modules.manage", label: "Crear módulos y permisos" },
     ],
   },
-  {
-    key: "inventario_rancho",
-    label: "Inventario — Rancho",
-    description:
-      "Control de existencias, entradas y salidas de insumos alimenticios.",
-    appId: "inventario",
-    sortOrder: 80,
-    permissions: [
-      {
-        key: "inventario.rancho.read",
-        label: "Consultar inventario del rancho",
-      },
-      {
-        key: "inventario.rancho.write",
-        label: "Registrar entradas y salidas del rancho",
-      },
-    ],
-  },
 ];
 
 /** Permisos por rol del sistema (clave de rol → claves de permiso). */
@@ -127,8 +109,6 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "users.manage",
     "audit.read",
     "roles.read",
-    "inventario.rancho.read",
-    "inventario.rancho.write",
   ],
   OPERADOR: [
     "dashboard.read",

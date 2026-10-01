@@ -132,4 +132,10 @@ export async function seedRbac(client: PrismaClient) {
     }
   }
 
+  // Elimina módulos huérfanos del sistema de inventario (ya retirado del catálogo).
+  await client.authModule.deleteMany({
+    where: {
+      OR: [{ key: { startsWith: "inventario" } }, { appId: "inventario" }],
+    },
+  });
 }

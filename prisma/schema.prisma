@@ -155,21 +155,6 @@ enum TipoPermisoPersonal {
   OTRO
 }
 
-enum AreaInventario {
-  RANCHO
-}
-
-enum TipoMovimientoInventario {
-  ENTRADA
-  SALIDA
-}
-
-enum EstadoReporteInventario {
-  QUEDA
-  FALTA
-  NO_HAY
-}
-
 /// Módulo funcional del sistema (agrupa permisos atómicos).
 model AuthModule {
   id          String           @id @default(cuid())
@@ -242,8 +227,6 @@ model User {
   accounts              Account[]
   sessions              Session[]
   auditLogs             AuditLog[]
-  inventarioMovimientos     InventarioMovimiento[]
-  inventarioReportesRancho  InventarioReporteRancho[]
 
   @@index([roleId])
 }
@@ -630,79 +613,4 @@ model EsquelaPlantilla {
   layout     Json
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-}
-
-model InventarioItem {
-  id          String                 @id @default(cuid())
-  nombre      String
-  unidad      String
-  area        AreaInventario
-  stockActual Float                  @default(0)
-  stockMinimo Float?
-  descripcion String?
-  /// Clave del objeto en S3/R2 (p. ej. inventario/rancho/{id}/foto.webp).
-  imagenKey   String?
-  activo      Boolean                @default(true)
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-  movimientos      InventarioMovimiento[]
-  reporteLineas    InventarioReporteRanchoLinea[]
-
-  @@unique([nombre, area])
-  @@index([area])
-  @@index([activo])
-}
-
-/// Entrada o salida de stock sobre un ítem de inventario.
-model InventarioMovimiento {
-  id           String                   @id @default(cuid())
-  itemId       String
-  item         InventarioItem           @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  tipo         TipoMovimientoInventario
-  cantidad     Float
-  motivo       String?
-  notas        String?
-  stockAntes   Float
-  stockDespues Float
-  userId       String?
-  user         User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt    DateTime                 @default(now())
-
-  @@index([itemId])
-  @@index([createdAt])
-}
-
-/// Reporte diario de existencias del rancho (hoy o con un día de atraso).
-model InventarioReporteRancho {
-  id        String                        @id @default(cuid())
-  /// Día al que corresponde el reporte (solo fecha, sin hora).
-  fecha     DateTime                      @db.Date
-  notas     String?
-  userId    String
-  user      User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  createdAt DateTime                      @default(now())
-  lineas    InventarioReporteRanchoLinea[]
-
-  @@unique([fecha])
-  @@index([fecha])
-}
-
-/// Línea de snapshot de un ítem dentro de un reporte diario.
-model InventarioReporteRanchoLinea {
-  id             String                   @id @default(cuid())
-  reporteId      String
-  reporte        InventarioReporteRancho  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
-  itemId         String
-  item           InventarioItem           @relation(fields: [itemId], references: [id], onDelete: Restrict)
-  nombre         String
-  unidad         String
-  stockMinimo    Float?
-  /// Existencias al inicio del día del reporte.
-  stockAyer      Float                    @default(0)
-  stockReportado Float
-  estado         EstadoReporteInventario
-
-  @@unique([reporteId, itemId])
-  @@index([reporteId])
-  @@index([estado])
 }

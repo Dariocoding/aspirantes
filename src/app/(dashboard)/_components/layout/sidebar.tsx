@@ -29,8 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/" || pathname === "";
-  if (href === "/personal" || href === "/sistema" || href === "/inventario")
-    return pathname === href;
+  if (href === "/personal" || href === "/sistema") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -191,9 +190,7 @@ export function Sidebar({ user }: SidebarProps) {
       ? "Portal"
       : appContext === "personal"
         ? APPS.personal.shortName
-        : appContext === "inventario"
-          ? APPS.inventario.shortName
-          : APPS.sistema.shortName;
+        : APPS.sistema.shortName;
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");

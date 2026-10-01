@@ -32,9 +32,6 @@
       "@dashboard/sistema/*": [
         "./src/app/(dashboard)/(sistema)/sistema/*"
       ],
-      "@dashboard/inventario/*": [
-        "./src/app/(dashboard)/(inventario)/inventario/*"
-      ],
       "@dashboard/usuarios/*": [
         "./src/app/(dashboard)/(sistema)/sistema/usuarios/*"
       ],

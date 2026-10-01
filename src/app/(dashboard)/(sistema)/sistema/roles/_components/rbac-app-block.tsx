@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { ChevronDown, Shield, Users, Warehouse } from "lucide-react";
+import { ChevronDown, Shield, Users } from "lucide-react";
 import { PermissionModuleGroup } from "@dashboard/sistema/roles/_components/permission-module-group";
 import type { ModuleRow, RoleRow } from "@dashboard/sistema/roles/_components/types";
 import { rolePermissionCoverage } from "@dashboard/sistema/roles/_components/role-utils";
@@ -30,12 +30,6 @@ const APP_VISUAL: Record<
     header: "border-sky-200/80 bg-linear-to-r from-sky-50/90 to-white",
     badge: "border-sky-200 bg-sky-50 text-sky-900",
     ring: "ring-sky-500/10",
-  },
-  inventario: {
-    icon: Warehouse,
-    header: "border-amber-200/80 bg-linear-to-r from-amber-50/90 to-white",
-    badge: "border-amber-200 bg-amber-50 text-amber-900",
-    ring: "ring-amber-500/10",
   },
 };
 
@@ -81,9 +75,7 @@ export function RbacAppPermissionsBlock({
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-white shadow-sm",
               group.appId === "personal"
                 ? "border-emerald-200/90 text-emerald-800"
-                : group.appId === "inventario"
-                  ? "border-amber-200/90 text-amber-800"
-                  : "border-sky-200/90 text-sky-800",
+                : "border-sky-200/90 text-sky-800",
             )}
           >
             <Icon className="h-4 w-4" aria-hidden />
@@ -138,7 +130,7 @@ export function RbacAppCatalogBlock({
 }: CatalogBlockProps) {
   const [open, setOpen] = useState(false);
   const visual = APP_VISUAL[group.appId];
-  const DisplayIcon = group.appId === "sistema" ? Shield : group.appId === "inventario" ? Warehouse : Users;
+  const DisplayIcon = group.appId === "sistema" ? Shield : Users;
   const permCount = group.modules.reduce((n, m) => n + m.permissions.length, 0);
 
   return (
@@ -159,9 +151,7 @@ export function RbacAppCatalogBlock({
               "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-white shadow-sm",
               group.appId === "personal"
                 ? "border-emerald-200/90 text-emerald-800"
-                : group.appId === "inventario"
-                  ? "border-amber-200/90 text-amber-800"
-                  : "border-sky-200/90 text-sky-800",
+                : "border-sky-200/90 text-sky-800",
             )}
           >
             <DisplayIcon className="h-4 w-4" aria-hidden />

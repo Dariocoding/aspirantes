@@ -25,11 +25,6 @@ export const routes = {
     roles: "/sistema/roles",
     auditoria: "/sistema/auditoria",
   },
-  inventario: {
-    home: "/inventario",
-    rancho: "/inventario/rancho",
-    ranchoReportes: "/inventario/rancho/reportes",
-  },
 } as const;
 
 export const personalPathPrefixes = [
@@ -47,10 +42,4 @@ export const sistemaPathPrefixes = [
   routes.sistema.home,
   routes.sistema.usuarios,
   routes.sistema.auditoria,
-] as const;
-
-export const inventarioPathPrefixes = [
-  routes.inventario.home,
-  routes.inventario.rancho,
-  routes.inventario.ranchoReportes,
 ] as const;

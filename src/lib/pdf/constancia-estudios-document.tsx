@@ -11,6 +11,13 @@ Font.registerHyphenationCallback((word) => [word]);
 const FONT = FICHA_TECNICA_PDF_FONT_FAMILY;
 const INK = "#000000";
 
+/** Carta US: 612 × 792 pt */
+const PAGE_W = 612;
+const MARGIN_X = 42;
+const MARGIN_TOP = 28;
+const MARGIN_BOTTOM = 22;
+const BORDER_INSET = 18;
+
 const MESES = [
   "Enero",
   "Febrero",
@@ -73,41 +80,66 @@ export type ConstanciaEstudiosPerson = {
   comandante: string;
 };
 
+const WATERMARK_SIZE = 340;
+const WATERMARK_TOP = 185;
+
 const styles = StyleSheet.create({
   page: {
     fontFamily: FONT,
     fontSize: 12,
     color: INK,
     backgroundColor: "#ffffff",
-    paddingTop: 32,
-    paddingBottom: 28,
-    paddingHorizontal: 58,
+    paddingTop: MARGIN_TOP,
+    paddingBottom: MARGIN_BOTTOM,
+    paddingHorizontal: MARGIN_X,
+    position: "relative",
+  },
+  border: {
+    position: "absolute",
+    top: BORDER_INSET,
+    left: BORDER_INSET,
+    right: BORDER_INSET,
+    bottom: BORDER_INSET,
+    borderWidth: 0.9,
+    borderColor: "#9ca3af",
+  },
+  watermark: {
+    position: "absolute",
+    top: WATERMARK_TOP,
+    left: (PAGE_W - WATERMARK_SIZE) / 2,
+    width: WATERMARK_SIZE,
+    height: WATERMARK_SIZE,
+  },
+  content: {
+    position: "relative",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 6,
   },
   logoEjercito: {
-    width: 58,
+    width: 62,
   },
   logoDireccion: {
     width: 78,
   },
   headerText: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     alignItems: "center",
   },
   headerLine: {
-    fontSize: 7.5,
-    lineHeight: 1.15,
+    fontSize: 7.4,
+    lineHeight: 1.18,
     textAlign: "center",
     textTransform: "uppercase",
+    fontWeight: "bold",
   },
   titleWrap: {
-    marginTop: 26,
-    marginBottom: 20,
+    marginTop: 28,
+    marginBottom: 22,
     alignItems: "center",
   },
   title: {
@@ -115,85 +147,80 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     textDecoration: "underline",
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
   },
   body: {
-    fontSize: 12,
-    lineHeight: 1.35,
-    textAlign: "justify",
-    marginBottom: 12,
+    fontSize: 11.5,
+    lineHeight: 1.5,
+    textAlign: "center",
+    marginBottom: 16,
   },
   mark: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "bold",
-    textDecoration: "underline",
   },
-  dios: {
-    marginTop: 22,
-    marginBottom: 4,
-    fontSize: 13,
-    fontWeight: "bold",
-    textAlign: "center",
-    letterSpacing: 0.8,
-  },
-  watermark: {
+  footer: {
     position: "absolute",
-    top: 500,
-    left: 170,
-    width: 240,
-  },
-  sign: {
-    marginTop: 72,
+    left: MARGIN_X,
+    right: MARGIN_X,
+    bottom: MARGIN_BOTTOM + 6,
     alignItems: "center",
   },
-  signName: {
+  dios: {
+    marginBottom: 28,
     fontSize: 12.5,
     fontWeight: "bold",
     textAlign: "center",
-    letterSpacing: 0.4,
+    letterSpacing: 0.9,
+  },
+  signName: {
+    fontSize: 11.5,
+    fontWeight: "bold",
+    textAlign: "center",
+    letterSpacing: 0.35,
   },
   signRank: {
     marginTop: 1,
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "bold",
     textAlign: "center",
   },
   signCargo: {
-    marginTop: 1,
-    fontSize: 11,
+    marginTop: 2,
+    fontSize: 9.5,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 1.18,
+    lineHeight: 1.2,
   },
   resolucion: {
-    marginTop: 7,
+    marginTop: 6,
     fontSize: 7,
     textAlign: "center",
   },
   motto: {
     marginTop: 1,
-    fontSize: 8.5,
+    fontSize: 8.2,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 1.15,
+    lineHeight: 1.18,
   },
   mottoFirst: {
-    marginTop: 8,
-    fontSize: 8.5,
+    marginTop: 10,
+    fontSize: 8.2,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 1.15,
+    lineHeight: 1.18,
   },
   address: {
     marginTop: 1,
-    fontSize: 8,
+    fontSize: 7.2,
     fontWeight: "bold",
     textAlign: "center",
     lineHeight: 1.15,
   },
   addressFirst: {
-    marginTop: 6,
-    fontSize: 8,
+    marginTop: 8,
+    fontSize: 7.2,
     fontWeight: "bold",
     textAlign: "center",
     lineHeight: 1.15,
@@ -268,56 +295,60 @@ function ConstanciaPage({
 
   return (
     <Page size="LETTER" style={styles.page}>
-      {marcaAgua ? <Image src={marcaAgua} style={styles.watermark} /> : null}
-      <View style={styles.header}>
-        {logoEjercito ? <Image src={logoEjercito} style={styles.logoEjercito} /> : <View style={styles.logoEjercito} />}
-        <View style={styles.headerText}>
-          <Text style={styles.headerLine}>República Bolivariana de Venezuela</Text>
-          <Text style={styles.headerLine}>Ministerio del Poder Popular para la Defensa</Text>
-          <Text style={styles.headerLine}>Ejército Bolivariano</Text>
-          <Text style={styles.headerLine}>Dirección de Educación del Ejército Bolivariano</Text>
-          <Text style={styles.headerLine}>
-            Curso Especial de Formación de Oficiales en la Categoría de Asimilado
-          </Text>
-          <Text style={styles.headerLine}>y Asimilado Técnico</Text>
+      <View style={styles.border} fixed />
+      {marcaAgua ? <Image src={marcaAgua} style={styles.watermark} fixed /> : null}
+
+      <View style={styles.content}>
+        <View style={styles.header}>
+          {logoEjercito ? (
+            <Image src={logoEjercito} style={styles.logoEjercito} />
+          ) : (
+            <View style={styles.logoEjercito} />
+          )}
+          <View style={styles.headerText}>
+            <Text style={styles.headerLine}>República Bolivariana de Venezuela</Text>
+            <Text style={styles.headerLine}>Ministerio del Poder Popular para la Defensa</Text>
+            <Text style={styles.headerLine}>Ejército Bolivariano</Text>
+            <Text style={styles.headerLine}>Dirección de Educación del Ejército Bolivariano</Text>
+            <Text style={styles.headerLine}>
+              Curso Especial de Formación de Oficiales en la Categoría de Asimilado
+            </Text>
+            <Text style={styles.headerLine}>y Asimilado Técnico</Text>
+          </View>
+          {logoDireccion ? (
+            <Image src={logoDireccion} style={styles.logoDireccion} />
+          ) : (
+            <View style={styles.logoDireccion} />
+          )}
         </View>
-        {logoDireccion ? (
-          <Image src={logoDireccion} style={styles.logoDireccion} />
-        ) : (
-          <View style={styles.logoDireccion} />
-        )}
-      </View>
 
-      <View style={styles.titleWrap}>
-        <Text style={styles.title}>CONSTANCIA DE ESTUDIO</Text>
-      </View>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title}>CONSTANCIA DE ESTUDIO</Text>
+        </View>
 
-      <Text style={styles.body}>
-        {`Quien suscribe, `}
-        <Text style={styles.mark}>{`${firmanteLinea || "EL DIRECTOR"},`}</Text>
-        {"\n"}
-        <Text style={styles.mark}>
-          {`Director del Liceo Militar Gran Mariscal de Ayacucho y del Curso Especial de Formación de Oficiales Asimilados y Asimilado Técnico (${cefoa}),`}
+        <Text style={styles.body}>
+          {`Quien suscribe, `}
+          <Text style={styles.mark}>{`${firmanteLinea || "EL DIRECTOR"},`}</Text>
+          {` Director del Liceo Militar Gran Mariscal de Ayacucho y del Curso Especial de Formación de Oficiales Asimilados y Asimilado Técnico (`}
+          <Text style={styles.mark}>{cefoa}</Text>
+          {`), por medio de la presente `}
+          <Text style={styles.mark}>CERTIFICO</Text>
+          {` que ${person.trato}: `}
+          <Text style={styles.mark}>{estudiante}</Text>
+          {`, titular de la Cédula de Identidad `}
+          <Text style={styles.mark}>{`Nro. ${cedula}`}</Text>
+          {`, se encuentra cursando el Curso Especial de Formación de Oficiales Asimilado y Asimilado Técnico `}
+          <Text style={styles.mark}>{`(PERIODO ${periodo})`}</Text>
+          {` en este centro de formación.`}
         </Text>
-        {"\n"}
-        {`por medio de la presente `}
-        <Text style={styles.mark}>CERTIFICO</Text>
-        {` que ${person.trato}: `}
-        <Text style={styles.mark}>{estudiante}</Text>
-        {`, titular de la Cédula de Identidad `}
-        <Text style={styles.mark}>{`Nro. ${cedula}`}</Text>
-        {`, se encuentra cursando el Curso Especial de Formación de Oficiales Asimilado y Asimilado Técnico `}
-        <Text style={styles.mark}>{`(PERIODO ${periodo})`}</Text>
-        {` en este centro de formación.`}
-      </Text>
 
-      <Text style={styles.body}>
-        {`Constancia que se expide a petición de parte interesada en Caracas, ${fechaExpedicion(emitida)}, para los fines legales y consiguientes a que dé lugar.`}
-      </Text>
+        <Text style={styles.body}>
+          {`Constancia que se expide a petición de parte interesada en Caracas, ${fechaExpedicion(emitida)}, para los fines legales y consiguientes a que dé lugar.`}
+        </Text>
+      </View>
 
-      <Text style={styles.dios}>DIOS Y FEDERACIÓN</Text>
-
-      <View style={styles.sign}>
+      <View style={styles.footer} fixed>
+        <Text style={styles.dios}>DIOS Y FEDERACIÓN</Text>
         {firmante.nombre ? <Text style={styles.signName}>{firmante.nombre}</Text> : null}
         {!firmante.nombre && firmanteLinea ? <Text style={styles.signName}>{firmanteLinea}</Text> : null}
         {firmante.rango ? <Text style={styles.signRank}>{firmante.rango}</Text> : null}
@@ -327,14 +358,16 @@ function ConstanciaPage({
         <Text style={styles.resolucion}>
           Designado Mediante Resolución N° 068681 de fecha 14 de septiembre de 2024
         </Text>
-        <Text style={styles.mottoFirst}>"CHÁVEZ VIVE, LA PATRIA SIGUE"</Text>
+        <Text style={styles.mottoFirst}>“CHÁVEZ VIVE, LA PATRIA SIGUE”</Text>
         <Text style={styles.motto}>¡INDEPENDENCIA O NADA!</Text>
         <Text style={styles.motto}>¡LEALES SIEMPRE, TRAIDORES NUNCA!</Text>
         <Text style={styles.motto}>¡INTEGRAR, ES VENCER!</Text>
         <Text style={styles.motto}>¡LA CONSIGNA ES TRIUNFAR!</Text>
-        <Text style={styles.addressFirst}>CARACAS MUNICIPIO LIBERTADOR, SECTOR RUIZ PINEDA DE CARICUAO, LOS</Text>
+        <Text style={styles.addressFirst}>
+          CARACAS MUNICIPIO LIBERTADOR, SECTOR RUIZ PINEDA DE CARICUAO, LOS
+        </Text>
         <Text style={styles.address}>TELARES, LICEO MILITAR GRAN MARISCAL DE AYACUCHO</Text>
-        <Text style={styles.address}>TELEFONO 04166427379</Text>
+        <Text style={styles.address}>TELÉFONO 04166427379</Text>
       </View>
     </Page>
   );

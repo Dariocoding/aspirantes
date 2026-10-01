@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const appIdSchema = z.enum(["personal", "sistema", "inventario"]);
+const appIdSchema = z.enum(["personal", "sistema"]);
 
 const slugKey = z
   .string()

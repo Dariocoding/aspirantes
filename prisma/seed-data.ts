@@ -1,7 +1,6 @@
 import { hash } from "bcryptjs";
 import type { PrismaClient } from "../src/generated/prisma";
 import { seedRbac } from "./seed-rbac";
-import { seedInventario } from "./seed-inventario";
 import { SYSTEM_ROLE_IDS } from "../src/lib/auth/rbac-catalog";
 import { PLANTILLA_MEMBRETE_CEFOA45 } from "../src/lib/membrete";
 
@@ -114,7 +113,6 @@ async function seedMembreteCefoa45(client: PrismaClient) {
  */
 export async function runSeed(client: PrismaClient) {
   await seedRbac(client);
-  await seedInventario(client);
   await seedMembreteCefoa45(client);
 
   const inserted = await client.efemeride.createMany({

@@ -17,8 +17,6 @@ export const Permission = {
   ROLES_READ: "roles.read",
   ROLES_MANAGE: "roles.manage",
   MODULES_MANAGE: "modules.manage",
-  INVENTARIO_RANCHO_READ: "inventario.rancho.read",
-  INVENTARIO_RANCHO_WRITE: "inventario.rancho.write",
 } as const;
 
 export type PermissionKey = (typeof Permission)[keyof typeof Permission];

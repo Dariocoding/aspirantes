@@ -1,5 +1,4 @@
 import {
-  inventarioPathPrefixes,
   personalPathPrefixes,
   routes,
   sistemaPathPrefixes,
@@ -21,21 +20,18 @@ import {
   KeyRound,
   LayoutGrid,
   Medal,
-  ClipboardList,
   Shield,
   Stamp,
   Users,
-  Warehouse,
 } from "lucide-react";
 
-export type AppId = "personal" | "sistema" | "inventario";
+export type AppId = "personal" | "sistema";
 
 /**
  * Estructura en `src/app/(dashboard)/`:
  * - `(hub)/` — portal `/`
  * - `(personal)/personal/` — gestión de personal (`/personal/*`)
  * - `(sistema)/sistema/` — usuarios y auditorías (`/sistema/*`)
- * - `(inventario)/inventario/` — inventario del rancho (`/inventario/*`)
  * - `sin-permiso/`, `_components/` — compartido entre apps
  */
 
@@ -81,22 +77,11 @@ export const APPS: Record<AppId, AppDefinition> = {
       Permission.ROLES_READ,
     ],
   },
-  inventario: {
-    id: "inventario",
-    name: "Control de inventario",
-    shortName: "Inventario",
-    description:
-      "Existencias, entradas y salidas de insumos en el rancho.",
-    homeHref: routes.inventario.home,
-    pathPrefixes: inventarioPathPrefixes,
-    accessPermissions: [Permission.INVENTARIO_RANCHO_READ],
-  },
 };
 
 export const APP_LIST: AppDefinition[] = [
   APPS.personal,
   APPS.sistema,
-  APPS.inventario,
 ];
 
 const HUB_PATHS = new Set(["/", ""]);
@@ -174,22 +159,6 @@ const sistemaLinks: AppNavLink[] = [
   },
 ];
 
-const inventarioLinks: AppNavLink[] = [
-  { href: routes.inventario.home, label: "Inicio", icon: Home },
-  {
-    href: routes.inventario.rancho,
-    label: "Rancho",
-    icon: Warehouse,
-    permission: Permission.INVENTARIO_RANCHO_READ,
-  },
-  {
-    href: routes.inventario.ranchoReportes,
-    label: "Reportes del rancho",
-    icon: ClipboardList,
-    permission: Permission.INVENTARIO_RANCHO_READ,
-  },
-];
-
 export function getSidebarNavForApp(
   appId: AppId | "hub",
   ctx: AuthContext,
@@ -210,10 +179,6 @@ export function getSidebarNavForApp(
 
   if (appId === "sistema") {
     return { main: filterByPermission(sistemaLinks) };
-  }
-
-  if (appId === "inventario") {
-    return { main: filterByPermission(inventarioLinks) };
   }
 
   return {

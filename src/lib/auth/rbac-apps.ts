@@ -11,13 +11,12 @@ export const MODULE_APP_BY_KEY: Record<string, AppId> = {
   users: "sistema",
   audit: "sistema",
   rbac: "sistema",
-  inventario_rancho: "inventario",
 };
 
-export const RBAC_APP_ORDER: AppId[] = ["personal", "sistema", "inventario"];
+export const RBAC_APP_ORDER: AppId[] = ["personal", "sistema"];
 
 export function resolveModuleAppId(mod: Pick<ModuleRow, "key" | "appId">): AppId {
-  if (mod.appId === "personal" || mod.appId === "sistema" || mod.appId === "inventario") return mod.appId;
+  if (mod.appId === "personal" || mod.appId === "sistema") return mod.appId;
   return MODULE_APP_BY_KEY[mod.key] ?? "personal";
 }
 
@@ -30,7 +29,7 @@ export type ModulesByAppGroup = {
 };
 
 export function groupModulesByApp(modules: ModuleRow[]): ModulesByAppGroup[] {
-  const buckets: Record<AppId, ModuleRow[]> = { personal: [], sistema: [], inventario: [] };
+  const buckets: Record<AppId, ModuleRow[]> = { personal: [], sistema: [] };
 
   for (const mod of modules) {
     buckets[resolveModuleAppId(mod)].push(mod);

@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { ArrowRight, FileSearch, Users, Warehouse } from "lucide-react";
+import { ArrowRight, FileSearch, Users } from "lucide-react";
 import type { AppDefinition, AppId } from "@src/lib/apps/registry";
 import { cn } from "@src/lib/utils";
 
 const appIcons = {
   personal: Users,
   sistema: FileSearch,
-  inventario: Warehouse,
 } as const;
 
 const appHighlights: Record<AppId, readonly string[]> = {
   personal: ["Censo y registro de aspirantes", "Permisos, efemérides, esquelas y convocatorias", "Reportes e impresión documental"],
   sistema: ["Administración de usuarios", "Roles y permisos por módulo", "Registro de auditoría del sistema"],
-  inventario: ["Inventario del rancho", "Alertas de stock bajo y reposición", "Historial de entradas y salidas"],
 };
 
 const appAccent = {
@@ -31,14 +29,6 @@ const appAccent = {
     button:
       "border-slate-900/50 bg-slate-800 text-white shadow-sm group-hover:bg-slate-900 group-hover:shadow-md",
     dot: "bg-slate-600/80",
-  },
-  inventario: {
-    card: "hover:border-amber-700/25 hover:shadow-amber-950/10",
-    icon: "from-amber-800 to-amber-950 shadow-amber-950/25",
-    ring: "group-hover:ring-amber-700/15",
-    button:
-      "border-amber-900/40 bg-amber-800 text-amber-50 shadow-sm group-hover:bg-amber-950 group-hover:shadow-md",
-    dot: "bg-amber-700/80",
   },
 } as const;
 
