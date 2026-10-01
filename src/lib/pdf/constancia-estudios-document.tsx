@@ -90,13 +90,9 @@ const styles = StyleSheet.create({
   },
   logoEjercito: {
     width: 58,
-    height: 86,
-    objectFit: "contain",
   },
   logoDireccion: {
     width: 78,
-    height: 78,
-    objectFit: "contain",
   },
   headerText: {
     flex: 1,
@@ -142,11 +138,9 @@ const styles = StyleSheet.create({
   },
   watermark: {
     position: "absolute",
-    top: 468,
-    left: 116,
-    width: 380,
-    height: 300,
-    objectFit: "contain",
+    top: 500,
+    left: 170,
+    width: 240,
   },
   sign: {
     marginTop: 72,
