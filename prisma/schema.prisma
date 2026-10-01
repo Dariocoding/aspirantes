@@ -346,6 +346,10 @@ model Aspirante {
   id                    String               @id @default(cuid())
   nombres               String
   apellidos             String
+  /// La calcula Postgres con fold_busqueda(nombres). No se escribe desde la app.
+  nombresBusqueda       String               @default(dbgenerated("fold_busqueda(\"nombres\")"))
+  /// La calcula Postgres con fold_busqueda(apellidos). No se escribe desde la app.
+  apellidosBusqueda     String               @default(dbgenerated("fold_busqueda(\"apellidos\")"))
   cedula                String
   sexo                  Sexo
   /// Edad se calcula en runtime desde esta fecha (no hay columna `edad`).
@@ -396,6 +400,7 @@ model Aspirante {
   contactos             ContactoEmergencia[]
   esquelasGeneradas     Esquela[]
   permisos              PermisoPersonal[]
+  asignacionesRolServicio AsignacionRolServicio[]
   /// Revisión de expediente, prueba física y examen médico (estructura versionada; ver `src/lib/aspirantes/ficha-evaluacion.ts`).
   fichaEvaluacion       Json?
   /// Clave del objeto en S3/R2 (p. ej. aspirantes/{id}/foto.webp). Foto tipo carnet.
@@ -460,6 +465,56 @@ model PermisoPersonal {
   @@index([aspiranteId, fechaInicio])
   @@index([fechaInicio, fechaFin])
   @@index([anulado])
+}
+
+/// Catálogo de un rol de servicio (enfermería, comedor, cuartelero…).
+model RolServicio {
+  id        String   @id @default(cuid())
+  /// Clave estable, p. ej. `enfermeria-cefoa-46`.
+  clave     String   @unique
+  nombre    String
+  /// Curso de origen, p. ej. `CEFOA 46`.
+  curso     String
+  sortOrder Int      @default(0)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  planes    PlanRolServicio[]
+}
+
+/// Publicación mensual de un rol de servicio.
+model PlanRolServicio {
+  id            String                @id @default(cuid())
+  rolServicioId String
+  rol           RolServicio           @relation(fields: [rolServicioId], references: [id], onDelete: Cascade)
+  anio          Int
+  mes           Int
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  asignaciones  AsignacionRolServicio[]
+
+  @@unique([rolServicioId, anio, mes])
+  @@index([anio, mes])
+}
+
+/// Persona incluida en el rol de un mes, con los días que le corresponden.
+model AsignacionRolServicio {
+  id          String          @id @default(cuid())
+  planId      String
+  plan        PlanRolServicio @relation(fields: [planId], references: [id], onDelete: Cascade)
+  orden       Int
+  grado       String
+  /// Nombre tal como figura en el rol. Puede ir abreviado o vacío.
+  nombre      String
+  aspiranteId String?
+  aspirante   Aspirante?      @relation(fields: [aspiranteId], references: [id], onDelete: SetNull)
+  /// Marcas por día: `[{"dia":8,"marca":"X"}]`.
+  dias        Json
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([planId, orden])
+  @@index([aspiranteId])
 }
 
 /// Textos fijos de la boleta individual de un permiso. Una sola fila (`formato_permiso`).

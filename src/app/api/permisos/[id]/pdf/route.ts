@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
+import { inlinePdfResponse, pdfNoEncontrado } from "@src/lib/pdf/inline-pdf";
 import { writeAuditLog } from "@src/lib/audit/log";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
@@ -33,12 +34,9 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
-  }
-  const ctx = authContextFromSession(session);
-  if (!hasPermission(ctx, Permission.ASPIRANTES_READ)) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  const ctx = session?.user ? authContextFromSession(session) : null;
+  if (!session?.user || !ctx || !hasPermission(ctx, Permission.ASPIRANTES_READ)) {
+    pdfNoEncontrado();
   }
 
   const { id } = await context.params;
@@ -60,9 +58,7 @@ export async function GET(
       },
     },
   });
-  if (!permiso) {
-    return NextResponse.json({ message: "Permiso no encontrado." }, { status: 404 });
-  }
+  if (!permiso) pdfNoEncontrado();
 
   const plantilla = await loadFormatoPermisoPlantilla();
   const presentacion = presentarFormatoPermiso(plantilla, {
@@ -106,13 +102,5 @@ export async function GET(
     metadata: { aspiranteId: permiso.aspiranteId, anulado: permiso.anulado },
   });
 
-  const filename = `boleta-permiso-${safeFilePart(permiso.aspirante.cedula)}.pdf`;
-  return new NextResponse(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${filename}"`,
-      "Cache-Control": "private, no-store",
-    },
-  });
+  return inlinePdfResponse(buffer, `boleta-permiso-${safeFilePart(permiso.aspirante.cedula)}.pdf`);
 }

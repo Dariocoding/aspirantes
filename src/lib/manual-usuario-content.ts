@@ -25,7 +25,7 @@ export const manualUsuarioSections: ManualUsuarioSection[] = [
     id: "consulta",
     title: "Rol: Solo consulta",
     paragraphs: [
-      "Puede ver el panel principal (dashboard), el listado del censo de aspirantes con filtros y búsqueda, el control de permisos de ausencia en modo solo lectura, y las secciones de Efemérides y Esquelas en modo solo lectura.",
+      "Puede ver el panel principal (dashboard), el listado del censo de aspirantes con filtros y búsqueda, el control de permisos de ausencia en modo solo lectura, los roles de servicio del mes y las secciones de Efemérides y Esquelas en modo solo lectura.",
       "No puede registrar, editar ni eliminar aspirantes. No puede exportar el censo en Excel ni en PDF. No tiene acceso a Convocatorias, Usuarios ni Auditoría.",
     ],
   },
@@ -33,7 +33,7 @@ export const manualUsuarioSections: ManualUsuarioSection[] = [
     id: "operador",
     title: "Rol: Operador",
     paragraphs: [
-      "Incluye todo lo del rol Solo consulta, y además puede dar de alta, modificar y eliminar aspirantes (registro y actualización). Eliminar los envía a la papelera: dejan de verse en el censo y desde allí se pueden restaurar o borrar por completo. También puede registrar y anular permisos de ausencia (de/hasta), exportar el censo en formato XLSX o PDF según los filtros aplicados, y crear o editar efemérides y esquelas.",
+      "Incluye todo lo del rol Solo consulta, y además puede dar de alta, modificar y eliminar aspirantes (registro y actualización). Eliminar los envía a la papelera: dejan de verse en el censo y desde allí se pueden restaurar o borrar por completo. También puede registrar y anular permisos de ausencia (de/hasta), exportar el censo en Excel según los filtros aplicados y generar los PDF de toda la convocatoria, y crear o editar efemérides y esquelas.",
       "No gestiona convocatorias ni cuentas de usuario, y no ve el listado de auditoría.",
     ],
     bullets: [
@@ -44,9 +44,9 @@ export const manualUsuarioSections: ManualUsuarioSection[] = [
       "Eliminar aspirante por completo desde la papelera — ASPIRANTE_PURGE.",
       "Alta, edición o anulación de permiso de personal — PERMISO_CREATE, PERMISO_UPDATE o PERMISO_ANULAR.",
       "Exportación de censo XLSX o PDF — CENSO_EXPORT_XLSX o CENSO_EXPORT_PDF (convocatoria, formato y cantidad de filas).",
-      "Exportación masiva de fichas técnicas PDF — CENSO_EXPORT_PDF_FICHAS_TECNICAS (un PDF con una página por aspirante: todas las de la convocatoria, o las que coincidan con los filtros del censo).",
+      "Exportación masiva de fichas técnicas PDF — CENSO_EXPORT_PDF_FICHAS_TECNICAS (un PDF con una página por aspirante: todas las de la convocatoria, o solo las marcadas con los checks).",
       "Exportación masiva de documentos académicos PDF — CENSO_EXPORT_PDF_DOCUMENTOS_ACADEMICOS (un PDF con fondo negro, autenticación del título y notas certificadas; cada hoja identifica al aspirante por nombre y cédula).",
-      "Constancia de estudios PDF — CONSTANCIA_ESTUDIOS_PDF (una hoja por aspirante: la persona del menú, la selección, los filtros o toda la convocatoria).",
+      "Constancia de estudios PDF — CONSTANCIA_ESTUDIOS_PDF (una hoja por aspirante: la persona del menú, la selección con checks o toda la convocatoria).",
     ],
   },
   {

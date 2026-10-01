@@ -15,6 +15,7 @@ import {
   BookMarked,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   FileSearch,
   Home,
   KeyRound,
@@ -139,6 +140,7 @@ const personalMainLinks: AppNavLink[] = [
 
 const personalConfigLinks: AppNavLink[] = [
   { href: routes.personal.permisos, label: "Permisos", icon: CalendarClock },
+  { href: routes.personal.rolesServicio, label: "Roles de servicio", icon: CalendarRange },
   { href: routes.personal.efemerides, label: "Efemérides", icon: CalendarDays },
   { href: routes.personal.esquelas, label: "Esquelas", icon: Medal },
   { href: routes.personal.membretes, label: "Membretes", icon: Stamp },

@@ -10,8 +10,13 @@ import { labelTipoEstudio } from "@src/lib/aspirantes/tipo-estudio";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
+import { inlinePdfResponse, pdfNoEncontrado } from "@src/lib/pdf/inline-pdf";
 import { ConstanciaEstudiosPdfDocument, type ConstanciaEstudiosPerson } from "@src/lib/pdf/constancia-estudios-document";
-import { boletaCefoaLogoUri, boletaEjercitoLogoUri } from "@src/lib/pdf/institution-logo";
+import {
+  boletaEjercitoLogoUri,
+  constanciaDireccionLogoUri,
+  constanciaMarcaAguaUri,
+} from "@src/lib/pdf/institution-logo";
 import { parseBoletaIdsParam } from "@src/lib/pdf/boleta-permiso";
 import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 import { prisma } from "@src/lib/prisma";
@@ -28,7 +33,14 @@ const CENSUS_KEYS = ["q", "sexo", "sort", "peloton", "convocatoria", "condicion"
 const include = {
   peloton: { select: { numero: true, nombre: true } },
   convocatoria: {
-    select: { id: true, codigo: true, nombre: true, anio: true, comandanteNombre: true },
+    select: {
+      id: true,
+      codigo: true,
+      nombre: true,
+      anio: true,
+      anioVence: true,
+      comandanteNombre: true,
+    },
   },
 } satisfies Prisma.AspiranteInclude;
 
@@ -73,6 +85,7 @@ function toPerson(row: Row): ConstanciaEstudiosPerson {
     convocatoriaNombre: row.convocatoria.nombre,
     convocatoriaCodigo: row.convocatoria.codigo,
     convocatoriaAnio: String(row.convocatoria.anio),
+    anioVence: row.convocatoria.anioVence,
     comandante: dash(row.convocatoria.comandanteNombre),
   };
 }
@@ -127,8 +140,9 @@ async function pdfResponse(userId: string | undefined, userEmail: string | null 
     const doc = createElement(ConstanciaEstudiosPdfDocument, {
       people,
       emitidaEn,
-      logoCefoa: boletaCefoaLogoUri(),
       logoEjercito: boletaEjercitoLogoUri(),
+      logoDireccion: constanciaDireccionLogoUri(),
+      marcaAgua: constanciaMarcaAguaUri(),
     });
     buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
   } catch (error) {
@@ -150,44 +164,27 @@ async function pdfResponse(userId: string | undefined, userEmail: string | null 
       ? `constancia-estudios-${safeFilePart(rows[0]!.cedula)}.pdf`
       : `constancias-estudios-${safeFilePart(rows[0]!.convocatoria.codigo)}.pdf`;
 
-  return new NextResponse(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "private, no-store",
-    },
-  });
+  return inlinePdfResponse(buffer, filename);
 }
 
 async function authorize() {
   const session = await auth();
-  if (!session?.user) {
-    return { ok: false as const, response: NextResponse.json({ message: "No autenticado" }, { status: 401 }) };
+  const ctx = session?.user ? authContextFromSession(session) : null;
+  if (!session?.user || !ctx || !hasPermission(ctx, Permission.ASPIRANTES_READ)) {
+    pdfNoEncontrado();
   }
-  const ctx = authContextFromSession(session);
-  if (!hasPermission(ctx, Permission.ASPIRANTES_READ)) {
-    return { ok: false as const, response: NextResponse.json({ message: "No autorizado" }, { status: 403 }) };
-  }
-  return { ok: true as const, session, ctx };
+  return { session, ctx };
 }
 
 export async function GET(request: Request) {
-  const authResult = await authorize();
-  if (!authResult.ok) return authResult.response;
-  const { session, ctx } = authResult;
+  const { session, ctx } = await authorize();
 
   const url = new URL(request.url);
   const ids = parseBoletaIdsParam(url.searchParams.get("ids")).slice(0, MAX_CONSTANCIAS);
   if (ids.length === 1) {
     return pdfResponse(session.user.id, session.user.email, await loadByIds(ids));
   }
-  if (!canWrite(ctx)) {
-    return NextResponse.json(
-      { message: "No autorizado: el rol consulta no puede descargar constancias masivas." },
-      { status: 403 },
-    );
-  }
+  if (!canWrite(ctx)) pdfNoEncontrado();
   if (ids.length > 1) {
     return pdfResponse(session.user.id, session.user.email, await loadByIds(ids));
   }
@@ -209,20 +206,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authResult = await authorize();
-  if (!authResult.ok) return authResult.response;
-  const { session, ctx } = authResult;
+  const { session, ctx } = await authorize();
 
   const body = (await request.json().catch(() => null)) as { ids?: unknown } | null;
   const ids = parseBoletaIdsParam(body?.ids).slice(0, MAX_CONSTANCIAS);
   if (!ids.length) {
     return NextResponse.json({ message: "Seleccione al menos un personal." }, { status: 400 });
   }
-  if (ids.length > 1 && !canWrite(ctx)) {
-    return NextResponse.json(
-      { message: "No autorizado: el rol consulta no puede descargar constancias masivas." },
-      { status: 403 },
-    );
-  }
+  if (ids.length > 1 && !canWrite(ctx)) pdfNoEncontrado();
   return pdfResponse(session.user.id, session.user.email, await loadByIds(ids));
 }

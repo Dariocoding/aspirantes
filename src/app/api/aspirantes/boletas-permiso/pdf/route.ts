@@ -9,6 +9,7 @@ import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { BoletasPermisoPdfDocument } from "@src/lib/pdf/boleta-permiso-document";
+import { inlinePdfResponse, pdfNoEncontrado } from "@src/lib/pdf/inline-pdf";
 import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 import {
   boletaConvocatoriaInfo,
@@ -216,14 +217,7 @@ async function pdfResponse(
       ? `boleta-permiso-${safeFilePart(ordered[0]!.cedula)}.pdf`
       : `boletas-permiso-${safeFilePart(convocatoria.codigo)}.pdf`;
 
-  return new NextResponse(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "private, no-store",
-    },
-  });
+  return inlinePdfResponse(buffer, filename);
 }
 
 async function loadByIds(ids: string[]) {
@@ -241,21 +235,16 @@ async function loadByIds(ids: string[]) {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
-  }
-  const ctx = authContextFromSession(session);
-  if (!hasPermission(ctx, Permission.ASPIRANTES_READ)) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  const ctx = session?.user ? authContextFromSession(session) : null;
+  if (!session?.user || !ctx || !hasPermission(ctx, Permission.ASPIRANTES_READ)) {
+    pdfNoEncontrado();
   }
 
   const url = new URL(request.url);
   const mode = url.searchParams.get("mode")?.toLowerCase().trim();
 
   if (mode === "directorio") {
-    if (!canWrite(ctx)) {
-      return NextResponse.json({ message: "No autorizado" }, { status: 403 });
-    }
+    if (!canWrite(ctx)) pdfNoEncontrado();
     const sp = parseSp(url.searchParams);
     const convocatoriaId = await resolveConvocatoriaId(sp);
     if (!convocatoriaId) {
@@ -280,12 +269,7 @@ export async function GET(request: Request) {
     return pdfResponse(session.user.id, session.user.email, aspirantes);
   }
 
-  if (!canWrite(ctx)) {
-    return NextResponse.json(
-      { message: "No autorizado: el rol consulta no puede descargar boletas masivas." },
-      { status: 403 },
-    );
-  }
+  if (!canWrite(ctx)) pdfNoEncontrado();
 
   if (ids.length > 1) {
     const aspirantes = await loadByIds(ids);
@@ -313,12 +297,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
-  }
-  const ctx = authContextFromSession(session);
-  if (!hasPermission(ctx, Permission.ASPIRANTES_READ)) {
-    return NextResponse.json({ message: "No autorizado" }, { status: 403 });
+  const ctx = session?.user ? authContextFromSession(session) : null;
+  if (!session?.user || !ctx || !hasPermission(ctx, Permission.ASPIRANTES_READ)) {
+    pdfNoEncontrado();
   }
 
   const body = (await request.json().catch(() => null)) as { ids?: unknown } | null;
@@ -326,12 +307,7 @@ export async function POST(request: Request) {
   if (!ids.length) {
     return NextResponse.json({ message: "Seleccione al menos un personal." }, { status: 400 });
   }
-  if (ids.length > 1 && !canWrite(ctx)) {
-    return NextResponse.json(
-      { message: "No autorizado: el rol consulta no puede descargar boletas masivas." },
-      { status: 403 },
-    );
-  }
+  if (ids.length > 1 && !canWrite(ctx)) pdfNoEncontrado();
 
   const aspirantes = await loadByIds(ids);
   return pdfResponse(session.user.id, session.user.email, aspirantes);

@@ -125,7 +125,7 @@ export function CensusToolbar({
           <CardDescription className="text-xs text-slate-600">
             Listado paginado e identificación básica.
             {write
-              ? " Excel permite elegir columnas, exportar e importar por cédula; PDF exporta censo, fichas, boletas de permiso y constancias de estudios."
+              ? " Excel permite elegir columnas, exportar e importar por cédula. PDF genera cada documento de toda la convocatoria; la selección con checks arma el mismo PDF solo con los marcados."
               : " La exportación masiva (Excel/PDF) está reservada a operadores y administradores."}
           </CardDescription>
         </div>

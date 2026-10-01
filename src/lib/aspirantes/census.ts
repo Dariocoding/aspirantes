@@ -1,4 +1,5 @@
 import type { Prisma } from "@src/generated/prisma";
+import { foldBusqueda } from "@src/lib/text/fold";
 import {
   condicionMilitarGroupLabel,
   condicionMilitarRank,
@@ -28,13 +29,14 @@ export function buildAspiranteCensusWhere(
   }
   const q = sp.q?.trim();
   if (q) {
-    filters.push({
-      OR: [
-        { nombres: { contains: q, mode: "insensitive" } },
-        { apellidos: { contains: q, mode: "insensitive" } },
-        { cedula: { contains: q.replace(/\D/g, "") || q, mode: "insensitive" } },
-      ],
-    });
+    const folded = foldBusqueda(q);
+    const digits = q.replace(/\D/g, "");
+    const text: Prisma.AspiranteWhereInput[] = [
+      { nombresBusqueda: { contains: folded } },
+      { apellidosBusqueda: { contains: folded } },
+    ];
+    if (digits) text.push({ cedula: { contains: digits } });
+    filters.push({ OR: text });
   }
   if (sp.sexo && sp.sexo !== "TODOS" && (sp.sexo === "MASCULINO" || sp.sexo === "FEMENINO")) {
     filters.push({ sexo: sp.sexo });

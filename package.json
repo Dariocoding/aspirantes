@@ -15,7 +15,8 @@
     "postinstall": "prisma generate",
     "prebuild": "node scripts/copy-pdfjs-worker.mjs",
     "seed": "tsx prisma/seed.ts",
-    "seed:cefoa46": "tsx prisma/seed-cefoa46-aspirantes.ts"
+    "seed:cefoa46": "tsx prisma/seed-cefoa46-aspirantes.ts",
+    "seed:roles": "tsx prisma/seed-roles-servicio.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

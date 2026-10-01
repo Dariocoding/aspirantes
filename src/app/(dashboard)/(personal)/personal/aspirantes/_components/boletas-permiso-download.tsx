@@ -2,7 +2,7 @@
 
 import { FileBadge, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button } from "@src/components/ui/button";
+import { Button, buttonVariants } from "@src/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import {
 } from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
 import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
+import { foldBusqueda } from "@src/lib/text/fold";
 import { cn } from "@src/lib/utils";
 
 export type BoletaPersonOption = {
@@ -22,62 +23,19 @@ export type BoletaPersonOption = {
   cedula: string;
 };
 
-function filenameFromContentDisposition(header: string | null, fallback: string) {
-  if (!header) return fallback;
-  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
-  if (star?.[1]) {
-    try {
-      return decodeURIComponent(star[1].trim());
-    } catch {
-      return star[1].trim();
-    }
-  }
-  const quoted = /filename="([^"]+)"/i.exec(header);
-  if (quoted?.[1]) return quoted[1];
-  const plain = /filename=([^;]+)/i.exec(header);
-  if (plain?.[1]) return plain[1].trim().replace(/^"+|"+$/g, "");
-  return fallback;
-}
-
-async function saveBlob(res: Response, fallbackName: string) {
-  const blob = await res.blob();
-  const filename = filenameFromContentDisposition(res.headers.get("Content-Disposition"), fallbackName);
-  const href = URL.createObjectURL(blob);
-  try {
-    const a = document.createElement("a");
-    a.href = href;
-    a.download = filename;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    URL.revokeObjectURL(href);
-  }
-}
-
 export function aspiranteBoletaPermisoPdfUrl(aspiranteId: string): string {
   return `/api/aspirantes/boletas-permiso/pdf?ids=${encodeURIComponent(aspiranteId)}`;
 }
 
-export async function downloadBoletasPermisoPdf(input: {
-  ids?: string[];
-  url?: string;
-  fallbackName?: string;
-}): Promise<void> {
-  const res = input.ids?.length
-    ? await fetch("/api/aspirantes/boletas-permiso/pdf", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: input.ids }),
-      })
-    : await fetch(input.url ?? "/api/aspirantes/boletas-permiso/pdf", { credentials: "same-origin" });
-  if (!res.ok) {
-    const data = (await res.json().catch(() => null)) as { message?: string } | null;
-    throw new Error(data?.message ?? `No se pudo generar el PDF (${res.status}).`);
+export function boletasPermisoPdfUrl(input: { ids?: string[]; url?: string }): string {
+  if (input.ids?.length) {
+    return `/api/aspirantes/boletas-permiso/pdf?ids=${input.ids.map((id) => encodeURIComponent(id)).join(",")}`;
   }
-  await saveBlob(res, input.fallbackName ?? "boletas-permiso.pdf");
+  return input.url ?? "/api/aspirantes/boletas-permiso/pdf";
+}
+
+export function openBoletasPermisoPdf(input: { ids?: string[]; url?: string }) {
+  window.open(boletasPermisoPdfUrl(input), "_blank", "noopener,noreferrer");
 }
 
 export function AspiranteBoletaPermisoPdfLink({
@@ -91,38 +49,20 @@ export function AspiranteBoletaPermisoPdfLink({
   size?: "sm" | "default";
   label?: string;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   return (
-    <span className="inline-flex flex-col items-start gap-1">
-      <Button
-        type="button"
-        variant="outline"
-        size={size}
-        disabled={busy}
-        className={cn("gap-1.5 border-slate-200 bg-white shadow-sm", className)}
-        onClick={() => {
-          if (busy) return;
-          setError(null);
-          setBusy(true);
-          void downloadBoletasPermisoPdf({
-            ids: [aspiranteId],
-            fallbackName: "boleta-permiso.pdf",
-          })
-            .catch((e) => setError(e instanceof Error ? e.message : "No se pudo descargar."))
-            .finally(() => setBusy(false));
-        }}
-      >
-        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <FileBadge className="h-3.5 w-3.5" aria-hidden />}
-        {busy ? "Generando…" : label}
-      </Button>
-      {error ? (
-        <span className="text-[11px] text-rose-700" role="alert">
-          {error}
-        </span>
-      ) : null}
-    </span>
+    <a
+      href={aspiranteBoletaPermisoPdfUrl(aspiranteId)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        buttonVariants({ variant: "outline", size }),
+        "gap-1.5 border-slate-200 bg-white shadow-sm",
+        className,
+      )}
+    >
+      <FileBadge className="h-3.5 w-3.5" aria-hidden />
+      {label}
+    </a>
   );
 }
 
@@ -147,10 +87,10 @@ export function BoletasPermisoSelectDialog({
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const filtered = useMemo(() => {
-    const n = q.trim().toLocaleLowerCase("es");
+    const n = foldBusqueda(q.trim());
     if (!n) return people;
     return people.filter((p) =>
-      `${p.nombres} ${p.apellidos} ${p.cedula} ${formatCedulaMillares(p.cedula)}`.toLocaleLowerCase("es").includes(n),
+      foldBusqueda(`${p.nombres} ${p.apellidos} ${p.cedula} ${formatCedulaMillares(p.cedula)}`).includes(n),
     );
   }, [people, q]);
 
@@ -160,9 +100,9 @@ export function BoletasPermisoSelectDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Descargar boletas de permiso</DialogTitle>
+          <DialogTitle>Ver boletas de permiso</DialogTitle>
           <DialogDescription>
-            Marque el personal. Se descarga un PDF (carta, dos boletas por hoja); el serial sigue el orden de la convocatoria.
+            Marque el personal. El PDF se abre en el navegador (carta, dos boletas por hoja); el serial sigue el orden de la convocatoria.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 px-5 pb-1">
@@ -246,7 +186,7 @@ export function BoletasPermisoSelectDialog({
             disabled={busy || selected.size < 1}
             onClick={() => onDownload([...selected])}
           >
-            {busy ? "Generando…" : `Descargar ${selected.size || ""}`}
+            {busy ? "Abriendo…" : `Ver PDF${selected.size ? ` (${selected.size})` : ""}`}
           </Button>
         </DialogFooter>
       </DialogContent>

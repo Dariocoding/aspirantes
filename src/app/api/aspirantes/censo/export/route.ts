@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
+import { inlinePdfResponse, pdfNoEncontrado } from "@src/lib/pdf/inline-pdf";
 import { writeAuditLog } from "@src/lib/audit/log";
 import { buildAspiranteCensusWhere, censusOrderBy, censusSortInMemory, resolveCensusPresentation, sortAspirantesForCensus } from "@src/lib/aspirantes/census";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -51,6 +52,11 @@ function safeFilePart(s: string) {
   return s.replace(/[^\w.-]+/g, "_").replace(/^\.+/, "").slice(0, 48) || "censo";
 }
 
+function parseExportIds(raw: string | null): string[] {
+  if (!raw?.trim()) return [];
+  return [...new Set(raw.split(/[,;\s]+/).map((id) => id.trim()).filter(Boolean))].slice(0, 2000);
+}
+
 function toMembreteSpec(row: {
   lineas: string[];
   logoIzq: string;
@@ -65,14 +71,8 @@ function toMembreteSpec(row: {
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ message: "No autenticado" }, { status: 401 });
-  }
-  if (!canWrite(authContextFromSession(session))) {
-    return NextResponse.json(
-      { message: "No autorizado: el rol consulta no puede exportar el censo." },
-      { status: 403 },
-    );
+  if (!session?.user || !canWrite(authContextFromSession(session))) {
+    pdfNoEncontrado();
   }
 
   const url = new URL(request.url);
@@ -135,8 +135,19 @@ export async function GET(request: Request) {
   const convocatoriaFiltroId =
     paramC && convocatorias.some((c) => c.id === paramC) ? paramC : defaultConvocatoriaId;
 
-  const convocatoriaActual =
+  const selectedIds = parseExportIds(url.searchParams.get("ids"));
+  let convocatoriaActual =
     convocatorias.find((c) => c.id === convocatoriaFiltroId) ?? convocatorias[0]!;
+  if (selectedIds.length) {
+    const anchor = await prisma.aspirante.findFirst({
+      where: { id: { in: selectedIds } },
+      select: { convocatoriaId: true },
+    });
+    const deLaSeleccion = anchor
+      ? convocatorias.find((c) => c.id === anchor.convocatoriaId)
+      : undefined;
+    if (deLaSeleccion) convocatoriaActual = deLaSeleccion;
+  }
 
   const membreteParam = url.searchParams.get("membrete")?.trim() ?? "";
   let membrete: MembreteSpec | null = null;
@@ -149,7 +160,9 @@ export async function GET(request: Request) {
     }
   }
 
-  const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
+  const where = selectedIds.length
+    ? { id: { in: selectedIds }, convocatoriaId: convocatoriaActual.id }
+    : buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
   const presentation = resolveCensusPresentation(sp);
   const sortInMemory = censusSortInMemory(presentation.group);
   const sort = censusOrderBy(
@@ -334,14 +347,7 @@ export async function GET(request: Request) {
       );
     }
 
-    return new NextResponse(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="fichas-tecnicas-${codigoSafe}-${dateSafe}.pdf"`,
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return inlinePdfResponse(buffer, `fichas-tecnicas-${codigoSafe}-${dateSafe}.pdf`);
   }
 
   if (pdfVariant === "documentos-academicos") {
@@ -370,14 +376,7 @@ export async function GET(request: Request) {
           generatedAt,
         },
       );
-      return new NextResponse(new Uint8Array(buffer), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="documentos-academicos-${codigoSafe}-${dateSafe}.pdf"`,
-          "Cache-Control": "private, no-store",
-        },
-      });
+      return inlinePdfResponse(buffer, `documentos-academicos-${codigoSafe}-${dateSafe}.pdf`);
     } catch (err) {
       if (err instanceof Error && err.message === "NONE") {
         return NextResponse.json(
@@ -412,12 +411,5 @@ export async function GET(request: Request) {
 
   const buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
 
-  return new NextResponse(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="censo-aspirantes-${codigoSafe}-${dateSafe}.pdf"`,
-      "Cache-Control": "private, no-store",
-    },
-  });
+  return inlinePdfResponse(buffer, `censo-aspirantes-${codigoSafe}-${dateSafe}.pdf`);
 }

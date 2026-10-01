@@ -473,7 +473,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             </span>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica PDF" />
+            <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Ver ficha técnica PDF" />
           </div>
           {(a.fotoCedulaKey || a.fotoTituloKey || a.fotoTituloAutenticacionKey || a.fotoNotasKey) ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">

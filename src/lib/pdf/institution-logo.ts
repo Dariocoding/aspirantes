@@ -60,6 +60,14 @@ export function boletaEjercitoLogoUri(): string | null {
   return publicImageUri("ejercito-logo.png");
 }
 
+export function constanciaDireccionLogoUri(): string | null {
+  return publicImageUri("constancia/direcciondeeducacion.jpg");
+}
+
+export function constanciaMarcaAguaUri(): string | null {
+  return publicImageUri("constancia/marcadeaguacfoa.png");
+}
+
 /** Franja vertical de la Bandera Nacional (anverso de la boleta). */
 export function readBoletaBanderaJpgBuffer(): Buffer | null {
   try {

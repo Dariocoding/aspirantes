@@ -507,7 +507,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones, sel
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-4 py-2">
         <p className="text-[11px] text-slate-500">
           {canWrite
-            ? "Marque las casillas para dar permiso, generar boletas o constancias, o eliminar. La selección queda en la dirección y se conserva al cambiar de página."
+            ? "Marque las casillas para generar el PDF de esas personas, dar permiso o eliminar. La selección queda en la dirección y se conserva al cambiar de página."
             : "Nombre completo y cédula siempre visibles. El resto se guarda en este navegador."}
         </p>
         <DropdownMenu>

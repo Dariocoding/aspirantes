@@ -2,12 +2,12 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { CalendarClock, FileBadge, GraduationCap, Loader2, Trash2, X } from "lucide-react";
+import { CalendarClock, FileBadge, FileText, Files, GraduationCap, IdCard, Loader2, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { deleteAspirantesSeleccion } from "@src/app/actions/aspirantes";
 import { createPermisosSeleccion, type PermisoSeleccionResult } from "@src/app/actions/permisos";
-import { downloadBoletasPermisoPdf } from "@dashboard/aspirantes/_components/boletas-permiso-download";
-import { downloadConstanciaEstudiosPdf } from "@dashboard/aspirantes/_components/constancia-estudios-download";
+import { openBoletasPermisoPdf } from "@dashboard/aspirantes/_components/boletas-permiso-download";
+import { openConstanciaEstudiosPdf } from "@dashboard/aspirantes/_components/constancia-estudios-download";
 import { Button } from "@src/components/ui/button";
 import {
   Dialog,
@@ -37,6 +37,14 @@ export type CensusSelectionPerson = {
   nombreCompleto: string;
 };
 
+function openSeleccionPdf(variant: "censo" | "fichas-tecnicas" | "documentos-academicos", ids: string[]) {
+  const params = new URLSearchParams();
+  params.set("format", "pdf");
+  if (variant !== "censo") params.set("variant", variant);
+  params.set("ids", ids.join(","));
+  window.open(`/api/aspirantes/censo/export?${params.toString()}`, "_blank", "noopener,noreferrer");
+}
+
 function defaultRange() {
   const start = new Date();
   start.setSeconds(0, 0);
@@ -59,19 +67,14 @@ export function CensusBulkActions({
   const router = useRouter();
   const [permisoOpen, setPermisoOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [boletasBusy, setBoletasBusy] = useState(false);
-  const [constanciaBusy, setConstanciaBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [omitted, setOmitted] = useState<PermisoSeleccionResult["omitted"]>([]);
   const [celebrate, setCelebrate] = useState<"permiso" | "deleted" | null>(null);
   const [celebrateTitle, setCelebrateTitle] = useState("");
   const [celebrateDetail, setCelebrateDetail] = useState("");
-  const [boletasError, setBoletasError] = useState<string | null>(null);
-  const [constanciaError, setConstanciaError] = useState<string | null>(null);
   const range = defaultRange();
   const count = people.length;
-  const busy = pending || boletasBusy || constanciaBusy;
-  const actionError = boletasError ?? constanciaError;
+  const busy = pending;
 
   useEffect(() => {
     if (!count) return;
@@ -141,26 +144,26 @@ export function CensusBulkActions({
     [onClear, people, router],
   );
 
+  const ids = people.map((person) => person.id);
+
+  const onListado = useCallback(() => {
+    openSeleccionPdf("censo", ids);
+  }, [ids]);
+
+  const onFichas = useCallback(() => {
+    openSeleccionPdf("fichas-tecnicas", ids);
+  }, [ids]);
+
+  const onDocumentos = useCallback(() => {
+    openSeleccionPdf("documentos-academicos", ids);
+  }, [ids]);
+
   const onBoletas = useCallback(() => {
-    setBoletasError(null);
-    setBoletasBusy(true);
-    void downloadBoletasPermisoPdf({
-      ids: people.map((person) => person.id),
-      fallbackName: "boletas-permiso.pdf",
-    })
-      .catch((error) => setBoletasError(error instanceof Error ? error.message : "No se pudo descargar."))
-      .finally(() => setBoletasBusy(false));
-  }, [people]);
+    openBoletasPermisoPdf({ ids });
+  }, [ids]);
 
   const onConstancia = useCallback(() => {
-    setConstanciaError(null);
-    setConstanciaBusy(true);
-    void downloadConstanciaEstudiosPdf({
-      ids: people.map((person) => person.id),
-      fallbackName: "constancias-estudios.pdf",
-    })
-      .catch((error) => setConstanciaError(error instanceof Error ? error.message : "No se pudo descargar."))
-      .finally(() => setConstanciaBusy(false));
+    openConstanciaEstudiosPdf({ ids: people.map((person) => person.id) });
   }, [people]);
 
   return (
@@ -182,14 +185,6 @@ export function CensusBulkActions({
       {count ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 md:left-60 print:hidden">
           <div className="pointer-events-auto flex w-full max-w-xl flex-col gap-2">
-            {actionError ? (
-              <p
-                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 shadow-sm"
-                role="alert"
-              >
-                {actionError}
-              </p>
-            ) : null}
             <div
               role="region"
               aria-label="Selección del censo"
@@ -215,6 +210,12 @@ export function CensusBulkActions({
                     setFormError(null);
                     setOmitted([]);
                     setPermisoOpen(true);
+                  } else if (value === "listado") {
+                    onListado();
+                  } else if (value === "fichas") {
+                    onFichas();
+                  } else if (value === "documentos") {
+                    onDocumentos();
                   } else if (value === "boletas") {
                     onBoletas();
                   } else if (value === "constancia") {
@@ -231,10 +232,18 @@ export function CensusBulkActions({
                   {busy ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : null}
                   <SelectValue placeholder={busy ? "Trabajando…" : "Acciones"} />
                 </SelectTrigger>
-                <SelectContent side="top" align="end" className="min-w-48">
-                  <SelectItem value="permiso">
-                    <CalendarClock aria-hidden />
-                    Dar permiso
+                <SelectContent side="top" align="end" className="min-w-56">
+                  <SelectItem value="listado">
+                    <FileText aria-hidden />
+                    Listado
+                  </SelectItem>
+                  <SelectItem value="fichas">
+                    <IdCard aria-hidden />
+                    Fichas técnicas
+                  </SelectItem>
+                  <SelectItem value="documentos">
+                    <Files aria-hidden />
+                    Documentos académicos
                   </SelectItem>
                   <SelectItem value="boletas">
                     <FileBadge aria-hidden />
@@ -243,6 +252,11 @@ export function CensusBulkActions({
                   <SelectItem value="constancia">
                     <GraduationCap aria-hidden />
                     Constancia
+                  </SelectItem>
+                  <SelectSeparator />
+                  <SelectItem value="permiso">
+                    <CalendarClock aria-hidden />
+                    Dar permiso
                   </SelectItem>
                   <SelectSeparator />
                   <SelectItem value="eliminar" className="text-red-700 focus:bg-red-50 focus:text-red-800">

@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import {
   BoletasPermisoSelectDialog,
-  downloadBoletasPermisoPdf,
+  openBoletasPermisoPdf,
 } from "@dashboard/aspirantes/_components/boletas-permiso-download";
 import {
   PermisoAnularDialog,
@@ -57,8 +57,6 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
   const [editItem, setEditItem] = useState<PermisoRow | null>(null);
   const [anularItem, setAnularItem] = useState<PermisoRow | null>(null);
   const [boletaPickerOpen, setBoletaPickerOpen] = useState(false);
-  const [boletaBusy, setBoletaBusy] = useState(false);
-  const [boletaError, setBoletaError] = useState<string | null>(null);
 
   const enriched = useMemo(
     () =>
@@ -115,15 +113,9 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
         open={boletaPickerOpen}
         onOpenChange={setBoletaPickerOpen}
         people={aspirantes}
-        busy={boletaBusy}
-        error={boletaError}
         onDownload={(ids) => {
           setBoletaPickerOpen(false);
-          setBoletaError(null);
-          setBoletaBusy(true);
-          void downloadBoletasPermisoPdf({ ids, fallbackName: "boletas-permiso.pdf" })
-            .catch((e) => setBoletaError(e instanceof Error ? e.message : "No se pudo generar el PDF."))
-            .finally(() => setBoletaBusy(false));
+          openBoletasPermisoPdf({ ids });
         }}
       />
 
@@ -138,12 +130,6 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
                   Un registro por persona: de cuándo a cuándo está autorizado a ausentarse.
                   <span className="text-slate-400"> · </span>
                   <span className="font-medium tabular-nums text-slate-800">{counts.VIGENTE}</span> vigentes
-                  {boletaError ? (
-                    <>
-                      <span className="text-slate-400"> · </span>
-                      <span className="text-rose-700">{boletaError}</span>
-                    </>
-                  ) : null}
                 </CardDescription>
               </div>
             </div>
@@ -162,33 +148,19 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
                     variant="outline"
                     size="sm"
                     className="h-8 gap-1.5"
-                    disabled={boletaBusy || aspirantes.length < 1}
-                    onClick={() => {
-                      setBoletaError(null);
-                      setBoletaBusy(true);
-                      void downloadBoletasPermisoPdf({
-                        ids: aspirantes.map((a) => a.id),
-                        fallbackName: "boletas-permiso.pdf",
-                      })
-                        .catch((e) =>
-                          setBoletaError(e instanceof Error ? e.message : "No se pudo generar el PDF."),
-                        )
-                        .finally(() => setBoletaBusy(false));
-                    }}
+                    disabled={aspirantes.length < 1}
+                    onClick={() => openBoletasPermisoPdf({ ids: aspirantes.map((a) => a.id) })}
                   >
                     <FileBadge className="h-3.5 w-3.5" aria-hidden />
-                    {boletaBusy ? "Generando…" : "Boletas (todas)"}
+                    Boletas (todas)
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="h-8 gap-1.5"
-                    disabled={boletaBusy || aspirantes.length < 1}
-                    onClick={() => {
-                      setBoletaError(null);
-                      setBoletaPickerOpen(true);
-                    }}
+                    disabled={aspirantes.length < 1}
+                    onClick={() => setBoletaPickerOpen(true)}
                   >
                     Elegir personal
                   </Button>

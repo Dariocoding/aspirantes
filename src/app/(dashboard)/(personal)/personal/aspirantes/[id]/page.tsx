@@ -6,6 +6,7 @@ import { AspiranteBoletaPermisoPdfLink } from "@dashboard/aspirantes/_components
 import { AspirantePerfilEditButton } from "@dashboard/aspirantes/_components/aspirante-perfil-edit-button";
 import { AspirantePerfilView } from "@dashboard/aspirantes/_components/aspirante-perfil-view";
 import { AspirantePermisosCard } from "@dashboard/aspirantes/_components/aspirante-permisos-card";
+import { AspiranteRolesServicioCard } from "@dashboard/aspirantes/_components/aspirante-roles-servicio-card";
 import { buttonVariants } from "@src/components/ui/button";
 import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -19,6 +20,7 @@ import { ageFromBirthDate } from "@src/lib/date";
 import { aspiranteIdIncluyendoPapelera } from "@src/lib/aspirantes/papelera";
 import { prisma } from "@src/lib/prisma";
 import { cn } from "@src/lib/utils";
+import { marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
 import type { PermisoTipoValue } from "@src/lib/permisos";
 
 export default async function AspirantePerfilPage({
@@ -42,6 +44,9 @@ export default async function AspirantePerfilPage({
       datosFisicos: true,
       contactos: { orderBy: { createdAt: "asc" }, take: 1 },
       permisos: { orderBy: { fechaInicio: "desc" }, take: 12 },
+      asignacionesRolServicio: {
+        include: { plan: { include: { rol: true } } },
+      },
     },
   });
   if (!a) notFound();
@@ -67,10 +72,12 @@ export default async function AspirantePerfilPage({
         <div className="flex flex-wrap items-center gap-2">
           {enPapelera ? null : (
             <>
-              <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Descargar ficha técnica" />
+              <AspiranteFichaTecnicaPdfLink aspiranteId={a.id} label="Ver ficha técnica" />
               <AspiranteBoletaPermisoPdfLink aspiranteId={a.id} label="Boleta de permiso" />
               <a
                 href={`/api/aspirantes/constancia-estudios/pdf?ids=${encodeURIComponent(a.id)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "sm" }),
                   "gap-1.5 border-slate-200 bg-white shadow-sm",
@@ -265,6 +272,18 @@ export default async function AspirantePerfilPage({
           anioIngresoUniversidad: a.anioIngresoUniversidad,
           anioEgresoUniversidad: a.anioEgresoUniversidad,
         }}
+      />
+      <AspiranteRolesServicioCard
+        roles={[...a.asignacionesRolServicio]
+          .sort((x, y) => y.plan.anio - x.plan.anio || y.plan.mes - x.plan.mes || x.plan.rol.sortOrder - y.plan.rol.sortOrder)
+          .map((asignacion) => ({
+            id: asignacion.id,
+            rol: asignacion.plan.rol.nombre,
+            curso: asignacion.plan.rol.curso,
+            anio: asignacion.plan.anio,
+            mes: asignacion.plan.mes,
+            dias: marcasDesdeJson(asignacion.dias),
+          }))}
       />
       <AspirantePermisosCard
         aspiranteId={a.id}

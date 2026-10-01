@@ -36,11 +36,13 @@ export function EsquelaDetalleToolbar({
         </Button>
       ) : pdfHref ? (
         <a
-          href={`${pdfHref}?download=1`}
+          href={pdfHref}
+          target="_blank"
+          rel="noopener noreferrer"
           className={cn(buttonVariants({ variant: "default", size: "sm" }), "h-9 gap-1.5 bg-slate-900 hover:bg-slate-800")}
         >
           <FileDown className="h-3.5 w-3.5" aria-hidden />
-          Descargar PDF
+          Ver PDF
         </a>
       ) : null}
       <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => window.print()}>
