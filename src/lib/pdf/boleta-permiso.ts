@@ -8,6 +8,7 @@ import {
   isColorOjos,
   isColorPiel,
 } from "@src/lib/aspirantes/senaletica";
+import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { pickFotoForBoleta } from "@src/lib/storage/aspirante-foto";
 import { getObjectBuffer } from "@src/lib/storage/s3";
 
@@ -113,9 +114,7 @@ export function formatGrupoSanguineoBoleta(
 
 /** Cédula con separación de millares: 31227201 → 31.227.201. */
 export function formatCedulaBoleta(cedula: string): string {
-  const digits = cedula.replace(/\D/g, "");
-  if (!digits) return cedula.trim() || "—";
-  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return formatCedulaMillares(cedula);
 }
 
 export function formatRasgoBoleta(value: string): string {

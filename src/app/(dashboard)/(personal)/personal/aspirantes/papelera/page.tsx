@@ -10,6 +10,7 @@ import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { canWrite } from "@src/lib/auth/roles";
+import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { routes } from "@src/lib/apps/routes";
 import { prisma } from "@src/lib/prisma";
 import { cn } from "@src/lib/utils";
@@ -100,7 +101,7 @@ export default async function PapeleraPage() {
                             {nombre}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 tabular-nums text-slate-700">{row.cedula}</td>
+                        <td className="px-4 py-3 font-mono tabular-nums text-slate-700">{formatCedulaMillares(row.cedula)}</td>
                         <td className="px-4 py-3 text-slate-700">
                           {row.convocatoria.nombre}
                           {" · "}

@@ -38,6 +38,13 @@ export function condicionCensusTotal(counts: CondicionCensusCounts) {
   return counts.soldado + counts.sargento + counts.sin;
 }
 
+/** Orden fijo del censo: soldado activo, sargento activo, sin clasificar. */
+export function condicionMilitarRank(v: string | null | undefined): number {
+  if (v === "SOLDADO_ACTIVO") return 0;
+  if (v === "SARGENTO_ACTIVO") return 1;
+  return 2;
+}
+
 export function labelCondicionMilitar(v: string | null | undefined): string | null {
   if (!isCondicionMilitarValue(v)) return null;
   return CONDICION_MILITAR_LABELS[v];
@@ -45,7 +52,7 @@ export function labelCondicionMilitar(v: string | null | undefined): string | nu
 
 /** Etiqueta de grupo en el censo. Vacío = aún sin clasificar. */
 export function condicionMilitarGroupLabel(v: string | null | undefined): string {
-  return labelCondicionMilitar(v) ?? "Sin condición";
+  return labelCondicionMilitar(v) ?? "Sin clasificar";
 }
 
 /**

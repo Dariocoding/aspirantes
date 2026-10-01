@@ -10,15 +10,11 @@ import {
   buildAspiranteCensusWhere,
   censusOrderBy,
   censusQueryString,
+  censusSortInMemory,
   gradoEducativoGroupKey,
-  isCensusCarreraGroupSort,
-  isCensusCondicionGroupSort,
-  isCensusGradoGroupSort,
-  isCensusNacimientoMesSort,
-  isCensusReligionGroupSort,
   nacimientoMesGroupKey,
-  sortAspirantesByGradoEducativo,
-  sortAspirantesByNacimientoMes,
+  resolveCensusPresentation,
+  sortAspirantesForCensus,
 } from "@src/lib/aspirantes/census";
 import { parseCondicionCensusFilter } from "@src/lib/aspirantes/condicion-militar";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -194,13 +190,17 @@ export default async function AspirantesPage({
     paramC && convocatorias.some((c) => c.id === paramC) ? paramC : defaultConvocatoriaId;
 
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
-  const sort = censusOrderBy(sp.sort);
-  const groupByCarrera = isCensusCarreraGroupSort(sp.sort);
-  const groupByNacimientoMes = isCensusNacimientoMesSort(sp.sort);
-  const groupByGrado = isCensusGradoGroupSort(sp.sort);
-  const groupByReligion = isCensusReligionGroupSort(sp.sort);
-  const groupByCondicion = isCensusCondicionGroupSort(sp.sort);
-  const sortInMemory = groupByNacimientoMes || groupByGrado;
+  const presentation = resolveCensusPresentation(sp);
+  const groupByCarrera = presentation.group === "carrera";
+  const groupByNacimientoMes = presentation.group === "nacimiento-mes";
+  const groupByGrado = presentation.group === "grado";
+  const groupByReligion = presentation.group === "religion";
+  const groupByCondicion = presentation.group === "condicion";
+  const sortInMemory = censusSortInMemory(presentation.group);
+  const sort = censusOrderBy(
+    presentation.sort,
+    presentation.group === "carrera" || presentation.group === "religion" ? presentation.group : null,
+  );
 
   const [totalCount, aspirantesRaw, carreraGrupos, religionGrupos, condicionGrupos, pelotones] = await Promise.all([
     sortInMemory
@@ -254,11 +254,9 @@ export default async function AspirantesPage({
     }),
   ]);
 
-  const aspirantesOrdenados = groupByNacimientoMes
-    ? sortAspirantesByNacimientoMes(aspirantesRaw)
-    : groupByGrado
-      ? sortAspirantesByGradoEducativo(aspirantesRaw)
-      : aspirantesRaw;
+  const aspirantesOrdenados = sortInMemory
+    ? sortAspirantesForCensus(aspirantesRaw, presentation.sort, presentation.group)
+    : aspirantesRaw;
   const total = sortInMemory ? aspirantesOrdenados.length : totalCount;
   const aspirantes = sortInMemory
     ? aspirantesOrdenados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -318,6 +316,7 @@ export default async function AspirantesPage({
     q: sp.q,
     sexo: sp.sexo,
     sort: sp.sort,
+    group: sp.group,
     peloton: pelotonFiltroActivo ? pelotonFiltro : undefined,
     condicion: parseCondicionCensusFilter(sp.condicion) ?? undefined,
   };

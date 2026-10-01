@@ -3,7 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
 import { writeAuditLog } from "@src/lib/audit/log";
-import { buildAspiranteCensusWhere, censusOrderBy, isCensusGradoGroupSort, isCensusNacimientoMesSort, sortAspirantesByGradoEducativo, sortAspirantesByNacimientoMes } from "@src/lib/aspirantes/census";
+import { buildAspiranteCensusWhere, censusOrderBy, censusSortInMemory, resolveCensusPresentation, sortAspirantesForCensus } from "@src/lib/aspirantes/census";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { canWrite } from "@src/lib/auth/roles";
 import { CENSUS_EXPORT_DEFAULT_IDS, parseCensusExportColumnIds } from "@src/lib/aspirantes/census-export-columns";
@@ -34,6 +34,7 @@ function parseSp(searchParams: URLSearchParams): Record<string, string | undefin
     "q",
     "sexo",
     "sort",
+    "group",
     "peloton",
     "convocatoria",
     "condicion",
@@ -149,10 +150,12 @@ export async function GET(request: Request) {
   }
 
   const where = buildAspiranteCensusWhere(sp, convocatoriaFiltroId);
-  const sort = censusOrderBy(sp.sort);
-  const nacimientoMesSort = isCensusNacimientoMesSort(sp.sort);
-  const gradoSort = isCensusGradoGroupSort(sp.sort);
-  const sortInMemory = nacimientoMesSort || gradoSort;
+  const presentation = resolveCensusPresentation(sp);
+  const sortInMemory = censusSortInMemory(presentation.group);
+  const sort = censusOrderBy(
+    presentation.sort,
+    presentation.group === "carrera" || presentation.group === "religion" ? presentation.group : null,
+  );
 
   const rowsRaw = await prisma.aspirante.findMany({
     where,
@@ -164,11 +167,9 @@ export async function GET(request: Request) {
     },
     orderBy: sortInMemory ? undefined : sort,
   });
-  const rows = nacimientoMesSort
-    ? sortAspirantesByNacimientoMes(rowsRaw)
-    : gradoSort
-      ? sortAspirantesByGradoEducativo(rowsRaw)
-      : rowsRaw;
+  const rows = sortInMemory
+    ? sortAspirantesForCensus(rowsRaw, presentation.sort, presentation.group)
+    : rowsRaw;
 
   const generatedAt = new Date();
 

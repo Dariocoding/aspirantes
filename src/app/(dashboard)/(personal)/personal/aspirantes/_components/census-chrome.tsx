@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ClipboardList, Trash2 } from "lucide-react";
 import { AspiranteQuickRegisterButton } from "@dashboard/aspirantes/_components/aspirante-quick-dialog";
 import { AspirantesExportLinks } from "@dashboard/aspirantes/_components/aspirantes-export-links";
-import { AspirantesFilterBar } from "@dashboard/aspirantes/_components/aspirantes-filter-bar";
+import { AspirantesCensusSearch, AspirantesFilterBar } from "@dashboard/aspirantes/_components/aspirantes-filter-bar";
 import { buttonVariants } from "@src/components/ui/button";
 import { CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { censusQueryString } from "@src/lib/aspirantes/census";
@@ -109,6 +109,7 @@ export function CensusToolbar({
       q: sp.get("q") ?? undefined,
       sexo: sp.get("sexo") ?? undefined,
       sort: sp.get("sort") ?? undefined,
+      group: sp.get("group") ?? undefined,
       peloton: pelotonActivo ? peloton : undefined,
       convocatoria: convocatoriaId,
       condicion: condicion ?? undefined,
@@ -157,8 +158,29 @@ export function CensusFilters({
   condicionCounts: Record<string, CondicionCensusCounts>;
 }) {
   return (
-    <div className="border-b border-slate-200/90 bg-slate-50/60 px-4 py-3">
-      <AspirantesFilterBar
+    <AspirantesFilterBar
+      pelotones={pelotones}
+      convocatorias={convocatorias}
+      defaultConvocatoriaId={defaultConvocatoriaId}
+      condicionCounts={condicionCounts}
+    />
+  );
+}
+
+export function CensusSearch({
+  convocatorias,
+  defaultConvocatoriaId,
+  pelotones,
+  condicionCounts,
+}: {
+  convocatorias: ConvocatoriaOption[];
+  defaultConvocatoriaId: string;
+  pelotones: PelotonOption[];
+  condicionCounts: Record<string, CondicionCensusCounts>;
+}) {
+  return (
+    <div className="border-b border-slate-200/90 bg-white px-4 py-3">
+      <AspirantesCensusSearch
         pelotones={pelotones}
         convocatorias={convocatorias}
         defaultConvocatoriaId={defaultConvocatoriaId}

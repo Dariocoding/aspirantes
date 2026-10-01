@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CensusFilters, CensusTitle, CensusToolbar, ConvocatoriaLine } from "@dashboard/aspirantes/_components/census-chrome";
+import { CensusFilters, CensusSearch, CensusTitle, CensusToolbar, ConvocatoriaLine } from "@dashboard/aspirantes/_components/census-chrome";
 import { auth } from "@src/auth";
 import { Card, CardContent } from "@src/components/ui/card";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -71,7 +71,7 @@ export default async function CensoLayout({ children }: { children: React.ReactN
           <ConvocatoriaLine convocatorias={opciones} defaultConvocatoriaId={defaultConvocatoriaId} />
         </Suspense>
       </div>
-      <Card className="shadow-sm shadow-slate-900/5 ring-slate-200/80">
+      <Card className="overflow-visible shadow-sm shadow-slate-900/5 ring-slate-200/80">
         <Suspense fallback={<div className="h-36 border-b border-slate-200/80 bg-slate-50" />}>
           <CensusToolbar
             write={write}
@@ -83,8 +83,8 @@ export default async function CensoLayout({ children }: { children: React.ReactN
             counts={countByConvocatoria}
           />
         </Suspense>
-        <CardContent className="space-y-0 p-0">
-          <Suspense fallback={<div className="h-24 border-b border-slate-200/90 bg-slate-50" />}>
+        <CardContent className="grid grid-cols-1 p-0 lg:grid-cols-[18rem_minmax(0,1fr)]">
+          <Suspense fallback={<div className="h-48 border-b border-slate-200/90 bg-slate-50 lg:border-r lg:border-b-0" />}>
             <CensusFilters
               convocatorias={opciones}
               defaultConvocatoriaId={defaultConvocatoriaId}
@@ -92,7 +92,17 @@ export default async function CensoLayout({ children }: { children: React.ReactN
               condicionCounts={condicionCounts}
             />
           </Suspense>
-          {children}
+          <div className="min-w-0">
+            <Suspense fallback={<div className="h-16 border-b border-slate-200/90 bg-white" />}>
+              <CensusSearch
+                convocatorias={opciones}
+                defaultConvocatoriaId={defaultConvocatoriaId}
+                pelotones={pelotones}
+                condicionCounts={condicionCounts}
+              />
+            </Suspense>
+            {children}
+          </div>
         </CardContent>
       </Card>
     </div>

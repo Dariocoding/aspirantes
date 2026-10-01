@@ -1,10 +1,10 @@
 "use client";
 
-import { Ban, CalendarClock, Clock3, FileBadge } from "lucide-react";
+import { Ban, CalendarClock, Clock3, FileBadge, Stamp } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import {
-  aspiranteBoletaPermisoPdfUrl,
   BoletasPermisoSelectDialog,
   downloadBoletasPermisoPdf,
 } from "@dashboard/aspirantes/_components/boletas-permiso-download";
@@ -16,11 +16,13 @@ import {
   type PermisoAspiranteOption,
   type PermisoRow,
 } from "./permiso-modals";
-import { Button } from "@src/components/ui/button";
+import { Button, buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { Input } from "@src/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@src/components/ui/table";
+import { routes } from "@src/lib/apps/routes";
 import { formatDateTime } from "@src/lib/date";
+import { permisoFormatoPdfUrl } from "@src/lib/pdf/formato-permiso";
 import {
   estadoPermiso,
   formatDuracionPermiso,
@@ -146,6 +148,13 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={routes.personal.permisosFormato}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 gap-1.5")}
+              >
+                <Stamp className="h-3.5 w-3.5" aria-hidden />
+                Editar formato
+              </Link>
               {canWrite ? (
                 <>
                   <Button
@@ -320,9 +329,10 @@ export function PermisosView({ canWrite, aspirantes, permisos, defaultAspiranteI
                       </TableCell>
                       <TableCell className="text-right">
                         <a
-                          href={aspiranteBoletaPermisoPdfUrl(p.aspiranteId)}
+                          href={permisoFormatoPdfUrl(p.id)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          title="Boleta de este permiso"
                           className={cn(
                             "inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-800 shadow-sm hover:bg-slate-50",
                           )}

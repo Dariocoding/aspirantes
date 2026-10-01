@@ -35,6 +35,7 @@ import {
 } from "@src/components/ui/dropdown-menu";
 import { Input } from "@src/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@src/components/ui/table";
+import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import {
   CENSUS_COLUMN_GROUPS,
   CENSUS_DEFAULT_VISIBLE_IDS,
@@ -803,7 +804,7 @@ export function AspirantesCensusTable({ rows, grouping, canWrite, pelotones, sel
                         />
                       </TableCell>
                       <TableCell className="px-3 py-2 font-mono text-sm tabular-nums text-slate-700">
-                        {a.cedula}
+                        {formatCedulaMillares(a.cedula)}
                       </TableCell>
                       {visibleColumns.map((col) => (
                         <TableCell

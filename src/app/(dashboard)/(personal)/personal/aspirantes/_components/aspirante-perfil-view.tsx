@@ -6,6 +6,7 @@ import {
   type FichaEvaluacionState,
 } from "@src/lib/aspirantes/ficha-evaluacion";
 import { calificacionAdmisionEtiqueta } from "@src/lib/aspirantes/census";
+import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelCondicionMilitar } from "@src/lib/aspirantes/condicion-militar";
 import {
@@ -450,7 +451,7 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <div className="min-w-0 space-y-1">
                 <CardTitle className="text-xl font-semibold tracking-tight text-slate-900">{nombreCompleto}</CardTitle>
                 <CardDescription className="text-sm text-slate-600">
-                  Cédula <span className="font-mono font-semibold text-slate-800">{a.cedula}</span>
+                  Cédula <span className="font-mono font-semibold text-slate-800">{formatCedulaMillares(a.cedula)}</span>
                   {" · "}
                   {a.sexo === "FEMENINO" ? "Femenino" : "Masculino"}
                   {a.edad != null ? (
@@ -574,11 +575,11 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
               <Campo label="Padres venezolanos" value={labelPadresVenezolanos(a.padresVenezolanos)} />
               <Campo label="Nombres de la madre" value={a.madreNombres} />
               <Campo label="Apellidos de la madre" value={a.madreApellidos} />
-              <Campo label="Cédula de la madre" value={a.madreCedula} />
+              <Campo label="Cédula de la madre" value={a.madreCedula ? formatCedulaMillares(a.madreCedula) : a.madreCedula} />
               <Campo label="Fecha de nacimiento de la madre" value={a.madreFechaNacimientoLabel} />
               <Campo label="Nombres del padre" value={a.padreNombres} />
               <Campo label="Apellidos del padre" value={a.padreApellidos} />
-              <Campo label="Cédula del padre" value={a.padreCedula} />
+              <Campo label="Cédula del padre" value={a.padreCedula ? formatCedulaMillares(a.padreCedula) : a.padreCedula} />
               <Campo label="Fecha de nacimiento del padre" value={a.padreFechaNacimientoLabel} />
               <Campo label="Posee vehículo propio" value={labelSiNo(a.poseeVehiculoPropio)} />
               <Campo label="Posee vivienda propia" value={labelSiNo(a.poseeViviendaPropia)} />

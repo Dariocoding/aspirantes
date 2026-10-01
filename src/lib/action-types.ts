@@ -87,6 +87,13 @@ export type MembreteActionState = {
 
 export const membreteInitialActionState: MembreteActionState = { ok: false, errors: {} };
 
+export type FormatoPermisoActionState = {
+  ok: boolean;
+  errors: Record<string, string>;
+};
+
+export const formatoPermisoInitialActionState: FormatoPermisoActionState = { ok: false, errors: {} };
+
 export type UsuarioActionState = {
   ok: boolean;
   errors: Record<string, string>;

@@ -462,6 +462,21 @@ model PermisoPersonal {
   @@index([anulado])
 }
 
+/// Textos fijos de la boleta individual de un permiso. Una sola fila (`formato_permiso`).
+model FormatoPermiso {
+  id             String   @id
+  lineas         String[]
+  logoIzq        String   @default("ejercito")
+  logoDer        String   @default("cefoa")
+  titulo         String   @default("BOLETA DE PERMISO")
+  /// Si está vacío, cada boleta usa el pelotón o la unidad del aspirante.
+  compania       String   @default("")
+  firmanteNombre String   @default("")
+  firmanteCargo  String   @default("")
+  nota           String   @default("")
+  updatedAt      DateTime @updatedAt
+}
+
 model ContactoEmergencia {
   id            String   @id @default(cuid())
   nombre        String

@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
+import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { cn } from "@src/lib/utils";
 
 export type BoletaPersonOption = {
@@ -149,7 +150,7 @@ export function BoletasPermisoSelectDialog({
     const n = q.trim().toLocaleLowerCase("es");
     if (!n) return people;
     return people.filter((p) =>
-      `${p.nombres} ${p.apellidos} ${p.cedula}`.toLocaleLowerCase("es").includes(n),
+      `${p.nombres} ${p.apellidos} ${p.cedula} ${formatCedulaMillares(p.cedula)}`.toLocaleLowerCase("es").includes(n),
     );
   }, [people, q]);
 
@@ -222,7 +223,7 @@ export function BoletasPermisoSelectDialog({
                         <span className="block text-sm font-medium text-slate-900">
                           {p.apellidos}, {p.nombres}
                         </span>
-                        <span className="block font-mono text-[11px] text-slate-500">{p.cedula}</span>
+                        <span className="block font-mono text-[11px] text-slate-500">{formatCedulaMillares(p.cedula)}</span>
                       </span>
                     </label>
                   </li>

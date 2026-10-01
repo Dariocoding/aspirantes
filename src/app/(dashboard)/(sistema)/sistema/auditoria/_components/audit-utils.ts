@@ -21,6 +21,8 @@ const ACTION_LABELS: Record<string, string> = {
   PERMISO_UPDATE: "Actualización de permiso de personal",
   PERMISO_ANULAR: "Anulación de permiso de personal",
   BOLETA_PERMISO_PDF: "Descarga de boleta de permiso (PDF)",
+  PERMISO_FORMATO_PDF: "Descarga de boleta individual de permiso (PDF)",
+  FORMATO_PERMISO_UPDATE: "Actualización del formato de boleta de permiso",
   CONSTANCIA_ESTUDIOS_PDF: "Descarga de constancia de estudios (PDF)",
 };
 
@@ -28,6 +30,7 @@ const ENTITY_LABELS: Record<string, string> = {
   ASPIRANTE: "Aspirante",
   CONVOCATORIA: "Convocatoria",
   PERMISO: "Permiso",
+  FORMATO_PERMISO: "Formato de boleta",
 };
 
 export function auditActionLabel(action: string): string {

@@ -1,6 +1,7 @@
 import type { Prisma } from "@src/generated/prisma";
 import {
   condicionMilitarGroupLabel,
+  condicionMilitarRank,
   parseCondicionCensusFilter,
 } from "@src/lib/aspirantes/condicion-militar";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
@@ -31,7 +32,7 @@ export function buildAspiranteCensusWhere(
       OR: [
         { nombres: { contains: q, mode: "insensitive" } },
         { apellidos: { contains: q, mode: "insensitive" } },
-        { cedula: { contains: q, mode: "insensitive" } },
+        { cedula: { contains: q.replace(/\D/g, "") || q, mode: "insensitive" } },
       ],
     });
   }
@@ -56,28 +57,57 @@ export function buildAspiranteCensusWhere(
   return filters.length ? { AND: filters } : {};
 }
 
-export function censusOrderBy(
-  sort: string | undefined,
-): Prisma.AspiranteOrderByWithRelationInput | Prisma.AspiranteOrderByWithRelationInput[] {
+export const CENSUS_SORT_KEYS = ["cedula", "nombres", "apellidos", "titulo", "nacimiento", "reciente"] as const;
+export type CensusSortKey = (typeof CENSUS_SORT_KEYS)[number];
+
+export const CENSUS_GROUP_KEYS = ["condicion", "carrera", "grado", "nacimiento-mes", "religion"] as const;
+export type CensusGroupKey = (typeof CENSUS_GROUP_KEYS)[number];
+
+export function isCensusSortKey(v: string | null | undefined): v is CensusSortKey {
+  return Boolean(v && (CENSUS_SORT_KEYS as readonly string[]).includes(v));
+}
+
+export function isCensusGroupKey(v: string | null | undefined): v is CensusGroupKey {
+  return Boolean(v && (CENSUS_GROUP_KEYS as readonly string[]).includes(v));
+}
+
+/**
+ * Separa orden y agrupación. Las URLs viejas guardaban la agrupación en `sort`
+ * (`sort=carrera`, etc.); en ese caso el orden dentro del grupo sigue siendo por nombre.
+ */
+export function resolveCensusPresentation(sp: { sort?: string; group?: string }): {
+  sort: CensusSortKey;
+  group: CensusGroupKey | null;
+} {
+  const groupFromParam = isCensusGroupKey(sp.group) ? sp.group : null;
+  const legacyGroup = sp.group == null && isCensusGroupKey(sp.sort) ? sp.sort : null;
+  const group = groupFromParam ?? legacyGroup;
+  if (isCensusSortKey(sp.sort)) return { sort: sp.sort, group };
+  return { sort: legacyGroup ? "nombres" : "cedula", group };
+}
+
+function sortFields(sort: CensusSortKey): Prisma.AspiranteOrderByWithRelationInput[] {
   if (sort === "nombres") return [{ nombres: "asc" }, { apellidos: "asc" }];
   if (sort === "apellidos") return [{ apellidos: "asc" }, { nombres: "asc" }];
-  if (sort === "titulo") return { tituloUniversidad: "asc" };
-  if (sort === "carrera") {
-    // Agrupa por carrera (A-Z) y, dentro de cada una, orden alfabético por nombre.
-    return [{ tituloUniversidad: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
-  }
-  if (sort === "religion") {
-    return [{ religion: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
-  }
-  if (sort === "condicion") {
-    return [{ condicionMilitar: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
-  }
-  if (sort === "reciente") return { createdAt: "desc" };
-  if (sort === "nacimiento") return { fechaNacimiento: "asc" };
-  // `nacimiento-mes` se ordena en memoria por mes/día (ver sortAspirantesByNacimientoMes).
-  // `grado` se ordena en memoria por nivel educativo (ver sortAspirantesByGradoEducativo).
-  // Por defecto (y con sort=cedula): cédula ascendente.
-  return { cedula: "asc" };
+  if (sort === "titulo") return [{ tituloUniversidad: "asc" }, { nombres: "asc" }, { apellidos: "asc" }];
+  if (sort === "reciente") return [{ createdAt: "desc" }];
+  if (sort === "nacimiento") return [{ fechaNacimiento: "asc" }, { cedula: "asc" }];
+  return [{ cedula: "asc" }];
+}
+
+/** Orden de base de datos. Condición, grado y mes se ordenan en memoria. */
+export function censusOrderBy(
+  sort: CensusSortKey,
+  group: CensusGroupKey | null,
+): Prisma.AspiranteOrderByWithRelationInput | Prisma.AspiranteOrderByWithRelationInput[] {
+  const primary: Prisma.AspiranteOrderByWithRelationInput[] =
+    group === "carrera" ? [{ tituloUniversidad: "asc" }] : group === "religion" ? [{ religion: "asc" }] : [];
+  const fields = [...primary, ...sortFields(sort)];
+  return fields.length === 1 ? fields[0]! : fields;
+}
+
+export function censusSortInMemory(group: CensusGroupKey | null) {
+  return group === "condicion" || group === "grado" || group === "nacimiento-mes";
 }
 
 export function isCensusCarreraGroupSort(sort: string | undefined) {
@@ -173,6 +203,84 @@ export function sortAspirantesByNacimientoMes<
     const dayDiff = a.fechaNacimiento.getDate() - b.fechaNacimiento.getDate();
     if (dayDiff !== 0) return dayDiff;
     return a.cedula.localeCompare(b.cedula, "es", { numeric: true });
+  });
+}
+
+type CensusOrderable = {
+  cedula: string;
+  nombres: string;
+  apellidos: string;
+  tituloUniversidad: string | null;
+  fechaNacimiento: Date;
+  createdAt: Date;
+  religion: string | null;
+  tipoEstudio: string | null;
+  condicionMilitar: string | null;
+};
+
+function compareCensusText(a: string, b: string) {
+  return a.localeCompare(b, "es", { sensitivity: "base", numeric: true });
+}
+
+function compareCensusSort(a: CensusOrderable, b: CensusOrderable, sort: CensusSortKey): number {
+  if (sort === "nombres") {
+    return (
+      compareCensusText(a.nombres, b.nombres) ||
+      compareCensusText(a.apellidos, b.apellidos) ||
+      compareCensusText(a.cedula, b.cedula)
+    );
+  }
+  if (sort === "apellidos") {
+    return (
+      compareCensusText(a.apellidos, b.apellidos) ||
+      compareCensusText(a.nombres, b.nombres) ||
+      compareCensusText(a.cedula, b.cedula)
+    );
+  }
+  if (sort === "titulo") {
+    return (
+      compareCensusText(a.tituloUniversidad ?? "", b.tituloUniversidad ?? "") ||
+      compareCensusText(a.nombres, b.nombres) ||
+      compareCensusText(a.cedula, b.cedula)
+    );
+  }
+  if (sort === "nacimiento") {
+    const diff = a.fechaNacimiento.getTime() - b.fechaNacimiento.getTime();
+    if (diff !== 0) return diff;
+    return compareCensusText(a.cedula, b.cedula);
+  }
+  if (sort === "reciente") return b.createdAt.getTime() - a.createdAt.getTime();
+  return compareCensusText(a.cedula, b.cedula);
+}
+
+function mesGroupRank(fecha: Date) {
+  const key = nacimientoMesGroupKey(fecha);
+  return key < 0 ? 99 : key;
+}
+
+function compareCensusGroup(a: CensusOrderable, b: CensusOrderable, group: CensusGroupKey | null): number {
+  if (group === "condicion") {
+    return condicionMilitarRank(a.condicionMilitar) - condicionMilitarRank(b.condicionMilitar);
+  }
+  if (group === "grado") {
+    return gradoEducativoGroupKey(a.tipoEstudio) - gradoEducativoGroupKey(b.tipoEstudio);
+  }
+  if (group === "nacimiento-mes") return mesGroupRank(a.fechaNacimiento) - mesGroupRank(b.fechaNacimiento);
+  if (group === "carrera") return compareCensusText(a.tituloUniversidad ?? "", b.tituloUniversidad ?? "");
+  if (group === "religion") return compareCensusText(a.religion ?? "", b.religion ?? "");
+  return 0;
+}
+
+/** Agrupa primero y, dentro de cada grupo, aplica el orden elegido. */
+export function sortAspirantesForCensus<T extends CensusOrderable>(
+  rows: T[],
+  sort: CensusSortKey,
+  group: CensusGroupKey | null,
+): T[] {
+  return [...rows].sort((a, b) => {
+    const groupDiff = compareCensusGroup(a, b, group);
+    if (groupDiff !== 0) return groupDiff;
+    return compareCensusSort(a, b, sort);
   });
 }
 

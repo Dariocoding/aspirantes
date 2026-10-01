@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, FileBadge } from "lucide-react";
 import { buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { routes } from "@src/lib/apps/routes";
+import { permisoFormatoPdfUrl } from "@src/lib/pdf/formato-permiso";
 import { formatDateTime } from "@src/lib/date";
 import {
   estadoPermiso,
@@ -85,13 +86,25 @@ export function AspirantePermisosCard({
                         {formatDuracionPermiso(inicio, fin)}
                       </span>
                     </p>
-                    <span
-                      className={cn(
-                        "inline-flex rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
-                        permisoEstadoBadgeClass(estado),
-                      )}
-                    >
-                      {PERMISO_ESTADO_LABEL[estado]}
+                    <span className="inline-flex items-center gap-2">
+                      <a
+                        href={permisoFormatoPdfUrl(p.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Boleta de este permiso"
+                        className="inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 text-[11px] font-medium text-slate-800 hover:bg-slate-50"
+                      >
+                        <FileBadge className="h-3 w-3" aria-hidden />
+                        PDF
+                      </a>
+                      <span
+                        className={cn(
+                          "inline-flex rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+                          permisoEstadoBadgeClass(estado),
+                        )}
+                      >
+                        {PERMISO_ESTADO_LABEL[estado]}
+                      </span>
                     </span>
                   </div>
                   <p className="mt-1 text-xs tabular-nums text-slate-600">

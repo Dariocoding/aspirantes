@@ -14,6 +14,7 @@ export const routes = {
     esquelasPlantilla: "/personal/esquelas/plantilla",
     esquela: (id: string) => `/personal/esquelas/${encodeURIComponent(id)}`,
     permisos: "/personal/permisos",
+    permisosFormato: "/personal/permisos/formato",
     convocatorias: "/personal/convocatorias",
     membretes: "/personal/membretes",
   },

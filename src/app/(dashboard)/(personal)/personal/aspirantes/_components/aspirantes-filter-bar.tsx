@@ -4,9 +4,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { applySelectionParam, useCensusNavigate } from "@dashboard/aspirantes/_components/census-selection";
 import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
   useState,
   type ComponentProps,
   type FormEvent,
@@ -27,6 +24,8 @@ import {
   Hash,
   IdCard,
   Layers,
+  List,
+  PanelLeft,
   Search,
   Shield,
   Signature,
@@ -44,7 +43,13 @@ import {
 } from "@src/components/ui/dropdown-menu";
 import { Input } from "@src/components/ui/input";
 import { Label } from "@src/components/ui/label";
-import { censusQueryString, sexoEtiqueta } from "@src/lib/aspirantes/census";
+import {
+  censusQueryString,
+  resolveCensusPresentation,
+  sexoEtiqueta,
+  type CensusGroupKey,
+  type CensusSortKey,
+} from "@src/lib/aspirantes/census";
 import {
   condicionCensusTotal,
   labelCondicionCensusFilter,
@@ -62,6 +67,7 @@ type FilterValues = {
   q?: string;
   sexo?: string;
   sort?: string;
+  group?: string;
   peloton?: string;
   convocatoria?: string;
   condicion?: string;
@@ -78,18 +84,21 @@ type Props = {
 
 const EMPTY_CONDICION_COUNTS: CondicionCensusCounts = { soldado: 0, sargento: 0, sin: 0 };
 
-const SORT_LABEL: Record<string, string> = {
+const SORT_LABEL: Record<CensusSortKey, string> = {
   cedula: "Cédula",
-  nombres: "Nombre A–Z",
-  apellidos: "Apellido A–Z",
-  titulo: "Título A–Z",
-  reciente: "Más recientes",
+  nombres: "Nombre",
+  apellidos: "Apellido",
+  titulo: "Título",
+  reciente: "Recientes",
   nacimiento: "Nacimiento",
-  "nacimiento-mes": "Mes de nacimiento",
-  carrera: "Por carrera",
-  grado: "Por grado",
-  religion: "Por religión",
-  condicion: "Por condición",
+};
+
+const GROUP_LABEL: Record<CensusGroupKey, string> = {
+  condicion: "Condición",
+  carrera: "Carrera",
+  grado: "Grado",
+  "nacimiento-mes": "Mes",
+  religion: "Religión",
 };
 
 const SORT_OPTIONS = [
@@ -102,137 +111,13 @@ const SORT_OPTIONS = [
 ] as const;
 
 const GROUP_OPTIONS = [
-  { value: "condicion", key: "condicion", label: "Condición", hint: "Soldado o sargento activo", icon: Shield },
-  { value: "carrera", key: "carrera", label: "Carrera", hint: "Agrupa por título universitario", icon: Hash },
-  { value: "grado", key: "grado", label: "Grado", hint: "Nivel educativo", icon: Layers },
-  { value: "nacimiento-mes", key: "nacimiento-mes", label: "Mes", hint: "Ene → Dic", icon: CalendarDays },
-  { value: "religion", key: "religion", label: "Religión", hint: "Agrupa por credo", icon: Church },
+  { value: "", key: "ninguno", label: "Sin agrupar", hint: "Un solo listado", icon: List },
+  { value: "condicion", key: "condicion", label: "Condición", hint: "Soldado, sargento, sin clasificar", icon: Shield },
+  { value: "carrera", key: "carrera", label: "Carrera", hint: "Por título universitario", icon: Hash },
+  { value: "grado", key: "grado", label: "Grado", hint: "Postgrado, TSU, pregrado", icon: Layers },
+  { value: "nacimiento-mes", key: "nacimiento-mes", label: "Mes", hint: "Enero a diciembre", icon: CalendarDays },
+  { value: "religion", key: "religion", label: "Religión", hint: "Por credo", icon: Church },
 ] as const;
-
-const ACTIVE_SORTS = new Set([
-  "nombres",
-  "apellidos",
-  "titulo",
-  "carrera",
-  "grado",
-  "condicion",
-  "nacimiento",
-  "nacimiento-mes",
-  "religion",
-  "reciente",
-]);
-
-function isActiveSort(sort: string | undefined) {
-  return Boolean(sort && sort !== "cedula" && ACTIVE_SORTS.has(sort));
-}
-
-function sortKeyOf(sort: string | undefined) {
-  if (!isActiveSort(sort)) return "cedula";
-  return sort as string;
-}
-
-function SortRail({
-  sort,
-  hrefFor,
-  go,
-}: {
-  sort: string | undefined;
-  hrefFor: (sortValue: string) => string;
-  go: (href: string, dropSelection?: boolean) => void;
-}) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
-  const [indicator, setIndicator] = useState({ x: 0, w: 0, ready: false });
-  const activeKey = pendingKey ?? sortKeyOf(sort);
-
-  useEffect(() => {
-    setPendingKey(null);
-  }, [sort]);
-
-  useLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-
-    const place = () => {
-      const chip = scroller.querySelector<HTMLElement>(`[data-sort-key="${activeKey}"]`);
-      if (!chip) return;
-      setIndicator({
-        x: chip.offsetLeft,
-        w: chip.offsetWidth,
-        ready: true,
-      });
-    };
-
-    place();
-    const ro = new ResizeObserver(place);
-    ro.observe(scroller);
-    for (const el of scroller.querySelectorAll("[data-sort-key]")) {
-      ro.observe(el);
-    }
-    return () => ro.disconnect();
-  }, [activeKey]);
-
-  useEffect(() => {
-    if (!pendingKey) return;
-    const scroller = scrollerRef.current;
-    const chip = scroller?.querySelector<HTMLElement>(`[data-sort-key="${pendingKey}"]`);
-    chip?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
-  }, [pendingKey]);
-
-  return (
-    <div className="rounded-2xl border border-slate-200/90 bg-white p-1 shadow-sm shadow-slate-900/4">
-      <div className="overflow-x-auto scrollbar-thin">
-        <div
-          ref={scrollerRef}
-          className="relative flex min-w-max items-center gap-1 px-0.5 py-0.5"
-          role="radiogroup"
-          aria-label="Orden y agrupación del censo"
-        >
-          <div
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute top-0.5 bottom-0.5 rounded-full bg-slate-900 shadow-[0_1px_8px_-2px_rgb(15_23_42/0.55)]",
-              indicator.ready
-                ? "transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
-                : "opacity-0",
-            )}
-            style={{ width: indicator.w, transform: `translateX(${indicator.x}px)` }}
-          />
-
-          <span className="z-10 shrink-0 px-2 py-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
-            Orden
-          </span>
-          {SORT_OPTIONS.map((opt) => (
-            <SortChip
-              key={opt.key}
-              href={hrefFor(opt.value)}
-              option={opt}
-              selected={activeKey === opt.key}
-              onPick={() => setPendingKey(opt.key)}
-              go={go}
-            />
-          ))}
-
-          <span className="mx-1 h-6 w-px shrink-0 bg-slate-200" aria-hidden />
-
-          <span className="z-10 shrink-0 px-2 py-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
-            Agrupar
-          </span>
-          {GROUP_OPTIONS.map((opt) => (
-            <SortChip
-              key={opt.key}
-              href={hrefFor(opt.value)}
-              option={opt}
-              selected={activeKey === opt.key}
-              onPick={() => setPendingKey(opt.key)}
-              go={go}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const CONDICION_OPTIONS = [
   {
@@ -269,6 +154,26 @@ const CONDICION_OPTIONS = [
   },
 ] as const;
 
+function SideSection({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-b border-slate-200/80 px-3 py-3">
+      <div className="mb-2 flex items-baseline justify-between gap-2 px-1">
+        <h2 className="text-[10px] font-semibold tracking-[0.16em] text-slate-400 uppercase">{title}</h2>
+        {hint ? <p className="text-[10px] text-slate-400">{hint}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function CondicionFilter({
   value,
   counts,
@@ -281,58 +186,39 @@ function CondicionFilter({
   go: (href: string, dropSelection?: boolean) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-sm shadow-slate-900/4">
-      <div className="flex items-baseline justify-between gap-3 px-2 pt-1 pb-1.5">
-        <p className="text-[10px] font-semibold tracking-[0.16em] text-slate-400 uppercase">
-          Condición militar
-        </p>
-        <p className="text-[10px] text-slate-400">Totales de la convocatoria</p>
-      </div>
-      <div
-        role="radiogroup"
-        aria-label="Filtrar por condición militar"
-        className="grid grid-cols-2 gap-1 sm:grid-cols-4"
-      >
-        {CONDICION_OPTIONS.map((opt) => {
-          const selected = opt.param === "" ? value == null : value === opt.param;
-          const href = hrefFor(opt.param);
-          const count = opt.countOf(counts);
-          const Icon = opt.icon;
-          return (
-            <Link
-              key={opt.key}
-              href={href}
-              prefetch={false}
-              role="radio"
-              aria-checked={selected}
-              title={opt.hint}
-              onClick={(event) => followWithSelection(event, href, false, go)}
+    <div role="radiogroup" aria-label="Filtrar por condición militar" className="flex flex-col gap-0.5">
+      {CONDICION_OPTIONS.map((opt) => {
+        const selected = opt.param === "" ? value == null : value === opt.param;
+        const href = hrefFor(opt.param);
+        const count = opt.countOf(counts);
+        const Icon = opt.icon;
+        return (
+          <Link
+            key={opt.key}
+            href={href}
+            prefetch={false}
+            role="radio"
+            aria-checked={selected}
+            title={opt.hint}
+            onClick={(event) => followWithSelection(event, href, false, go)}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-2.5 py-2 outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2",
+              selected ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-white",
+            )}
+          >
+            <Icon className={cn("size-3.5 shrink-0", selected ? "text-white" : "text-slate-400")} aria-hidden />
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{opt.label}</span>
+            <span
               className={cn(
-                "flex min-h-17 flex-col justify-between rounded-xl px-3 py-2.5 outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2",
-                selected
-                  ? "bg-slate-900 text-white shadow-[0_10px_24px_-16px_rgb(15_23_42/0.9)]"
-                  : "text-slate-700 hover:bg-slate-50",
+                "text-sm font-semibold tabular-nums",
+                selected ? "text-white" : count === 0 ? "text-slate-300" : "text-slate-900",
               )}
             >
-              <span className="flex items-center gap-1.5 text-[11px] font-medium leading-none">
-                <Icon
-                  className={cn("size-3.5 shrink-0", selected ? "text-white" : "text-slate-400")}
-                  aria-hidden
-                />
-                <span className="truncate">{opt.label}</span>
-              </span>
-              <span
-                className={cn(
-                  "mt-2 text-[1.35rem] font-semibold leading-none tabular-nums tracking-tight",
-                  selected ? "text-white" : count === 0 ? "text-slate-300" : "text-slate-900",
-                )}
-              >
-                {count}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+              {count}
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -351,50 +237,37 @@ function followWithSelection(
   go(href, dropSelection);
 }
 
-function SortChip({
+function SideChoice({
   href,
-  option,
+  label,
+  hint,
+  icon: Icon,
   selected,
-  onPick,
   go,
 }: {
   href: string;
-  option: {
-    key: string;
-    label: string;
-    hint: string;
-    icon: typeof IdCard;
-  };
+  label: string;
+  hint: string;
+  icon: typeof IdCard;
   selected: boolean;
-  onPick: () => void;
   go: (href: string, dropSelection?: boolean) => void;
 }) {
-  const Icon = option.icon;
   return (
     <Link
       href={href}
       prefetch={false}
-      data-sort-key={option.key}
       role="radio"
       aria-checked={selected}
-      title={option.hint}
-      onClick={(event) => {
-        onPick();
-        followWithSelection(event, href, false, go);
-      }}
+      title={hint}
+      onClick={(event) => followWithSelection(event, href, false, go)}
       className={cn(
-        "relative z-10 flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors duration-200",
-        selected ? "text-white" : "text-slate-600 hover:text-slate-900",
+        "flex items-center gap-2 rounded-lg px-2.5 py-1.5 outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2",
+        selected ? "bg-white font-medium text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white/80 hover:text-slate-900",
       )}
     >
-      <Icon
-        className={cn(
-          "size-3.5 transition-transform duration-300",
-          selected ? "scale-110 text-white" : "text-slate-400",
-        )}
-        aria-hidden
-      />
-      <span>{option.label}</span>
+      <Icon className={cn("size-3.5 shrink-0", selected ? "text-slate-900" : "text-slate-400")} aria-hidden />
+      <span className="min-w-0 flex-1 truncate text-sm">{label}</span>
+      <Check className={cn("size-3.5 shrink-0", selected ? "text-slate-900" : "opacity-0")} aria-hidden />
     </Link>
   );
 }
@@ -475,7 +348,7 @@ function OptionItem({
   );
 }
 
-export function AspirantesFilterBar({
+function useCensusFilters({
   pelotones,
   convocatorias,
   defaultConvocatoriaId,
@@ -485,7 +358,10 @@ export function AspirantesFilterBar({
   const sp = useSearchParams();
   const q = sp.get("q") ?? "";
   const sexo = sp.get("sexo") ?? undefined;
-  const sort = sp.get("sort") ?? undefined;
+  const presentation = resolveCensusPresentation({
+    sort: sp.get("sort") ?? undefined,
+    group: sp.get("group") ?? undefined,
+  });
   const paramC = sp.get("convocatoria")?.trim();
   const convocatoriaId =
     paramC && convocatorias.some((c) => c.id === paramC) ? paramC : defaultConvocatoriaId;
@@ -500,15 +376,17 @@ export function AspirantesFilterBar({
   const condicion = parseCondicionCensusFilter(sp.get("condicion"));
   const counts = condicionCounts[convocatoriaId] ?? EMPTY_CONDICION_COUNTS;
   const [query, setQuery] = useState(q);
-
-  useEffect(() => {
+  const [syncedQ, setSyncedQ] = useState(q);
+  if (syncedQ !== q) {
+    setSyncedQ(q);
     setQuery(q);
-  }, [q]);
+  }
 
   const current: FilterValues = {
     q: q || undefined,
     sexo,
-    sort: isActiveSort(sort) ? sort : undefined,
+    sort: presentation.sort === "cedula" ? undefined : presentation.sort,
+    group: presentation.group ?? undefined,
     peloton,
     convocatoria: convocatoriaId,
     condicion: condicion ?? undefined,
@@ -518,7 +396,6 @@ export function AspirantesFilterBar({
 
   const sexoActivo = sexo === "MASCULINO" || sexo === "FEMENINO";
   const pelotonActivo = Boolean(peloton?.trim() && peloton !== "TODOS");
-  const sortActivo = isActiveSort(sort);
   const convocatoriaActiva = Boolean(
     convocatoriaId && defaultConvocatoriaId && convocatoriaId !== defaultConvocatoriaId,
   );
@@ -547,11 +424,18 @@ export function AspirantesFilterBar({
   if (sexoActivo && sexo) {
     chips.push({ key: "sexo", label: `Sexo: ${sexoEtiqueta(sexo)}`, href: href({ sexo: "TODOS" }) });
   }
-  if (sortActivo && sort) {
+  if (presentation.sort !== "cedula") {
     chips.push({
       key: "sort",
-      label: `Orden: ${SORT_LABEL[sort] ?? sort}`,
+      label: `Orden: ${SORT_LABEL[presentation.sort]}`,
       href: href({ sort: "" }),
+    });
+  }
+  if (presentation.group) {
+    chips.push({
+      key: "group",
+      label: `Agrupar: ${GROUP_LABEL[presentation.group]}`,
+      href: href({ group: "" }),
     });
   }
   if (condicion) {
@@ -568,55 +452,169 @@ export function AspirantesFilterBar({
   }
 
   const resetHref = routes.personal.aspirantes;
+  const summary = [
+    condicion ? labelCondicionCensusFilter(condicion) : "Todos",
+    SORT_LABEL[presentation.sort],
+    presentation.group ? GROUP_LABEL[presentation.group] : "Sin agrupar",
+  ].join(" · ");
+
+  return {
+    go,
+    href,
+    query,
+    setQuery,
+    onSearch,
+    condicion,
+    counts,
+    presentation,
+    chips,
+    resetHref,
+    summary,
+    sexo,
+    sexoActivo,
+    peloton,
+    pelotonActivo,
+    pelotonActual,
+    pelotonesVisibles,
+    convocatorias,
+    convocatoriaId,
+    convocatoriaActual,
+    convocatoriaActiva,
+  };
+}
+
+export function AspirantesCensusSearch(props: Props) {
+  const { go, href, query, setQuery, onSearch } = useCensusFilters(props);
 
   return (
-    <div className="flex flex-col gap-3">
-      <CondicionFilter
-        value={condicion}
-        counts={counts}
-        hrefFor={(next) => href({ condicion: next })}
-        go={go}
-      />
+    <form onSubmit={onSearch} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="relative min-w-0 flex-1">
+        <Label htmlFor="q" className="sr-only">
+          Buscar por nombre, apellido o cédula
+        </Label>
+        <Search
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
+          aria-hidden
+        />
+        <Input
+          id="q"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar nombre, apellido o cédula…"
+          className="h-10 border-slate-200 bg-white pr-9 pl-9 shadow-sm"
+        />
+        {query ? (
+          <button
+            type="button"
+            className="absolute top-1/2 right-2.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Borrar búsqueda"
+            onClick={() => {
+              setQuery("");
+              go(href({ q: "" }));
+            }}
+          >
+            <X className="size-3.5" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+      <Button type="submit" className="h-10 flex-1 gap-2 bg-slate-900 px-4 hover:bg-slate-800 sm:flex-initial">
+        <Search className="size-4" aria-hidden />
+        Buscar
+      </Button>
+    </form>
+  );
+}
 
-      <form onSubmit={onSearch} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Label htmlFor="q" className="sr-only">
-            Buscar por nombre, apellido o cédula
-          </Label>
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-            aria-hidden
-          />
-          <Input
-            id="q"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar nombre, apellido o cédula…"
-            className="h-10 border-slate-200 bg-white pr-9 pl-9 shadow-sm"
-          />
-          {query ? (
-            <button
-              type="button"
-              className="absolute right-2.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              aria-label="Borrar búsqueda"
-              onClick={() => {
-                setQuery("");
-                go(href({ q: "" }));
-              }}
-            >
-              <X className="size-3.5" aria-hidden />
-            </button>
-          ) : null}
-        </div>
-        <Button type="submit" className="h-10 flex-1 gap-2 bg-slate-900 px-4 hover:bg-slate-800 sm:flex-initial">
-          <Search className="size-4" aria-hidden />
-          Buscar
-        </Button>
-      </form>
+export function AspirantesFilterBar(props: Props) {
+  const filters = useCensusFilters(props);
+  const {
+    go,
+    href,
+    condicion,
+    counts,
+    presentation,
+    chips,
+    resetHref,
+    summary,
+    sexo,
+    sexoActivo,
+    peloton,
+    pelotonActivo,
+    pelotonActual,
+    pelotonesVisibles,
+    convocatorias,
+    convocatoriaId,
+    convocatoriaActual,
+    convocatoriaActiva,
+  } = filters;
+  const [open, setOpen] = useState(false);
 
-      <SortRail sort={sort} hrefFor={(value) => href({ sort: value })} go={go} />
+  function goFromSidebar(next: string, dropSelection?: boolean) {
+    setOpen(false);
+    go(next, dropSelection);
+  }
 
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 scrollbar-thin">
+  return (
+    <aside className="border-b border-slate-200/90 bg-slate-50/80 lg:border-r lg:border-b-0">
+      <div className="lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto scrollbar-thin">
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 px-4 py-3 text-left lg:hidden"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <PanelLeft className="size-4 shrink-0 text-slate-500" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-slate-900">Organizar listado</span>
+            <span className="block truncate text-xs text-slate-500">{summary}</span>
+          </span>
+          <ChevronDown className={cn("size-4 shrink-0 text-slate-400 transition-transform", open && "rotate-180")} aria-hidden />
+        </button>
+
+        <div className={cn(open ? "block" : "hidden", "lg:block")}>
+          <SideSection title="Condición militar" hint="Totales">
+            <CondicionFilter
+              value={condicion}
+              counts={counts}
+              hrefFor={(next) => href({ condicion: next })}
+              go={goFromSidebar}
+            />
+          </SideSection>
+
+          <SideSection title="Ordenar">
+            <div role="radiogroup" aria-label="Orden del listado" className="flex flex-col gap-0.5">
+              {SORT_OPTIONS.map((opt) => (
+                <SideChoice
+                  key={opt.key}
+                  href={href({ sort: opt.value })}
+                  label={opt.label}
+                  hint={opt.hint}
+                  icon={opt.icon}
+                  selected={presentation.sort === opt.key}
+                  go={goFromSidebar}
+                />
+              ))}
+            </div>
+          </SideSection>
+
+          <SideSection title="Agrupar">
+            <div role="radiogroup" aria-label="Agrupación del listado" className="flex flex-col gap-0.5">
+              {GROUP_OPTIONS.map((opt) => (
+                <SideChoice
+                  key={opt.key}
+                  href={href({ group: opt.value })}
+                  label={opt.label}
+                  hint={opt.hint}
+                  icon={opt.icon}
+                  selected={opt.value === "" ? presentation.group == null : presentation.group === opt.value}
+                  go={goFromSidebar}
+                />
+              ))}
+            </div>
+          </SideSection>
+
+          <SideSection title="Filtrar">
+            <div className="flex flex-col gap-1.5">
         {convocatorias.length ? (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -626,13 +624,14 @@ export function AspirantesFilterBar({
                   label="Convocatoria"
                   value={convocatoriaActual ? convocatoriaActual.codigo : undefined}
                   active={convocatoriaActiva}
+                  className="h-9 w-full max-w-none justify-between rounded-lg"
                 />
               }
             />
             <DropdownMenuContent align="start" className="min-w-64">
               <DropdownMenuGroup>
                 {convocatorias.map((c) => (
-                  <OptionItem go={go}
+                  <OptionItem go={goFromSidebar}
                     key={c.id}
                     href={href({ convocatoria: c.id, peloton: "" })}
                     selected={c.id === convocatoriaId}
@@ -655,19 +654,20 @@ export function AspirantesFilterBar({
                 label="Pelotón"
                 value={pelotonActivo ? pelotonActual : undefined}
                 active={pelotonActivo}
+                className="h-9 w-full max-w-none justify-between rounded-lg"
               />
             }
           />
           <DropdownMenuContent align="start" className="min-w-52">
             <DropdownMenuGroup>
-              <OptionItem go={go} href={href({ peloton: "TODOS" })} selected={!pelotonActivo}>
+              <OptionItem go={goFromSidebar} href={href({ peloton: "TODOS" })} selected={!pelotonActivo}>
                 Todos
               </OptionItem>
-              <OptionItem go={go} href={href({ peloton: "SIN_ASIGNAR" })} selected={peloton === "SIN_ASIGNAR"}>
+              <OptionItem go={goFromSidebar} href={href({ peloton: "SIN_ASIGNAR" })} selected={peloton === "SIN_ASIGNAR"}>
                 Sin asignar
               </OptionItem>
               {pelotonesVisibles.map((p) => (
-                <OptionItem go={go} key={p.id} href={href({ peloton: p.id })} selected={peloton === p.id}>
+                <OptionItem go={goFromSidebar} key={p.id} href={href({ peloton: p.id })} selected={peloton === p.id}>
                   {labelPeloton(p)}
                 </OptionItem>
               ))}
@@ -683,55 +683,57 @@ export function AspirantesFilterBar({
                 label="Sexo"
                 value={sexoActivo && sexo ? sexoEtiqueta(sexo) : undefined}
                 active={sexoActivo}
+                className="h-9 w-full max-w-none justify-between rounded-lg"
               />
             }
           />
           <DropdownMenuContent align="start" className="min-w-40">
             <DropdownMenuGroup>
-              <OptionItem go={go} href={href({ sexo: "TODOS" })} selected={!sexoActivo}>
+              <OptionItem go={goFromSidebar} href={href({ sexo: "TODOS" })} selected={!sexoActivo}>
                 Todos
               </OptionItem>
-              <OptionItem go={go} href={href({ sexo: "MASCULINO" })} selected={sexo === "MASCULINO"}>
+              <OptionItem go={goFromSidebar} href={href({ sexo: "MASCULINO" })} selected={sexo === "MASCULINO"}>
                 Masculino
               </OptionItem>
-              <OptionItem go={go} href={href({ sexo: "FEMENINO" })} selected={sexo === "FEMENINO"}>
+              <OptionItem go={goFromSidebar} href={href({ sexo: "FEMENINO" })} selected={sexo === "FEMENINO"}>
                 Femenino
               </OptionItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+            </div>
+          </SideSection>
 
-      {chips.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {chips.map((chip) => (
-            <Link
-              key={chip.key}
-              href={chip.href}
-              prefetch={false}
-              onClick={(event) =>
-                followWithSelection(event, chip.href, Boolean(chip.dropSelection), go)
-              }
-              className="inline-flex h-7 max-w-full items-center gap-1 rounded-full border border-slate-200 bg-slate-50 pl-2.5 pr-1 text-xs text-slate-800 hover:border-slate-300 hover:bg-white"
-            >
-              <span className="min-w-0 truncate">{chip.label}</span>
-              <span className="flex size-5 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-800">
-                <X className="size-3" aria-hidden />
-              </span>
-            </Link>
-          ))}
-          <Link
-            href={resetHref}
-            prefetch={false}
-            onClick={(event) =>
-              followWithSelection(event, resetHref, convocatoriaActiva, go)
-            }
-            className="inline-flex h-7 items-center rounded-full px-2 text-xs font-medium text-slate-500 hover:text-slate-900"
-          >
-            Restablecer
-          </Link>
+          {chips.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5 px-3 py-3">
+              {chips.map((chip) => (
+                <Link
+                  key={chip.key}
+                  href={chip.href}
+                  prefetch={false}
+                  onClick={(event) =>
+                    followWithSelection(event, chip.href, Boolean(chip.dropSelection), goFromSidebar)
+                  }
+                  className="inline-flex h-7 max-w-full items-center gap-1 rounded-full border border-slate-200 bg-white pl-2.5 pr-1 text-xs text-slate-800 hover:border-slate-300"
+                >
+                  <span className="min-w-0 truncate">{chip.label}</span>
+                  <span className="flex size-5 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-800">
+                    <X className="size-3" aria-hidden />
+                  </span>
+                </Link>
+              ))}
+              <Link
+                href={resetHref}
+                prefetch={false}
+                onClick={(event) => followWithSelection(event, resetHref, convocatoriaActiva, goFromSidebar)}
+                className="inline-flex h-7 items-center rounded-full px-2 text-xs font-medium text-slate-500 hover:text-slate-900"
+              >
+                Restablecer
+              </Link>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-    </div>
+      </div>
+    </aside>
   );
 }
