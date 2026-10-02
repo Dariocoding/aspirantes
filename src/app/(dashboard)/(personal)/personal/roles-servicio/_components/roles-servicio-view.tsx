@@ -377,7 +377,11 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
 
           <div className="flex flex-wrap items-center gap-3">
             {planes.length > 0 ? (
-              <OrdenDelDiaDownloadButton anio={anio} mes={mes} dia={diaSeleccionado} />
+              <OrdenDelDiaDownloadButton
+                anio={anio}
+                mes={mes}
+                diaSeleccionado={diaSeleccionado}
+              />
             ) : null}
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
               <span className="inline-flex items-center gap-1.5">
