@@ -16,7 +16,8 @@
     "prebuild": "node scripts/copy-pdfjs-worker.mjs",
     "seed": "tsx prisma/seed.ts",
     "seed:cefoa46": "tsx prisma/seed-cefoa46-aspirantes.ts",
-    "seed:roles": "tsx prisma/seed-roles-servicio.ts"
+    "seed:roles": "tsx prisma/seed-roles-servicio.ts",
+    "seed:autoridades": "tsx prisma/seed-autoridades.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

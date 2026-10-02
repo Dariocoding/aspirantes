@@ -35,6 +35,7 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "lugarNacimiento", label: "Lugar de nacimiento", group: "Identidad", width: 22, align: "left" },
   { id: "unidad", label: "Unidad postulante", group: "Postulación", width: 28, align: "left" },
   { id: "condicion", label: "Condición militar", group: "Postulación", width: 18, align: "left" },
+  { id: "jerarquia", label: "Jerarquía", group: "Postulación", width: 18, align: "left" },
   { id: "carrera", label: "Carrera", group: "Postulación", width: 34, align: "left" },
   { id: "calificacion", label: "Calificación", group: "Postulación", width: 14, align: "center" },
   { id: "peloton", label: "Pelotón", group: "Postulación", width: 16, align: "left" },
@@ -142,6 +143,9 @@ HEADER_TO_COLUMN_ID.set("cuentanomina", "cuentaNominaBanfanb");
 HEADER_TO_COLUMN_ID.set("numerodecuentabanfanb", "cuentaNominaBanfanb");
 HEADER_TO_COLUMN_ID.set("condicion", "condicion");
 HEADER_TO_COLUMN_ID.set("condicionmilitar", "condicion");
+HEADER_TO_COLUMN_ID.set("jerarquia", "jerarquia");
+HEADER_TO_COLUMN_ID.set("aspofic", "jerarquia");
+HEADER_TO_COLUMN_ID.set("distinguido", "jerarquia");
 HEADER_TO_COLUMN_ID.set("religion", "religion");
 HEADER_TO_COLUMN_ID.set("credo", "religion");
 HEADER_TO_COLUMN_ID.set("deporte", "deporte");

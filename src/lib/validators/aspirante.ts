@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CONDICION_MILITAR_VALUES } from "@src/lib/aspirantes/condicion-militar";
+import { JERARQUIA_ASPIRANTE_VALUES } from "@src/lib/aspirantes/jerarquia-aspirante";
 import { ESTADO_CIVIL_VALUES } from "@src/lib/aspirantes/estado-civil";
 import {
   COLOR_CABELLO_VALUES,
@@ -38,6 +39,10 @@ const estadoCivilField = z.preprocess(
 );
 
 const condicionMilitarField = optionalCatalogEnum(CONDICION_MILITAR_VALUES);
+const jerarquiaAspiranteField = z.preprocess(
+  (v) => (v === "" || v === null || v === undefined ? "ASPIRANTE_OFICIAL" : v),
+  z.enum(JERARQUIA_ASPIRANTE_VALUES),
+);
 
 function optionalCatalogEnum<T extends readonly [string, ...string[]]>(values: T) {
   return z.preprocess(
@@ -279,6 +284,7 @@ const aspiranteStaffBaseSchema = z.object({
     z.string().max(200, "Unidad postulante demasiado larga"),
   ),
   condicionMilitar: condicionMilitarField,
+  jerarquia: jerarquiaAspiranteField,
   calificacionAdmision: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? "EN_EVALUACION" : v),
     calificacionAdmisionEnum,
@@ -370,6 +376,7 @@ export const aspiranteQuickUpdateSchema = z
       z.string().max(200),
     ),
     condicionMilitar: condicionMilitarField,
+    jerarquia: jerarquiaAspiranteField,
     telefono: z.string().trim().max(40).optional().nullable(),
     correo: z.preprocess(
       (v) => (v === null || v === undefined || v === "" ? undefined : String(v).trim()),

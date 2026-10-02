@@ -119,3 +119,10 @@ export type PermisoActionState = {
 };
 
 export const permisoInitialActionState: PermisoActionState = { ok: false, errors: {} };
+
+export type AutoridadActionState = {
+  ok: boolean;
+  errors: Record<string, string>;
+};
+
+export const autoridadInitialActionState: AutoridadActionState = { ok: false, errors: {} };

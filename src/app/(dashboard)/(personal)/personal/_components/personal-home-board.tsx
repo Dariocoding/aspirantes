@@ -1,6 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { BookMarked, CalendarClock, CalendarDays, Medal, Users, type LucideIcon } from "lucide-react";
+import {
+  BookMarked,
+  CalendarClock,
+  CalendarDays,
+  Medal,
+  Shield,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { AspiranteIdentityLink } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
@@ -43,6 +51,20 @@ export type PersonalHomePermiso = {
   hastaLabel: string;
 };
 
+export type PersonalHomeServicioHoy = {
+  id: string;
+  rolNombre: string;
+  rolClave: string;
+  grado: string;
+  nombre: string;
+  aspiranteId: string | null;
+  fotoKey: string | null;
+  esAutoridad: boolean;
+  detalle: string;
+  cedula: string | null;
+  marca: string;
+};
+
 type Props = {
   fechaLarga: string;
   nombreMes: string;
@@ -56,6 +78,8 @@ type Props = {
   cumpleanosDelMes: PersonalHomeBirthday[];
   proximasEfemerides: PersonalHomeEfemeride[];
   permisosVigentes: PersonalHomePermiso[];
+  servicioHoy: PersonalHomeServicioHoy[];
+  diaHoy: number;
 };
 
 const PELOTON_TONES = ["#3b82f6", "#22c55e", "#38bdf8", "#84cc16", "#06b6d4"] as const;
@@ -67,6 +91,13 @@ const SHORTCUTS: { href: string; label: string; hint: string; icon: LucideIcon; 
     hint: "Aspirantes",
     icon: Users,
     tone: "bg-sky-50 text-sky-700",
+  },
+  {
+    href: routes.personal.rolesServicio,
+    label: "Roles",
+    hint: "Servicio",
+    icon: Shield,
+    tone: "bg-teal-50 text-teal-800",
   },
   {
     href: routes.personal.esquelas,
@@ -148,6 +179,8 @@ export function PersonalHomeBoard({
   cumpleanosDelMes,
   proximasEfemerides,
   permisosVigentes,
+  servicioHoy,
+  diaHoy,
 }: Props) {
   const pctHombres = total ? Math.round((masculinos / total) * 100) : 0;
   const pctMujeres = total ? Math.round((femeninos / total) * 100) : 0;
@@ -218,7 +251,10 @@ export function PersonalHomeBoard({
             />
           </div>
           <div className="min-w-36 flex-1">
-            <Kpi label="Hoy" value={String(hoyCount)} hint="Cumpleaños" />
+            <Kpi label="De servicio" value={String(servicioHoy.length)} hint={`Hoy ${diaHoy}`} />
+          </div>
+          <div className="min-w-36 flex-1">
+            <Kpi label="Cumpleaños" value={String(hoyCount)} hint="Hoy" />
           </div>
           <div className="min-w-36 flex-1">
             <Kpi
@@ -231,7 +267,7 @@ export function PersonalHomeBoard({
         </div>
       </section>
 
-      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" aria-label="Atajos">
+      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" aria-label="Atajos">
         {SHORTCUTS.map((item) => {
           const Icon = item.icon;
           return (
@@ -251,6 +287,74 @@ export function PersonalHomeBoard({
           );
         })}
       </nav>
+
+      <section className="min-w-0 overflow-hidden rounded-lg border border-teal-200/80 bg-white">
+        <div className="flex items-center justify-between gap-2 border-b border-teal-100 bg-linear-to-r from-teal-50 to-white px-3 py-2">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">De servicio hoy</h2>
+            <p className="text-[11px] text-slate-500">Día {diaHoy} · cuadro de roles del mes</p>
+          </div>
+          <Link
+            href={routes.personal.rolesServicio}
+            className="text-xs font-medium text-teal-800 hover:text-teal-950"
+          >
+            Ver cuadro
+          </Link>
+        </div>
+        {servicioHoy.length === 0 ? (
+          <p className="px-3 py-6 text-sm text-slate-500">
+            Nadie figura de servicio hoy. Si ya cargaste el Excel del mes, revisa el cuadro de roles.
+          </p>
+        ) : (
+          <ul className="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3">
+            {servicioHoy.map((item) => (
+              <li key={item.id} className="bg-white px-3 py-2.5">
+                <p className="truncate text-[10px] font-medium tracking-wide text-teal-800 uppercase">
+                  {item.rolNombre}
+                </p>
+                {item.aspiranteId ? (
+                  <AspiranteIdentityLink
+                    aspiranteId={item.aspiranteId}
+                    fotoKey={item.fotoKey}
+                    nombre={item.nombre}
+                    size="sm"
+                    className="mt-1 min-w-0"
+                  >
+                    <span className="truncate text-[11px] text-slate-500">
+                      {item.detalle}
+                      {item.cedula ? (
+                        <>
+                          {" · "}
+                          <span className="font-mono tabular-nums">{item.cedula}</span>
+                        </>
+                      ) : null}
+                    </span>
+                  </AspiranteIdentityLink>
+                ) : (
+                  <div className="mt-1 min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-900">{item.nombre}</p>
+                    <p
+                      className={cn(
+                        "truncate text-[11px]",
+                        item.esAutoridad ? "text-indigo-700" : "text-slate-500",
+                      )}
+                    >
+                      {item.detalle}
+                      {item.esAutoridad ? " · Autoridad" : ""}
+                      {item.cedula ? (
+                        <>
+                          {" · "}
+                          <span className="font-mono tabular-nums">{item.cedula}</span>
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {pelotones.length > 0 ? (
         <section className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">

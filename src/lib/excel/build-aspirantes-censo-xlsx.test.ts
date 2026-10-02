@@ -10,6 +10,7 @@ function sampleRow(): AspiranteCensoExportRow {
     apellidos: "CAÑIZALES ROSALES",
     unidadPostulante: "Unidad",
     condicionMilitar: null,
+    jerarquia: "ASPIRANTE_OFICIAL",
     tituloUniversidad: null,
     tipoEstudio: null,
     cedula: "21425976",

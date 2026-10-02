@@ -27,6 +27,13 @@ import {
   CONDICION_MILITAR_LABELS,
   CONDICION_MILITAR_VALUES,
 } from "@src/lib/aspirantes/condicion-militar";
+import {
+  JERARQUIA_ASPIRANTE_ABREV,
+  JERARQUIA_ASPIRANTE_DEFAULT,
+  JERARQUIA_ASPIRANTE_LABELS,
+  JERARQUIA_ASPIRANTE_VALUES,
+  type JerarquiaAspiranteValue,
+} from "@src/lib/aspirantes/jerarquia-aspirante";
 import { hasRealBirthDate } from "@src/lib/date";
 import { labelPeloton, type PelotonResumen } from "@src/lib/pelotones";
 import { ASPIRANTE_FOTO_FORM } from "@src/lib/storage/aspirante-foto";
@@ -78,6 +85,7 @@ export type AspiranteQuickInitial = {
   fechaNacimientoIso: string;
   lugarNacimiento: string;
   condicionMilitar?: "SOLDADO_ACTIVO" | "SARGENTO_ACTIVO" | null;
+  jerarquia?: JerarquiaAspiranteValue;
   telefono: string | null;
   correo: string | null;
   direccion: string | null;
@@ -409,6 +417,22 @@ function AspiranteQuickForm({
                   ))}
                 </select>
                 <FieldError message={state.errors.condicionMilitar} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-jerarquia">Jerarquía</Label>
+                <select
+                  id="quick-jerarquia"
+                  name="jerarquia"
+                  defaultValue={initial?.jerarquia ?? JERARQUIA_ASPIRANTE_DEFAULT}
+                  className={selectClass}
+                >
+                  {JERARQUIA_ASPIRANTE_VALUES.map((value) => (
+                    <option key={value} value={value}>
+                      {JERARQUIA_ASPIRANTE_LABELS[value]} ({JERARQUIA_ASPIRANTE_ABREV[value]})
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={state.errors.jerarquia} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="quick-peloton">Pelotón</Label>

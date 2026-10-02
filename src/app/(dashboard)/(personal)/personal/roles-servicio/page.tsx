@@ -1,5 +1,7 @@
 import { unauthorized } from "next/navigation";
-import { RolesServicioView, type PlanVista } from "./_components/roles-servicio-view";
+import { RolesServicioShell } from "./_components/roles-servicio-shell";
+import type { PlanVista } from "./_components/roles-servicio-view";
+import type { AutoridadVista } from "./_components/autoridades-panel";
 import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
@@ -16,33 +18,57 @@ export default async function RolesServicioPage({
   const ctx = authContextFromSession(session);
   if (!hasPermission(ctx, Permission.ASPIRANTES_READ)) unauthorized();
 
+  const canWrite = hasPermission(ctx, Permission.ASPIRANTES_WRITE);
   const { rol } = await searchParams;
   const reciente = await prisma.planRolServicio.findFirst({
     orderBy: [{ anio: "desc" }, { mes: "desc" }],
     select: { anio: true, mes: true },
   });
 
+  const hoy = new Date();
+  const diaHoy =
+    reciente && hoy.getFullYear() === reciente.anio && hoy.getMonth() + 1 === reciente.mes
+      ? hoy.getDate()
+      : null;
+
   if (!reciente) {
     return (
-      <RolesServicioView anio={new Date().getFullYear()} mes={new Date().getMonth() + 1} planes={[]} activo={null} diaHoy={null} />
+      <RolesServicioShell
+        anio={hoy.getFullYear()}
+        mes={hoy.getMonth() + 1}
+        planes={[]}
+        rolInicial={null}
+        diaHoy={null}
+        autoridades={[]}
+        canWrite={canWrite}
+      />
     );
   }
 
-  const planesDb = await prisma.planRolServicio.findMany({
-    where: { anio: reciente.anio, mes: reciente.mes },
-    orderBy: { rol: { sortOrder: "asc" } },
-    include: {
-      rol: true,
-      asignaciones: {
-        orderBy: { orden: "asc" },
-        include: {
-          aspirante: {
-            select: { id: true, nombres: true, apellidos: true, cedula: true },
+  const [planesDb, autoridadesDb] = await Promise.all([
+    prisma.planRolServicio.findMany({
+      where: { anio: reciente.anio, mes: reciente.mes },
+      orderBy: { rol: { sortOrder: "asc" } },
+      include: {
+        rol: true,
+        asignaciones: {
+          orderBy: { orden: "asc" },
+          include: {
+            aspirante: {
+              select: { id: true, nombres: true, apellidos: true, cedula: true },
+            },
+            autoridad: {
+              select: { id: true, nombres: true, apellidos: true, cedula: true, jerarquia: true },
+            },
           },
         },
       },
-    },
-  });
+    }),
+    prisma.autoridad.findMany({
+      orderBy: [{ jerarquia: "desc" }, { apellidos: "asc" }, { nombres: "asc" }],
+      include: { _count: { select: { asignacionesRolServicio: true } } },
+    }),
+  ]);
 
   const planes: PlanVista[] = planesDb.map((plan) => ({
     clave: plan.rol.clave,
@@ -55,21 +81,33 @@ export default async function RolesServicioPage({
       nombre: asignacion.nombre,
       dias: marcasDesdeJson(asignacion.dias),
       aspirante: asignacion.aspirante,
+      autoridad: asignacion.autoridad,
     })),
   }));
 
-  const activo = planes.find((plan) => plan.clave === rol) ?? planes[0] ?? null;
-  const hoy = new Date();
-  const diaHoy =
-    hoy.getFullYear() === reciente.anio && hoy.getMonth() + 1 === reciente.mes ? hoy.getDate() : null;
+  const autoridades: AutoridadVista[] = autoridadesDb.map((item) => ({
+    id: item.id,
+    nombres: item.nombres,
+    apellidos: item.apellidos,
+    cedula: item.cedula,
+    telefono: item.telefono,
+    correo: item.correo,
+    jerarquia: item.jerarquia,
+    activa: item.activa,
+    asignaciones: item._count.asignacionesRolServicio,
+  }));
+
+  const rolInicial = rol && planes.some((plan) => plan.clave === rol) ? rol : null;
 
   return (
-    <RolesServicioView
+    <RolesServicioShell
       anio={reciente.anio}
       mes={reciente.mes}
       planes={planes}
-      activo={activo}
+      rolInicial={rolInicial}
       diaHoy={diaHoy}
+      autoridades={autoridades}
+      canWrite={canWrite}
     />
   );
 }

@@ -55,6 +55,11 @@ import {
 } from "@src/lib/aspirantes/census";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelCondicionMilitar, type CondicionMilitarValue } from "@src/lib/aspirantes/condicion-militar";
+import {
+  abrevJerarquiaAspirante,
+  labelJerarquiaAspirante,
+  type JerarquiaAspiranteValue,
+} from "@src/lib/aspirantes/jerarquia-aspirante";
 import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
 import { formatEstaturaM } from "@src/lib/aspirantes/medidas";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
@@ -82,6 +87,7 @@ export type AspirantesCensusRow = {
   notasIsPdf: boolean;
   unidadPostulante: string;
   condicionMilitar: CondicionMilitarValue | null;
+  jerarquia: JerarquiaAspiranteValue;
   tituloUniversidad: string | null;
   tipoEstudio: string | null;
   sexo: "MASCULINO" | "FEMENINO";
@@ -311,6 +317,12 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
       return <TextCell value={a.unidadPostulante} clamp />;
     case "condicion":
       return <TextCell value={labelCondicionMilitar(a.condicionMilitar)} />;
+    case "jerarquia":
+      return (
+        <TextCell
+          value={`${abrevJerarquiaAspirante(a.jerarquia)} · ${labelJerarquiaAspirante(a.jerarquia)}`}
+        />
+      );
     case "carrera": {
       const carrera = (a.tituloUniversidad ?? "").trim();
       const nivel = labelTipoEstudioNivel(a.tipoEstudio);

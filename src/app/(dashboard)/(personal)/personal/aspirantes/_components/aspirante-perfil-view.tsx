@@ -10,6 +10,10 @@ import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelCondicionMilitar } from "@src/lib/aspirantes/condicion-militar";
 import {
+  abrevJerarquiaAspirante,
+  labelJerarquiaAspirante,
+} from "@src/lib/aspirantes/jerarquia-aspirante";
+import {
   COLOR_CABELLO_LABELS,
   COLOR_OJOS_LABELS,
   COLOR_PIEL_LABELS,
@@ -64,6 +68,7 @@ export type AspirantePerfilSerializado = {
   lugarNacimiento: string;
   unidadPostulante: string;
   condicionMilitar: string | null;
+  jerarquia: string;
   pelotonLabel: string | null;
   calificacionAdmision: string;
   direccion: string | null;
@@ -560,6 +565,10 @@ export function AspirantePerfilView({ a }: { a: AspirantePerfilSerializado }) {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Campo label="Unidad postulante" value={a.unidadPostulante} />
               <Campo label="Condición militar" value={labelCondicionMilitar(a.condicionMilitar)} />
+              <Campo
+                label="Jerarquía"
+                value={`${abrevJerarquiaAspirante(a.jerarquia)} · ${labelJerarquiaAspirante(a.jerarquia)}`}
+              />
               <Campo label="Pelotón" value={a.pelotonLabel} />
               <Campo label="Fecha de nacimiento" value={a.fechaNacimientoLabel} />
               <Campo label="Lugar de nacimiento" value={a.lugarNacimiento} />

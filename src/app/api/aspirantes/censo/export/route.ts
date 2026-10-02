@@ -193,6 +193,7 @@ export async function GET(request: Request) {
       apellidos: a.apellidos,
       unidadPostulante: a.unidadPostulante,
       condicionMilitar: a.condicionMilitar,
+      jerarquia: a.jerarquia,
       tituloUniversidad: a.tituloUniversidad,
       tipoEstudio: a.tipoEstudio,
       cedula: a.cedula,

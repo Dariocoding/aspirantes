@@ -5,12 +5,19 @@ import { ageFromBirthDate, ageTurningOnBirthday, formatDate, formatDateTime, has
 import { labelTipoPermiso } from "@src/lib/permisos";
 import { getConvocatoriaActiva } from "@src/lib/convocatoria";
 import { labelPeloton } from "@src/lib/pelotones";
+import { marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
+import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
+import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { prisma } from "@src/lib/prisma";
 
 export default async function PersonalDashboardPage() {
   const convocatoriaActiva = await getConvocatoriaActiva();
+  const hoy = new Date();
+  const anioHoy = hoy.getFullYear();
+  const mesHoy = hoy.getMonth() + 1;
+  const diaHoy = hoy.getDate();
 
-  const [aspirantes, efemerides, pelotonesDb, permisosVigentesDb] = await Promise.all([
+  const [aspirantes, efemerides, pelotonesDb, permisosVigentesDb, planesHoy] = await Promise.all([
     convocatoriaActiva
       ? prisma.aspirante.findMany({
           where: { convocatoriaId: convocatoriaActiva.id },
@@ -54,12 +61,57 @@ export default async function PersonalDashboardPage() {
         aspirante: { select: { id: true, nombres: true, apellidos: true, fotoKey: true } },
       },
     }),
+    prisma.planRolServicio.findMany({
+      where: { anio: anioHoy, mes: mesHoy },
+      orderBy: { rol: { sortOrder: "asc" } },
+      include: {
+        rol: { select: { nombre: true, clave: true } },
+        asignaciones: {
+          orderBy: { orden: "asc" },
+          include: {
+            aspirante: { select: { id: true, nombres: true, apellidos: true, fotoKey: true, cedula: true } },
+            autoridad: {
+              select: { id: true, nombres: true, apellidos: true, jerarquia: true, cedula: true },
+            },
+          },
+        },
+      },
+    }),
   ]);
 
-  const hoy = new Date();
   const proximos15 = addDays(hoy, 15);
   const nombreMes = format(hoy, "MMMM", { locale: es });
   const fechaLarga = format(hoy, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+
+  const servicioHoy = planesHoy.flatMap((plan) =>
+    plan.asignaciones
+      .map((asignacion) => {
+        const marca = marcasDesdeJson(asignacion.dias).find((item) => item.dia === diaHoy);
+        if (!marca) return null;
+        const nombre = asignacion.aspirante
+          ? `${asignacion.aspirante.nombres} ${asignacion.aspirante.apellidos}`
+          : asignacion.autoridad
+            ? `${asignacion.autoridad.nombres} ${asignacion.autoridad.apellidos}`
+            : asignacion.nombre.trim() || "Sin nombre";
+        const cedulaRaw = asignacion.aspirante?.cedula ?? asignacion.autoridad?.cedula ?? null;
+        return {
+          id: asignacion.id,
+          rolNombre: plan.rol.nombre,
+          rolClave: plan.rol.clave,
+          grado: asignacion.grado,
+          nombre,
+          aspiranteId: asignacion.aspirante?.id ?? null,
+          fotoKey: asignacion.aspirante?.fotoKey ?? null,
+          esAutoridad: asignacion.autoridad != null,
+          detalle: asignacion.autoridad
+            ? labelJerarquiaAutoridad(asignacion.autoridad.jerarquia)
+            : asignacion.grado,
+          cedula: cedulaRaw ? formatCedulaMillares(cedulaRaw) : null,
+          marca: marca.marca,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item != null),
+  );
 
   const cumpleanosDelMes = aspirantes
     .filter((a) => hasRealBirthDate(a.fechaNacimiento) && isBirthdayThisMonth(a.fechaNacimiento, hoy))
@@ -139,6 +191,8 @@ export default async function PersonalDashboardPage() {
         tipoLabel: labelTipoPermiso(p.tipo),
         hastaLabel: formatDateTime(p.fechaFin),
       }))}
+      servicioHoy={servicioHoy}
+      diaHoy={diaHoy}
     />
   );
 }

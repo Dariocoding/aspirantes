@@ -73,6 +73,11 @@ function condicionMilitarWrite(value: string | null | undefined) {
   return null;
 }
 
+function jerarquiaAspiranteWrite(value: string | null | undefined) {
+  if (value === "DISTINGUIDO") return "DISTINGUIDO" as const;
+  return "ASPIRANTE_OFICIAL" as const;
+}
+
 function formSenaletica(formData: FormData) {
   return {
     colorCabello: emptyToNull(formData.get("colorCabello")),
@@ -214,6 +219,7 @@ export async function createAspirante(
   const raw = {
     unidadPostulante: formData.get("unidadPostulante"),
     condicionMilitar: emptyToNull(formData.get("condicionMilitar")),
+    jerarquia: formData.get("jerarquia") || "ASPIRANTE_OFICIAL",
     calificacionAdmision: formData.get("calificacionAdmision"),
     nombres: formData.get("nombres"),
     apellidos: formData.get("apellidos"),
@@ -288,6 +294,7 @@ export async function createAspirante(
       data: {
         unidadPostulante: d.unidadPostulante,
         condicionMilitar: condicionMilitarWrite(d.condicionMilitar),
+        jerarquia: jerarquiaAspiranteWrite(d.jerarquia),
         calificacionAdmision:
           d.calificacionAdmision === "APTO"
             ? CalificacionAdmision.APTO
@@ -540,6 +547,7 @@ export async function updateAspirante(
     aspiranteId: formData.get("aspiranteId"),
     unidadPostulante: formData.get("unidadPostulante"),
     condicionMilitar: emptyToNull(formData.get("condicionMilitar")),
+    jerarquia: formData.get("jerarquia") || "ASPIRANTE_OFICIAL",
     calificacionAdmision: formData.get("calificacionAdmision"),
     nombres: formData.get("nombres"),
     apellidos: formData.get("apellidos"),
@@ -628,6 +636,7 @@ export async function updateAspirante(
         data: {
           unidadPostulante: d.unidadPostulante,
           condicionMilitar: condicionMilitarWrite(d.condicionMilitar),
+          jerarquia: jerarquiaAspiranteWrite(d.jerarquia),
           calificacionAdmision:
             d.calificacionAdmision === "APTO"
               ? CalificacionAdmision.APTO
@@ -753,6 +762,7 @@ export async function updateAspiranteQuick(
     fechaNacimiento: formData.get("fechaNacimiento"),
     lugarNacimiento: formData.get("lugarNacimiento"),
     condicionMilitar: emptyToNull(formData.get("condicionMilitar")),
+    jerarquia: formData.get("jerarquia") || "ASPIRANTE_OFICIAL",
     telefono: emptyToNull(formData.get("telefono")),
     correo: emptyToNull(formData.get("correo")),
     direccion: emptyToNull(formData.get("direccion")),
@@ -830,6 +840,7 @@ export async function updateAspiranteQuick(
           fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
           lugarNacimiento: d.lugarNacimiento,
           condicionMilitar: condicionMilitarWrite(d.condicionMilitar),
+          jerarquia: jerarquiaAspiranteWrite(d.jerarquia),
           telefono: d.telefono ?? null,
           correo: d.correo ?? null,
           direccion: d.direccion ?? null,

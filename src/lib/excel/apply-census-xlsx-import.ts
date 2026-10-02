@@ -7,6 +7,7 @@ import {
 } from "@src/lib/aspirantes/census-export-columns";
 import { ESTADO_CIVIL_LABELS, isEstadoCivilValue, labelEstadoCivil, type EstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import { parseCondicionMilitar } from "@src/lib/aspirantes/condicion-militar";
+import { parseJerarquiaAspirante } from "@src/lib/aspirantes/jerarquia-aspirante";
 import {
   isFichaEvaluacionVacia,
   normalizeFichaEvaluacionForDb,
@@ -420,6 +421,9 @@ export async function applyCensusXlsxImport(
               condicionMilitar: hasColumn(ids, "condicion")
                 ? (parseCondicionMilitar(blankToNull(v.condicion)) ?? null)
                 : null,
+              jerarquia: hasColumn(ids, "jerarquia")
+                ? (parseJerarquiaAspirante(blankToNull(v.jerarquia)) ?? "ASPIRANTE_OFICIAL")
+                : "ASPIRANTE_OFICIAL",
               calificacionAdmision: hasColumn(ids, "calificacion")
                 ? (parseCalificacion(blankToNull(v.calificacion)) ?? CalificacionAdmision.EN_EVALUACION)
                 : CalificacionAdmision.EN_EVALUACION,
@@ -535,6 +539,9 @@ export async function applyCensusXlsxImport(
         if (hasColumn(ids, "unidad")) data.unidadPostulante = blankToNull(v.unidad) ?? "";
         if (hasColumn(ids, "condicion")) {
           data.condicionMilitar = parseCondicionMilitar(blankToNull(v.condicion)) ?? null;
+        }
+        if (hasColumn(ids, "jerarquia")) {
+          data.jerarquia = parseJerarquiaAspirante(blankToNull(v.jerarquia)) ?? "ASPIRANTE_OFICIAL";
         }
         if (hasColumn(ids, "calificacion")) {
           data.calificacionAdmision =

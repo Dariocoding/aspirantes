@@ -77,6 +77,7 @@ function toCensusRow(
     notasIsPdf: Boolean(a.fotoNotasKey?.toLowerCase().endsWith(".pdf")),
     unidadPostulante: a.unidadPostulante ?? "",
     condicionMilitar: a.condicionMilitar,
+    jerarquia: a.jerarquia === "DISTINGUIDO" ? "DISTINGUIDO" : "ASPIRANTE_OFICIAL",
     tituloUniversidad: a.tituloUniversidad,
     tipoEstudio: a.tipoEstudio,
     sexo: a.sexo,

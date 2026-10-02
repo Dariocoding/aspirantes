@@ -7,6 +7,7 @@ export type CensusOptionalColumnId =
   | "documentos"
   | "unidad"
   | "condicion"
+  | "jerarquia"
   | "carrera"
   | "sexo"
   | "edad"
@@ -87,6 +88,14 @@ export const CENSUS_OPTIONAL_COLUMNS: readonly CensusOptionalColumn[] = [
     defaultVisible: true,
     headClassName: "w-[9.5rem]",
     minWidthRem: 9.5,
+  },
+  {
+    id: "jerarquia",
+    label: "Jerarquía",
+    group: "Postulación",
+    defaultVisible: true,
+    headClassName: "w-[8.5rem]",
+    minWidthRem: 8.5,
   },
   { id: "carrera", label: "Carrera", group: "Postulación", defaultVisible: true, headClassName: "w-[14rem]", minWidthRem: 14 },
   {
@@ -196,7 +205,7 @@ export const CENSUS_DEFAULT_VISIBLE_IDS: CensusOptionalColumnId[] = CENSUS_OPTIO
 
 const OPTIONAL_ID_SET = new Set<string>(CENSUS_OPTIONAL_COLUMN_IDS);
 
-export const CENSUS_COLUMNS_STORAGE_KEY = "personal.aspirantes.census.columns.v5";
+export const CENSUS_COLUMNS_STORAGE_KEY = "personal.aspirantes.census.columns.v6";
 
 export function isCensusOptionalColumnId(value: string): value is CensusOptionalColumnId {
   return OPTIONAL_ID_SET.has(value);

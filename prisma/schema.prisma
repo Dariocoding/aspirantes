@@ -31,6 +31,12 @@ enum CondicionMilitar {
   SARGENTO_ACTIVO
 }
 
+/// Jerarquía del aspirante en el curso (cuadro / roles de servicio).
+enum JerarquiaAspirante {
+  ASPIRANTE_OFICIAL
+  DISTINGUIDO
+}
+
 /// Nivel / grado educativo del aspirante (TSU o superior).
 enum TipoEstudioAspirante {
   TSU
@@ -342,6 +348,8 @@ model Aspirante {
   unidadPostulante      String               @default("")
   /// Soldado activo o sargento activo. Null = aún sin clasificar.
   condicionMilitar      CondicionMilitar?
+  /// Jerarquía en el curso. Por defecto aspirante a oficial (ASP/OFIC).
+  jerarquia             JerarquiaAspirante   @default(ASPIRANTE_OFICIAL)
   calificacionAdmision  CalificacionAdmision @default(EN_EVALUACION)
   direccion             String?
   telefono              String?
@@ -423,6 +431,7 @@ model Aspirante {
   @@index([calificacionAdmision])
   @@index([unidadPostulante])
   @@index([condicionMilitar])
+  @@index([jerarquia])
   @@index([pelotonId])
   @@index([deletedAt])
 }
@@ -448,6 +457,34 @@ model PermisoPersonal {
   @@index([aspiranteId, fechaInicio])
   @@index([fechaInicio, fechaFin])
   @@index([anulado])
+}
+
+/// Jerarquía de oficiales vinculables a roles de servicio (oficial de día, etc.).
+enum JerarquiaAutoridad {
+  TENIENTE
+  PRIMER_TENIENTE
+  CAPITAN
+  MAYOR
+  TENIENTE_CORONEL
+  CORONEL
+}
+
+/// Oficial o autoridad del cuadro (no aspirante).
+model Autoridad {
+  id        String             @id @default(cuid())
+  nombres   String
+  apellidos String
+  cedula    String?
+  telefono  String?
+  correo    String?
+  jerarquia JerarquiaAutoridad
+  activa    Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  asignacionesRolServicio AsignacionRolServicio[]
+
+  @@index([activa])
+  @@index([jerarquia])
 }
 
 /// Catálogo de un rol de servicio (enfermería, comedor, cuartelero…).
@@ -491,6 +528,8 @@ model AsignacionRolServicio {
   nombre      String
   aspiranteId String?
   aspirante   Aspirante?      @relation(fields: [aspiranteId], references: [id], onDelete: SetNull)
+  autoridadId String?
+  autoridad   Autoridad?      @relation(fields: [autoridadId], references: [id], onDelete: SetNull)
   /// Marcas por día: `[{"dia":8,"marca":"X"}]`.
   dias        Json
   createdAt   DateTime        @default(now())
@@ -498,6 +537,7 @@ model AsignacionRolServicio {
 
   @@index([planId, orden])
   @@index([aspiranteId])
+  @@index([autoridadId])
 }
 
 /// Textos fijos de la boleta individual de un permiso. Una sola fila (`formato_permiso`).

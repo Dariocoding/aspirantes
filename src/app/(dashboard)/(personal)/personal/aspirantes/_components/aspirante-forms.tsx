@@ -17,6 +17,14 @@ import {
   isCondicionMilitarValue,
 } from "@src/lib/aspirantes/condicion-militar";
 import {
+  JERARQUIA_ASPIRANTE_ABREV,
+  JERARQUIA_ASPIRANTE_DEFAULT,
+  JERARQUIA_ASPIRANTE_LABELS,
+  JERARQUIA_ASPIRANTE_VALUES,
+  isJerarquiaAspiranteValue,
+  type JerarquiaAspiranteValue,
+} from "@src/lib/aspirantes/jerarquia-aspirante";
+import {
   COLOR_CABELLO_LABELS,
   COLOR_CABELLO_VALUES,
   COLOR_OJOS_LABELS,
@@ -99,12 +107,14 @@ function seedFromForm(
   const calificacionRaw = formStr(fd, "calificacionAdmision");
   const sexoRaw = formStr(fd, "sexo");
   const condicionRaw = formStr(fd, "condicionMilitar");
+  const jerarquiaRaw = formStr(fd, "jerarquia");
   const hijos = formNumOrNull(fd, "hijosCantidad");
 
   return {
     ...prev,
     unidadPostulante: formStr(fd, "unidadPostulante"),
     condicionMilitar: isCondicionMilitarValue(condicionRaw) ? condicionRaw : null,
+    jerarquia: isJerarquiaAspiranteValue(jerarquiaRaw) ? jerarquiaRaw : JERARQUIA_ASPIRANTE_DEFAULT,
     calificacionAdmision:
       calificacionRaw === "APTO" ||
       calificacionRaw === "NO_APTO" ||
@@ -207,6 +217,7 @@ export type AspiranteRegistroInitial = {
   id: string;
   unidadPostulante: string;
   condicionMilitar?: "SOLDADO_ACTIVO" | "SARGENTO_ACTIVO" | null;
+  jerarquia?: JerarquiaAspiranteValue;
   calificacionAdmision: "APTO" | "NO_APTO" | "EN_EVALUACION";
   nombres: string;
   apellidos: string;
@@ -368,6 +379,7 @@ export function AspiranteRegistroForm({
     () => ({
       unidadPostulante: seed?.unidadPostulante ?? "",
       condicionMilitar: seed?.condicionMilitar ?? "",
+      jerarquia: seed?.jerarquia ?? JERARQUIA_ASPIRANTE_DEFAULT,
       calificacionAdmision: seed?.calificacionAdmision ?? "EN_EVALUACION",
       nombres: seed?.nombres ?? "",
       apellidos: seed?.apellidos ?? "",
@@ -769,6 +781,23 @@ export function AspiranteRegistroForm({
               </select>
               <p className="mt-1 text-xs text-slate-500">
                 Permite separar el censo entre soldados activos y sargentos activos.
+              </p>
+            </div>
+            <div>
+              <Label>Jerarquía</Label>
+              <select
+                name="jerarquia"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none"
+                defaultValue={defaults.jerarquia}
+              >
+                {JERARQUIA_ASPIRANTE_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {JERARQUIA_ASPIRANTE_LABELS[value]} ({JERARQUIA_ASPIRANTE_ABREV[value]})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Por defecto aspirante a oficial. Distinguido es la jerarquía superior del curso.
               </p>
             </div>
             <div className="md:col-span-2">

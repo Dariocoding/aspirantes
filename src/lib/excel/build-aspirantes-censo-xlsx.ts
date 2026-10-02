@@ -11,6 +11,10 @@ import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/
 import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
 import { labelEstadoCivil } from "@src/lib/aspirantes/estado-civil";
 import { labelCondicionMilitar } from "@src/lib/aspirantes/condicion-militar";
+import {
+  abrevJerarquiaAspirante,
+  labelJerarquiaAspirante,
+} from "@src/lib/aspirantes/jerarquia-aspirante";
 import { labelTipoEstudioNivel } from "@src/lib/aspirantes/tipo-estudio";
 import { formatTipoSangreHomologado } from "@src/lib/aspirantes/senaletica";
 import { TALLA_UNIFORME_PATRIOTA_LABELS, isTallaUniformePatriota } from "@src/lib/aspirantes/tallas-familia";
@@ -22,6 +26,7 @@ export type AspiranteCensoExportRow = {
   apellidos: string;
   unidadPostulante: string;
   condicionMilitar: string | null;
+  jerarquia: string;
   tituloUniversidad: string | null;
   tipoEstudio: string | null;
   cedula: string;
@@ -178,6 +183,8 @@ function cellValue(
       return dash(r.unidadPostulante);
     case "condicion":
       return dash(labelCondicionMilitar(r.condicionMilitar) ?? undefined);
+    case "jerarquia":
+      return dash(`${abrevJerarquiaAspirante(r.jerarquia)} · ${labelJerarquiaAspirante(r.jerarquia)}`);
     case "carrera":
       return formatCarreraConNivel(r.tituloUniversidad, r.tipoEstudio);
     case "calificacion":

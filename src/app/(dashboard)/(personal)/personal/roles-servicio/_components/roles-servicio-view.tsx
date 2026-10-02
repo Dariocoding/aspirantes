@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CalendarRange,
@@ -17,6 +17,8 @@ import { Button } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { Input } from "@src/components/ui/input";
 import { routes } from "@src/lib/apps/routes";
+import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
+import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
 import {
   diasDelMes,
   esFinDeSemana,
@@ -24,6 +26,7 @@ import {
   letraSemana,
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
+import type { JerarquiaAutoridad } from "@src/generated/prisma";
 import { cn } from "@src/lib/utils";
 
 export type AsignacionVista = {
@@ -38,6 +41,13 @@ export type AsignacionVista = {
     apellidos: string;
     cedula: string;
   } | null;
+  autoridad: {
+    id: string;
+    nombres: string;
+    apellidos: string;
+    cedula: string | null;
+    jerarquia: JerarquiaAutoridad;
+  } | null;
 };
 
 export type PlanVista = {
@@ -51,7 +61,8 @@ type Props = {
   anio: number;
   mes: number;
   planes: PlanVista[];
-  activo: PlanVista | null;
+  /** Clave del rol inicial desde la URL; `null` = todos los roles. */
+  rolInicial: string | null;
   diaHoy: number | null;
 };
 
@@ -61,6 +72,11 @@ type ServicioDia = {
   plan: PlanVista;
   asignacion: AsignacionVista;
   marca: string;
+};
+
+type FilaCuadricula = {
+  plan: PlanVista;
+  asignacion: AsignacionVista;
 };
 
 const DIAS_SEMANA = ["D", "L", "M", "M", "J", "V", "S"] as const;
@@ -80,9 +96,16 @@ function marcaDelDia(asignacion: AsignacionVista, dia: number): string | null {
   return asignacion.dias.find((item) => item.dia === dia)?.marca ?? null;
 }
 
+function estaVinculado(asignacion: AsignacionVista): boolean {
+  return asignacion.aspirante != null || asignacion.autoridad != null;
+}
+
 function nombreMostrado(asignacion: AsignacionVista): string {
   if (asignacion.aspirante) {
     return `${asignacion.aspirante.nombres} ${asignacion.aspirante.apellidos}`;
+  }
+  if (asignacion.autoridad) {
+    return `${asignacion.autoridad.nombres} ${asignacion.autoridad.apellidos}`;
   }
   return asignacion.nombre.trim() || "Sin nombre";
 }
@@ -111,18 +134,32 @@ function densidadClase(count: number, max: number): string {
   return "bg-teal-200/80 text-teal-950 border-teal-400/80 hover:border-teal-600";
 }
 
-export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) {
+export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Props) {
   const totalDias = diasDelMes(anio, mes);
   const dias = useMemo(() => Array.from({ length: totalDias }, (_, i) => i + 1), [totalDias]);
+  const [rolClave, setRolClave] = useState<string | null>(rolInicial);
   const [modo, setModo] = useState<ModoVista>(diaHoy != null ? "dia" : "cuadricula");
   const [diaSeleccionado, setDiaSeleccionado] = useState<number>(diaHoy ?? 1);
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("");
   const [navAbierta, setNavAbierta] = useState(false);
-  const [soloRolActivo, setSoloRolActivo] = useState(false);
+
+  const planActivo = useMemo(
+    () => (rolClave ? planes.find((plan) => plan.clave === rolClave) ?? null : null),
+    [planes, rolClave],
+  );
+  const planesAlcance = planActivo ? [planActivo] : planes;
+  const todosLosRoles = rolClave == null;
+
+  useEffect(() => {
+    const url = rolClave
+      ? `${routes.personal.rolesServicio}?rol=${encodeURIComponent(rolClave)}`
+      : routes.personal.rolesServicio;
+    window.history.replaceState(null, "", url);
+  }, [rolClave]);
 
   const vinculados = planes.reduce(
-    (total, plan) => total + plan.asignaciones.filter((item) => item.aspirante).length,
+    (total, plan) => total + plan.asignaciones.filter((item) => estaVinculado(item)).length,
     0,
   );
   const conNombre = planes.reduce(
@@ -133,7 +170,7 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
 
   const servicioDelDia = useMemo(() => {
     const lista: ServicioDia[] = [];
-    for (const plan of planes) {
+    for (const plan of planesAlcance) {
       for (const asignacion of plan.asignaciones) {
         const marca = marcaDelDia(asignacion, diaSeleccionado);
         if (!marca) continue;
@@ -141,12 +178,11 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
       }
     }
     return lista;
-  }, [planes, diaSeleccionado]);
+  }, [planesAlcance, diaSeleccionado]);
 
   const conteoPorDia = useMemo(() => {
     const mapa = new Map<number, number>();
-    const fuente = activo ? [activo] : planes;
-    for (const plan of fuente) {
+    for (const plan of planesAlcance) {
       for (const asignacion of plan.asignaciones) {
         for (const marca of asignacion.dias) {
           mapa.set(marca.dia, (mapa.get(marca.dia) ?? 0) + 1);
@@ -154,7 +190,7 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
       }
     }
     return mapa;
-  }, [activo, planes]);
+  }, [planesAlcance]);
 
   const maxConteo = useMemo(() => Math.max(1, ...conteoPorDia.values(), 1), [conteoPorDia]);
 
@@ -186,30 +222,41 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
     })).filter((grupo) => grupo.planes.length > 0);
   }, [planesFiltrados]);
 
-  const asignacionesFiltradas = useMemo(() => {
-    if (!activo) return [];
+  const filasCuadricula = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    if (!q) return activo.asignaciones;
-    return activo.asignaciones.filter((asignacion) => {
-      const texto = [
-        asignacion.nombre,
-        asignacion.grado,
-        asignacion.aspirante?.nombres,
-        asignacion.aspirante?.apellidos,
-        asignacion.aspirante?.cedula,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return texto.includes(q);
-    });
-  }, [activo, busqueda]);
+    const filas: FilaCuadricula[] = [];
+    for (const plan of planesAlcance) {
+      for (const asignacion of plan.asignaciones) {
+        if (!q) {
+          filas.push({ plan, asignacion });
+          continue;
+        }
+        const texto = [
+          plan.nombre,
+          asignacion.nombre,
+          asignacion.grado,
+          asignacion.aspirante?.nombres,
+          asignacion.aspirante?.apellidos,
+          asignacion.autoridad?.nombres,
+          asignacion.autoridad?.apellidos,
+          asignacion.aspirante?.cedula,
+          asignacion.autoridad?.cedula,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (texto.includes(q)) filas.push({ plan, asignacion });
+      }
+    }
+    return filas;
+  }, [planesAlcance, busqueda]);
 
   const esHoySeleccionado = diaHoy != null && diaSeleccionado === diaHoy;
-  const servicioVisible =
-    soloRolActivo && activo
-      ? servicioDelDia.filter((item) => item.plan.clave === activo.clave)
-      : servicioDelDia;
+
+  const seleccionarRol = (clave: string | null) => {
+    setRolClave(clave);
+    setNavAbierta(false);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -225,7 +272,7 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                   Cuadro de servicio · {planes[0]?.curso ?? "CEFOA"}
                 </p>
                 <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.7rem]">
-                  Roles de servicio
+                  {todosLosRoles ? "Todos los roles" : planActivo?.nombre}
                 </h1>
                 <p className="mt-1 text-sm text-slate-600">
                   <span className="font-medium text-slate-800">{etiquetaMes(anio, mes)}</span>
@@ -286,6 +333,9 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
               <span className="size-2.5 rounded-full bg-teal-500" /> Servicio
             </span>
             <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-sm bg-indigo-300" /> Autoridad
+            </span>
+            <span className="inline-flex items-center gap-1.5">
               <span className="size-2.5 rounded-sm bg-slate-200" /> Fin de semana
             </span>
             <span className="inline-flex items-center gap-1.5">
@@ -344,22 +394,38 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                 )}
               >
                 <nav className="flex flex-col gap-3" aria-label="Roles de servicio">
+                  <button
+                    type="button"
+                    onClick={() => seleccionarRol(null)}
+                    className={cn(
+                      "rounded-lg px-2.5 py-2 text-left transition-colors",
+                      todosLosRoles
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-slate-700 hover:bg-slate-50",
+                    )}
+                  >
+                    <span className="block text-xs font-medium">Todos los roles</span>
+                    <span className={cn("mt-0.5 block text-[10px]", todosLosRoles ? "text-slate-300" : "text-slate-500")}>
+                      {planes.length} roles · vista consolidada
+                    </span>
+                  </button>
+
                   {gruposNav.map((grupo) => (
                     <div key={grupo.id} className="flex flex-col gap-1">
                       <p className="px-2 text-[10px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
                         {grupo.label}
                       </p>
                       {grupo.planes.map((plan) => {
-                        const seleccion = plan.clave === activo?.clave;
+                        const seleccion = plan.clave === rolClave;
                         const activos = plan.asignaciones.filter((a) => a.nombre.trim()).length;
-                        const ligados = plan.asignaciones.filter((a) => a.aspirante).length;
+                        const ligados = plan.asignaciones.filter((a) => estaVinculado(a)).length;
                         return (
-                          <Link
+                          <button
                             key={plan.clave}
-                            href={`${routes.personal.rolesServicio}?rol=${encodeURIComponent(plan.clave)}`}
-                            scroll={false}
+                            type="button"
+                            onClick={() => seleccionarRol(plan.clave)}
                             className={cn(
-                              "rounded-lg px-2.5 py-2 transition-colors",
+                              "rounded-lg px-2.5 py-2 text-left transition-colors",
                               seleccion
                                 ? "bg-slate-900 text-white shadow-sm"
                                 : "text-slate-700 hover:bg-slate-50",
@@ -374,7 +440,7 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                             >
                               {ligados}/{activos || plan.asignaciones.length} vinculados
                             </span>
-                          </Link>
+                          </button>
                         );
                       })}
                     </div>
@@ -399,20 +465,11 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                         ) : null}
                       </CardTitle>
                       <CardDescription className="text-xs">
-                        {letraSemana(anio, mes, diaSeleccionado)} · {servicioVisible.length} personas en turno
-                        {soloRolActivo && activo ? ` · solo «${activo.nombre}»` : " · todos los roles"}
+                        {letraSemana(anio, mes, diaSeleccionado)} · {servicioDelDia.length} personas en turno
+                        {todosLosRoles ? " · todos los roles" : ` · ${planActivo?.nombre}`}
                       </CardDescription>
                     </div>
                     <div className="flex flex-wrap items-center gap-1">
-                      <Button
-                        type="button"
-                        variant={soloRolActivo ? "default" : "outline"}
-                        size="xs"
-                        onClick={() => setSoloRolActivo((v) => !v)}
-                        disabled={!activo}
-                      >
-                        Solo rol
-                      </Button>
                       <Button
                         type="button"
                         variant="outline"
@@ -440,59 +497,50 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                   </div>
                 </CardHeader>
                 <CardContent className="p-4">
-                  {servicioVisible.length === 0 ? (
+                  {servicioDelDia.length === 0 ? (
                     <p className="py-8 text-center text-sm text-slate-500">
-                      Nadie figura de servicio este día en los roles publicados.
+                      Nadie figura de servicio este día
+                      {todosLosRoles ? "" : " en este rol"}.
                     </p>
                   ) : (
                     <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                      {servicioVisible.map(({ plan, asignacion, marca }) => {
-                        const resalta = activo?.clave === plan.clave;
-                        return (
-                          <li
-                            key={`${plan.clave}-${asignacion.id}`}
-                            className={cn(
-                              "group rounded-xl border bg-white p-3 transition-colors hover:bg-slate-50/60",
-                              resalta
-                                ? "border-teal-300/90 ring-1 ring-teal-200/70"
-                                : "border-slate-200/90 hover:border-slate-300",
-                            )}
-                          >
-                            <div className="flex items-start gap-3">
-                              <span
-                                className={cn(
-                                  "flex size-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                                  asignacion.aspirante
-                                    ? "bg-teal-100 text-teal-900"
-                                    : "bg-amber-100 text-amber-900",
-                                )}
-                              >
-                                {iniciales(nombreMostrado(asignacion))}
-                              </span>
-                              <div className="min-w-0 flex-1">
+                      {servicioDelDia.map(({ plan, asignacion, marca }) => (
+                        <li
+                          key={`${plan.clave}-${asignacion.id}`}
+                          className={cn(
+                            "group rounded-xl border bg-white p-3 transition-colors hover:bg-slate-50/60",
+                            todosLosRoles
+                              ? "border-slate-200/90 hover:border-slate-300"
+                              : "border-teal-300/90 ring-1 ring-teal-200/70",
+                          )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <AvatarAsignacion asignacion={asignacion} size="md" />
+                            <div className="min-w-0 flex-1">
+                              {todosLosRoles ? (
                                 <p className="truncate text-[10px] font-medium tracking-wide text-slate-500 uppercase">
                                   {plan.nombre}
                                 </p>
-                                <PersonaRol asignacion={asignacion} compact />
-                                <div className="mt-1.5 flex items-center gap-1.5">
-                                  <Badge variant="outline" className="font-mono text-[10px]">
-                                    {asignacion.grado}
+                              ) : null}
+                              <PersonaRol asignacion={asignacion} compact />
+                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                <Badge variant="outline" className="font-mono text-[10px]">
+                                  {asignacion.grado}
+                                </Badge>
+                                {marca !== "X" ? (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    Marca {marca}
                                   </Badge>
-                                  {marca !== "X" ? (
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      Marca {marca}
-                                    </Badge>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 text-[10px] text-teal-700">
-                                      <CheckCircle2 className="size-3" aria-hidden /> En servicio
-                                    </span>
-                                  )}
-                                </div>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-teal-700">
+                                    <CheckCircle2 className="size-3" aria-hidden /> En servicio
+                                  </span>
+                                )}
                               </div>
                             </div>
-                          </li>
-                        );
-                      })}
+                          </div>
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </CardContent>
@@ -505,7 +553,8 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                   <CardTitle className="text-base">Calendario de {etiquetaMes(anio, mes)}</CardTitle>
                   <CardDescription className="text-xs">
                     Intensidad según personas de servicio
-                    {activo ? ` en «${activo.nombre}»` : " en todos los roles"}. Pulsa un día para ver el detalle.
+                    {todosLosRoles ? " en todos los roles" : ` en «${planActivo?.nombre}»`}. Pulsa un día para ver el
+                    detalle.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4">
@@ -557,15 +606,18 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
               </Card>
             ) : null}
 
-            {modo === "cuadricula" && activo ? (
-              <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
+            {modo === "cuadricula" ? (
+              <Card className="gap-0 overflow-hidden py-0 shadow-sm ring-slate-200/80">
                 <CardHeader className="border-b border-slate-200/80 px-4 py-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div className="min-w-0">
-                      <CardTitle className="text-base">{activo.nombre}</CardTitle>
+                      <CardTitle className="text-base">
+                        {todosLosRoles ? "Cuadrícula consolidada" : planActivo?.nombre}
+                      </CardTitle>
                       <CardDescription className="text-xs">
-                        {activo.curso}. Cada celda marcada es un día de servicio. Desplaza horizontalmente en pantallas
-                        estrechas.
+                        {todosLosRoles
+                          ? "Todos los roles del mes. Filtra por nombre o selecciona un rol en la barra lateral."
+                          : `${planActivo?.curso}. Cada celda marcada es un día de servicio.`}
                       </CardDescription>
                     </div>
                     <div className="relative w-full max-w-xs">
@@ -580,21 +632,31 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {asignacionesFiltradas.length === 0 ? (
+                  {filasCuadricula.length === 0 ? (
                     <p className="px-4 py-10 text-center text-sm text-slate-500">
                       {busqueda.trim()
                         ? "Ninguna persona coincide con la búsqueda."
-                        : "Este rol todavía no tiene personal asignado."}
+                        : "No hay personal asignado en la selección actual."}
                     </p>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-max min-w-full border-collapse text-xs">
+                    <div className="overflow-x-auto overscroll-x-contain">
+                      <table className="w-max border-collapse text-xs">
                         <thead>
                           <tr className="border-b border-slate-200">
-                            <th className="sticky left-0 z-20 min-w-56 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                            {todosLosRoles ? (
+                              <th className="sticky left-0 z-20 min-w-40 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+                                Rol
+                              </th>
+                            ) : null}
+                            <th
+                              className={cn(
+                                "sticky z-20 min-w-56 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase",
+                                todosLosRoles ? "left-40" : "left-0",
+                              )}
+                            >
                               Personal
                               <span className="ml-1 font-normal normal-case tabular-nums text-slate-400">
-                                ({asignacionesFiltradas.length})
+                                ({filasCuadricula.length})
                               </span>
                             </th>
                             {dias.map((dia) => {
@@ -605,7 +667,7 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                                 <th
                                   key={dia}
                                   className={cn(
-                                    "w-8 px-0 py-1.5 text-center font-semibold text-slate-600",
+                                    "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center font-semibold text-slate-600",
                                     fin && "bg-slate-100/80",
                                     hoy && "bg-amber-100 text-amber-950",
                                     sel && !hoy && "bg-teal-50 text-teal-950",
@@ -628,29 +690,32 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                                 </th>
                               );
                             })}
+                            {/* Respiro para que el día 31 no quede pegado al borde redondeado */}
+                            <th aria-hidden className="w-3 min-w-3 bg-slate-50 p-0" />
                           </tr>
                         </thead>
                         <tbody>
-                          {asignacionesFiltradas.map((asignacion, index) => (
+                          {filasCuadricula.map(({ plan, asignacion }, index) => (
                             <tr
-                              key={asignacion.id}
+                              key={`${plan.clave}-${asignacion.id}`}
                               className={cn(
                                 "border-b border-slate-100 transition-colors hover:bg-slate-50/70",
                                 index % 2 === 1 && "bg-slate-50/40",
                               )}
                             >
-                              <td className="sticky left-0 z-10 min-w-56 bg-white px-3 py-2.5 align-middle shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]">
+                              {todosLosRoles ? (
+                                <td className="sticky left-0 z-10 min-w-40 bg-white px-3 py-2.5 align-middle text-[10px] font-medium text-slate-600 shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]">
+                                  {plan.nombre}
+                                </td>
+                              ) : null}
+                              <td
+                                className={cn(
+                                  "sticky z-10 min-w-56 bg-white px-3 py-2.5 align-middle shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]",
+                                  todosLosRoles ? "left-40" : "left-0",
+                                )}
+                              >
                                 <div className="flex items-start gap-2.5">
-                                  <span
-                                    className={cn(
-                                      "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
-                                      asignacion.aspirante
-                                        ? "bg-slate-100 text-slate-700"
-                                        : "bg-amber-50 text-amber-800",
-                                    )}
-                                  >
-                                    {iniciales(nombreMostrado(asignacion))}
-                                  </span>
+                                  <AvatarAsignacion asignacion={asignacion} size="sm" />
                                   <div className="min-w-0">
                                     <p className="text-[10px] tracking-wide text-slate-400 uppercase">
                                       {asignacion.orden}. {asignacion.grado}
@@ -667,7 +732,7 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                                   <td
                                     key={dia}
                                     className={cn(
-                                      "px-0 py-1.5 text-center align-middle",
+                                      "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center align-middle",
                                       fin && "bg-slate-50/80",
                                       hoy && "bg-amber-50/70",
                                       dia === diaSeleccionado && !hoy && "bg-teal-50/50",
@@ -677,6 +742,7 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                                   </td>
                                 );
                               })}
+                              <td aria-hidden className="w-3 min-w-3 p-0" />
                             </tr>
                           ))}
                         </tbody>
@@ -685,10 +751,6 @@ export function RolesServicioView({ anio, mes, planes, activo, diaHoy }: Props) 
                   )}
                 </CardContent>
               </Card>
-            ) : null}
-
-            {modo === "cuadricula" && !activo ? (
-              <p className="text-sm text-slate-500">Selecciona un rol para ver la cuadrícula mensual.</p>
             ) : null}
           </div>
         </div>
@@ -704,6 +766,31 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
       <p className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums">{value}</p>
       {hint ? <p className="mt-0.5 truncate text-[10px] text-slate-500">{hint}</p> : null}
     </div>
+  );
+}
+
+function AvatarAsignacion({
+  asignacion,
+  size,
+}: {
+  asignacion: AsignacionVista;
+  size: "sm" | "md";
+}) {
+  const clase = size === "md" ? "size-9 text-[11px]" : "size-7 text-[10px]";
+  return (
+    <span
+      className={cn(
+        "mt-0.5 flex shrink-0 items-center justify-center rounded-full font-semibold",
+        clase,
+        asignacion.autoridad
+          ? "bg-indigo-100 text-indigo-900"
+          : asignacion.aspirante
+            ? "bg-slate-100 text-slate-700"
+            : "bg-amber-50 text-amber-800",
+      )}
+    >
+      {iniciales(nombreMostrado(asignacion))}
+    </span>
   );
 }
 
@@ -732,6 +819,30 @@ function PersonaRol({ asignacion, compact = false }: { asignacion: AsignacionVis
   if (!asignacion.nombre.trim()) {
     return <p className={cn("text-slate-400", compact ? "text-xs" : "text-sm")}>Sin nombre en el rol</p>;
   }
+  if (asignacion.autoridad) {
+    const { autoridad } = asignacion;
+    const cedula = autoridad.cedula?.trim()
+      ? formatCedulaMillares(autoridad.cedula)
+      : null;
+    return (
+      <p>
+        <span className={cn("font-medium text-slate-900", compact ? "text-xs" : "text-sm")}>
+          {autoridad.nombres} {autoridad.apellidos}
+        </span>
+        <span className="mt-0.5 block text-[10px] text-indigo-700">
+          {labelJerarquiaAutoridad(autoridad.jerarquia)}
+          {cedula ? (
+            <>
+              {" · "}
+              <span className="font-mono tabular-nums">{cedula}</span>
+            </>
+          ) : (
+            " · Sin cédula"
+          )}
+        </span>
+      </p>
+    );
+  }
   if (!asignacion.aspirante) {
     return (
       <p>
@@ -741,6 +852,7 @@ function PersonaRol({ asignacion, compact = false }: { asignacion: AsignacionVis
     );
   }
   const { aspirante } = asignacion;
+  const cedula = formatCedulaMillares(aspirante.cedula);
   return (
     <p>
       <Link
@@ -751,10 +863,10 @@ function PersonaRol({ asignacion, compact = false }: { asignacion: AsignacionVis
       </Link>
       {!compact ? (
         <span className="mt-0.5 block text-[11px] text-slate-500">
-          En el rol: {asignacion.nombre} · {aspirante.cedula}
+          En el rol: {asignacion.nombre} · <span className="font-mono tabular-nums">{cedula}</span>
         </span>
       ) : (
-        <span className="mt-0.5 block truncate text-[10px] text-slate-500">{aspirante.cedula}</span>
+        <span className="mt-0.5 block truncate font-mono text-[10px] tabular-nums text-slate-500">{cedula}</span>
       )}
     </p>
   );

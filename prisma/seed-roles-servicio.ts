@@ -7,8 +7,8 @@
  */
 import dotenv from "dotenv";
 import { Prisma, PrismaClient } from "../src/generated/prisma";
-import { coincidenciaRol } from "../src/lib/roles-servicio/match";
 import { parsearRolesExcel } from "../src/lib/roles-servicio/parse-excel";
+import { vincularPersonaRol } from "../src/lib/roles-servicio/vincular";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
@@ -31,12 +31,20 @@ async function main() {
   });
   const porId = new Map(aspirantes.map((aspirante) => [aspirante.id, aspirante]));
 
-  let vinculados = 0;
-  let ambiguos = 0;
+  const autoridades = await prisma.autoridad.findMany({
+    where: { activa: true },
+    select: { id: true, nombres: true, apellidos: true, cedula: true },
+  });
+  const porAutoridad = new Map(autoridades.map((item) => [item.id, item]));
+
+  let vinculadosAspirante = 0;
+  let vinculadosAutoridad = 0;
   let sinCoincidencia = 0;
   let sinNombre = 0;
 
-  console.log(`Mes ${libro.mes}/${libro.anio}. Roles: ${libro.roles.length}. Aspirantes en censo: ${aspirantes.length}.`);
+  console.log(
+    `Mes ${libro.mes}/${libro.anio}. Roles: ${libro.roles.length}. Aspirantes: ${aspirantes.length}. Autoridades: ${autoridades.length}.`,
+  );
 
   if (!dryRun) {
     const borradas = await prisma.asignacionRolServicio.deleteMany({});
@@ -65,23 +73,17 @@ async function main() {
         continue;
       }
 
-      const coincidencia = coincidenciaRol(persona.nombre, aspirantes);
-      let aspiranteId: string | null = null;
-      if (coincidencia.status === "vinculado") {
-        aspiranteId = coincidencia.aspiranteId;
-        vinculados += 1;
-        const personaCenso = porId.get(aspiranteId);
+      const vinculo = vincularPersonaRol(persona.nombre, persona.grado, aspirantes, autoridades);
+      if (vinculo.aspiranteId) {
+        vinculadosAspirante += 1;
+        const personaCenso = porId.get(vinculo.aspiranteId);
         console.log(
           `  ${persona.nombre} -> ${personaCenso?.nombres} ${personaCenso?.apellidos} (${personaCenso?.cedula})`,
         );
-      } else if (coincidencia.status === "ambiguo") {
-        ambiguos += 1;
-        const nombres = coincidencia.aspiranteIds
-          .map((id) => porId.get(id))
-          .filter((item) => item != null)
-          .map((item) => `${item.nombres} ${item.apellidos}`)
-          .join(" | ");
-        console.log(`  AMBIGUO ${persona.nombre} -> ${nombres}`);
+      } else if (vinculo.autoridadId) {
+        vinculadosAutoridad += 1;
+        const autoridad = porAutoridad.get(vinculo.autoridadId);
+        console.log(`  ${persona.nombre} -> [Autoridad] ${autoridad?.nombres} ${autoridad?.apellidos}`);
       } else {
         sinCoincidencia += 1;
         console.log(`  SIN COINCIDENCIA ${persona.grado} ${persona.nombre}`);
@@ -92,7 +94,8 @@ async function main() {
         orden: persona.orden,
         grado: persona.grado,
         nombre: persona.nombre,
-        aspiranteId,
+        aspiranteId: vinculo.aspiranteId,
+        autoridadId: vinculo.autoridadId,
         dias: persona.dias,
       });
     }
@@ -139,6 +142,7 @@ async function main() {
           grado: fila.grado,
           nombre: fila.nombre,
           aspiranteId: fila.aspiranteId,
+          autoridadId: fila.autoridadId,
           dias: fila.dias as Prisma.InputJsonValue,
           createdAt: ahora,
           updatedAt: ahora,
@@ -148,7 +152,7 @@ async function main() {
   }
 
   console.log(
-    `\nVinculados: ${vinculados}. Ambiguos: ${ambiguos}. Sin coincidencia: ${sinCoincidencia}. Sin nombre: ${sinNombre}.`,
+    `\nAspirantes: ${vinculadosAspirante}. Autoridades: ${vinculadosAutoridad}. Sin coincidencia: ${sinCoincidencia}. Sin nombre: ${sinNombre}.`,
   );
   if (dryRun) console.log("Vista previa: no se escribió nada.");
 }
