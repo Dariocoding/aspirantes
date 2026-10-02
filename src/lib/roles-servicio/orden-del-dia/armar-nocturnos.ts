@@ -54,9 +54,18 @@ function personasDeRolesEnDia(
   return filas;
 }
 
+function etiquetaServicioBinomio(etiquetaBase: string, nombreRol: string): string {
+  if (!etiquetaBase) return nombreRol.toUpperCase();
+  const fem = /femenin/i.test(nombreRol);
+  const masc = /masculin/i.test(nombreRol);
+  if (fem) return `${etiquetaBase} FEMENINA`;
+  if (masc) return `${etiquetaBase} MASCULINO`;
+  return etiquetaBase;
+}
+
 /**
  * Arma la tabla nocturna según config:
- * 1) RONDA = personal del rol «oficial de día» (u otros elegidos) ese día.
+ * 1) RONDA siempre primero (= personal del rol «oficial de día» u otros elegidos).
  * 2) Binomios: cada turno (1ER/2DO/3ER) toma el personal de los roles fuente
  *    (aula / cuartelero / baño por defecto).
  */
@@ -65,24 +74,25 @@ export function construirFilasNocturnas(
   dia: number,
   config: OrdenNocturnoConfig,
 ): FilaServicioNocturno[] {
-  const filas: FilaServicioNocturno[] = [];
-  let nro = 1;
+  const filasRonda: FilaServicioNocturno[] = [];
+  const filasBinomio: FilaServicioNocturno[] = [];
+  const etiquetaRonda = config.rondaServicioEtiqueta.toUpperCase() || "RONDA";
 
   const ronda = personasDeRolesEnDia(planes, config.rondaRolClaves, dia);
   if (ronda.length === 0 && config.rondaRolClaves.length > 0) {
-    filas.push({
-      nro: nro++,
+    filasRonda.push({
+      nro: 0,
       turno: config.rondaTurno,
-      servicio: config.rondaServicioEtiqueta.toUpperCase(),
+      servicio: etiquetaRonda,
       grado: "—",
       nombres: OMITIR,
     });
   } else {
     for (const { persona } of ronda) {
-      filas.push({
-        nro: nro++,
+      filasRonda.push({
+        nro: 0,
         turno: config.rondaTurno,
-        servicio: config.rondaServicioEtiqueta.toUpperCase(),
+        servicio: etiquetaRonda,
         grado: gradoMostrado(persona),
         nombres: nombreMostrado(persona),
       });
@@ -95,8 +105,8 @@ export function construirFilasNocturnas(
 
     if (personas.length === 0) {
       if (binomio.rolClaves.length === 0) continue;
-      filas.push({
-        nro: nro++,
+      filasBinomio.push({
+        nro: 0,
         turno: binomio.turno,
         servicio: etiquetaBase || "IMAGINARIA",
         grado: "—",
@@ -107,8 +117,8 @@ export function construirFilasNocturnas(
 
     for (const { plan, persona } of personas) {
       const servicio = etiquetaServicioBinomio(etiquetaBase, plan.nombre);
-      filas.push({
-        nro: nro++,
+      filasBinomio.push({
+        nro: 0,
         turno: binomio.turno,
         servicio,
         grado: gradoMostrado(persona),
@@ -117,14 +127,8 @@ export function construirFilasNocturnas(
     }
   }
 
-  return filas;
-}
-
-function etiquetaServicioBinomio(etiquetaBase: string, nombreRol: string): string {
-  if (!etiquetaBase) return nombreRol.toUpperCase();
-  const fem = /femenin/i.test(nombreRol);
-  const masc = /masculin/i.test(nombreRol);
-  if (fem) return `${etiquetaBase} FEMENINA`;
-  if (masc) return `${etiquetaBase} MASCULINO`;
-  return etiquetaBase;
+  return [...filasRonda, ...filasBinomio].map((fila, index) => ({
+    ...fila,
+    nro: index + 1,
+  }));
 }

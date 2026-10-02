@@ -127,6 +127,15 @@ function gradoMostrado(persona: PersonaOrdenInput): string {
   return persona.grado.trim().toUpperCase() || "—";
 }
 
+/**
+ * Orden fijo de diurnos: 1) Oficial de día · 2) Inspección · resto alfabético.
+ */
+function prioridadRolDiurno(nombreRol: string): number {
+  if (/oficial\s+de\s+d[ií]a/i.test(nombreRol)) return 0;
+  if (/inspecci[oó]n/i.test(nombreRol)) return 1;
+  return 100;
+}
+
 function filasDelDia(
   planes: PlanOrdenInput[],
   dia: number,
@@ -141,6 +150,9 @@ function filasDelDia(
     }
   }
   filas.sort((a, b) => {
+    const porPrioridad =
+      prioridadRolDiurno(a.plan.nombre) - prioridadRolDiurno(b.plan.nombre);
+    if (porPrioridad !== 0) return porPrioridad;
     const porRol = a.plan.nombre.localeCompare(b.plan.nombre, "es");
     if (porRol !== 0) return porRol;
     return a.persona.orden - b.persona.orden;
