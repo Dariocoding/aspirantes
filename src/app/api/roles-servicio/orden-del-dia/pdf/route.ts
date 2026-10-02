@@ -16,6 +16,8 @@ import {
   type OrdenDelDiaData,
   type PlanOrdenInput,
 } from "@src/lib/roles-servicio/orden-del-dia/build-orden";
+import type { OrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
+import { loadOrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/load-config-nocturno";
 import { diasDelMes, etiquetaMes, marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
 import { prisma } from "@src/lib/prisma";
 
@@ -74,6 +76,7 @@ function construirOrdenesMes(input: {
   planesManana: PlanOrdenInput[];
   lineasMembrete?: string[];
   directorNombre?: string | null;
+  nocturnoConfig: OrdenNocturnoConfig;
 }): OrdenDelDiaData[] {
   const total = diasDelMes(input.anio, input.mes);
   const ordenes: OrdenDelDiaData[] = [];
@@ -88,6 +91,7 @@ function construirOrdenesMes(input: {
         planesManana: esUltimo ? input.planesManana : input.planes,
         lineasMembrete: input.lineasMembrete,
         directorNombre: input.directorNombre,
+        nocturnoConfig: input.nocturnoConfig,
       }),
     );
   }
@@ -118,13 +122,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "Fecha inválida" }, { status: 400 });
   }
 
-  const [planes, membrete, convocatoria] = await Promise.all([
+  const [planes, membrete, convocatoria, nocturnoConfig] = await Promise.all([
     cargarPlanes(anio, mes),
     prisma.membrete.findFirst({
       where: { isDefault: true },
       orderBy: { nombre: "asc" },
     }),
     getConvocatoriaActiva(),
+    loadOrdenNocturnoConfig(),
   ]);
 
   if (planes.length === 0) {
@@ -148,6 +153,7 @@ export async function GET(request: Request) {
     planesManana,
     lineasMembrete: membrete?.lineas,
     directorNombre: convocatoria?.comandanteNombre,
+    nocturnoConfig,
   };
 
   const ordenes =
@@ -162,6 +168,7 @@ export async function GET(request: Request) {
             planesManana: dia === totalDias ? planesManana : planes,
             lineasMembrete: comunes.lineasMembrete,
             directorNombre: comunes.directorNombre,
+            nocturnoConfig,
           }),
         ];
 

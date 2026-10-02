@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, UserCog } from "lucide-react";
+import { LayoutGrid, MoonStar, UserCog } from "lucide-react";
 import { AutoridadesPanel, type AutoridadVista } from "./autoridades-panel";
+import {
+  OrdenNocturnoConfigPanel,
+  type RolOpcion,
+} from "./orden-nocturno-config-panel";
 import { RolesServicioView, type PlanVista } from "./roles-servicio-view";
+import type { OrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
 import { cn } from "@src/lib/utils";
 
 type Props = {
@@ -14,17 +19,20 @@ type Props = {
   diaHoy: number | null;
   autoridades: AutoridadVista[];
   canWrite: boolean;
+  nocturnoConfig: OrdenNocturnoConfig;
+  rolesParaConfig: RolOpcion[];
 };
 
 export function RolesServicioShell(props: Props) {
-  const [seccion, setSeccion] = useState<"cuadro" | "autoridades">("cuadro");
+  const [seccion, setSeccion] = useState<"cuadro" | "autoridades" | "nocturno">("cuadro");
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="inline-flex w-fit rounded-lg bg-slate-100 p-1">
+      <div className="inline-flex w-fit flex-wrap rounded-lg bg-slate-100 p-1">
         {(
           [
             { id: "cuadro", label: "Cuadro de servicio", icon: LayoutGrid },
+            { id: "nocturno", label: "Orden nocturna", icon: MoonStar },
             { id: "autoridades", label: "Autoridades", icon: UserCog },
           ] as const
         ).map((item) => {
@@ -57,9 +65,17 @@ export function RolesServicioShell(props: Props) {
           rolInicial={props.rolInicial}
           diaHoy={props.diaHoy}
         />
-      ) : (
+      ) : null}
+      {seccion === "nocturno" ? (
+        <OrdenNocturnoConfigPanel
+          roles={props.rolesParaConfig}
+          initialConfig={props.nocturnoConfig}
+          canWrite={props.canWrite}
+        />
+      ) : null}
+      {seccion === "autoridades" ? (
         <AutoridadesPanel autoridades={props.autoridades} canWrite={props.canWrite} />
-      )}
+      ) : null}
     </div>
   );
 }

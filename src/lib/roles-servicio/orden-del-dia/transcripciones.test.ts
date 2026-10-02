@@ -3,8 +3,8 @@ import {
   listTranscripciones,
   trioTranscripcionesDelDia,
   transcripcionDelDia,
-} from "@src/lib/roles-servicio/orden-del-dia/transcripciones";
-import { numeroOrdenDelDia } from "@src/lib/roles-servicio/orden-del-dia/fechas";
+} from "./transcripciones";
+import { numeroOrdenDelDia } from "./fechas";
 
 describe("transcripciones orden del día", () => {
   it("tiene al menos 31 entradas por categoría", () => {

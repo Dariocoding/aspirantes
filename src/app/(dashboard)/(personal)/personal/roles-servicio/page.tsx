@@ -5,6 +5,8 @@ import type { AutoridadVista } from "./_components/autoridades-panel";
 import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
+import { hidratarSugerenciasClaves } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
+import { loadOrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/load-config-nocturno";
 import { marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
 import { prisma } from "@src/lib/prisma";
 
@@ -31,6 +33,8 @@ export default async function RolesServicioPage({
       ? hoy.getDate()
       : null;
 
+  const nocturnoRaw = await loadOrdenNocturnoConfig();
+
   if (!reciente) {
     return (
       <RolesServicioShell
@@ -41,6 +45,8 @@ export default async function RolesServicioPage({
         diaHoy={null}
         autoridades={[]}
         canWrite={canWrite}
+        nocturnoConfig={nocturnoRaw}
+        rolesParaConfig={[]}
       />
     );
   }
@@ -85,6 +91,9 @@ export default async function RolesServicioPage({
     })),
   }));
 
+  const rolesParaConfig = planes.map((p) => ({ clave: p.clave, nombre: p.nombre }));
+  const nocturnoConfig = hidratarSugerenciasClaves(nocturnoRaw, rolesParaConfig);
+
   const autoridades: AutoridadVista[] = autoridadesDb.map((item) => ({
     id: item.id,
     nombres: item.nombres,
@@ -108,6 +117,8 @@ export default async function RolesServicioPage({
       diaHoy={diaHoy}
       autoridades={autoridades}
       canWrite={canWrite}
+      nocturnoConfig={nocturnoConfig}
+      rolesParaConfig={rolesParaConfig}
     />
   );
 }

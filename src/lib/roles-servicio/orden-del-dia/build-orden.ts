@@ -1,8 +1,13 @@
 import {
   clasificarTurnoServicio,
-  etiquetaTurnoServicio,
   type TurnoServicio,
 } from "@src/lib/roles-servicio/orden-del-dia/clasificar-servicio";
+import { construirFilasNocturnas } from "@src/lib/roles-servicio/orden-del-dia/armar-nocturnos";
+import {
+  defaultOrdenNocturnoConfig,
+  hidratarSugerenciasClaves,
+  type OrdenNocturnoConfig,
+} from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
 import {
   aniversariosInstitucionales,
   etiquetaFechaOrden,
@@ -89,7 +94,7 @@ export const LUGAR_ORDEN_DEFAULT =
   'LICEO MILITAR "GRAN MARISCAL DE AYACUCHO"';
 
 export const DISPOSICION_GENERAL_DEFAULT =
-  "Se recuerda a todo el personal la obligación de ser diligente en la conservación del armamento, municiones, equipos, vehículos, uniformes y demás bienes asignados al servicio. El descuido u omisión en el cuidado de estos bienes constituye falta leve, sin perjuicio de las responsabilidades a que hubiere lugar.";
+  "SE RECUERDA A TODO EL PERSONAL LA OBLIGACIÓN DE SER DILIGENTE EN LA CONSERVACIÓN DEL ARMAMENTO, MUNICIONES, EQUIPOS, VEHÍCULOS, UNIFORMES Y DEMÁS BIENES ASIGNADOS AL SERVICIO. EL DESCUIDO U OMISIÓN EN EL CUIDADO DE ESTOS BIENES CONSTITUYE FALTA LEVE, SIN PERJUICIO DE LAS RESPONSABILIDADES A QUE HUBIERE LUGAR.";
 
 export const DISPOSICION_PARTICULAR_DEFAULT = "NINGUNA";
 
@@ -148,7 +153,6 @@ export type BuildOrdenDelDiaInput = {
   mes: number;
   dia: number;
   planes: PlanOrdenInput[];
-  /** Si el día siguiente está en otro mes, planes de ese mes (opcional). */
   planesManana?: PlanOrdenInput[];
   lineasMembrete?: string[];
   lugar?: string;
@@ -157,6 +161,7 @@ export type BuildOrdenDelDiaInput = {
   directorCargo?: string | null;
   disposicionGeneral?: string;
   disposicionParticular?: string;
+  nocturnoConfig?: OrdenNocturnoConfig;
 };
 
 export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData {
@@ -172,18 +177,15 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
   const mesDiurno = manana?.mes ?? mes;
 
   const rawDiurnos = filasDelDia(planesManana, diaDiurno, "diurno");
-  const rawNocturnos = filasDelDia(input.planes, dia, "nocturno");
+
+  const configNocturna = hidratarSugerenciasClaves(
+    input.nocturnoConfig ?? defaultOrdenNocturnoConfig(),
+    input.planes,
+  );
+  const nocturnos = construirFilasNocturnas(input.planes, dia, configNocturna);
 
   const diurnos: FilaServicioDiurno[] = rawDiurnos.map((fila, index) => ({
     nro: index + 1,
-    servicio: fila.plan.nombre.toUpperCase(),
-    grado: gradoMostrado(fila.persona),
-    nombres: nombreMostrado(fila.persona),
-  }));
-
-  const nocturnos: FilaServicioNocturno[] = rawNocturnos.map((fila, index) => ({
-    nro: index + 1,
-    turno: etiquetaTurnoServicio(fila.plan.nombre, fila.persona.orden),
     servicio: fila.plan.nombre.toUpperCase(),
     grado: gradoMostrado(fila.persona),
     nombres: nombreMostrado(fila.persona),
