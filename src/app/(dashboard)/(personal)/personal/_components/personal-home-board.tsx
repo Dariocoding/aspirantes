@@ -1,10 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
-  BookMarked,
   CalendarClock,
-  CalendarDays,
-  Medal,
+  Settings2,
   Shield,
   Users,
   type LucideIcon,
@@ -100,20 +98,6 @@ const SHORTCUTS: { href: string; label: string; hint: string; icon: LucideIcon; 
     tone: "bg-teal-50 text-teal-800",
   },
   {
-    href: routes.personal.esquelas,
-    label: "Esquelas",
-    hint: "Honores",
-    icon: Medal,
-    tone: "bg-amber-50 text-amber-800",
-  },
-  {
-    href: routes.personal.efemerides,
-    label: "Efemérides",
-    hint: "Calendario",
-    icon: CalendarDays,
-    tone: "bg-emerald-50 text-emerald-800",
-  },
-  {
     href: routes.personal.permisos,
     label: "Permisos",
     hint: "Ausencias",
@@ -121,11 +105,11 @@ const SHORTCUTS: { href: string; label: string; hint: string; icon: LucideIcon; 
     tone: "bg-teal-50 text-teal-800",
   },
   {
-    href: routes.personal.convocatorias,
-    label: "Convocatorias",
-    hint: "Períodos",
-    icon: BookMarked,
-    tone: "bg-indigo-50 text-indigo-700",
+    href: routes.personal.configuracion,
+    label: "Configuración",
+    hint: "Ajustes",
+    icon: Settings2,
+    tone: "bg-slate-100 text-slate-700",
   },
 ];
 
@@ -267,7 +251,7 @@ export function PersonalHomeBoard({
         </div>
       </section>
 
-      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" aria-label="Atajos">
+      <nav className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Atajos">
         {SHORTCUTS.map((item) => {
           const Icon = item.icon;
           return (

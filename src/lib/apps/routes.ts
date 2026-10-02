@@ -16,6 +16,7 @@ export const routes = {
     permisos: "/personal/permisos",
     permisosFormato: "/personal/permisos/formato",
     rolesServicio: "/personal/roles-servicio",
+    configuracion: "/personal/configuracion",
     convocatorias: "/personal/convocatorias",
     membretes: "/personal/membretes",
   },
@@ -34,6 +35,7 @@ export const personalPathPrefixes = [
   routes.personal.esquelas,
   routes.personal.permisos,
   routes.personal.rolesServicio,
+  routes.personal.configuracion,
   routes.personal.convocatorias,
   routes.personal.membretes,
 ] as const;

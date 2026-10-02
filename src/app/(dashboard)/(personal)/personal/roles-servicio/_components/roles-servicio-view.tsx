@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   CalendarRange,
   CheckCircle2,
   ChevronsUpDown,
   LayoutGrid,
+  Maximize2,
   Search,
   Shield,
   UserRound,
@@ -15,6 +16,13 @@ import {
 import { Badge } from "@src/components/ui/badge";
 import { Button } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
 import { routes } from "@src/lib/apps/routes";
 import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
@@ -143,6 +151,9 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("");
   const [navAbierta, setNavAbierta] = useState(false);
+  const [cuadriculaAmpliada, setCuadriculaAmpliada] = useState(false);
+  const [cuadriculaDesborda, setCuadriculaDesborda] = useState(false);
+  const cuadriculaScrollRef = useRef<HTMLDivElement>(null);
 
   const planActivo = useMemo(
     () => (rolClave ? planes.find((plan) => plan.clave === rolClave) ?? null : null),
@@ -157,6 +168,16 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
       : routes.personal.rolesServicio;
     window.history.replaceState(null, "", url);
   }, [rolClave]);
+
+  useEffect(() => {
+    if (modo !== "cuadricula") setCuadriculaAmpliada(false);
+  }, [modo]);
+
+  const abrirDiaDesdeCuadricula = (dia: number) => {
+    setDiaSeleccionado(dia);
+    setModo("dia");
+    setCuadriculaAmpliada(false);
+  };
 
   const vinculados = planes.reduce(
     (total, plan) => total + plan.asignaciones.filter((item) => estaVinculado(item)).length,
@@ -250,6 +271,31 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
     }
     return filas;
   }, [planesAlcance, busqueda]);
+
+  useEffect(() => {
+    if (modo !== "cuadricula") {
+      setCuadriculaDesborda(false);
+      return;
+    }
+
+    const el = cuadriculaScrollRef.current;
+    if (!el) return;
+
+    const medir = () => {
+      setCuadriculaDesborda(el.scrollWidth > el.clientWidth + 2);
+    };
+
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    const tabla = el.querySelector("table");
+    if (tabla) ro.observe(tabla);
+    window.addEventListener("resize", medir);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", medir);
+    };
+  }, [modo, filasCuadricula, dias, todosLosRoles]);
 
   const esHoySeleccionado = diaHoy != null && diaSeleccionado === diaHoy;
 
@@ -620,14 +666,28 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                           : `${planActivo?.curso}. Cada celda marcada es un día de servicio.`}
                       </CardDescription>
                     </div>
-                    <div className="relative w-full max-w-xs">
-                      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
-                      <Input
-                        value={busqueda}
-                        onChange={(e) => setBusqueda(e.target.value)}
-                        placeholder="Filtrar personal…"
-                        className="h-8 bg-white pl-8 text-xs"
-                      />
+                    <div className="flex w-full max-w-md flex-wrap items-center gap-2 lg:justify-end">
+                      {cuadriculaDesborda ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1.5 text-xs"
+                          onClick={() => setCuadriculaAmpliada(true)}
+                        >
+                          <Maximize2 className="size-3.5" aria-hidden />
+                          Ver completo
+                        </Button>
+                      ) : null}
+                      <div className="relative min-w-0 flex-1 basis-40">
+                        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          value={busqueda}
+                          onChange={(e) => setBusqueda(e.target.value)}
+                          placeholder="Filtrar personal…"
+                          className="h-8 bg-white pl-8 text-xs"
+                        />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -639,123 +699,217 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                         : "No hay personal asignado en la selección actual."}
                     </p>
                   ) : (
-                    <div className="overflow-x-auto overscroll-x-contain">
-                      <table className="w-max border-collapse text-xs">
-                        <thead>
-                          <tr className="border-b border-slate-200">
-                            {todosLosRoles ? (
-                              <th className="sticky left-0 z-20 min-w-40 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-                                Rol
-                              </th>
-                            ) : null}
-                            <th
-                              className={cn(
-                                "sticky z-20 min-w-56 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase",
-                                todosLosRoles ? "left-40" : "left-0",
-                              )}
-                            >
-                              Personal
-                              <span className="ml-1 font-normal normal-case tabular-nums text-slate-400">
-                                ({filasCuadricula.length})
-                              </span>
-                            </th>
-                            {dias.map((dia) => {
-                              const fin = esFinDeSemana(anio, mes, dia);
-                              const hoy = dia === diaHoy;
-                              const sel = dia === diaSeleccionado;
-                              return (
-                                <th
-                                  key={dia}
-                                  className={cn(
-                                    "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center font-semibold text-slate-600",
-                                    fin && "bg-slate-100/80",
-                                    hoy && "bg-amber-100 text-amber-950",
-                                    sel && !hoy && "bg-teal-50 text-teal-950",
-                                  )}
-                                >
-                                  <button
-                                    type="button"
-                                    className="mx-auto flex w-full flex-col items-center rounded-md px-0.5 py-0.5 hover:bg-black/5"
-                                    onClick={() => {
-                                      setDiaSeleccionado(dia);
-                                      setModo("dia");
-                                    }}
-                                    title={`Ver servicio del día ${dia}`}
-                                  >
-                                    <span className="text-[9px] font-medium text-slate-400">
-                                      {letraSemana(anio, mes, dia)}
-                                    </span>
-                                    <span className="tabular-nums">{dia}</span>
-                                  </button>
-                                </th>
-                              );
-                            })}
-                            {/* Respiro para que el día 31 no quede pegado al borde redondeado */}
-                            <th aria-hidden className="w-3 min-w-3 bg-slate-50 p-0" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filasCuadricula.map(({ plan, asignacion }, index) => (
-                            <tr
-                              key={`${plan.clave}-${asignacion.id}`}
-                              className={cn(
-                                "border-b border-slate-100 transition-colors hover:bg-slate-50/70",
-                                index % 2 === 1 && "bg-slate-50/40",
-                              )}
-                            >
-                              {todosLosRoles ? (
-                                <td className="sticky left-0 z-10 min-w-40 bg-white px-3 py-2.5 align-middle text-[10px] font-medium text-slate-600 shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]">
-                                  {plan.nombre}
-                                </td>
-                              ) : null}
-                              <td
-                                className={cn(
-                                  "sticky z-10 min-w-56 bg-white px-3 py-2.5 align-middle shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]",
-                                  todosLosRoles ? "left-40" : "left-0",
-                                )}
-                              >
-                                <div className="flex items-start gap-2.5">
-                                  <AvatarAsignacion asignacion={asignacion} size="sm" />
-                                  <div className="min-w-0">
-                                    <p className="text-[10px] tracking-wide text-slate-400 uppercase">
-                                      {asignacion.orden}. {asignacion.grado}
-                                    </p>
-                                    <PersonaRol asignacion={asignacion} compact />
-                                  </div>
-                                </div>
-                              </td>
-                              {dias.map((dia) => {
-                                const marca = marcaDelDia(asignacion, dia);
-                                const fin = esFinDeSemana(anio, mes, dia);
-                                const hoy = dia === diaHoy;
-                                return (
-                                  <td
-                                    key={dia}
-                                    className={cn(
-                                      "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center align-middle",
-                                      fin && "bg-slate-50/80",
-                                      hoy && "bg-amber-50/70",
-                                      dia === diaSeleccionado && !hoy && "bg-teal-50/50",
-                                    )}
-                                  >
-                                    {marca ? <MarcaCelda marca={marca} /> : <span className="text-slate-200">·</span>}
-                                  </td>
-                                );
-                              })}
-                              <td aria-hidden className="w-3 min-w-3 p-0" />
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <>
+                      <div ref={cuadriculaScrollRef} className="overflow-x-auto overscroll-x-contain">
+                        <CuadriculaTable
+                          filas={filasCuadricula}
+                          dias={dias}
+                          anio={anio}
+                          mes={mes}
+                          diaHoy={diaHoy}
+                          diaSeleccionado={diaSeleccionado}
+                          todosLosRoles={todosLosRoles}
+                          onSelectDia={abrirDiaDesdeCuadricula}
+                        />
+                      </div>
+                      {cuadriculaDesborda ? (
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-4 py-2">
+                          <p className="text-[11px] text-slate-500">
+                            La cuadrícula no cabe en pantalla. Desplace horizontalmente o ábrala a pantalla completa.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="h-7 gap-1.5 text-xs"
+                            onClick={() => setCuadriculaAmpliada(true)}
+                          >
+                            <Maximize2 className="size-3.5" aria-hidden />
+                            Ver completo
+                          </Button>
+                        </div>
+                      ) : null}
+                    </>
                   )}
                 </CardContent>
               </Card>
             ) : null}
+
+            <Dialog open={cuadriculaAmpliada} onOpenChange={setCuadriculaAmpliada}>
+              <DialogContent
+                className="flex h-[min(100dvh-1rem,920px)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-1rem)]"
+                showCloseButton
+              >
+                <DialogHeader className="shrink-0 border-b border-slate-200 px-4 py-3 pr-12 sm:px-5">
+                  <DialogTitle>
+                    {todosLosRoles ? "Cuadrícula consolidada" : planActivo?.nombre}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Vista ampliada · {etiquetaMes(anio, mes)} · {filasCuadricula.length} personas
+                  </DialogDescription>
+                  <div className="relative mt-2 max-w-xs">
+                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                      placeholder="Filtrar personal…"
+                      className="h-8 bg-white pl-8 text-xs"
+                    />
+                  </div>
+                </DialogHeader>
+                <div className="min-h-0 flex-1 overflow-auto">
+                  {filasCuadricula.length === 0 ? (
+                    <p className="px-4 py-10 text-center text-sm text-slate-500">
+                      {busqueda.trim()
+                        ? "Ninguna persona coincide con la búsqueda."
+                        : "No hay personal asignado en la selección actual."}
+                    </p>
+                  ) : (
+                    <CuadriculaTable
+                      filas={filasCuadricula}
+                      dias={dias}
+                      anio={anio}
+                      mes={mes}
+                      diaHoy={diaHoy}
+                      diaSeleccionado={diaSeleccionado}
+                      todosLosRoles={todosLosRoles}
+                      onSelectDia={abrirDiaDesdeCuadricula}
+                    />
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function CuadriculaTable({
+  filas,
+  dias,
+  anio,
+  mes,
+  diaHoy,
+  diaSeleccionado,
+  todosLosRoles,
+  onSelectDia,
+}: {
+  filas: FilaCuadricula[];
+  dias: number[];
+  anio: number;
+  mes: number;
+  diaHoy: number | null;
+  diaSeleccionado: number;
+  todosLosRoles: boolean;
+  onSelectDia: (dia: number) => void;
+}) {
+  return (
+    <table className="w-max border-collapse text-xs">
+      <thead>
+        <tr className="border-b border-slate-200">
+          {todosLosRoles ? (
+            <th className="sticky left-0 z-20 min-w-40 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+              Rol
+            </th>
+          ) : null}
+          <th
+            className={cn(
+              "sticky z-20 min-w-56 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase",
+              todosLosRoles ? "left-40" : "left-0",
+            )}
+          >
+            Personal
+            <span className="ml-1 font-normal normal-case tabular-nums text-slate-400">
+              ({filas.length})
+            </span>
+          </th>
+          {dias.map((dia) => {
+            const fin = esFinDeSemana(anio, mes, dia);
+            const hoy = dia === diaHoy;
+            const sel = dia === diaSeleccionado;
+            return (
+              <th
+                key={dia}
+                className={cn(
+                  "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center font-semibold text-slate-600",
+                  fin && "bg-slate-100/80",
+                  hoy && "bg-amber-100 text-amber-950",
+                  sel && !hoy && "bg-teal-50 text-teal-950",
+                )}
+              >
+                <button
+                  type="button"
+                  className="mx-auto flex w-full flex-col items-center rounded-md px-0.5 py-0.5 hover:bg-black/5"
+                  onClick={() => onSelectDia(dia)}
+                  title={`Ver servicio del día ${dia}`}
+                >
+                  <span className="text-[9px] font-medium text-slate-400">
+                    {letraSemana(anio, mes, dia)}
+                  </span>
+                  <span className="tabular-nums">{dia}</span>
+                </button>
+              </th>
+            );
+          })}
+          {/* Respiro para que el día 31 no quede pegado al borde redondeado */}
+          <th aria-hidden className="w-3 min-w-3 bg-slate-50 p-0" />
+        </tr>
+      </thead>
+      <tbody>
+        {filas.map(({ plan, asignacion }, index) => (
+          <tr
+            key={`${plan.clave}-${asignacion.id}`}
+            className={cn(
+              "border-b border-slate-100 transition-colors hover:bg-slate-50/70",
+              index % 2 === 1 && "bg-slate-50/40",
+            )}
+          >
+            {todosLosRoles ? (
+              <td className="sticky left-0 z-10 min-w-40 bg-white px-3 py-2.5 align-middle text-[10px] font-medium text-slate-600 shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]">
+                {plan.nombre}
+              </td>
+            ) : null}
+            <td
+              className={cn(
+                "sticky z-10 min-w-56 bg-white px-3 py-2.5 align-middle shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]",
+                todosLosRoles ? "left-40" : "left-0",
+              )}
+            >
+              <div className="flex items-start gap-2.5">
+                <AvatarAsignacion asignacion={asignacion} size="sm" />
+                <div className="min-w-0">
+                  <p className="text-[10px] tracking-wide text-slate-400 uppercase">
+                    {asignacion.orden}. {asignacion.grado}
+                  </p>
+                  <PersonaRol asignacion={asignacion} compact />
+                </div>
+              </div>
+            </td>
+            {dias.map((dia) => {
+              const marca = marcaDelDia(asignacion, dia);
+              const fin = esFinDeSemana(anio, mes, dia);
+              const hoy = dia === diaHoy;
+              return (
+                <td
+                  key={dia}
+                  className={cn(
+                    "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center align-middle",
+                    fin && "bg-slate-50/80",
+                    hoy && "bg-amber-50/70",
+                    dia === diaSeleccionado && !hoy && "bg-teal-50/50",
+                  )}
+                >
+                  {marca ? <MarcaCelda marca={marca} /> : <span className="text-slate-200">·</span>}
+                </td>
+              );
+            })}
+            <td aria-hidden className="w-3 min-w-3 p-0" />
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

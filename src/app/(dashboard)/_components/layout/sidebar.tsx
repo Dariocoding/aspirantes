@@ -27,10 +27,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-function isActivePath(pathname: string, href: string) {
+function isActivePath(
+  pathname: string,
+  href: string,
+  matchPrefixes?: readonly string[],
+) {
   if (href === "/") return pathname === "/" || pathname === "";
-  if (href === "/personal" || href === "/sistema") return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (href === "/personal" || href === "/sistema") {
+    if (pathname === href) return true;
+  } else if (pathname === href || pathname.startsWith(`${href}/`)) {
+    return true;
+  }
+  return Boolean(
+    matchPrefixes?.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    ),
+  );
 }
 
 const linkBase =
@@ -62,7 +74,7 @@ function NavLinks({
     <>
       {links.map((link) => {
         const Icon = link.icon;
-        const active = isActivePath(pathname, link.href);
+        const active = isActivePath(pathname, link.href, link.matchPrefixes);
         return (
           <Link
             key={link.href}
@@ -160,7 +172,7 @@ function SidebarPanel({
           ) : null}
           {nav.config && nav.config.length > 0 ? (
             <>
-              <NavSectionLabel>Más</NavSectionLabel>
+              <NavSectionLabel>Configuración</NavSectionLabel>
               <NavLinks
                 links={nav.config}
                 pathname={pathname}

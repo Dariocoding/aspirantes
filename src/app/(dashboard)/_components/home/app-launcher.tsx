@@ -9,7 +9,7 @@ const appIcons = {
 } as const;
 
 const appHighlights: Record<AppId, readonly string[]> = {
-  personal: ["Censo y registro de aspirantes", "Permisos, efemérides, esquelas y convocatorias", "Reportes e impresión documental"],
+  personal: ["Censo y registro de aspirantes", "Permisos, roles de servicio y configuración", "Reportes e impresión documental"],
   sistema: ["Administración de usuarios", "Roles y permisos por módulo", "Registro de auditoría del sistema"],
 };
 

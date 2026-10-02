@@ -20,6 +20,7 @@ import {
   KeyRound,
   LayoutGrid,
   Medal,
+  Settings2,
   Shield,
   Stamp,
   Users,
@@ -49,6 +50,17 @@ export type AppNavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
+  permission?: PermissionKey;
+  /** Prefijos adicionales que marcan el enlace como activo (p. ej. hijos de Configuración). */
+  matchPrefixes?: readonly string[];
+};
+
+export type ConfigCard = {
+  href: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  tone: string;
   permission?: PermissionKey;
 };
 
@@ -121,18 +133,50 @@ const personalMainLinks: AppNavLink[] = [
     label: "Censo de Aspirantes",
     icon: Users,
   },
+  { href: routes.personal.rolesServicio, label: "Roles de servicio", icon: CalendarRange },
+  { href: routes.personal.permisos, label: "Permisos", icon: CalendarClock },
+  {
+    href: routes.personal.configuracion,
+    label: "Configuración",
+    icon: Settings2,
+    matchPrefixes: [
+      routes.personal.efemerides,
+      routes.personal.esquelas,
+      routes.personal.membretes,
+      routes.personal.convocatorias,
+    ],
+  },
 ];
 
-const personalConfigLinks: AppNavLink[] = [
-  { href: routes.personal.permisos, label: "Permisos", icon: CalendarClock },
-  { href: routes.personal.rolesServicio, label: "Roles de servicio", icon: CalendarRange },
-  { href: routes.personal.efemerides, label: "Efemérides", icon: CalendarDays },
-  { href: routes.personal.esquelas, label: "Esquelas", icon: Medal },
-  { href: routes.personal.membretes, label: "Membretes", icon: Stamp },
+/** Enlaces del área Configuración (visibles como tarjetas, no en el sidebar). */
+export const personalConfigCards: ConfigCard[] = [
+  {
+    href: routes.personal.efemerides,
+    label: "Efemérides",
+    description: "Calendario cívico, feriados y conmemoraciones del año.",
+    icon: CalendarDays,
+    tone: "bg-emerald-50 text-emerald-800",
+  },
+  {
+    href: routes.personal.esquelas,
+    label: "Esquelas",
+    description: "Generador de esquelas y plantilla ceremonial.",
+    icon: Medal,
+    tone: "bg-amber-50 text-amber-800",
+  },
+  {
+    href: routes.personal.membretes,
+    label: "Membretes",
+    description: "Encabezados institucionales para documentos y exportaciones.",
+    icon: Stamp,
+    tone: "bg-sky-50 text-sky-800",
+  },
   {
     href: routes.personal.convocatorias,
     label: "Convocatorias",
+    description: "Períodos académicos, pelotones y comando del curso.",
     icon: BookMarked,
+    tone: "bg-indigo-50 text-indigo-800",
     permission: Permission.CONVOCATORIAS_MANAGE,
   },
 ];
@@ -159,6 +203,12 @@ const sistemaLinks: AppNavLink[] = [
   },
 ];
 
+export function listPersonalConfigCards(ctx: AuthContext): ConfigCard[] {
+  return personalConfigCards.filter(
+    (card) => !card.permission || hasPermission(ctx, card.permission),
+  );
+}
+
 export function getSidebarNavForApp(
   appId: AppId | "hub",
   ctx: AuthContext,
@@ -183,7 +233,6 @@ export function getSidebarNavForApp(
 
   return {
     main: filterByPermission(personalMainLinks),
-    config: filterByPermission(personalConfigLinks),
   };
 }
 
