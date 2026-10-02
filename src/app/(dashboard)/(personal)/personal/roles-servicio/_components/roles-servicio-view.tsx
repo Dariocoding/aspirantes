@@ -25,6 +25,7 @@ import {
 } from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
 import { OrdenDelDiaDownloadButton } from "./orden-del-dia-download";
+import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { routes } from "@src/lib/apps/routes";
 import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
@@ -49,6 +50,7 @@ export type AsignacionVista = {
     nombres: string;
     apellidos: string;
     cedula: string;
+    fotoKey: string | null;
   } | null;
   autoridad: {
     id: string;
@@ -940,6 +942,21 @@ function AvatarAsignacion({
   asignacion: AsignacionVista;
   size: "sm" | "md";
 }) {
+  const aspirante = asignacion.aspirante;
+  if (aspirante?.fotoKey) {
+    return (
+      <span className="mt-0.5 shrink-0">
+        <AspiranteFotoThumbnail
+          aspiranteId={aspirante.id}
+          fotoKey={aspirante.fotoKey}
+          nombre={nombreMostrado(asignacion)}
+          size={size}
+          kind="perfil"
+        />
+      </span>
+    );
+  }
+
   const clase = size === "md" ? "size-9 text-[11px]" : "size-7 text-[10px]";
   return (
     <span
@@ -948,7 +965,7 @@ function AvatarAsignacion({
         clase,
         asignacion.autoridad
           ? "bg-indigo-100 text-indigo-900"
-          : asignacion.aspirante
+          : aspirante
             ? "bg-slate-100 text-slate-700"
             : "bg-amber-50 text-amber-800",
       )}

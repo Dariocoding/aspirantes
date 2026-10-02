@@ -61,7 +61,7 @@ export default async function RolesServicioPage({
           orderBy: { orden: "asc" },
           include: {
             aspirante: {
-              select: { id: true, nombres: true, apellidos: true, cedula: true },
+              select: { id: true, nombres: true, apellidos: true, cedula: true, fotoKey: true },
             },
             autoridad: {
               select: { id: true, nombres: true, apellidos: true, cedula: true, jerarquia: true },
