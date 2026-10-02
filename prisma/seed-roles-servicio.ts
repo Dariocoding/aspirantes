@@ -15,7 +15,7 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 
-const RUTA_POR_DEFECTO = "C:/Users/javie/Desktop/ROLES DE SERVICIO 20266.xlsx";
+const RUTA_POR_DEFECTO = "C:/Users/javie/Desktop/ROLES DE SERVICIO 2026.xlsx";
 
 function rutaExcel(): string {
   const argumento = process.argv.find((item) => item.toLowerCase().endsWith(".xlsx"));
@@ -37,6 +37,15 @@ async function main() {
   let sinNombre = 0;
 
   console.log(`Mes ${libro.mes}/${libro.anio}. Roles: ${libro.roles.length}. Aspirantes en censo: ${aspirantes.length}.`);
+
+  if (!dryRun) {
+    const borradas = await prisma.asignacionRolServicio.deleteMany({});
+    const planesBorrados = await prisma.planRolServicio.deleteMany({});
+    const rolesBorrados = await prisma.rolServicio.deleteMany({});
+    console.log(
+      `Datos anteriores borrados: ${rolesBorrados.count} roles, ${planesBorrados.count} planes, ${borradas.count} asignaciones.`,
+    );
+  }
 
   for (const rol of libro.roles) {
     console.log(`\n${rol.curso} — ${rol.nombre} (${rol.personas.length})`);

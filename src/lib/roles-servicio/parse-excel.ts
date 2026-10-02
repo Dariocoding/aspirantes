@@ -67,31 +67,64 @@ function claveDe(nombre: string, curso: string): string {
     .replace(/^-|-$/g, "");
 }
 
+function detectarMesAnio(texto: string): { mes: number; anio: number } | null {
+  const hallado = texto.match(new RegExp(`(?:MES\\s+DE\\s+)?(${MESES.join("|")})[,\\s]+(\\d{4})`, "i"));
+  if (!hallado?.[1] || !hallado[2]) return null;
+  return {
+    mes: MESES.indexOf(hallado[1].toUpperCase()) + 1,
+    anio: Number(hallado[2]),
+  };
+}
+
 function tituloRol(texto: string): { nombre: string; curso: string } | null {
-  if (!texto.startsWith("ROL DE SERVICIO")) return null;
-  const cursoMatch = texto.match(/CEFOA\s*N[°ºo.]?\s*(\d+)/i);
-  const curso = cursoMatch?.[1] ? `CEFOA ${cursoMatch[1]}` : "CEFOA";
-  const nombre = texto
-    .replace(/^ROL DE SERVICIO DE\s+/i, "")
-    .replace(/\s*CEFOA\s*N[°ºo.]?\s*\d+\s*$/i, "")
+  const normalizado = texto.replace(/\s+/g, " ").trim();
+  if (!/^ROL DE SERVICIO\b/i.test(normalizado)) return null;
+
+  const cursoMatch = normalizado.match(/CEFOA\s*N[°ºªo.]?\s*(\d+)/i);
+  const curso = cursoMatch?.[1] ? `CEFOA ${cursoMatch[1]}` : "CEFOA 46";
+
+  let nombre = normalizado
+    .replace(/^ROL DE SERVICIO\s+(?:DE(?:L)?\s+)?/i, "")
+    .replace(/\s*CEFOA\s*N[°ºªo.]?\s*\d+/gi, " ")
+    .replace(/\s*(?:CORRESPONDIENTE\s+AL\s+)?(?:DEL\s+)?MES\s+DE\s+(?:ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\s+\d{4}\s*$/i, "")
+    .replace(/\s+/g, " ")
     .trim();
+
   if (!nombre) return null;
   return { nombre, curso };
 }
 
+/** Busca una fila con días consecutivos 1, 2, 3… y devuelve col → día. */
 function mapaDias(row: ExcelJS.Row): Map<number, number> | null {
-  if (textoCelda(row.getCell(4)) !== "1" || textoCelda(row.getCell(5)) !== "2") return null;
-  const mapa = new Map<number, number>();
-  for (let col = 4; col <= 40; col++) {
-    const texto = textoCelda(row.getCell(col));
-    if (!/^\d+$/.test(texto)) break;
-    mapa.set(col, Number(texto));
+  const maxCol = Math.max(row.cellCount, 45);
+  for (let inicio = 1; inicio <= maxCol - 1; inicio++) {
+    if (textoCelda(row.getCell(inicio)) !== "1") continue;
+    if (textoCelda(row.getCell(inicio + 1)) !== "2") continue;
+
+    const mapa = new Map<number, number>();
+    for (let col = inicio; col <= maxCol; col++) {
+      const texto = textoCelda(row.getCell(col));
+      if (!/^\d+$/.test(texto)) break;
+      const dia = Number(texto);
+      if (dia < 1 || dia > 31) break;
+      mapa.set(col, dia);
+    }
+    if (mapa.size >= 28) return mapa;
   }
-  return mapa.size > 0 ? mapa : null;
+  return null;
 }
 
 function esPersona(numero: string, grado: string): boolean {
   return /^\d+$/.test(numero) && grado.length > 0 && !/grado|nombres|n[º°]/i.test(grado);
+}
+
+function textoFila(row: ExcelJS.Row, maxCol = 40): string[] {
+  const celdas: string[] = [];
+  for (let col = 1; col <= maxCol; col++) {
+    const texto = textoCelda(row.getCell(col));
+    if (texto) celdas.push(texto);
+  }
+  return celdas;
 }
 
 export async function parsearRolesExcel(ruta: string): Promise<LibroRolesParseado> {
@@ -99,71 +132,70 @@ export async function parsearRolesExcel(ruta: string): Promise<LibroRolesParsead
   await libro.xlsx.readFile(ruta);
 
   let anio = 2026;
-  let mes = 9;
+  let mes = 10;
   const roles: RolParseado[] = [];
 
   for (const hoja of libro.worksheets) {
     let actual: RolParseado | null = null;
     let dias = new Map<number, number>();
+    /** Columna del Nº de persona relativa al bloque de días (día1 - 3). */
+    let colNumero = 1;
+    let colGrado = 2;
+    let colNombre = 3;
 
     for (let r = 1; r <= hoja.rowCount; r++) {
       const row = hoja.getRow(r);
-      const primera = textoCelda(row.getCell(1));
-      const mesMatch = primera.match(
-        new RegExp(`(${MESES.join("|")})[,\\s]+(\\d{4})`, "i"),
-      );
-      if (!mesMatch) {
-        for (let col = 1; col <= 36; col++) {
-          const candidato = textoCelda(row.getCell(col));
-          const hallado = candidato.match(new RegExp(`(${MESES.join("|")})[,\\s]+(\\d{4})`, "i"));
-          if (hallado?.[1] && hallado[2]) {
-            mes = MESES.indexOf(hallado[1].toUpperCase()) + 1;
-            anio = Number(hallado[2]);
-            break;
-          }
+
+      for (const texto of textoFila(row)) {
+        const periodo = detectarMesAnio(texto);
+        if (periodo) {
+          mes = periodo.mes;
+          anio = periodo.anio;
         }
-      } else if (mesMatch[1] && mesMatch[2]) {
-        mes = MESES.indexOf(mesMatch[1].toUpperCase()) + 1;
-        anio = Number(mesMatch[2]);
+        const titulo = tituloRol(texto);
+        if (titulo) {
+          actual = {
+            clave: claveDe(titulo.nombre, titulo.curso),
+            nombre: titulo.nombre,
+            curso: titulo.curso,
+            sortOrder: roles.length,
+            personas: [],
+          };
+          roles.push(actual);
+          dias = new Map();
+          break;
+        }
       }
 
-      const titulo = tituloRol(primera);
-      if (titulo) {
-        actual = {
-          clave: claveDe(titulo.nombre, titulo.curso),
-          nombre: titulo.nombre,
-          curso: titulo.curso,
-          sortOrder: roles.length,
-          personas: [],
-        };
-        roles.push(actual);
-        dias = new Map();
-        continue;
-      }
       if (!actual) continue;
 
       const encabezado = mapaDias(row);
       if (encabezado) {
         dias = encabezado;
+        const primeraColDia = Math.min(...dias.keys());
+        colNumero = primeraColDia - 3;
+        colGrado = primeraColDia - 2;
+        colNombre = primeraColDia - 1;
         continue;
       }
 
-      const grado = textoCelda(row.getCell(2));
-      if (!esPersona(primera, grado)) continue;
+      const numero = textoCelda(row.getCell(colNumero));
+      const grado = textoCelda(row.getCell(colGrado));
+      if (!esPersona(numero, grado)) continue;
 
       const marcas: MarcaDia[] = [];
-      const columnas = dias.size > 0 ? [...dias.keys()] : Array.from({ length: 30 }, (_, i) => i + 4);
+      const columnas = dias.size > 0 ? [...dias.keys()] : Array.from({ length: 31 }, (_, i) => colNombre + 1 + i);
       for (const col of columnas) {
         const marca = textoCelda(row.getCell(col)).toUpperCase();
-        if (!marca || marca === "0") continue;
-        const dia = dias.get(col) ?? col - 3;
+        if (!marca || marca === "0" || marca === "**") continue;
+        const dia = dias.get(col) ?? col - colNombre;
         if (dia >= 1 && dia <= 31) marcas.push({ dia, marca });
       }
 
-      const nombre = textoCelda(row.getCell(3));
+      const nombre = textoCelda(row.getCell(colNombre));
       if (!nombre && marcas.length === 0) continue;
       actual.personas.push({
-        orden: Number(primera),
+        orden: Number(numero),
         grado,
         nombre,
         dias: marcas.sort((a, b) => a.dia - b.dia),
