@@ -12,7 +12,6 @@ import {
   aniversariosInstitucionales,
   etiquetaFechaOrden,
   numeroOrdenDelDia,
-  siguienteDia,
 } from "@src/lib/roles-servicio/orden-del-dia/fechas";
 import {
   trioTranscripcionesDelDia,
@@ -178,17 +177,10 @@ export type BuildOrdenDelDiaInput = {
 
 export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData {
   const { anio, mes, dia } = input;
-  const manana = siguienteDia(anio, mes, dia);
-  const planesManana =
-    manana && manana.mes === mes && manana.anio === anio
-      ? input.planes
-      : (input.planesManana ?? input.planes);
 
-  const diaDiurno = manana?.dia ?? dia;
-  const anioDiurno = manana?.anio ?? anio;
-  const mesDiurno = manana?.mes ?? mes;
-
-  const rawDiurnos = filasDelDia(planesManana, diaDiurno, "diurno");
+  // Diurnos y nocturno del mismo día del documento.
+  // El nocturno cubre la noche de ese día hasta la madrugada del siguiente.
+  const rawDiurnos = filasDelDia(input.planes, dia, "diurno");
 
   const configNocturna = hidratarSugerenciasClaves(
     input.nocturnoConfig ?? defaultOrdenNocturnoConfig(),
@@ -208,6 +200,8 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
       ? input.lineasMembrete.map((l) => l.toUpperCase())
       : [...PLANTILLA_MEMBRETE_CEFOA45].map((l) => l.toUpperCase());
 
+  const fechaEste = etiquetaFechaOrden(anio, mes, dia);
+
   return {
     anio,
     mes,
@@ -215,11 +209,11 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
     numeroOrden: numeroOrdenDelDia(anio, mes, dia),
     lineasMembrete: lineas,
     lugar: (input.lugar ?? LUGAR_ORDEN_DEFAULT).toUpperCase(),
-    fechaDocumento: etiquetaFechaOrden(anio, mes, dia),
+    fechaDocumento: fechaEste,
     aniversarios: aniversariosInstitucionales(anio),
     transcripciones: trioTranscripcionesDelDia(anio, mes, dia),
-    diurnosTitulo: `1. DIURNOS PARA MAÑANA ${etiquetaFechaOrden(anioDiurno, mesDiurno, diaDiurno)}.`,
-    nocturnosTitulo: `2. NOCTURNO PARA ESTE ${etiquetaFechaOrden(anio, mes, dia)}.`,
+    diurnosTitulo: `1. DIURNOS PARA ESTE ${fechaEste}.`,
+    nocturnosTitulo: `2. NOCTURNO PARA ESTE ${fechaEste}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,

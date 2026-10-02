@@ -91,7 +91,7 @@ export function OrdenDelDiaDownloadButton({
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de hoy</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(hoy)} · nocturno de hoy · diurnos para mañana
+              {etiquetaCorta(hoy)} · diurno de hoy · nocturno hasta la madrugada de mañana
             </span>
           </span>
         </DropdownMenuItem>
@@ -106,7 +106,7 @@ export function OrdenDelDiaDownloadButton({
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de mañana</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(manana)} · nocturno de mañana · diurnos del día siguiente
+              {etiquetaCorta(manana)} · diurno de mañana · nocturno hasta la madrugada del día siguiente
             </span>
           </span>
         </DropdownMenuItem>

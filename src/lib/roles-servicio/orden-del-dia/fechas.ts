@@ -39,7 +39,13 @@ export function numeroOrdenDelDia(anio: number, mes: number, dia: number): numbe
   return Math.round((actual - inicio) / 86_400_000);
 }
 
-/** Efemérides institucionales del encabezado (convención documental CEFOA). */
+/** Efemérides institucionales del encabezado (convención documental CEFOA).
+ * No son números fijos: se calculan con el año del documento.
+ * - Independencia: desde el 19 Abr 1810
+ * - Federación: desde el 20 Feb 1859 (Grito de Coro / Guerra Federal)
+ * - Revolución: desde el 2 Feb 1999 (inicio de la Revolución Bolivariana)
+ * Ej. 2026 → 216º / 167º / 27º.
+ */
 export function aniversariosInstitucionales(anio: number): {
   independencia: number;
   federacion: number;
