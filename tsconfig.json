@@ -47,6 +47,9 @@
       "@dashboard/permisos/*": [
         "./src/app/(dashboard)/(personal)/personal/permisos/*"
       ],
+      "@dashboard/roles-servicio/*": [
+        "./src/app/(dashboard)/(personal)/personal/roles-servicio/*"
+      ],
       "@dashboard/convocatorias/*": [
         "./src/app/(dashboard)/(personal)/personal/convocatorias/*"
       ],

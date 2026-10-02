@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
+import { OrdenDelDiaDownloadButton } from "./orden-del-dia-download";
 import { routes } from "@src/lib/apps/routes";
 import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
@@ -374,19 +375,24 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-teal-500" /> Servicio
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-indigo-300" /> Autoridad
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-slate-200" /> Fin de semana
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-amber-300" /> Hoy
-            </span>
+          <div className="flex flex-wrap items-center gap-3">
+            {planes.length > 0 ? (
+              <OrdenDelDiaDownloadButton anio={anio} mes={mes} dia={diaSeleccionado} />
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-full bg-teal-500" /> Servicio
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-indigo-300" /> Autoridad
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-slate-200" /> Fin de semana
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2.5 rounded-sm bg-amber-300" /> Hoy
+              </span>
+            </div>
           </div>
         </div>
       </header>
