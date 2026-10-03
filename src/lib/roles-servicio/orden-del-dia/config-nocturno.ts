@@ -31,6 +31,12 @@ export type OrdenNocturnoConfig = {
   /** Turno mostrado junto a RONDA (vacío = sin turno). */
   rondaTurno: TurnoNocturnoEtiqueta | "";
   /**
+   * Rondín: 2 puestos del personal de inspección en el 1.er turno (después de Ronda).
+   */
+  rondinRolClaves: string[];
+  rondinServicioEtiqueta: string;
+  rondinTurno: TurnoNocturnoEtiqueta | "";
+  /**
    * Binomios: cada turno de imaginaria toma el personal de los roles indicados.
    * 1ER ← guardia de aula, 2DO ← cuartelero, 3ER ← guardia de baño (por defecto).
    */
@@ -40,6 +46,7 @@ export type OrdenNocturnoConfig = {
 /** Patrones para auto-sugerir claves al hidratar la UI (no se persisten). */
 export const PATRONES_SUGERENCIA = {
   ronda: [/oficial\s+de\s+d[ií]a/i],
+  rondin: [/inspecci[oó]n/i],
   aula: [/aula|guardia\s+de\s+aula/i],
   cuartel: [/cuarteler/i],
   bano: [/ba[nñ]o/i],
@@ -59,6 +66,9 @@ export function defaultOrdenNocturnoConfig(): OrdenNocturnoConfig {
     rondaRolClaves: [],
     rondaServicioEtiqueta: "RONDA",
     rondaTurno: "1ER",
+    rondinRolClaves: [],
+    rondinServicioEtiqueta: "RONDIN",
+    rondinTurno: "1ER",
     binomios: [
       {
         id: "binomio-1er",
@@ -82,6 +92,17 @@ export function defaultOrdenNocturnoConfig(): OrdenNocturnoConfig {
   };
 }
 
+function normalizeTurno(
+  raw: unknown,
+  fallback: TurnoNocturnoEtiqueta | "",
+): TurnoNocturnoEtiqueta | "" {
+  if (raw === "") return "";
+  if (TURNOS_NOCTURNOS.includes(raw as TurnoNocturnoEtiqueta)) {
+    return raw as TurnoNocturnoEtiqueta;
+  }
+  return fallback;
+}
+
 export function normalizeOrdenNocturnoConfig(raw: unknown): OrdenNocturnoConfig {
   const base = defaultOrdenNocturnoConfig();
   if (!raw || typeof raw !== "object") return base;
@@ -96,10 +117,18 @@ export function normalizeOrdenNocturnoConfig(raw: unknown): OrdenNocturnoConfig 
       ? o.rondaServicioEtiqueta.trim()
       : base.rondaServicioEtiqueta;
 
-  const rondaTurno =
-    o.rondaTurno === "" || TURNOS_NOCTURNOS.includes(o.rondaTurno as TurnoNocturnoEtiqueta)
-      ? (o.rondaTurno as TurnoNocturnoEtiqueta | "")
-      : base.rondaTurno;
+  const rondaTurno = normalizeTurno(o.rondaTurno, base.rondaTurno);
+
+  const rondinRolClaves = Array.isArray(o.rondinRolClaves)
+    ? o.rondinRolClaves.filter((x): x is string => typeof x === "string")
+    : base.rondinRolClaves;
+
+  const rondinServicioEtiqueta =
+    typeof o.rondinServicioEtiqueta === "string" && o.rondinServicioEtiqueta.trim()
+      ? o.rondinServicioEtiqueta.trim()
+      : base.rondinServicioEtiqueta;
+
+  const rondinTurno = normalizeTurno(o.rondinTurno, base.rondinTurno);
 
   let binomios = base.binomios;
   if (Array.isArray(o.binomios) && o.binomios.length > 0) {
@@ -123,7 +152,15 @@ export function normalizeOrdenNocturnoConfig(raw: unknown): OrdenNocturnoConfig 
       .filter((x): x is BinomioNocturnoConfig => x != null);
   }
 
-  return { rondaRolClaves, rondaServicioEtiqueta, rondaTurno, binomios };
+  return {
+    rondaRolClaves,
+    rondaServicioEtiqueta,
+    rondaTurno,
+    rondinRolClaves,
+    rondinServicioEtiqueta,
+    rondinTurno,
+    binomios,
+  };
 }
 
 /** Si no hay claves guardadas, sugiere por nombre de rol. */
@@ -143,6 +180,9 @@ export function hidratarSugerenciasClaves(
   const next = structuredClone(config);
   if (next.rondaRolClaves.length === 0) {
     next.rondaRolClaves = sugerirClavesPorPatron(planes, PATRONES_SUGERENCIA.ronda);
+  }
+  if (next.rondinRolClaves.length === 0) {
+    next.rondinRolClaves = sugerirClavesPorPatron(planes, PATRONES_SUGERENCIA.rondin);
   }
   const patronesBinomio = [
     PATRONES_SUGERENCIA.aula,

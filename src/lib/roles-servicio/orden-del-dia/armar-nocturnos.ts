@@ -63,42 +63,81 @@ function etiquetaServicioBinomio(etiquetaBase: string, nombreRol: string): strin
   return etiquetaBase;
 }
 
+function filasDeBloqueFijo(input: {
+  planes: PlanOrdenInput[];
+  dia: number;
+  rolClaves: string[];
+  servicioEtiqueta: string;
+  turno: string;
+  /** Mínimo de filas (completa con OMITIR si faltan personas). */
+  minimoFilas?: number;
+}): FilaServicioNocturno[] {
+  const etiqueta = input.servicioEtiqueta.toUpperCase() || "SERVICIO";
+  const minimo = Math.max(0, input.minimoFilas ?? 0);
+  const personas = personasDeRolesEnDia(input.planes, input.rolClaves, input.dia);
+
+  if (input.rolClaves.length === 0 && minimo === 0) return [];
+
+  const filas: FilaServicioNocturno[] = personas.map(({ persona }) => ({
+    nro: 0,
+    turno: input.turno,
+    servicio: etiqueta,
+    grado: gradoMostrado(persona),
+    nombres: nombreMostrado(persona),
+  }));
+
+  while (filas.length < minimo) {
+    filas.push({
+      nro: 0,
+      turno: input.turno,
+      servicio: etiqueta,
+      grado: "—",
+      nombres: OMITIR,
+    });
+  }
+
+  if (filas.length === 0 && input.rolClaves.length > 0) {
+    filas.push({
+      nro: 0,
+      turno: input.turno,
+      servicio: etiqueta,
+      grado: "—",
+      nombres: OMITIR,
+    });
+  }
+
+  return filas;
+}
+
 /**
  * Arma la tabla nocturna según config:
- * 1) RONDA siempre primero (= personal del rol «oficial de día» u otros elegidos).
- * 2) Binomios: cada turno (1ER/2DO/3ER) toma el personal de los roles fuente
- *    (aula / cuartelero / baño por defecto).
+ * 1) RONDA (= oficial de día)
+ * 2) RONDIN ×2 (= inspección, 1.er turno)
+ * 3) Binomios: imaginaria por turno (aula / cuartelero / baño)
  */
 export function construirFilasNocturnas(
   planes: PlanOrdenInput[],
   dia: number,
   config: OrdenNocturnoConfig,
 ): FilaServicioNocturno[] {
-  const filasRonda: FilaServicioNocturno[] = [];
+  const filasRonda = filasDeBloqueFijo({
+    planes,
+    dia,
+    rolClaves: config.rondaRolClaves,
+    servicioEtiqueta: config.rondaServicioEtiqueta || "RONDA",
+    turno: config.rondaTurno,
+  });
+
+  const filasRondin = filasDeBloqueFijo({
+    planes,
+    dia,
+    rolClaves: config.rondinRolClaves,
+    servicioEtiqueta: config.rondinServicioEtiqueta || "RONDIN",
+    turno: config.rondinTurno,
+    minimoFilas: 2,
+  });
+
   const filasBinomio: FilaServicioNocturno[] = [];
-  const etiquetaRonda = config.rondaServicioEtiqueta.toUpperCase() || "RONDA";
-
-  const ronda = personasDeRolesEnDia(planes, config.rondaRolClaves, dia);
-  if (ronda.length === 0 && config.rondaRolClaves.length > 0) {
-    filasRonda.push({
-      nro: 0,
-      turno: config.rondaTurno,
-      servicio: etiquetaRonda,
-      grado: "—",
-      nombres: OMITIR,
-    });
-  } else {
-    for (const { persona } of ronda) {
-      filasRonda.push({
-        nro: 0,
-        turno: config.rondaTurno,
-        servicio: etiquetaRonda,
-        grado: gradoMostrado(persona),
-        nombres: nombreMostrado(persona),
-      });
-    }
-  }
-
   for (const binomio of config.binomios) {
     const personas = personasDeRolesEnDia(planes, binomio.rolClaves, dia);
     const etiquetaBase = binomio.servicioEtiqueta.trim().toUpperCase();
@@ -127,7 +166,7 @@ export function construirFilasNocturnas(
     }
   }
 
-  return [...filasRonda, ...filasBinomio].map((fila, index) => ({
+  return [...filasRonda, ...filasRondin, ...filasBinomio].map((fila, index) => ({
     ...fila,
     nro: index + 1,
   }));

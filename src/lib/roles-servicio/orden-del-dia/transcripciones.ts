@@ -22,7 +22,7 @@ export type Transcripcion = {
   /** Texto de la cita o artículo (sin comillas; el PDF aplica formato APA). */
   texto: string;
   /**
-   * Referencia APA (7.ª ed.), p. ej. Bolívar, S. (1819). Discurso ante el Congreso de Angostura.
+   * Referencia APA (7.ª ed.), p. ej. Simón Bolívar.
    */
   atribucion?: string;
 };
@@ -33,7 +33,7 @@ export const TITULO_LEY =
   "LEY DE DISCIPLINA MILITAR, TÍTULO I CAPÍTULO I DE LAS DISPOSICIONES FUNDAMENTALES.";
 
 const APA_LEY =
-  "Asamblea Nacional de la República Bolivariana de Venezuela. (2014). Ley de disciplina militar.";
+  "Ley de disciplina militar.";
 
 export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
   {
@@ -42,7 +42,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Moral y luces son los polos de una República; moral y luces son nuestras primeras necesidades. Eduquemos al pueblo y formemos su carácter; sólo así la libertad dejará de ser un nombre vano y se convertirá en el principio de la prosperidad nacional.",
-    atribucion: "Bolívar, S. (1819). Discurso ante el Congreso de Angostura.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-02",
@@ -50,7 +50,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Un pueblo ignorante es instrumento ciego de su propia destrucción; la ambición y la intriga usurpan el poder de los Estados donde no hay ilustración. La instrucción pública es el primer deber del gobierno republicano y el más seguro baluarte de la libertad.",
-    atribucion: "Bolívar, S. (1819). Discurso ante el Congreso de Angostura.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-03",
@@ -58,7 +58,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "El arte de vencer se aprende en las derrotas. No desmayemos ante la adversidad: cada reveses de la guerra y de la política deben servirnos de lección; el valor perseverante convierte los obstáculos en peldaños de la victoria.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-04",
@@ -66,7 +66,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La libertad no puede ser asegurada sin virtud. Un pueblo corrompido no merece ni puede conservar la independencia; la República exige ciudadanos honestos, soldados disciplinados y magistrados justos que antepongan el bien común a todo interés particular.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-05",
@@ -74,7 +74,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Es más difícil mantener el equilibrio de la libertad que soportar el peso de la tiranía. La libertad ilimitada termina en despotismo; por eso las leyes, la disciplina y la virtud pública son el freno necesario de todo pueblo que aspira a ser libre de verdad.",
-    atribucion: "Bolívar, S. (1819). Discurso ante el Congreso de Angostura.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-06",
@@ -82,7 +82,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La justicia es la reina de las virtudes republicanas. Sin ella, el gobierno no es más que una usurpación y la sociedad un campo de conflictos. Que cada ciudadano encuentre en las instituciones el amparo de sus derechos y el castigo de sus faltas.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-07",
@@ -90,7 +90,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La unidad de nuestros pueblos no es simple quimera de los hombres, sino irrevocable decreto del destino. Divididos seremos débiles; unidos, formaremos una nación capaz de resistir cualquier amenaza exterior y de consolidar la independencia americana.",
-    atribucion: "Bolívar, S. (1815). Carta de Jamaica.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-08",
@@ -98,7 +98,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "El sistema de gobierno más perfecto es aquel que produce mayor suma de felicidad posible, mayor suma de seguridad social y mayor suma de estabilidad política. No busquemos modelos ajenos a nuestra realidad: construyamos instituciones propias, firmes y justas, dignas de un pueblo libre.",
-    atribucion: "Bolívar, S. (1819). Discurso ante el Congreso de Angostura.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-09",
@@ -106,7 +106,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La gloria está en ser grande y en ser útil. No basta con vencer en los campos de batalla; es preciso después gobernar con sabiduría, educar a la juventud y dejar a la patria instituciones sólidas que sobrevivan a los hombres y a las pasiones del momento.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-10",
@@ -114,7 +114,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Juramos delante de ustedes no dejar las armas hasta no ver libre a todo el Continente. La independencia de América es obra de la providencia y de la voluntad de los pueblos; nuestro deber es sostenerla con constancia, honor y sacrificio.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-11",
@@ -122,7 +122,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La educación formará el carácter moral de los pueblos. Un hombre sin instrucción es un instrumento peligroso; un pueblo ilustrado es invencible. Invertir en la formación de la juventud es invertir en la duración misma de la República.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-12",
@@ -130,7 +130,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Si la naturaleza se opone, lucharemos contra ella y haremos que nos obedezca. Ningún obstáculo —montañas, ríos, desiertos ni ejércitos— debe detener a quien pelea por la libertad de su patria y por la dignidad de sus hermanos.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-13",
@@ -138,7 +138,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La patria es el altar mayor al que debemos sacrificarlo todo. El amor a la tierra que nos vio nacer, el respeto a sus leyes y la defensa de su independencia son deberes sagrados que ningún ciudadano consciente puede eludir.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-14",
@@ -146,7 +146,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Más cuesta mantener el equilibrio de la libertad que sufrir el peso de la tiranía. Por eso la disciplina, el orden y la subordinación a la ley no son enemigos de la libertad, sino sus verdaderos guardianes.",
-    atribucion: "Bolívar, S. (1819). Discurso ante el Congreso de Angostura.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-15",
@@ -154,7 +154,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "El soldado de la libertad no puede ser el esclavo del poder. Su espada defiende al pueblo, no oprime al ciudadano; su lealtad es a la República y a la Constitución, no a la ambición de ningún hombre.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-16",
@@ -162,7 +162,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La independencia de América es obra de la providencia y de la voluntad de los pueblos. Nosotros no somos más que instrumentos de esa causa grande; nuestra obligación es servirla con desinterés, valor y perseverancia hasta el fin.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-17",
@@ -170,7 +170,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Las naciones marchan hacia su grandeza al mismo paso que camina su educación. Sin escuelas, sin maestros y sin virtudes cívicas, la independencia se reduce a un cambio de amos; con instrucción, el pueblo se hace dueño de su destino.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-18",
@@ -178,7 +178,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La fuerza del pueblo todo lo puede cuando actúa unida y consciente de sus derechos. Dividido, el pueblo es presa fácil de la tiranía; organizado, es el más poderoso de los ejércitos y el más legítimo de los soberanos.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-19",
@@ -186,7 +186,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "Combatir por la libertad es combatir por la justicia. No basta expulsar al opresor extranjero; es preciso edificar después un orden social donde la igualdad ante la ley y el respeto a la dignidad humana sean principios irrevocables.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-20",
@@ -194,7 +194,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "El valor, la constancia y la virtud son los únicos que pueden salvar a la República. Las armas conquistan el territorio; las virtudes conservan la libertad. Sin ellas, toda victoria es efímera y toda Constitución, papel muerto.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-21",
@@ -202,7 +202,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La disciplina es el alma de los ejércitos. Sin ella no hay victoria posible, ni orden en las filas, ni respeto al mando. El soldado disciplinado es el pilar de la defensa nacional y el ejemplo de obediencia consciente a la ley.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-22",
@@ -210,7 +210,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La honradez es la primera virtud del ciudadano y la más necesaria en el hombre público. Quien maneja los intereses de la patria debe hacerlo con manos limpias; la corrupción destruye más rápido una República que el enemigo más poderoso.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-23",
@@ -218,7 +218,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La igualdad política no es otra cosa que el derecho a participar en el gobierno y a ser juzgado por las mismas leyes. Sin igualdad ante la ley, la democracia se convierte en privilegio de unos pocos y en humillación de la mayoría.",
-    atribucion: "Bolívar, S. (1819). Discurso ante el Congreso de Angostura.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-24",
@@ -226,7 +226,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La América toda estará libre el día que lo esté Venezuela. Nuestra causa no es estrecha ni local: es la causa de un continente entero que reclama su derecho a gobernarse por sí mismo y a vivir en dignidad.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-25",
@@ -234,7 +234,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La unión es nuestra fuerza; la discordia, nuestra ruina. Mientras permanezcamos unidos en torno a la patria y a sus instituciones, seremos respetados; si nos dividimos por ambiciones mezquinas, seremos juguete de enemigos internos y externos.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-26",
@@ -242,7 +242,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "El amor a la patria es el primer deber del ciudadano. Ese amor se manifiesta en el trabajo diario, en el respeto a las leyes, en la defensa del territorio y en la disposición de sacrificar el interés personal cuando lo exige el bien de la República.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-27",
@@ -250,7 +250,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La victoria no es siempre de los más fuertes, sino de los más perseverantes. El que no se rinde ante el cansancio ni ante el desaliento acaba por imponer su voluntad; la constancia es, en la guerra y en la vida pública, la madre de los triunfos duraderos.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-28",
@@ -258,7 +258,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La libertad de un pueblo no se mendiga: se conquista. Ningún poder extranjero ni ninguna oligarquía entrega derechos por piedad; la independencia y la justicia social se ganan con organización, valor y firmeza de principios.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-29",
@@ -266,7 +266,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La Constitución debe ser un freno a la anarquía y un dique a la tiranía. Ella fija los límites del poder y garantiza los derechos del pueblo; sin Constitución respetada, no hay República ni seguridad para el ciudadano.",
-    atribucion: "Bolívar, S. (1819). Discurso ante el Congreso de Angostura.",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-30",
@@ -274,7 +274,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La verdadera soberanía reside en el pueblo. Los gobiernos son depositarios temporales de esa soberanía; cuando traicionan el mandato popular, pierden su legitimidad. El pueblo consciente es el único juez definitivo de sus gobernantes.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-31",
@@ -282,7 +282,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La República debe ser el asilo de la virtud y el terror del vicio. Que el mérito sea premiado, que la falta sea corregida y que nadie se cree por encima de la ley: sólo así la patria será digna del sacrificio de sus libertadores.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-32",
@@ -290,7 +290,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "La patria no se hace con palabras, sino con hechos. Discursos elocuentes no levantan cuarteles, no instruyen tropas ni alimentan al pueblo; el verdadero patriotismo se mide en el cumplimiento del deber y en el servicio silencioso a la nación.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
   {
     id: "bolivar-33",
@@ -298,7 +298,7 @@ export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
     titulo: TITULO_LIBERTADOR,
     texto:
       "El que sirve a la revolución pliega su interés particular al interés de todos. No hay causa grande sin renuncia personal; el hombre público debe olvidarse de sí mismo cuando la salvación de la patria lo reclama.",
-    atribucion: "Bolívar, S. (s. f.).",
+    atribucion: "Simón Bolívar.",
   },
 ];
 
@@ -309,7 +309,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "El único camino para que haya Patria es el socialismo, no hay otro camino. O construimos una sociedad de iguales, solidaria y soberana, o seguiremos bajo el yugo de quienes convierten al pueblo en mercancía. La patria verdadera se edifica con justicia social.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-02",
@@ -317,7 +317,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La patria es sagrada, la patria es de todos. No pertenece a una élite ni a un partido: pertenece al pueblo trabajador, a los soldados, a los campesinos y a la juventud que estudia y lucha. Quien ame de verdad a Venezuela debe servirla sin descanso.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-03",
@@ -325,7 +325,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "No hay revolución sin disciplina, ni disciplina sin conciencia. La disciplina revolucionaria no nace del miedo, sino del convencimiento profundo de que servir al pueblo es el más alto honor. Un soldado consciente es más fuerte que mil bayonetas sin ideal.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-04",
@@ -333,7 +333,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "El soldado venezolano es pueblo en uniforme. No es casta aparte ni fuerza de ocupación sobre su propia gente: es hijo del pueblo, servidor del pueblo y defensor de la soberanía. Quien olvida eso traiciona el juramento militar.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-05",
@@ -341,7 +341,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La educación es el arma más poderosa para transformar la sociedad. Un pueblo instruido no se deja engañar ni esclavizar; por eso debemos formar oficiales y ciudadanos con pensamiento crítico, ética pública y amor profundo a la patria.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-06",
@@ -349,7 +349,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La soberanía reside intransferiblemente en el pueblo. Ningún gobierno, ninguna fuerza extranjera y ninguna oligarquía pueden disponer de ella. Nuestro deber es defender esa soberanía en lo político, lo económico, lo militar y lo cultural.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-07",
@@ -357,7 +357,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Patria, socialismo o muerte: esa es la consigna de los hombres y mujeres libres. No es una frase de ocasión, sino un compromiso de vida con la independencia, con la justicia social y con la dignidad de nuestro pueblo.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-08",
@@ -365,7 +365,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La independencia no se negocia; la independencia se defiende. Cada día hay que conquistarla de nuevo en el estudio, en el trabajo productivo, en la vigilancia del territorio y en la unidad del pueblo con su Fuerza Armada.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-09",
@@ -373,7 +373,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "El amor a la patria se demuestra con trabajo, estudio y compromiso. No basta cantar el himno: hay que madrugar al cuartel, cumplir la guardia, formar el carácter y poner el talento al servicio de Venezuela.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-10",
@@ -381,7 +381,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Un pueblo consciente es un pueblo invencible. Cuando las masas conocen su historia, sus derechos y su fuerza, ninguna potencia puede doblegarlas. La conciencia patriótica es el verdadero escudo de la República.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-11",
@@ -389,7 +389,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La unidad es la clave de la victoria. Divididos, somos vulnerables; unidos en torno a Bolívar, a la Constitución y al pueblo, seremos capaces de enfrentar cualquier amenaza. Cuiden la unidad como se cuida la vida misma de la patria.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-12",
@@ -397,7 +397,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La FANB es del pueblo y para el pueblo. Su razón de ser no es el privilegio de una cúpula, sino la defensa integral de la nación. Cada oficial debe vivir como servidor público y como hermano de los más humildes.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-13",
@@ -405,7 +405,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La dignidad no se vende ni se arrienda. Hay quienes cambian principios por comodidades; nosotros no. Prefiero morir de pie, con la frente en alto, antes que vivir de rodillas ante el imperio o ante el capital.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-14",
@@ -413,7 +413,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La revolución es pacífica, pero armada: armada de conciencia y de pueblo. No buscamos la violencia; buscamos la justicia. Y para defenderla necesitamos ideas claras, organización popular y una fuerza armada leal a la patria.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-15",
@@ -421,7 +421,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "El que no ama a la patria no puede llamarse venezolano de verdad. El amor a Venezuela se prueba en la lealtad diaria, en el rechazo a la corrupción y en la disposición de darlo todo cuando la República lo necesite.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-16",
@@ -429,7 +429,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La justicia social es el corazón de la democracia verdadera. ¿De qué sirve votar si el pueblo pasa hambre, si no hay escuelas ni hospitales? Democracia sin justicia es una farsa; con justicia, es la forma más alta de libertad.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-17",
@@ -437,7 +437,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Estudien, formen su carácter y sirvan a la República con honradez. El oficial del siglo XXI debe ser profesional, ético y profundamente humano. La ignorancia y la soberbia son enemigos tan peligrosos como cualquier amenaza exterior.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-18",
@@ -445,7 +445,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La patria nos llama a la unidad, al trabajo y a la defensa de lo nuestro. No hay tiempo para el desaliento ni para la indiferencia: cada venezolano consciente debe aportar su esfuerzo en la construcción de una nación soberana y justa.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-19",
@@ -453,7 +453,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Sin moral no hay revolución que se sostenga. Pueden ganarse batallas políticas, pero si corrompe el corazón de los cuadros, todo se derrumba. La ética, la austeridad y el ejemplo personal son el combustible de la causa bolivariana.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-20",
@@ -461,7 +461,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "El compromiso con el pueblo es el compromiso con la historia. No trabajamos para una foto ni para un cargo: trabajamos para que las generaciones futuras hereden una Venezuela libre, educada y dueña de sus destinos.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-21",
@@ -469,7 +469,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La soberanía alimentaria, energética y militar son pilares de la independencia. Quien depende del extranjero para comer, para alumbrar o para defenderse, no es libre. Construyamos capacidad propia en cada uno de esos frentes.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-22",
@@ -477,7 +477,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Quien sirva al pueblo con lealtad nunca estará solo. El pueblo reconoce a sus verdaderos servidores y los acompaña en las horas difíciles. El egoísmo aísla; el servicio generoso construye una familia nacional indestructible.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-23",
@@ -485,7 +485,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La disciplina revolucionaria nace del convencimiento, no del miedo. Ordenamos y obedecemos porque sabemos que sin orden no hay victoria ni institución. El mando debe ser ejemplar; la obediencia, consciente y digna.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-24",
@@ -493,7 +493,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Venezuela es de Bolívar, y Bolívar es del pueblo. Su pensamiento no es museo: es brújula viva para la acción. Cada generación debe reencontrarse con el Libertador y continuar su obra de emancipación y justicia.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-25",
@@ -501,7 +501,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La esperanza se construye todos los días con trabajo y firmeza. No esperemos milagros: organicémonos, estudiemos, produzcamos y defendamos lo conquistado. La fe en la patria se demuestra en la constancia.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-26",
@@ -509,7 +509,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "El oficial debe ser ejemplo de honor, estudio y servicio. Su autoridad moral vale más que cualquier grado. Si el jefe es justo, trabajador y cercano al personal, la unidad entera se eleva; si es indigno, arrastra a todos hacia abajo.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-27",
@@ -517,7 +517,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La patria no se entrega: se defiende con ideas y con voluntad. Hay batallas de opinión, batallas económicas y batallas territoriales. En todas ellas debe estar presente el espíritu bolivariano de resistencia y de victoria.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-28",
@@ -525,7 +525,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La conciencia patriótica es el escudo de la República. Un pueblo dormido es fácil de conquistar; un pueblo despierto, organizado y leal a su historia es imposible de doblegar. Despertemos cada día al servicio de Venezuela.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-29",
@@ -533,7 +533,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "El pueblo organizado es la mayor fuerza de la nación. Ni el oro ni las armas extranjeras vencen a un pueblo unido. Por eso la organización popular y militar debe marchar junta, como un solo cuerpo al servicio de la soberanía.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-30",
@@ -541,7 +541,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La lealtad a la Constitución es lealtad a la patria. No hay disciplina militar verdadera fuera del marco constitucional. El juramento de armas es, ante todo, un juramento de fidelidad a la República Bolivariana de Venezuela.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-31",
@@ -549,7 +549,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Formar oficiales es formar servidores de la República. Cada aula, cada instrucción y cada guardia debe sembrar valores de honor, solidaridad y amor al pueblo. El futuro de la FANB se decide en la calidad moral de quienes hoy se forman.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-32",
@@ -557,7 +557,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "La revolución bolivariana es obra colectiva del pueblo venezolano. Ningún hombre solo hace la historia: la hace el pueblo cuando se organiza, cuando estudia y cuando se niega a renunciar a su dignidad. Sigamos siendo ese pueblo en marcha.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
   {
     id: "chavez-33",
@@ -565,7 +565,7 @@ export const TRANSCRIPCIONES_COMANDANTE: readonly Transcripcion[] = [
     titulo: TITULO_COMANDANTE,
     texto:
       "Con Bolívar y el pueblo, siempre venceremos. Esa certeza no es fanfarronería: es la síntesis de nuestra historia. Cuando la causa es justa y el pueblo está despierto, la victoria es sólo cuestión de tiempo y de firmeza.",
-    atribucion: "Chávez Frías, H. R. (s. f.).",
+    atribucion: "Hugo Rafael Chávez Frías.",
   },
 ];
 

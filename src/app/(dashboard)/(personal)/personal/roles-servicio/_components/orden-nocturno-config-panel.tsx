@@ -168,8 +168,8 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">Orden nocturna</h1>
             <p className="mt-0.5 max-w-xl text-xs text-slate-500">
-              Defina qué roles alimentan la Ronda y cada turno de imaginaria (binomios). La Ronda usa el
-              mismo personal del oficial de día (u otro rol que elija).
+              Defina qué roles alimentan la Ronda, el Rondín ×2 (inspección) y cada turno de
+              imaginaria (binomios). La Ronda usa el oficial de día; el Rondín, inspección.
             </p>
           </div>
         </div>
@@ -250,9 +250,64 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
 
       <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
         <CardHeader className="border-b border-slate-100 px-4 py-3">
+          <CardTitle className="text-base">2. Rondín (×2)</CardTitle>
+          <CardDescription className="text-xs">
+            Dos puestos en el 1.er turno, justo después de la Ronda. Toman el personal de Inspección
+            (si falta alguien, aparece OMITIR).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Etiqueta en la orden</Label>
+              <Input
+                value={config.rondinServicioEtiqueta}
+                disabled={!canWrite}
+                onChange={(e) =>
+                  setConfig((prev) => ({ ...prev, rondinServicioEtiqueta: e.target.value }))
+                }
+                className="h-8 text-xs uppercase"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Turno (columna)</Label>
+              <select
+                className="border-input bg-background h-8 w-full rounded-md border px-2 text-xs"
+                disabled={!canWrite}
+                value={config.rondinTurno}
+                onChange={(e) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    rondinTurno: e.target.value as TurnoNocturnoEtiqueta | "",
+                  }))
+                }
+              >
+                <option value="">(sin turno)</option>
+                {TURNOS_NOCTURNOS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Rol fuente (p. ej. Inspección)</Label>
+            <RolChecklist
+              roles={roles}
+              selected={config.rondinRolClaves}
+              disabled={!canWrite}
+              onChange={(rondinRolClaves) => setConfig((prev) => ({ ...prev, rondinRolClaves }))}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
+        <CardHeader className="border-b border-slate-100 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-base">2. Binomios (imaginaria)</CardTitle>
+              <CardTitle className="text-base">3. Binomios (imaginaria)</CardTitle>
               <CardDescription className="text-xs">
                 1.er turno ← guardia de aula · 2.º ← cuartelero · 3.er ← guardia de baño (ajustable).
               </CardDescription>

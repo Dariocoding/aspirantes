@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, FileText, Files, Sun, Sunrise } from "lucide-react";
+import { ChevronDown, FileText, Files, Moon, Sun, Sunrise } from "lucide-react";
 import { buttonVariants } from "@src/components/ui/button";
 import {
   DropdownMenu,
@@ -62,9 +62,18 @@ export function OrdenDelDiaDownloadButton({
   const mesNombre = etiquetaMes(anio, mes);
   const hoy = fechaDeHoy();
   const manana = sumarDias(hoy, 1);
+  const diaSiguiente = sumarDias(hoy, 2);
   const seleccionado: FechaOrden = { anio, mes, dia: diaSeleccionado };
-  const seleccionadoEsHoy = mismaFecha(seleccionado, hoy);
-  const seleccionadoEsManana = mismaFecha(seleccionado, manana);
+
+  // Cada botón imprime diurno + nocturno del mismo día de servicio.
+  const ordenAyer = hoy;
+  const ordenHoy = manana;
+  const ordenManana = diaSiguiente;
+
+  const seleccionadoEsEspecial =
+    !mismaFecha(seleccionado, ordenAyer) &&
+    !mismaFecha(seleccionado, ordenHoy) &&
+    !mismaFecha(seleccionado, ordenManana);
 
   return (
     <DropdownMenu>
@@ -84,14 +93,14 @@ export function OrdenDelDiaDownloadButton({
           nativeButton={false}
           closeOnClick
           render={
-            <a href={ordenDelDiaPdfUrl(hoy)} target="_blank" rel="noopener noreferrer" />
+            <a href={ordenDelDiaPdfUrl(ordenAyer)} target="_blank" rel="noopener noreferrer" />
           }
         >
-          <Sun className="size-3.5" aria-hidden />
+          <Moon className="size-3.5" aria-hidden />
           <span className="min-w-0">
-            <span className="block text-sm font-medium">Orden de hoy</span>
+            <span className="block text-sm font-medium">Orden de ayer</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(hoy)} · diurno de hoy · nocturno hasta la madrugada de mañana
+              {etiquetaCorta(ordenAyer)} · nocturno de hoy · diurnos de hoy
             </span>
           </span>
         </DropdownMenuItem>
@@ -99,19 +108,34 @@ export function OrdenDelDiaDownloadButton({
           nativeButton={false}
           closeOnClick
           render={
-            <a href={ordenDelDiaPdfUrl(manana)} target="_blank" rel="noopener noreferrer" />
+            <a href={ordenDelDiaPdfUrl(ordenHoy)} target="_blank" rel="noopener noreferrer" />
+          }
+        >
+          <Sun className="size-3.5" aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">Orden de hoy</span>
+            <span className="block text-[11px] text-muted-foreground">
+              {etiquetaCorta(ordenHoy)} · nocturno de mañana · diurnos para mañana
+            </span>
+          </span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          nativeButton={false}
+          closeOnClick
+          render={
+            <a href={ordenDelDiaPdfUrl(ordenManana)} target="_blank" rel="noopener noreferrer" />
           }
         >
           <Sunrise className="size-3.5" aria-hidden />
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de mañana</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(manana)} · diurno de mañana · nocturno hasta la madrugada del día siguiente
+              {etiquetaCorta(ordenManana)} · nocturno del día siguiente · diurnos del día siguiente
             </span>
           </span>
         </DropdownMenuItem>
 
-        {!seleccionadoEsHoy && !seleccionadoEsManana ? (
+        {seleccionadoEsEspecial ? (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem

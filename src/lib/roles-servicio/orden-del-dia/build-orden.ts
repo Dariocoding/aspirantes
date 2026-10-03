@@ -127,11 +127,14 @@ function gradoMostrado(persona: PersonaOrdenInput): string {
 }
 
 /**
- * Orden fijo de diurnos: 1) Oficial de día · 2) Inspección · resto alfabético.
+ * Orden provisional de diurnos (hasta un sort configurable):
+ * 1) Oficial de día · 2) Inspección · 3) Medicina · 4) Enfermería · resto alfabético.
  */
 function prioridadRolDiurno(nombreRol: string): number {
   if (/oficial\s+de\s+d[ií]a/i.test(nombreRol)) return 0;
   if (/inspecci[oó]n/i.test(nombreRol)) return 1;
+  if (/medicina/i.test(nombreRol)) return 2;
+  if (/enfermer/i.test(nombreRol)) return 3;
   return 100;
 }
 
@@ -175,11 +178,18 @@ export type BuildOrdenDelDiaInput = {
   nocturnoConfig?: OrdenNocturnoConfig;
 };
 
+function etiquetaServicioDiurno(nombreRol: string): string {
+  return nombreRol
+    .replace(/\(\s*diurn[oa]\s*\)/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
 export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData {
   const { anio, mes, dia } = input;
 
   // Diurnos y nocturno del mismo día del documento.
-  // El nocturno cubre la noche de ese día hasta la madrugada del siguiente.
   const rawDiurnos = filasDelDia(input.planes, dia, "diurno");
 
   const configNocturna = hidratarSugerenciasClaves(
@@ -190,7 +200,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
 
   const diurnos: FilaServicioDiurno[] = rawDiurnos.map((fila, index) => ({
     nro: index + 1,
-    servicio: fila.plan.nombre.toUpperCase(),
+    servicio: etiquetaServicioDiurno(fila.plan.nombre),
     grado: gradoMostrado(fila.persona),
     nombres: nombreMostrado(fila.persona),
   }));
@@ -200,7 +210,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
       ? input.lineasMembrete.map((l) => l.toUpperCase())
       : [...PLANTILLA_MEMBRETE_CEFOA45].map((l) => l.toUpperCase());
 
-  const fechaEste = etiquetaFechaOrden(anio, mes, dia);
+  const fecha = etiquetaFechaOrden(anio, mes, dia);
 
   return {
     anio,
@@ -209,11 +219,11 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
     numeroOrden: numeroOrdenDelDia(anio, mes, dia),
     lineasMembrete: lineas,
     lugar: (input.lugar ?? LUGAR_ORDEN_DEFAULT).toUpperCase(),
-    fechaDocumento: fechaEste,
+    fechaDocumento: fecha,
     aniversarios: aniversariosInstitucionales(anio),
     transcripciones: trioTranscripcionesDelDia(anio, mes, dia),
-    diurnosTitulo: `1. DIURNOS PARA ESTE ${fechaEste}.`,
-    nocturnosTitulo: `2. NOCTURNO PARA ESTE ${fechaEste}.`,
+    diurnosTitulo: `1. DIURNOS PARA ${fecha}.`,
+    nocturnosTitulo: `2. NOCTURNO PARA ${fecha}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,
