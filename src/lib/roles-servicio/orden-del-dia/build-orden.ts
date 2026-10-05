@@ -212,8 +212,9 @@ function etiquetaServicioDiurno(nombreRol: string): string {
 
 export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData {
   const { anio, mes, dia } = input;
-  const noche = diaAnterior(anio, mes, dia);
-  const mismaHoja = noche.anio === anio && noche.mes === mes;
+  // La orden se dicta el día anterior al diurno. Ese día es también el nocturno.
+  const dictada = diaAnterior(anio, mes, dia);
+  const mismaHoja = dictada.anio === anio && dictada.mes === mes;
   const planesNoche = mismaHoja ? input.planes : (input.planesMesAnterior ?? []);
 
   const rawDiurnos = filasDelDia(input.planes, dia, "diurno");
@@ -222,7 +223,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
     input.nocturnoConfig ?? defaultOrdenNocturnoConfig(),
     planesNoche.length > 0 ? planesNoche : input.planes,
   );
-  const nocturnos = construirFilasNocturnas(planesNoche, noche.dia, configNocturna);
+  const nocturnos = construirFilasNocturnas(planesNoche, dictada.dia, configNocturna);
 
   const diurnos: FilaServicioDiurno[] = rawDiurnos.map((fila, index) => ({
     nro: index + 1,
@@ -236,22 +237,22 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
       ? input.lineasMembrete.map((l) => l.toUpperCase())
       : [...PLANTILLA_MEMBRETE_CEFOA45].map((l) => l.toUpperCase());
 
-  const fecha = etiquetaFechaOrden(anio, mes, dia);
+  const fecha = etiquetaFechaOrden(dictada.anio, dictada.mes, dictada.dia);
   const diaMes = etiquetaDiaMesOrden(anio, mes, dia);
-  const diaMesNoche = etiquetaDiaMesOrden(noche.anio, noche.mes, noche.dia);
+  const diaMesNoche = etiquetaDiaMesOrden(dictada.anio, dictada.mes, dictada.dia);
 
   return {
     anio,
     mes,
     dia,
-    numeroOrden: numeroOrdenDelDia(anio, mes, dia),
+    numeroOrden: numeroOrdenDelDia(dictada.anio, dictada.mes, dictada.dia),
     lineasMembrete: lineas,
     lugar: (input.lugar ?? LUGAR_ORDEN_DEFAULT).toUpperCase(),
     fechaDocumento: fecha,
-    aniversarios: aniversariosInstitucionales(anio),
-    transcripciones: trioTranscripcionesDelDia(anio, mes, dia),
+    aniversarios: aniversariosInstitucionales(dictada.anio),
+    transcripciones: trioTranscripcionesDelDia(dictada.anio, dictada.mes, dictada.dia),
     diurnosTitulo: `1. SERVICIO DIURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
-    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMesNoche} DEL AÑO ${noche.anio}.`,
+    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMesNoche} DEL AÑO ${dictada.anio}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,

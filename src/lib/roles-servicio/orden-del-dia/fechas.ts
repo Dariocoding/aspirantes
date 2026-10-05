@@ -37,7 +37,7 @@ export function etiquetaFechaOrden(anio: number, mes: number, dia: number): stri
   return `${etiquetaDiaMesOrden(anio, mes, dia)} DE ${anio}`;
 }
 
-/** Día del año (1–366), usado como Número de Orden del día. */
+/** Día del año en el calendario gregoriano (1–366). El 5 oct 2026 es el 278. */
 export function numeroOrdenDelDia(anio: number, mes: number, dia: number): number {
   const inicio = Date.UTC(anio, 0, 0);
   const actual = Date.UTC(anio, mes - 1, dia);

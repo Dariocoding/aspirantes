@@ -32,7 +32,9 @@ describe("transcripciones orden del día", () => {
 });
 
 describe("numeroOrdenDelDia", () => {
-  it("coincide con el día del año (1 sep no bisiesto = 244)", () => {
+  it("coincide con el día gregoriano del año", () => {
     expect(numeroOrdenDelDia(2026, 9, 1)).toBe(244);
+    expect(numeroOrdenDelDia(2026, 10, 5)).toBe(278);
+    expect(numeroOrdenDelDia(2026, 10, 6)).toBe(279);
   });
 });
