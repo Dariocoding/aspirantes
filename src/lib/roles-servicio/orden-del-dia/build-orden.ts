@@ -10,6 +10,7 @@ import {
 } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
 import {
   aniversariosInstitucionales,
+  etiquetaDiaMesOrden,
   etiquetaFechaOrden,
   numeroOrdenDelDia,
 } from "@src/lib/roles-servicio/orden-del-dia/fechas";
@@ -178,8 +179,29 @@ export type BuildOrdenDelDiaInput = {
   nocturnoConfig?: OrdenNocturnoConfig;
 };
 
-function etiquetaServicioDiurno(nombreRol: string): string {
+/** Mantenimiento al aula y comedor no distinguen sexo en el título. */
+function quitarGeneroDelTitulo(nombreRol: string): string {
+  if (!/mantenimiento\s+al\s+aula|comedor/i.test(nombreRol)) return nombreRol;
   return nombreRol
+    .replace(/\(\s*(masculin[oa]|femenin[oa])\s*\)/gi, "")
+    .replace(/\b(masculin[oa]|femenin[oa])\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
+ * Unifica el orden del título: pelotón y después el sexo.
+ * «CUARTELERA FEMENINA DEL 1ER PELOTÓN» → «CUARTELERA 1ER PELOTÓN FEMENINA».
+ */
+function pelotonAntesDeSexo(nombre: string): string {
+  return nombre.replace(
+    /\b(masculin[oa]|femenin[oa])\s+(?:del\s+)?(\d+\s*(?:er|do|ro|to|mo|[º°o])\s+pelot[oó]n)\b/gi,
+    "$2 $1",
+  );
+}
+
+function etiquetaServicioDiurno(nombreRol: string): string {
+  return pelotonAntesDeSexo(quitarGeneroDelTitulo(nombreRol))
     .replace(/\(\s*diurn[oa]\s*\)/gi, "")
     .replace(/\s{2,}/g, " ")
     .trim()
@@ -211,6 +233,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
       : [...PLANTILLA_MEMBRETE_CEFOA45].map((l) => l.toUpperCase());
 
   const fecha = etiquetaFechaOrden(anio, mes, dia);
+  const diaMes = etiquetaDiaMesOrden(anio, mes, dia);
 
   return {
     anio,
@@ -222,13 +245,16 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
     fechaDocumento: fecha,
     aniversarios: aniversariosInstitucionales(anio),
     transcripciones: trioTranscripcionesDelDia(anio, mes, dia),
-    diurnosTitulo: `1. DIURNOS PARA ${fecha}.`,
-    nocturnosTitulo: `2. NOCTURNO PARA ${fecha}.`,
+    diurnosTitulo: `1. SERVICIO DIURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
+    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,
     disposicionParticular: input.disposicionParticular ?? DISPOSICION_PARTICULAR_DEFAULT,
-    directorNombre: (input.directorNombre?.trim() || "DIRECTOR DEL CURSO").toUpperCase(),
+    directorNombre: (input.directorNombre?.trim() || "DIRECTOR DEL CURSO")
+      .replace(/^cnel\.?\s+/i, "")
+      .trim()
+      .toUpperCase(),
     directorGrado: (input.directorGrado?.trim() || DIRECTOR_GRADO_DEFAULT).toUpperCase(),
     directorCargo: (input.directorCargo?.trim() || DIRECTOR_CARGO_DEFAULT).toUpperCase(),
   };

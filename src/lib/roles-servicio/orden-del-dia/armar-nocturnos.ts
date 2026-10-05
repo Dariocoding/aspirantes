@@ -56,6 +56,8 @@ function personasDeRolesEnDia(
 
 function etiquetaServicioBinomio(etiquetaBase: string, nombreRol: string): string {
   if (!etiquetaBase) return nombreRol.toUpperCase();
+  // Mantenimiento al aula y comedor no llevan sexo en el título.
+  if (/mantenimiento\s+al\s+aula|comedor/i.test(nombreRol)) return etiquetaBase;
   const fem = /femenin/i.test(nombreRol);
   const masc = /masculin/i.test(nombreRol);
   if (fem) return `${etiquetaBase} FEMENINA`;

@@ -33,7 +33,7 @@ export const TITULO_LEY =
   "LEY DE DISCIPLINA MILITAR, TÍTULO I CAPÍTULO I DE LAS DISPOSICIONES FUNDAMENTALES.";
 
 const APA_LEY =
-  "Ley de disciplina militar.";
+  "Ley de Disciplina Militar.";
 
 export const TRANSCRIPCIONES_LIBERTADOR: readonly Transcripcion[] = [
   {

@@ -23,13 +23,18 @@ const MESES = [
   "DICIEMBRE",
 ] as const;
 
-/** Etiqueta larga: MIÉRCOLES 02 DE SEPTIEMBRE DE 2026 */
-export function etiquetaFechaOrden(anio: number, mes: number, dia: number): string {
+/** Día y mes, sin año: MIÉRCOLES 02 DE SEPTIEMBRE */
+export function etiquetaDiaMesOrden(anio: number, mes: number, dia: number): string {
   const fecha = new Date(anio, mes - 1, dia);
   const semana = DIAS_SEMANA[fecha.getDay()] ?? "";
   const mesNombre = MESES[mes - 1] ?? "";
   const diaPad = String(dia).padStart(2, "0");
-  return `${semana} ${diaPad} DE ${mesNombre} DE ${anio}`;
+  return `${semana} ${diaPad} DE ${mesNombre}`;
+}
+
+/** Etiqueta larga: MIÉRCOLES 02 DE SEPTIEMBRE DE 2026 */
+export function etiquetaFechaOrden(anio: number, mes: number, dia: number): string {
+  return `${etiquetaDiaMesOrden(anio, mes, dia)} DE ${anio}`;
 }
 
 /** Día del año (1–366), usado como Número de Orden del día. */

@@ -25,6 +25,7 @@ export {
 
 export {
   aniversariosInstitucionales,
+  etiquetaDiaMesOrden,
   etiquetaFechaOrden,
   numeroOrdenDelDia,
   siguienteDia,

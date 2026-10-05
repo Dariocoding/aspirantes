@@ -166,6 +166,13 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  /** El resto de la hoja 2, debajo del encabezado de continuación. */
+  page2Body: {
+    flexGrow: 1,
+    flexDirection: "column",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
   continuacionHead: {
     fontSize: 10,
     fontWeight: "bold",
@@ -409,34 +416,36 @@ function OrdenDelDiaPages({
       </Page>
 
       <Page size={[PAGE_W, PAGE_H]} style={s.page} wrap={false}>
-        <View style={s.sheet}>
+        <View style={[s.sheet, { justifyContent: "flex-start" }]}>
           <View style={s.page2Top} wrap={false}>
             <Crest src={logoIzq} />
             <Text style={s.continuacionHead}>...CONTINUACIÓN</Text>
             <Crest src={logoDer} />
           </View>
 
-          <View style={s.block} wrap={false}>
-            <Text style={s.subSection}>{data.nocturnosTitulo}</Text>
-            <TablaNocturnos filas={data.nocturnos} />
-          </View>
+          <View style={s.page2Body}>
+            <View style={s.block} wrap={false}>
+              <Text style={s.subSection}>{data.nocturnosTitulo}</Text>
+              <TablaNocturnos filas={data.nocturnos} />
+            </View>
 
-          <View style={s.block} wrap={false}>
-            <Text style={s.sectionTitle}>C. DISPOSICIONES DE CARÁCTER GENERAL</Text>
-            <Text style={s.bodyText}>{data.disposicionGeneral}</Text>
-          </View>
+            <View style={s.block} wrap={false}>
+              <Text style={s.sectionTitle}>C. DISPOSICIONES DE CARÁCTER GENERAL</Text>
+              <Text style={s.bodyText}>{data.disposicionGeneral}</Text>
+            </View>
 
-          <View style={s.block} wrap={false}>
-            <Text style={s.sectionTitle}>D. DISPOSICIONES DE CARÁCTER PARTICULAR</Text>
-            <Text style={s.particular}>{data.disposicionParticular}</Text>
-          </View>
+            <View style={s.block} wrap={false}>
+              <Text style={s.sectionTitle}>D. DISPOSICIONES DE CARÁCTER PARTICULAR</Text>
+              <Text style={s.particular}>{data.disposicionParticular}</Text>
+            </View>
 
-          <View style={s.block} wrap={false}>
-            <Text style={s.cumplase}>CÚMPLASE</Text>
-            <View style={s.firma}>
-              <Text style={s.firmaNombre}>{data.directorNombre}</Text>
-              <Text style={s.firmaGrado}>{data.directorGrado}</Text>
-              <Text style={s.firmaCargo}>{data.directorCargo}</Text>
+            <View style={s.block} wrap={false}>
+              <Text style={s.cumplase}>CÚMPLASE</Text>
+              <View style={s.firma}>
+                <Text style={s.firmaNombre}>{data.directorNombre}</Text>
+                <Text style={s.firmaGrado}>{data.directorGrado}</Text>
+                <Text style={s.firmaCargo}>{data.directorCargo}</Text>
+              </View>
             </View>
           </View>
         </View>
