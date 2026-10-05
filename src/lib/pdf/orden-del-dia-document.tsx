@@ -174,8 +174,11 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   continuacionHead: {
+    flexGrow: 1,
+    paddingLeft: 10,
     fontSize: 10,
     fontWeight: "bold",
+    textAlign: "left",
     textTransform: "uppercase",
   },
   bodyText: {

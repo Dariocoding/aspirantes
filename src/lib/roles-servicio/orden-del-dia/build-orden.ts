@@ -10,6 +10,7 @@ import {
 } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
 import {
   aniversariosInstitucionales,
+  diaAnterior,
   etiquetaDiaMesOrden,
   etiquetaFechaOrden,
   numeroOrdenDelDia,
@@ -168,7 +169,8 @@ export type BuildOrdenDelDiaInput = {
   mes: number;
   dia: number;
   planes: PlanOrdenInput[];
-  planesManana?: PlanOrdenInput[];
+  /** Roles del mes anterior, para el nocturno cuando la orden es el día 1. */
+  planesMesAnterior?: PlanOrdenInput[];
   lineasMembrete?: string[];
   lugar?: string;
   directorNombre?: string | null;
@@ -210,15 +212,17 @@ function etiquetaServicioDiurno(nombreRol: string): string {
 
 export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData {
   const { anio, mes, dia } = input;
+  const noche = diaAnterior(anio, mes, dia);
+  const mismaHoja = noche.anio === anio && noche.mes === mes;
+  const planesNoche = mismaHoja ? input.planes : (input.planesMesAnterior ?? []);
 
-  // Diurnos y nocturno del mismo día del documento.
   const rawDiurnos = filasDelDia(input.planes, dia, "diurno");
 
   const configNocturna = hidratarSugerenciasClaves(
     input.nocturnoConfig ?? defaultOrdenNocturnoConfig(),
-    input.planes,
+    planesNoche.length > 0 ? planesNoche : input.planes,
   );
-  const nocturnos = construirFilasNocturnas(input.planes, dia, configNocturna);
+  const nocturnos = construirFilasNocturnas(planesNoche, noche.dia, configNocturna);
 
   const diurnos: FilaServicioDiurno[] = rawDiurnos.map((fila, index) => ({
     nro: index + 1,
@@ -234,6 +238,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
 
   const fecha = etiquetaFechaOrden(anio, mes, dia);
   const diaMes = etiquetaDiaMesOrden(anio, mes, dia);
+  const diaMesNoche = etiquetaDiaMesOrden(noche.anio, noche.mes, noche.dia);
 
   return {
     anio,
@@ -246,7 +251,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
     aniversarios: aniversariosInstitucionales(anio),
     transcripciones: trioTranscripcionesDelDia(anio, mes, dia),
     diurnosTitulo: `1. SERVICIO DIURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
-    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
+    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMesNoche} DEL AÑO ${noche.anio}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,

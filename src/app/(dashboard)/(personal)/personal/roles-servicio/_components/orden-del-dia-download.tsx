@@ -83,14 +83,12 @@ export function OrdenDelDiaDownloadButton({
 }: Props) {
   const mesNombre = etiquetaMes(anio, mes);
   const hoy = fechaDeHoy();
-  const manana = sumarDias(hoy, 1);
-  const diaSiguiente = sumarDias(hoy, 2);
   const seleccionado: FechaOrden = { anio, mes, dia: diaSeleccionado };
 
-  // Cada botón imprime diurno + nocturno del mismo día de servicio.
-  const ordenAyer = hoy;
-  const ordenHoy = manana;
-  const ordenManana = diaSiguiente;
+  // Cada acceso abre esa fecha: diurno del día y nocturno de la noche anterior.
+  const ordenAyer = sumarDias(hoy, -1);
+  const ordenHoy = hoy;
+  const ordenManana = sumarDias(hoy, 1);
 
   const seleccionadoEsEspecial =
     !mismaFecha(seleccionado, ordenAyer) &&
@@ -143,7 +141,7 @@ export function OrdenDelDiaDownloadButton({
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de ayer</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(ordenAyer)} · nocturno de hoy · diurnos de hoy
+              {etiquetaCorta(ordenAyer)} · diurno de ayer · nocturno de la noche anterior
             </span>
           </span>
         </DropdownMenuItem>
@@ -158,7 +156,7 @@ export function OrdenDelDiaDownloadButton({
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de hoy</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(ordenHoy)} · nocturno de mañana · diurnos para mañana
+              {etiquetaCorta(ordenHoy)} · diurno de hoy · nocturno de anoche
             </span>
           </span>
         </DropdownMenuItem>
@@ -173,7 +171,7 @@ export function OrdenDelDiaDownloadButton({
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de mañana</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(ordenManana)} · nocturno del día siguiente · diurnos del día siguiente
+              {etiquetaCorta(ordenManana)} · diurno de mañana · nocturno de hoy
             </span>
           </span>
         </DropdownMenuItem>
@@ -196,7 +194,7 @@ export function OrdenDelDiaDownloadButton({
               <span className="min-w-0">
                 <span className="block text-sm">Día seleccionado ({diaSeleccionado})</span>
                 <span className="block text-[11px] text-muted-foreground">
-                  {etiquetaCorta(seleccionado)} · 2 páginas
+                  {etiquetaCorta(seleccionado)} · diurno de ese día · nocturno de la noche anterior
                 </span>
               </span>
             </DropdownMenuItem>
@@ -241,7 +239,7 @@ export function OrdenDelDiaDownloadButton({
         <DialogHeader>
           <DialogTitle>Orden de servicio</DialogTitle>
           <DialogDescription>
-            Elige el día. Se abre la orden con el servicio diurno y el nocturno.
+            Elige el día. El diurno es de esa fecha y el nocturno, de la noche anterior.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 px-5 py-4">

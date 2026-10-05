@@ -63,6 +63,20 @@ export function aniversariosInstitucionales(anio: number): {
   };
 }
 
+/** Día calendario anterior. El nocturno de la orden es el de esta fecha. */
+export function diaAnterior(
+  anio: number,
+  mes: number,
+  dia: number,
+): { anio: number; mes: number; dia: number } {
+  const fecha = new Date(anio, mes - 1, dia - 1);
+  return {
+    anio: fecha.getFullYear(),
+    mes: fecha.getMonth() + 1,
+    dia: fecha.getDate(),
+  };
+}
+
 export function siguienteDia(
   anio: number,
   mes: number,

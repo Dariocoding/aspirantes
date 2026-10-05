@@ -73,7 +73,7 @@ function construirOrdenesMes(input: {
   anio: number;
   mes: number;
   planes: PlanOrdenInput[];
-  planesManana: PlanOrdenInput[];
+  planesMesAnterior: PlanOrdenInput[];
   lineasMembrete?: string[];
   directorNombre?: string | null;
   nocturnoConfig: OrdenNocturnoConfig;
@@ -81,14 +81,13 @@ function construirOrdenesMes(input: {
   const total = diasDelMes(input.anio, input.mes);
   const ordenes: OrdenDelDiaData[] = [];
   for (let dia = 1; dia <= total; dia += 1) {
-    const esUltimo = dia === total;
     ordenes.push(
       buildOrdenDelDia({
         anio: input.anio,
         mes: input.mes,
         dia,
         planes: input.planes,
-        planesManana: esUltimo ? input.planesManana : input.planes,
+        planesMesAnterior: input.planesMesAnterior,
         lineasMembrete: input.lineasMembrete,
         directorNombre: input.directorNombre,
         nocturnoConfig: input.nocturnoConfig,
@@ -139,9 +138,9 @@ export async function GET(request: Request) {
     );
   }
 
-  const siguienteMes = mes === 12 ? 1 : mes + 1;
-  const siguienteAnio = mes === 12 ? anio + 1 : anio;
-  const planesManana = await cargarPlanes(siguienteAnio, siguienteMes);
+  const mesAnterior = mes === 1 ? 12 : mes - 1;
+  const anioAnterior = mes === 1 ? anio - 1 : anio;
+  const planesMesAnterior = await cargarPlanes(anioAnterior, mesAnterior);
 
   const logoIzqKind: MembreteLogoKind =
     membrete && isMembreteLogoKind(membrete.logoIzq) ? membrete.logoIzq : "ejercito";
@@ -150,7 +149,7 @@ export async function GET(request: Request) {
 
   const comunes = {
     planes,
-    planesManana,
+    planesMesAnterior,
     lineasMembrete: membrete?.lineas,
     directorNombre: convocatoria?.comandanteNombre,
     nocturnoConfig,
@@ -165,7 +164,7 @@ export async function GET(request: Request) {
             mes,
             dia,
             planes,
-            planesManana: dia === totalDias ? planesManana : planes,
+            planesMesAnterior,
             lineasMembrete: comunes.lineasMembrete,
             directorNombre: comunes.directorNombre,
             nocturnoConfig,
