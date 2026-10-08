@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 
 const OFICIALES = [
   { nombres: "EDWING", apellidos: "SANABRIA", jerarquia: "PRIMER_TENIENTE" as const },
-  { nombres: "LEANDRO", apellidos: "CONTRERAS", jerarquia: "PRIMER_TENIENTE" as const },
+  { nombres: "LEONDER", apellidos: "CONTRERAS", jerarquia: "PRIMER_TENIENTE" as const },
   { nombres: "OSWALDO", apellidos: "MORILLO", jerarquia: "PRIMER_TENIENTE" as const },
 ];
 

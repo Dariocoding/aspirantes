@@ -258,7 +258,7 @@ function MembreteHeader({
           {data.lugar}, {data.fechaDocumento}
         </Text>
         <Text style={s.metaLine}>
-          {independencia}º DE LA INDEPENDENCIA Y {federacion}º DE LA FEDERACIÓN
+          {independencia}º DE LA INDEPENDENCIA, {federacion}º DE LA FEDERACIÓN Y
         </Text>
         <Text style={s.metaLine}>{revolucion}º DE LA REVOLUCIÓN</Text>
       </View>

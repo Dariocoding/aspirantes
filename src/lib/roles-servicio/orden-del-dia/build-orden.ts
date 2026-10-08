@@ -252,7 +252,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
     aniversarios: aniversariosInstitucionales(dictada.anio),
     transcripciones: trioTranscripcionesDelDia(dictada.anio, dictada.mes, dictada.dia),
     diurnosTitulo: `1. SERVICIO DIURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
-    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMesNoche} DEL AÑO ${dictada.anio}.`,
+    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA HOY ${diaMesNoche} DEL AÑO ${dictada.anio}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,
