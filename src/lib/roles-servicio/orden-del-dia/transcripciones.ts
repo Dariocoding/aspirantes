@@ -1,5 +1,5 @@
 /**
- * Catálogo de transcripciones para la Orden del día.
+ * Catálogo de transcripciones para la Orden del Día.
  *
  * Extender: agregue entradas a `TRANSCRIPCIONES_LIBERTADOR`,
  * `TRANSCRIPCIONES_COMANDANTE` o `TRANSCRIPCIONES_LEY` (mín. 31 por categoría

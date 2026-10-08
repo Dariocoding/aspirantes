@@ -3,6 +3,7 @@ import { CalendarRange } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import { routes } from "@src/lib/apps/routes";
 import { etiquetaMes, type MarcaDia } from "@src/lib/roles-servicio/marcas";
+import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { cn } from "@src/lib/utils";
 import { buttonVariants } from "@src/components/ui/button";
 
@@ -49,7 +50,13 @@ export function AspiranteRolesServicioCard({ roles }: { roles: RolServicioPerfil
                 <p className="mt-1 text-xs text-slate-700">
                   {rol.dias.length === 0
                     ? "Sin días marcados"
-                    : rol.dias.map((dia) => (dia.marca === "X" ? String(dia.dia) : `${dia.dia} (${dia.marca})`)).join(", ")}
+                    : rol.dias
+                        .map((dia) => {
+                          const turno = turnoDesdeMarca(dia.marca);
+                          if (turno) return `${dia.dia} (${turno.nombre})`;
+                          return dia.marca === "X" ? String(dia.dia) : `${dia.dia} (${dia.marca})`;
+                        })
+                        .join(", ")}
                 </p>
               </li>
             ))}

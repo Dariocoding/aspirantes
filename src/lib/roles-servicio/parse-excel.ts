@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { foldBusqueda } from "@src/lib/text/fold";
 import type { MarcaDia } from "@src/lib/roles-servicio/marcas";
+import { esRolConTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
 
 export type PersonaRolParseada = {
   orden: number;
@@ -127,6 +128,51 @@ function textoFila(row: ExcelJS.Row, maxCol = 40): string[] {
   return celdas;
 }
 
+function cuentaMarcaX(rol: RolParseado): number {
+  let total = 0;
+  for (const persona of rol.personas) {
+    for (const dia of persona.dias) {
+      if (dia.marca === "X") total += 1;
+    }
+  }
+  return total;
+}
+
+/**
+ * El libro trae dos hojas con el mismo título (borrador con X y rol limpio).
+ * En guardia de estacionamiento la X no es servicio: se queda la hoja sin X.
+ * En el resto, si hubiera duplicado, gana la última hoja.
+ */
+export function deduplicarRoles(roles: RolParseado[]): RolParseado[] {
+  const grupos = new Map<string, RolParseado[]>();
+  for (const rol of roles) {
+    const lista = grupos.get(rol.clave) ?? [];
+    lista.push(rol);
+    grupos.set(rol.clave, lista);
+  }
+
+  const vistos = new Set<string>();
+  const resultado: RolParseado[] = [];
+  for (const rol of roles) {
+    if (vistos.has(rol.clave)) continue;
+    vistos.add(rol.clave);
+    const grupo = grupos.get(rol.clave) ?? [rol];
+    const elegido = esRolConTurnoEnMarca(rol.nombre)
+      ? grupo.reduce((mejor, actual) =>
+          cuentaMarcaX(actual) <= cuentaMarcaX(mejor) ? actual : mejor,
+        )
+      : grupo[grupo.length - 1]!;
+    const personas = esRolConTurnoEnMarca(elegido.nombre)
+      ? elegido.personas.map((persona) => ({
+          ...persona,
+          dias: persona.dias.filter((dia) => dia.marca !== "X"),
+        }))
+      : elegido.personas;
+    resultado.push({ ...elegido, personas, sortOrder: resultado.length });
+  }
+  return resultado;
+}
+
 export async function parsearRolesExcel(ruta: string): Promise<LibroRolesParseado> {
   const libro = new ExcelJS.Workbook();
   await libro.xlsx.readFile(ruta);
@@ -203,5 +249,5 @@ export async function parsearRolesExcel(ruta: string): Promise<LibroRolesParsead
     }
   }
 
-  return { anio, mes, roles };
+  return { anio, mes, roles: deduplicarRoles(roles) };
 }

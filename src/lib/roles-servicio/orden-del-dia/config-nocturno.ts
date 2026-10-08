@@ -1,5 +1,5 @@
 /**
- * Configuración de la sección NOCTURNO de la Orden del día.
+ * Configuración de la sección NOCTURNO de la Orden del Día.
  * Editable desde Roles de servicio → Orden nocturna.
  */
 

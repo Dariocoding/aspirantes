@@ -196,6 +196,11 @@ const KIND_COPY: Record<
     help: `Opcional. Se usa en la esquela de cumpleaños tal cual (sin comprimir). Si no hay, se usa la foto de carnet. ${formatHelpForKind("esquela")}`,
     aria: "foto de esquela",
   },
+  ficha: {
+    title: "Foto de ficha técnica",
+    help: `Opcional. Es la foto que se imprime en la ficha técnica. Si no hay, se usa la foto de carnet. ${formatHelpForKind("ficha")}`,
+    aria: "foto de ficha técnica",
+  },
   cedula: {
     title: "Foto de la cédula",
     help: `Imagen legible de la cédula de identidad. ${formatHelpForKind("cedula")}`,
@@ -314,8 +319,8 @@ export function AspiranteFotoField({
 
   const formNames = ASPIRANTE_FOTO_FORM[kind];
   const copy = KIND_COPY[kind];
-  const isPortrait = kind === "boleta";
-  const isDoc = kind !== "perfil" && kind !== "boleta" && kind !== "esquela";
+  const isPortrait = kind === "boleta" || kind === "ficha";
+  const isDoc = kind !== "perfil" && kind !== "boleta" && kind !== "esquela" && kind !== "ficha";
   const radiusClass = isDoc || isPortrait ? "rounded-md" : "rounded-full";
   const thumbClass = isDoc ? DOC_THUMB : isPortrait ? "h-28 w-[5.25rem]" : THUMB_SIZE.lg;
   const rounded = isDoc || isPortrait ? "md" : "full";

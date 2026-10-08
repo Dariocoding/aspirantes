@@ -10,6 +10,11 @@ import { canWrite } from "@src/lib/auth/roles";
 import { CENSUS_EXPORT_DEFAULT_IDS, parseCensusExportColumnIds } from "@src/lib/aspirantes/census-export-columns";
 import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import { buildAspirantesCensoXlsxBuffer } from "@src/lib/excel/build-aspirantes-censo-xlsx";
+import {
+  contentDispositionAttachment,
+  excelAttachmentFilename,
+  normalizeExcelTitle,
+} from "@src/lib/excel/excel-export-name";
 import { buildAspirantesCumpleanosXlsxBuffer } from "@src/lib/excel/build-aspirantes-cumpleanos-xlsx";
 import { isMembreteLogoKind, MEMBRETE_NONE_ID, type MembreteSpec } from "@src/lib/membrete";
 import { ageFromBirthDate } from "@src/lib/date";
@@ -19,8 +24,8 @@ import { AspiranteFichasTecnicasBulkPdfDocument } from "@src/lib/pdf/aspirante-f
 import { buildDocumentosAcademicosBulkPdf } from "@src/lib/pdf/build-documentos-academicos-bulk-pdf";
 import {
   fichaTecnicaPdfPropsFromAspirante,
-  loadFotoForFichaTecnicaPdf,
   mapWithConcurrency,
+  resolveFotoFichaTecnicaPdf,
 } from "@src/lib/pdf/ficha-tecnica-from-aspirante";
 import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 import { prisma } from "@src/lib/prisma";
@@ -298,6 +303,7 @@ export async function GET(request: Request) {
   }
 
   if (format === "xlsx") {
+    const titulo = normalizeExcelTitle(url.searchParams.get("titulo"));
     const buffer = await buildAspirantesCensoXlsxBuffer({
       convocatoriaNombre: convocatoriaActual.nombre,
       convocatoriaCodigo: convocatoriaActual.codigo,
@@ -306,14 +312,19 @@ export async function GET(request: Request) {
       columnIds: columnIds ?? [...CENSUS_EXPORT_DEFAULT_IDS],
       generatedAt,
       membrete,
+      titulo,
     });
+    const filename = excelAttachmentFilename(
+      url.searchParams.get("archivo"),
+      `censo-aspirantes-${codigoSafe}-${dateSafe}`,
+    );
 
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="censo-aspirantes-${codigoSafe}-${dateSafe}.xlsx"`,
+        "Content-Disposition": contentDispositionAttachment(filename),
         "Cache-Control": "private, no-store",
       },
     });
@@ -328,7 +339,7 @@ export async function GET(request: Request) {
     }
 
     const items = await mapWithConcurrency(rows, 6, async (a) => {
-      const foto = await loadFotoForFichaTecnicaPdf(a.fotoKey);
+      const foto = await resolveFotoFichaTecnicaPdf(a.fotoFichaTecnicaKey, a.fotoKey);
       return fichaTecnicaPdfPropsFromAspirante(a, foto);
     });
 

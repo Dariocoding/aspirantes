@@ -8,7 +8,7 @@ import { inlinePdfResponse, pdfNoEncontrado } from "@src/lib/pdf/inline-pdf";
 import { AspiranteFichaTecnicaPdfDocument } from "@src/lib/pdf/aspirante-ficha-tecnica-document";
 import {
   fichaTecnicaPdfPropsFromAspirante,
-  loadFotoForFichaTecnicaPdf,
+  resolveFotoFichaTecnicaPdf,
 } from "@src/lib/pdf/ficha-tecnica-from-aspirante";
 import { registerFichaTecnicaPdfFonts } from "@src/lib/pdf/register-ficha-tecnica-fonts";
 import { prisma } from "@src/lib/prisma";
@@ -36,7 +36,7 @@ export async function GET(
 
   if (!a) pdfNoEncontrado();
 
-  const foto = await loadFotoForFichaTecnicaPdf(a.fotoKey);
+  const foto = await resolveFotoFichaTecnicaPdf(a.fotoFichaTecnicaKey, a.fotoKey);
   const doc = createElement(
     AspiranteFichaTecnicaPdfDocument,
     fichaTecnicaPdfPropsFromAspirante(a, foto),

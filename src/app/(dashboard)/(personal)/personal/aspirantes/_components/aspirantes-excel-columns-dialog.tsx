@@ -30,6 +30,12 @@ import Link from "next/link";
 
 const REQUIRED_EXPORT_IDS = new Set<string>(CENSUS_EXPORT_DEFAULT_IDS);
 
+export type ExcelExportRequest = {
+  columnIds: string[];
+  titulo: string;
+  archivo: string;
+};
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,8 +43,27 @@ type Props = {
   membretes: MembreteOption[];
   membreteId: string;
   onMembreteIdChange: (id: string) => void;
-  onExport: (columnIds: string[]) => void;
+  defaultTitulo: string;
+  defaultArchivo: string;
+  onExport: (request: ExcelExportRequest) => void;
 };
+
+function defaultExcelTitle(nombre: string) {
+  const n = nombre.trim();
+  return n ? `CENSO DE ASPIRANTES — ${n}` : "CENSO DE ASPIRANTES";
+}
+
+function defaultExcelFilename(codigo: string) {
+  const date = new Date().toISOString().slice(0, 10);
+  const part = codigo
+    .trim()
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return part ? `censo-aspirantes-${part}-${date}` : `censo-aspirantes-${date}`;
+}
+
+export { defaultExcelTitle, defaultExcelFilename };
 
 export function AspirantesExcelColumnsDialog({
   open,
@@ -47,16 +72,22 @@ export function AspirantesExcelColumnsDialog({
   membretes,
   membreteId,
   onMembreteIdChange,
+  defaultTitulo,
+  defaultArchivo,
   onExport,
 }: Props) {
   const [ids, setIds] = useState<string[]>([...CENSUS_EXPORT_DEFAULT_IDS]);
   const [query, setQuery] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [titulo, setTitulo] = useState(defaultTitulo);
+  const [archivo, setArchivo] = useState(defaultArchivo);
 
   function handleOpenChange(next: boolean) {
     if (next) {
       setIds([...CENSUS_EXPORT_DEFAULT_IDS]);
       setQuery("");
+      setTitulo(defaultTitulo);
+      setArchivo(defaultArchivo);
     }
     onOpenChange(next);
   }
@@ -99,12 +130,42 @@ export function AspirantesExcelColumnsDialog({
             Exportar Excel
           </DialogTitle>
           <DialogDescription>
-            N°, nombre completo y cédula salen siempre. Elija el membrete institucional y el resto de
-            columnas.
+            Escriba el título de la hoja y el nombre del archivo. N°, nombre completo y cédula salen
+            siempre.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap items-end gap-3 px-5 pt-3">
+        <div className="grid gap-3 px-5 pt-3 sm:grid-cols-2">
+          <div className="min-w-0">
+            <label htmlFor="excel-titulo" className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+              Título en el Excel
+            </label>
+            <Input
+              id="excel-titulo"
+              value={titulo}
+              maxLength={180}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="CENSO DE ASPIRANTES"
+              className="h-9"
+            />
+          </div>
+          <div className="min-w-0">
+            <label htmlFor="excel-archivo" className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+              Nombre del archivo
+            </label>
+            <Input
+              id="excel-archivo"
+              value={archivo}
+              maxLength={80}
+              onChange={(e) => setArchivo(e.target.value)}
+              placeholder="censo-aspirantes"
+              className="h-9"
+            />
+            <p className="mt-1 text-[11px] text-slate-500">Se descarga como .xlsx</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3 px-5 pt-1">
           <div className="min-w-0 flex-1">
             <label htmlFor="excel-membrete" className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
               Membrete
@@ -115,7 +176,7 @@ export function AspirantesExcelColumnsDialog({
               value={membreteId || defaultMembreteOptionId(membretes)}
               onChange={(e) => onMembreteIdChange(e.target.value)}
             >
-              <option value={MEMBRETE_NONE_ID}>Sin membrete (solo título actual)</option>
+              <option value={MEMBRETE_NONE_ID}>Sin membrete</option>
               {membretes.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.nombre}
@@ -267,7 +328,7 @@ export function AspirantesExcelColumnsDialog({
             <Button
               type="button"
               disabled={!ids.length || busy}
-              onClick={() => onExport(ids)}
+              onClick={() => onExport({ columnIds: ids, titulo, archivo })}
               className="gap-1.5"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden />

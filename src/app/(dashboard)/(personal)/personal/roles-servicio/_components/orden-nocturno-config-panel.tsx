@@ -14,6 +14,7 @@ import {
   type OrdenNocturnoConfig,
   type TurnoNocturnoEtiqueta,
 } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
+import { esRolConTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { cn } from "@src/lib/utils";
 
 export type RolOpcion = {
@@ -112,6 +113,10 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const rolesAsignables = useMemo(
+    () => roles.filter((rol) => !esRolConTurnoEnMarca(rol.nombre)),
+    [roles],
+  );
 
   const guardar = () => {
     setMessage(null);
@@ -169,7 +174,8 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">Orden nocturna</h1>
             <p className="mt-0.5 max-w-xl text-xs text-slate-500">
               Defina qué roles alimentan la Ronda, el Rondín ×2 (inspección) y cada turno de
-              imaginaria (binomios). La Ronda usa el oficial de día; el Rondín, inspección.
+              imaginaria (binomios). La guardia de estacionamiento entra sola: T1 es primer turno,
+              T2 segundo y T3 tercero.
             </p>
           </div>
         </div>
@@ -239,7 +245,7 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
           <div className="space-y-1.5">
             <Label className="text-xs">Rol fuente (p. ej. Oficial de día)</Label>
             <RolChecklist
-              roles={roles}
+              roles={rolesAsignables}
               selected={config.rondaRolClaves}
               disabled={!canWrite}
               onChange={(rondaRolClaves) => setConfig((prev) => ({ ...prev, rondaRolClaves }))}
@@ -294,7 +300,7 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
           <div className="space-y-1.5">
             <Label className="text-xs">Rol fuente (p. ej. Inspección)</Label>
             <RolChecklist
-              roles={roles}
+              roles={rolesAsignables}
               selected={config.rondinRolClaves}
               disabled={!canWrite}
               onChange={(rondinRolClaves) => setConfig((prev) => ({ ...prev, rondinRolClaves }))}
@@ -377,7 +383,7 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
               <div className="space-y-1.5">
                 <Label className="text-xs">Roles fuente de este turno</Label>
                 <RolChecklist
-                  roles={roles}
+                  roles={rolesAsignables}
                   selected={binomio.rolClaves}
                   disabled={!canWrite}
                   onChange={(rolClaves) => updateBinomio(binomio.id, { rolClaves })}
@@ -385,6 +391,33 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
               </div>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
+        <CardHeader className="border-b border-slate-100 px-4 py-3">
+          <CardTitle className="text-base">4. Guardia de estacionamiento</CardTitle>
+          <CardDescription className="text-xs">
+            Solo nocturno. Cada celda indica el turno: T1 primer turno, T2 segundo turno, T3 tercer
+            turno. No se asigna en los binomios.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-4">
+          {roles.some((rol) => esRolConTurnoEnMarca(rol.nombre)) ? (
+            <ul className="space-y-1">
+              {roles
+                .filter((rol) => esRolConTurnoEnMarca(rol.nombre))
+                .map((rol) => (
+                  <li key={rol.clave} className="text-sm text-slate-800">
+                    {rol.nombre}
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-slate-500">
+              Todavía no hay un rol de estacionamiento en el mes cargado.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -135,6 +135,7 @@ export type AspiranteQuickInitial = {
   fotoKey?: string | null;
   fotoBoletaKey?: string | null;
   fotoEsquelaKey?: string | null;
+  fotoFichaTecnicaKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
   fotoTituloAutenticacionKey?: string | null;
@@ -1006,7 +1007,7 @@ function AspiranteQuickForm({
           <fieldset hidden={tab !== "archivos"} className="border-0 p-0">
             <legend className="sr-only">Archivos</legend>
             <p className="mb-2.5 text-[11px] text-slate-500">
-              Foto de carnet, foto de boleta, foto de esquela y documentos. Pulse para ver, arrastre para subir, o quite lo que no corresponda.
+              Foto de carnet, foto de ficha técnica, foto de boleta, foto de esquela y documentos. Pulse para ver, arrastre para subir, o quite lo que no corresponda.
               Se guardan al registrar.
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -1018,6 +1019,15 @@ function AspiranteQuickForm({
                 kind="perfil"
                 layout="compact"
                 serverError={state.errors[ASPIRANTE_FOTO_FORM.perfil.file]}
+              />
+              <AspiranteFotoField
+                id="quick-foto-ficha"
+                aspiranteId={initial?.id}
+                fotoKey={initial?.fotoFichaTecnicaKey}
+                nombre={`${initial?.nombres ?? ""} ${initial?.apellidos ?? ""}`.trim() || "aspirante"}
+                kind="ficha"
+                layout="compact"
+                serverError={state.errors[ASPIRANTE_FOTO_FORM.ficha.file]}
               />
               <AspiranteFotoField
                 id="quick-foto-boleta"

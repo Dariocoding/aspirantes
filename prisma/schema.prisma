@@ -400,6 +400,8 @@ model Aspirante {
   fotoBoletaKey         String?
   /// Foto ceremonial para esquelas (S3/R2). Si falta, se usa `fotoKey`.
   fotoEsquelaKey        String?
+  /// Foto impresa en la ficha técnica (S3/R2). Si falta, se usa `fotoKey`.
+  fotoFichaTecnicaKey   String?
   /// Foto de la cédula de identidad (S3/R2).
   fotoCedulaKey         String?
   /// Foto del título universitario / fondo negro (S3/R2).
@@ -555,7 +557,7 @@ model FormatoPermiso {
   updatedAt      DateTime @updatedAt
 }
 
-/// Configuración de la sección nocturna de la Orden del día (singleton JSON).
+/// Configuración de la sección nocturna de la Orden del Día (singleton JSON).
 model OrdenNocturnoConfig {
   id        String   @id
   config    Json

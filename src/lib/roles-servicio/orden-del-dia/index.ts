@@ -1,5 +1,5 @@
 /**
- * Punto de entrada del dominio Orden del día.
+ * Punto de entrada del dominio Orden del Día.
  * Ampliar catálogos en `transcripciones.ts` y patrones en `clasificar-servicio.ts`.
  */
 export {

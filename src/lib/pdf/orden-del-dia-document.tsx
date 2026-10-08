@@ -262,7 +262,7 @@ function MembreteHeader({
         </Text>
         <Text style={s.metaLine}>{revolucion}º DE LA REVOLUCIÓN</Text>
       </View>
-      <Text style={s.tituloOrden}>Orden del día Nº. {data.numeroOrden}</Text>
+      <Text style={s.tituloOrden}>Orden del Día Nº. {data.numeroOrden}</Text>
     </View>
   );
 }
@@ -472,7 +472,7 @@ export function OrdenDelDiaPdfDocument({
   const docTitle =
     titulo ??
     (ordenes.length === 1 && primera
-      ? `Orden del día Nº. ${primera.numeroOrden}`
+      ? `Orden del Día Nº. ${primera.numeroOrden}`
       : "Órdenes del día");
 
   return (

@@ -2,7 +2,12 @@
 
 import { ChevronDown, FileDown, FileSpreadsheet, FileUp, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { AspirantesExcelColumnsDialog } from "@dashboard/aspirantes/_components/aspirantes-excel-columns-dialog";
+import {
+  AspirantesExcelColumnsDialog,
+  defaultExcelFilename,
+  defaultExcelTitle,
+  type ExcelExportRequest,
+} from "@dashboard/aspirantes/_components/aspirantes-excel-columns-dialog";
 import { AspirantesExcelImportDialog } from "@dashboard/aspirantes/_components/aspirantes-excel-import-dialog";
 import { Button } from "@src/components/ui/button";
 import {
@@ -36,6 +41,8 @@ type Props = {
   convocatoriaId: string;
   /** Aspirantes de la convocatoria (sin filtros del listado). */
   convocatoriaCount: number;
+  convocatoriaNombre: string;
+  convocatoriaCodigo: string;
   membretes: MembreteOption[];
 };
 
@@ -85,6 +92,8 @@ export function AspirantesExportLinks({
   exportQuery,
   convocatoriaId,
   convocatoriaCount,
+  convocatoriaNombre,
+  convocatoriaCodigo,
   membretes,
 }: Props) {
   const suffix = exportQuery ? `&${exportQuery}` : "";
@@ -108,11 +117,13 @@ export function AspirantesExportLinks({
     }
   }
 
-  function exportExcel(columnIds: string[]) {
+  function exportExcel({ columnIds, titulo, archivo }: ExcelExportRequest) {
     const params = new URLSearchParams(exportQuery);
     params.set("format", "xlsx");
     params.set("columns", columnIds.join(","));
     params.set("membrete", membreteId || MEMBRETE_NONE_ID);
+    if (titulo.trim()) params.set("titulo", titulo.trim());
+    if (archivo.trim()) params.set("archivo", archivo.trim());
     setExcelOpen(false);
     void runDownload(`${base}?${params.toString()}`, "censo-aspirantes.xlsx", "el Excel del censo");
   }
@@ -311,6 +322,8 @@ export function AspirantesExportLinks({
         membretes={membretes}
         membreteId={membreteId}
         onMembreteIdChange={setMembreteId}
+        defaultTitulo={defaultExcelTitle(convocatoriaNombre)}
+        defaultArchivo={defaultExcelFilename(convocatoriaCodigo)}
         onExport={exportExcel}
       />
       <AspirantesExcelImportDialog

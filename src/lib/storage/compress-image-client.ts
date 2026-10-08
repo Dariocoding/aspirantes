@@ -17,6 +17,7 @@ type Preset = {
 const PRESET: Record<Exclude<AspiranteFotoKind, "esquela">, Preset> = {
   perfil: { maxEdge: 1400, quality: 0.84, prefer: "image/webp" },
   boleta: { maxEdge: 1200, quality: 0.86, prefer: "image/webp" },
+  ficha: { maxEdge: 1400, quality: 0.88, prefer: "image/jpeg" },
   cedula: { maxEdge: 2000, quality: 0.86, prefer: "image/webp" },
   titulo: { maxEdge: 2400, quality: 0.88, prefer: "image/jpeg" },
   tituloAuth: { maxEdge: 2400, quality: 0.88, prefer: "image/jpeg" },

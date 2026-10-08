@@ -6,6 +6,11 @@ import type {
 import type { OrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
 import type { MarcaDia } from "@src/lib/roles-servicio/marcas";
 import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
+import {
+  esRolConTurnoEnMarca,
+  etiquetaServicioTurnoEnMarca,
+  turnoDesdeMarca,
+} from "@src/lib/roles-servicio/turnos-marca";
 
 const OMITIR = "OMITIR";
 
@@ -29,6 +34,49 @@ function gradoMostrado(persona: PersonaOrdenInput): string {
     return labelJerarquiaAutoridad(persona.autoridad.jerarquia).toUpperCase();
   }
   return persona.grado.trim().toUpperCase() || "—";
+}
+
+function clavesSinTurnoEnMarca(claves: string[], planes: PlanOrdenInput[]): string[] {
+  if (claves.length === 0) return claves;
+  const excluir = new Set(
+    planes.filter((plan) => esRolConTurnoEnMarca(plan.nombre)).map((plan) => plan.clave),
+  );
+  return claves.filter((clave) => !excluir.has(clave));
+}
+
+/**
+ * Una fila por persona de guardia de estacionamiento.
+ * T1 → 1ER, T2 → 2DO, T3 → 3ER. La X no cuenta como servicio.
+ */
+function filasTurnoEnMarca(planes: PlanOrdenInput[], dia: number): FilaServicioNocturno[] {
+  const filas: Array<FilaServicioNocturno & { ordenTurno: number; ordenPersona: number }> = [];
+  for (const plan of planes) {
+    if (!esRolConTurnoEnMarca(plan.nombre)) continue;
+    const servicio = etiquetaServicioTurnoEnMarca(plan.nombre);
+    for (const persona of plan.asignaciones) {
+      const marca = marcaDelDia(persona.dias, dia);
+      if (!marca) continue;
+      const turno = turnoDesdeMarca(marca);
+      if (!turno) continue;
+      filas.push({
+        nro: 0,
+        turno: turno.etiqueta,
+        servicio,
+        grado: gradoMostrado(persona),
+        nombres: nombreMostrado(persona),
+        ordenTurno: turno.orden,
+        ordenPersona: persona.orden,
+      });
+    }
+  }
+  filas.sort((a, b) => a.ordenTurno - b.ordenTurno || a.ordenPersona - b.ordenPersona);
+  return filas.map(({ nro, turno, servicio, grado, nombres }) => ({
+    nro,
+    turno,
+    servicio,
+    grado,
+    nombres,
+  }));
 }
 
 function personasDeRolesEnDia(
@@ -116,6 +164,7 @@ function filasDeBloqueFijo(input: {
  * 1) RONDA (= oficial de día)
  * 2) RONDIN ×2 (= inspección, 1.er turno)
  * 3) Binomios: imaginaria por turno (aula / cuartelero / baño)
+ * 4) Guardia de estacionamiento, con el turno que trae la marca (T1/T2/T3)
  */
 export function construirFilasNocturnas(
   planes: PlanOrdenInput[],
@@ -125,7 +174,7 @@ export function construirFilasNocturnas(
   const filasRonda = filasDeBloqueFijo({
     planes,
     dia,
-    rolClaves: config.rondaRolClaves,
+    rolClaves: clavesSinTurnoEnMarca(config.rondaRolClaves, planes),
     servicioEtiqueta: config.rondaServicioEtiqueta || "RONDA",
     turno: config.rondaTurno,
   });
@@ -133,7 +182,7 @@ export function construirFilasNocturnas(
   const filasRondin = filasDeBloqueFijo({
     planes,
     dia,
-    rolClaves: config.rondinRolClaves,
+    rolClaves: clavesSinTurnoEnMarca(config.rondinRolClaves, planes),
     servicioEtiqueta: config.rondinServicioEtiqueta || "RONDIN",
     turno: config.rondinTurno,
     minimoFilas: 2,
@@ -141,11 +190,12 @@ export function construirFilasNocturnas(
 
   const filasBinomio: FilaServicioNocturno[] = [];
   for (const binomio of config.binomios) {
-    const personas = personasDeRolesEnDia(planes, binomio.rolClaves, dia);
+    const rolClaves = clavesSinTurnoEnMarca(binomio.rolClaves, planes);
+    const personas = personasDeRolesEnDia(planes, rolClaves, dia);
     const etiquetaBase = binomio.servicioEtiqueta.trim().toUpperCase();
 
     if (personas.length === 0) {
-      if (binomio.rolClaves.length === 0) continue;
+      if (rolClaves.length === 0) continue;
       filasBinomio.push({
         nro: 0,
         turno: binomio.turno,
@@ -168,7 +218,9 @@ export function construirFilasNocturnas(
     }
   }
 
-  return [...filasRonda, ...filasRondin, ...filasBinomio].map((fila, index) => ({
+  const filasEstacionamiento = filasTurnoEnMarca(planes, dia);
+
+  return [...filasRonda, ...filasRondin, ...filasBinomio, ...filasEstacionamiento].map((fila, index) => ({
     ...fila,
     nro: index + 1,
   }));

@@ -38,7 +38,7 @@ function addLogo(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, buf: Buffer, tlCol
 
 /**
  * Escribe el bloque de membrete institucional al inicio de la hoja.
- * `spanCols` es el ancho visual (puede ser mayor que las columnas de datos).
+ * `spanCols` es la cantidad de columnas de datos: el membrete ocupa exactamente ese ancho.
  * Devuelve cuántas filas ocupó (0 si no hay membrete).
  */
 export function applyExcelMembreteHeader(

@@ -231,7 +231,7 @@ export async function buildAspirantesCumpleanosXlsxBuffer(
   const subRow = offset + 2;
   const resumenRow = offset + 3;
 
-  ws.views = [{ state: "frozen", ySplit: resumenRow, activeCell: `A${resumenRow + 1}`, showGridLines: false }];
+  ws.views = [{ showGridLines: false, activeCell: "A1" } as ExcelJS.WorksheetView];
   ws.pageSetup.printTitlesRow = `${titleRow}:${resumenRow}`;
 
   // —— Encabezado ——

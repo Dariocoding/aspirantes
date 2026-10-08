@@ -20,6 +20,7 @@ import {
   type Transcripcion,
 } from "@src/lib/roles-servicio/orden-del-dia/transcripciones";
 import type { MarcaDia } from "@src/lib/roles-servicio/marcas";
+import { esRolConTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
 import type { JerarquiaAutoridad } from "@src/generated/prisma";
 import { PLANTILLA_MEMBRETE_CEFOA45 } from "@src/lib/membrete";
@@ -147,6 +148,7 @@ function filasDelDia(
 ): Array<{ plan: PlanOrdenInput; persona: PersonaOrdenInput }> {
   const filas: Array<{ plan: PlanOrdenInput; persona: PersonaOrdenInput }> = [];
   for (const plan of planes) {
+    if (esRolConTurnoEnMarca(plan.nombre)) continue;
     if (clasificarTurnoServicio(plan.nombre) !== turno) continue;
     for (const persona of plan.asignaciones) {
       if (!marcaDelDia(persona.dias, dia)) continue;
@@ -212,9 +214,9 @@ function etiquetaServicioDiurno(nombreRol: string): string {
 
 export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData {
   const { anio, mes, dia } = input;
-  // La orden se dicta el día anterior al diurno. Ese día es también el nocturno.
-  const dictada = diaAnterior(anio, mes, dia);
-  const mismaHoja = dictada.anio === anio && dictada.mes === mes;
+  // El diurno y la fecha de la orden son el día pedido. El nocturno es la noche anterior.
+  const noche = diaAnterior(anio, mes, dia);
+  const mismaHoja = noche.anio === anio && noche.mes === mes;
   const planesNoche = mismaHoja ? input.planes : (input.planesMesAnterior ?? []);
 
   const rawDiurnos = filasDelDia(input.planes, dia, "diurno");
@@ -223,7 +225,7 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
     input.nocturnoConfig ?? defaultOrdenNocturnoConfig(),
     planesNoche.length > 0 ? planesNoche : input.planes,
   );
-  const nocturnos = construirFilasNocturnas(planesNoche, dictada.dia, configNocturna);
+  const nocturnos = construirFilasNocturnas(planesNoche, noche.dia, configNocturna);
 
   const diurnos: FilaServicioDiurno[] = rawDiurnos.map((fila, index) => ({
     nro: index + 1,
@@ -237,22 +239,22 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
       ? input.lineasMembrete.map((l) => l.toUpperCase())
       : [...PLANTILLA_MEMBRETE_CEFOA45].map((l) => l.toUpperCase());
 
-  const fecha = etiquetaFechaOrden(dictada.anio, dictada.mes, dictada.dia);
+  const fecha = etiquetaFechaOrden(anio, mes, dia);
   const diaMes = etiquetaDiaMesOrden(anio, mes, dia);
-  const diaMesNoche = etiquetaDiaMesOrden(dictada.anio, dictada.mes, dictada.dia);
+  const diaMesNoche = etiquetaDiaMesOrden(noche.anio, noche.mes, noche.dia);
 
   return {
     anio,
     mes,
     dia,
-    numeroOrden: numeroOrdenDelDia(dictada.anio, dictada.mes, dictada.dia),
+    numeroOrden: numeroOrdenDelDia(anio, mes, dia),
     lineasMembrete: lineas,
     lugar: (input.lugar ?? LUGAR_ORDEN_DEFAULT).toUpperCase(),
     fechaDocumento: fecha,
-    aniversarios: aniversariosInstitucionales(dictada.anio),
-    transcripciones: trioTranscripcionesDelDia(dictada.anio, dictada.mes, dictada.dia),
+    aniversarios: aniversariosInstitucionales(anio),
+    transcripciones: trioTranscripcionesDelDia(anio, mes, dia),
     diurnosTitulo: `1. SERVICIO DIURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
-    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA HOY ${diaMesNoche} DEL AÑO ${dictada.anio}.`,
+    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMesNoche} DEL AÑO ${noche.anio}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,

@@ -280,6 +280,7 @@ export type AspiranteRegistroInitial = {
   fotoKey?: string | null;
   fotoBoletaKey?: string | null;
   fotoEsquelaKey?: string | null;
+  fotoFichaTecnicaKey?: string | null;
   fotoCedulaKey?: string | null;
   fotoTituloKey?: string | null;
   fotoTituloAutenticacionKey?: string | null;
@@ -654,6 +655,13 @@ export function AspiranteRegistroForm({
               fotoKey={seed?.fotoKey ?? initial?.fotoKey}
               nombre={`${defaults.nombres} ${defaults.apellidos}`.trim() || "aspirante"}
               kind="perfil"
+            />
+            <AspiranteFotoField
+              id="aspirante-foto-ficha"
+              aspiranteId={seed?.id}
+              fotoKey={seed?.fotoFichaTecnicaKey ?? initial?.fotoFichaTecnicaKey}
+              nombre={`${defaults.nombres} ${defaults.apellidos}`.trim() || "aspirante"}
+              kind="ficha"
             />
             <AspiranteFotoField
               id="aspirante-foto-boleta"

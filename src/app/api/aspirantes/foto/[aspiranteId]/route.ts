@@ -49,6 +49,7 @@ export async function GET(
       fotoKey: true,
       fotoBoletaKey: true,
       fotoEsquelaKey: true,
+      fotoFichaTecnicaKey: true,
       fotoCedulaKey: true,
       fotoTituloKey: true,
       fotoTituloAutenticacionKey: true,

@@ -1,5 +1,5 @@
 /**
- * Clasificación diurno / nocturno para filas de la Orden del día.
+ * Clasificación diurno / nocturno para filas de la Orden del Día.
  * Extender los patrones si aparecen nuevos nombres de rol en el Excel.
  */
 

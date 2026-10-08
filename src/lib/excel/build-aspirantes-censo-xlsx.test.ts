@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import ExcelJS from "exceljs";
 import { parseAspirantesCensoXlsxBuffer } from "./parse-aspirantes-censo-xlsx";
 import { buildAspirantesCensoXlsxBuffer, type AspiranteCensoExportRow } from "./build-aspirantes-censo-xlsx";
 import { PLANTILLA_MEMBRETE_CEFOA45 } from "@src/lib/membrete";
@@ -116,4 +117,54 @@ test("el membrete con escudos del Ejército y C.E.F.O.A. sigue importándose", a
 
   const parsed = await parseAspirantesCensoXlsxBuffer(buffer);
   assert.equal(parsed.rows[0]?.cedula, "21425976");
+});
+
+test("el título escrito queda encima de las columnas y el censo sigue importándose", async () => {
+  const buffer = await buildAspirantesCensoXlsxBuffer({
+    convocatoriaNombre: "CEFOA 46",
+    convocatoriaCodigo: "CEFOA-46",
+    anio: 2026,
+    rows: [sampleRow()],
+    columnIds: ["numero", "nombreCompleto", "cedula"],
+    generatedAt: new Date("2026-09-19T12:00:00Z"),
+    membrete: null,
+    titulo: "LISTADO DEL CURSO 46",
+  });
+
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buffer);
+  const ws = wb.getWorksheet("Censo");
+  assert.ok(ws);
+  assert.equal(ws.getCell("A1").value, "LISTADO DEL CURSO 46");
+  assert.ok(ws.model.merges.some((range) => range.startsWith("A1:C")));
+  const parsed = await parseAspirantesCensoXlsxBuffer(buffer);
+  assert.equal(parsed.rows[0]?.cedula, "21425976");
+});
+
+test("el membrete ocupa solo las columnas exportadas y no queda inmovilizado", async () => {
+  const buffer = await buildAspirantesCensoXlsxBuffer({
+    convocatoriaNombre: "CEFOA 46",
+    convocatoriaCodigo: "CEFOA-46",
+    anio: 2026,
+    rows: [sampleRow()],
+    columnIds: ["numero", "edad", "sexo"],
+    generatedAt: new Date("2026-09-19T12:00:00Z"),
+    membrete: {
+      lineas: [...PLANTILLA_MEMBRETE_CEFOA45],
+      logoIzq: "ejercito",
+      logoDer: "cefoa",
+    },
+  });
+
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buffer);
+  const ws = wb.getWorksheet("Censo");
+  assert.ok(ws);
+  assert.ok(ws.model.merges.some((range) => range.startsWith("A1:C")));
+  assert.equal(ws.model.merges.some((range) => /:[D-Z]/.test(range)), false);
+  assert.equal((ws.views ?? []).some((view) => view.state === "frozen"), false);
+  assert.ok(ws.getTable("Censo"));
+  const sum = [1, 2, 3].reduce((total, col) => total + (ws.getColumn(col).width ?? 0), 0);
+  assert.ok(sum > 6 + 8 + 12);
+  assert.ok((ws.getColumn(2).width ?? 0) >= (ws.getColumn(1).width ?? 0));
 });

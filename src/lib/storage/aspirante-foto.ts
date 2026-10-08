@@ -18,17 +18,19 @@ export type AspiranteFotoKind =
   | "perfil"
   | "boleta"
   | "esquela"
+  | "ficha"
   | "cedula"
   | "titulo"
   | "tituloAuth"
   | "notas";
 
-export type AspiranteDocumentoKind = Exclude<AspiranteFotoKind, "perfil" | "boleta" | "esquela">;
+export type AspiranteDocumentoKind = Exclude<AspiranteFotoKind, "perfil" | "boleta" | "esquela" | "ficha">;
 
 export const ASPIRANTE_FOTO_KINDS: readonly AspiranteFotoKind[] = [
   "perfil",
   "boleta",
   "esquela",
+  "ficha",
   "cedula",
   "titulo",
   "tituloAuth",
@@ -46,6 +48,7 @@ export type AspiranteFotoDbField =
   | "fotoKey"
   | "fotoBoletaKey"
   | "fotoEsquelaKey"
+  | "fotoFichaTecnicaKey"
   | "fotoCedulaKey"
   | "fotoTituloKey"
   | "fotoTituloAutenticacionKey"
@@ -55,6 +58,7 @@ const KIND_FILE: Record<AspiranteFotoKind, string> = {
   perfil: "foto",
   boleta: "boleta",
   esquela: "esquela",
+  ficha: "ficha-tecnica",
   cedula: "cedula",
   titulo: "titulo",
   tituloAuth: "titulo-auth",
@@ -69,6 +73,7 @@ export const ASPIRANTE_FOTO_FORM: Record<
   perfil: { file: "imagen", quitar: "quitarImagen", dbField: "fotoKey" },
   boleta: { file: "imagenBoleta", quitar: "quitarImagenBoleta", dbField: "fotoBoletaKey" },
   esquela: { file: "imagenEsquela", quitar: "quitarImagenEsquela", dbField: "fotoEsquelaKey" },
+  ficha: { file: "imagenFichaTecnica", quitar: "quitarImagenFichaTecnica", dbField: "fotoFichaTecnicaKey" },
   cedula: { file: "imagenCedula", quitar: "quitarImagenCedula", dbField: "fotoCedulaKey" },
   titulo: { file: "imagenTitulo", quitar: "quitarImagenTitulo", dbField: "fotoTituloKey" },
   tituloAuth: {
@@ -80,18 +85,21 @@ export const ASPIRANTE_FOTO_FORM: Record<
 };
 
 export function allowedExtsForKind(kind: AspiranteFotoKind): Set<AspiranteArchivoExt> {
-  if (kind === "titulo" || kind === "tituloAuth") return EXTS_JPEG_PNG;
+  if (kind === "titulo" || kind === "tituloAuth" || kind === "ficha") return EXTS_JPEG_PNG;
   if (kind === "notas") return EXTS_NOTAS;
   return EXTS_IMAGEN;
 }
 
 export function acceptAttrForKind(kind: AspiranteFotoKind): string {
-  if (kind === "titulo" || kind === "tituloAuth") return "image/jpeg,image/png,.jpg,.jpeg,.png";
+  if (kind === "titulo" || kind === "tituloAuth" || kind === "ficha") {
+    return "image/jpeg,image/png,.jpg,.jpeg,.png";
+  }
   if (kind === "notas") return "image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf";
   return "image/jpeg,image/png,image/webp,image/gif";
 }
 
 export function formatHelpForKind(kind: AspiranteFotoKind): string {
+  if (kind === "ficha") return "Solo JPEG o PNG, para que salga en el PDF.";
   if (kind === "titulo" || kind === "tituloAuth") return "Solo JPEG o PNG.";
   if (kind === "notas") {
     return "JPEG, PNG o PDF. Varias imágenes se unen en un PDF; una sola se queda como imagen.";
@@ -103,6 +111,9 @@ export function formatHelpForKind(kind: AspiranteFotoKind): string {
 }
 
 export function formatErrorForKind(kind: AspiranteFotoKind): string {
+  if (kind === "ficha") {
+    return "Formato no permitido. La foto de la ficha técnica solo acepta JPEG o PNG.";
+  }
   if (kind === "titulo" || kind === "tituloAuth") {
     return "Formato no permitido. El fondo negro y la autenticación solo aceptan JPEG o PNG.";
   }
@@ -193,6 +204,17 @@ export function pickFotoForBoleta(
 ): string | null {
   const boleta = fotoBoletaKey?.trim();
   if (boleta) return boleta;
+  const carnet = fotoCarnetKey?.trim();
+  return carnet || null;
+}
+
+/** Fuente de la foto en la ficha técnica: la propia si existe; si no, carnet. */
+export function pickFotoForFichaTecnica(
+  fotoFichaTecnicaKey: string | null | undefined,
+  fotoCarnetKey: string | null | undefined,
+): string | null {
+  const propia = fotoFichaTecnicaKey?.trim();
+  if (propia) return propia;
   const carnet = fotoCarnetKey?.trim();
   return carnet || null;
 }

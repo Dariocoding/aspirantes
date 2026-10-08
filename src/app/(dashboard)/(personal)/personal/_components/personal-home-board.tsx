@@ -12,6 +12,7 @@ import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
 import { INSTITUTION_SHORT_NAME } from "@src/lib/branding";
 import { routes } from "@src/lib/apps/routes";
+import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { cn } from "@src/lib/utils";
 
 export type PersonalHomeBirthday = {
@@ -295,6 +296,7 @@ export function PersonalHomeBoard({
               <li key={item.id} className="bg-white px-3 py-2.5">
                 <p className="truncate text-[10px] font-medium tracking-wide text-teal-800 uppercase">
                   {item.rolNombre}
+                  {turnoDesdeMarca(item.marca) ? ` · ${turnoDesdeMarca(item.marca)?.nombre}` : ""}
                 </p>
                 {item.aspiranteId ? (
                   <AspiranteIdentityLink

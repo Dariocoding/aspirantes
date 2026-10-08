@@ -37,6 +37,7 @@ import {
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
 import type { JerarquiaAutoridad } from "@src/generated/prisma";
+import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { cn } from "@src/lib/utils";
 
 export type AsignacionVista = {
@@ -100,6 +101,7 @@ const GRUPOS_ROL: { id: string; label: string; match: (nombre: string) => boolea
   { id: "bano", label: "Baños", match: (n) => /ba[nñ]o/i.test(n) },
   { id: "comedor", label: "Comedores", match: (n) => /comedor/i.test(n) },
   { id: "aula", label: "Aulas", match: (n) => /aula/i.test(n) },
+  { id: "estacionamiento", label: "Estacionamiento", match: (n) => /estacionamiento/i.test(n) },
   { id: "otros", label: "Otros", match: () => true },
 ];
 
@@ -201,6 +203,12 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
         lista.push({ plan, asignacion, marca });
       }
     }
+    lista.sort((a, b) => {
+      const turnoA = turnoDesdeMarca(a.marca);
+      const turnoB = turnoDesdeMarca(b.marca);
+      if (turnoA && turnoB && turnoA.orden !== turnoB.orden) return turnoA.orden - turnoB.orden;
+      return 0;
+    });
     return lista;
   }, [planesAlcance, diaSeleccionado]);
 
@@ -585,7 +593,11 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                                 <Badge variant="outline" className="font-mono text-[10px]">
                                   {asignacion.grado}
                                 </Badge>
-                                {marca !== "X" ? (
+                                {turnoDesdeMarca(marca) ? (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {turnoDesdeMarca(marca)?.nombre}
+                                  </Badge>
+                                ) : marca !== "X" ? (
                                   <Badge variant="secondary" className="text-[10px]">
                                     Marca {marca}
                                   </Badge>
@@ -976,6 +988,26 @@ function AvatarAsignacion({
 }
 
 function MarcaCelda({ marca }: { marca: string }) {
+  const turno = turnoDesdeMarca(marca);
+  if (turno) {
+    const tono =
+      marca.toUpperCase() === "T1"
+        ? "bg-indigo-700"
+        : marca.toUpperCase() === "T2"
+          ? "bg-violet-700"
+          : "bg-amber-700";
+    return (
+      <span
+        className={cn(
+          "mx-auto inline-flex min-w-5 items-center justify-center rounded-md px-1 py-0.5 font-mono text-[10px] font-semibold text-white",
+          tono,
+        )}
+        title={turno.nombre}
+      >
+        {marca}
+      </span>
+    );
+  }
   if (marca === "X") {
     return (
       <span

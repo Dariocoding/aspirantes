@@ -96,6 +96,7 @@ export function CensusToolbar({
 }) {
   const sp = useSearchParams();
   const convocatoriaId = useConvocatoriaId(convocatorias, defaultConvocatoriaId);
+  const convocatoria = convocatorias.find((c) => c.id === convocatoriaId);
   const pelotonesVisibles = pelotones.filter((p) => p.convocatoriaId === convocatoriaId);
   const peloton = sp.get("peloton")?.trim();
   const pelotonActivo = Boolean(
@@ -136,6 +137,8 @@ export function CensusToolbar({
               exportQuery={exportQuery}
               convocatoriaId={convocatoriaId}
               convocatoriaCount={counts[convocatoriaId] ?? 0}
+              convocatoriaNombre={convocatoria?.nombre ?? ""}
+              convocatoriaCodigo={convocatoria?.codigo ?? ""}
               membretes={membretes}
             />
             <AspiranteQuickRegisterButton pelotones={pelotonesVisibles} />

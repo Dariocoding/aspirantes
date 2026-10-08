@@ -340,6 +340,7 @@ export async function updateAspiranteSelfService(
     fotoKey: aspirante.fotoKey,
     fotoBoletaKey: aspirante.fotoBoletaKey,
     fotoEsquelaKey: aspirante.fotoEsquelaKey,
+    fotoFichaTecnicaKey: aspirante.fotoFichaTecnicaKey,
     fotoCedulaKey: aspirante.fotoCedulaKey,
     fotoTituloKey: aspirante.fotoTituloKey,
     fotoTituloAutenticacionKey: aspirante.fotoTituloAutenticacionKey,

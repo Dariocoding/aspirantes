@@ -175,7 +175,7 @@ export async function GET(request: Request) {
   const titulo =
     ambito === "mes"
       ? `Órdenes del día · ${mesLabel}`
-      : `Orden del día Nº ${ordenes[0]?.numeroOrden ?? dia}`;
+      : `Orden del Día Nº ${ordenes[0]?.numeroOrden ?? dia}`;
 
   let buffer: Buffer;
   try {

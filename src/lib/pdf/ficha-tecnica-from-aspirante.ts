@@ -3,6 +3,7 @@ import { parseFichaEvaluacion } from "@src/lib/aspirantes/ficha-evaluacion";
 import { labelTipoEstudioPdf } from "@src/lib/aspirantes/tipo-estudio";
 import { ageFromBirthDate } from "@src/lib/date";
 import type { AspiranteFichaTecnicaPdfProps } from "@src/lib/pdf/aspirante-ficha-tecnica-document";
+import { pickFotoForFichaTecnica } from "@src/lib/storage/aspirante-foto";
 import { getObjectBuffer } from "@src/lib/storage/s3";
 
 export type AspiranteForFichaTecnicaPdf = {
@@ -30,6 +31,19 @@ export type AspiranteForFichaTecnicaPdf = {
     comandanteTelefono: string | null;
   };
 };
+
+/** La foto propia de la ficha tiene prioridad. Si no existe o no se puede embeber, usa la de carnet. */
+export async function resolveFotoFichaTecnicaPdf(
+  fotoFichaTecnicaKey: string | null | undefined,
+  fotoCarnetKey: string | null | undefined,
+): Promise<Buffer | null> {
+  const propia = fotoFichaTecnicaKey?.trim();
+  if (propia) {
+    const buffer = await loadFotoForFichaTecnicaPdf(propia);
+    if (buffer) return buffer;
+  }
+  return loadFotoForFichaTecnicaPdf(pickFotoForFichaTecnica(null, fotoCarnetKey));
+}
 
 export async function loadFotoForFichaTecnicaPdf(fotoKey: string | null): Promise<Buffer | null> {
   if (!fotoKey) return null;

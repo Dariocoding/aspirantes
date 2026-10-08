@@ -76,6 +76,8 @@ export type BuildAspirantesCensoXlsxParams = {
   columnIds: string[];
   generatedAt: Date;
   membrete?: MembreteSpec | null;
+  /** Título escrito en la hoja, debajo del membrete y encima de las columnas. */
+  titulo?: string | null;
 };
 
 const BORDER: Partial<ExcelJS.Borders> = {
@@ -129,6 +131,60 @@ function formatContacto(r: AspiranteCensoExportRow): string {
   const tel = formatTelefonoVenezolano(r.contactoTelefono);
   const parts = [nombre, parentesco, tel].filter(Boolean);
   return parts.length ? parts.join(" · ") : "—";
+}
+
+/** Con 5 columnas o menos el membrete se queda angosto: se estira según el texto. */
+const FEW_COLUMNS = 5;
+
+function longestLine(text: string): number {
+  return text.split(/\r?\n/).reduce((max, part) => Math.max(max, part.trim().length), 0);
+}
+
+function columnWidths(
+  columns: CensusExportColumn[],
+  rows: AspiranteCensoExportRow[],
+  membrete: MembreteSpec | null | undefined,
+  titulo: string,
+): number[] {
+  const samples = columns.map((col) =>
+    rows.slice(0, 80).map((row, index) => String(cellValue(col, row, index))),
+  );
+  const base = columns.map((col, index) => {
+    const longest = samples[index]!.reduce((max, text) => Math.max(max, longestLine(text)), col.label.length);
+    if (columns.length > FEW_COLUMNS) return col.width;
+    const fitted = Math.ceil(longest * 1.08 + 2);
+    return Math.max(col.width, Math.min(fitted, 40));
+  });
+  if (columns.length > FEW_COLUMNS) return base;
+
+  const longestMembrete = membrete?.lineas.reduce((max, line) => Math.max(max, line.trim().length), 0) ?? 0;
+  const hasLogo = Boolean(membrete && (membrete.logoIzq !== "none" || membrete.logoDer !== "none"));
+  const longestText = Math.max(longestMembrete, titulo.length);
+  if (!longestText && !hasLogo) return base;
+
+  const flanked = columns.length >= FEW_COLUMNS && hasLogo;
+  const textGoal = Math.ceil(Math.max(longestText, 42) / 2);
+  const logoGoal = flanked ? 24 : hasLogo ? 6 : 0;
+  const target = Math.max(68, textGoal + logoGoal);
+
+  const weights = columns.map((col, index) => {
+    const content = samples[index]!.reduce(
+      (max, text) => Math.max(max, Math.min(longestLine(text.split(/\r?\n/)[0] ?? ""), 32)),
+      col.label.length,
+    );
+    const side = flanked && (index === 0 || index === columns.length - 1);
+    return Math.max(2, side ? content * 0.4 : content);
+  });
+
+  const next = [...base];
+  if (flanked) {
+    next[0] = Math.max(next[0] ?? 0, 12);
+    next[next.length - 1] = Math.max(next[next.length - 1] ?? 0, 12);
+  }
+  const deficit = target - next.reduce((sum, width) => sum + width, 0);
+  if (deficit <= 0.5) return next.map((width) => Math.round(width * 10) / 10);
+  const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+  return next.map((width, index) => Math.round((width + (deficit * weights[index]!) / weightSum) * 10) / 10);
 }
 
 function estimateWrappedLines(text: string, colWidth: number): number {
@@ -257,7 +313,8 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   }
 
   const lastCol = columns.length;
-  const headerSpan = Math.max(lastCol, 8);
+  const titulo = params.titulo?.replace(/\s+/g, " ").trim().slice(0, 180) ?? "";
+  const widths = columnWidths(columns, rows, params.membrete ?? null, titulo);
   const wb = new ExcelJS.Workbook();
   wb.creator = "FANB Aspirantes";
   wb.created = generatedAt;
@@ -275,26 +332,44 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
 
   columns.forEach((col, i) => {
     const column = ws.getColumn(i + 1);
-    column.width = col.width;
+    column.width = widths[i];
     column.font = { name: "Arial", size: 12, bold: false, color: { argb: "FF0F172A" } };
   });
-  for (let c = lastCol + 1; c <= headerSpan; c++) {
-    ws.getColumn(c).width = 12;
+
+  const offset = applyExcelMembreteHeader(wb, ws, lastCol, params.membrete);
+  const titleRows = titulo ? 1 : 0;
+  if (titulo) {
+    const titleRow = offset + 1;
+    if (lastCol > 1) ws.mergeCells(titleRow, 1, titleRow, lastCol);
+    const titleFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF1F5F9" } };
+    for (let c = 1; c <= lastCol; c++) {
+      const side = ws.getCell(titleRow, c);
+      side.fill = titleFill;
+      applyCellBorder(side);
+    }
+    const title = ws.getCell(titleRow, 1);
+    title.value = titulo;
+    title.font = { name: "Arial", size: 14, bold: true, color: { argb: "FF0F172A" } };
+    title.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    const chars = Math.max(18, Math.floor(widths.reduce((sum, width) => sum + width, 0) * 1.05));
+    const lines = Math.max(1, Math.ceil(titulo.length / chars));
+    ws.getRow(titleRow).height = Math.min(48, Math.max(26, lines * 18));
   }
+  const colHeaderRow = offset + titleRows + 1;
+  const dataStartRow = offset + titleRows + 2;
 
-  const offset = applyExcelMembreteHeader(wb, ws, headerSpan, params.membrete);
-  const colHeaderRow = offset + 1;
-  const dataStartRow = offset + 2;
-
-  ws.views = [
-    {
-      state: "frozen",
-      ySplit: colHeaderRow,
-      xSplit: 0,
-      activeCell: `A${dataStartRow}`,
-      showGridLines: true,
-    },
-  ];
+  // El membrete va encima y se desplaza. La tabla deja fijos solo los encabezados al hacer scroll.
+  if (rows.length > 0) {
+    ws.addTable({
+      name: "Censo",
+      ref: `A${colHeaderRow}`,
+      headerRow: true,
+      totalsRow: false,
+      style: { theme: "TableStyleLight1", showRowStripes: false },
+      columns: columns.map((col) => ({ name: col.label, filterButton: false })),
+      rows: rows.map((row, idx) => columns.map((col) => cellValue(col, row, idx))),
+    });
+  }
   ws.pageSetup.printTitlesRow = `${colHeaderRow}:${colHeaderRow}`;
 
   const headerRow = ws.getRow(colHeaderRow);
@@ -352,7 +427,7 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
       }
       applyCellBorder(cell);
       if (typeof value === "string" && col.align === "left") {
-        maxLines = Math.max(maxLines, estimateWrappedLines(value, col.width));
+        maxLines = Math.max(maxLines, estimateWrappedLines(value, widths[i] ?? col.width));
       }
     });
 

@@ -73,6 +73,7 @@ export type AspirantesCensusRow = {
   fotoKey: string | null;
   fotoBoletaKey: string | null;
   fotoEsquelaKey: string | null;
+  fotoFichaTecnicaKey: string | null;
   fotoCedulaKey: string | null;
   fotoTituloKey: string | null;
   fotoTituloAutenticacionKey: string | null;

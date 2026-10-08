@@ -85,15 +85,12 @@ export function OrdenDelDiaDownloadButton({
   const hoy = fechaDeHoy();
   const seleccionado: FechaOrden = { anio, mes, dia: diaSeleccionado };
 
-  // Cada acceso abre esa fecha: diurno del día y nocturno de la noche anterior.
+  // La mañana (diurno) es la orden de ese día. El nocturno es la noche anterior.
   const ordenAyer = sumarDias(hoy, -1);
   const ordenHoy = hoy;
-  const ordenManana = sumarDias(hoy, 1);
 
   const seleccionadoEsEspecial =
-    !mismaFecha(seleccionado, ordenAyer) &&
-    !mismaFecha(seleccionado, ordenHoy) &&
-    !mismaFecha(seleccionado, ordenManana);
+    !mismaFecha(seleccionado, ordenAyer) && !mismaFecha(seleccionado, ordenHoy);
 
   const [calendarioAbierto, setCalendarioAbierto] = useState(false);
   const [vistaAnio, setVistaAnio] = useState(anio);
@@ -164,14 +161,14 @@ export function OrdenDelDiaDownloadButton({
           nativeButton={false}
           closeOnClick
           render={
-            <a href={ordenDelDiaPdfUrl(ordenManana)} target="_blank" rel="noopener noreferrer" />
+            <a href={ordenDelDiaPdfUrl(ordenHoy)} target="_blank" rel="noopener noreferrer" />
           }
         >
           <Sunrise className="size-3.5" aria-hidden />
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de mañana</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(ordenManana)} · diurno de mañana · nocturno de hoy
+              {etiquetaCorta(ordenHoy)} · diurno de hoy · nocturno de anoche
             </span>
           </span>
         </DropdownMenuItem>
