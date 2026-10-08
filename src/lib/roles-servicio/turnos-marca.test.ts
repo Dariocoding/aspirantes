@@ -106,7 +106,8 @@ test("la orden nocturna coloca la guardia según T1 T2 T3 y no en el diurno", ()
   });
   assert.equal(orden.diurnos.some((fila) => fila.servicio.includes("ESTACIONAMIENTO")), false);
   assert.equal(orden.nocturnos.some((fila) => fila.servicio === "GUARDIA ESTACIONAMIENTO"), true);
-  assert.equal(orden.fechaDocumento, "VIERNES 09 DE OCTUBRE DE 2026");
-  assert.match(orden.diurnosTitulo, /09 DE OCTUBRE/);
-  assert.match(orden.nocturnosTitulo, /08 DE OCTUBRE/);
+  assert.equal(orden.fechaDocumento, "JUEVES 08 DE OCTUBRE DE 2026");
+  assert.equal(orden.dia, 8);
+  assert.match(orden.diurnosTitulo, /VIERNES 09 DE OCTUBRE DEL AÑO 2026/);
+  assert.match(orden.nocturnosTitulo, /PARA HOY JUEVES 08 DE OCTUBRE DEL AÑO 2026/);
 });

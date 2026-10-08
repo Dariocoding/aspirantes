@@ -18,6 +18,7 @@ import {
 } from "@src/lib/roles-servicio/orden-del-dia/build-orden";
 import type { OrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/config-nocturno";
 import { loadOrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/load-config-nocturno";
+import { siguienteDia } from "@src/lib/roles-servicio/orden-del-dia/fechas";
 import { diasDelMes, etiquetaMes, marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
 import { prisma } from "@src/lib/prisma";
 
@@ -74,6 +75,7 @@ function construirOrdenesMes(input: {
   mes: number;
   planes: PlanOrdenInput[];
   planesMesAnterior: PlanOrdenInput[];
+  planesMesSiguiente: PlanOrdenInput[];
   lineasMembrete?: string[];
   directorNombre?: string | null;
   nocturnoConfig: OrdenNocturnoConfig;
@@ -81,13 +83,16 @@ function construirOrdenesMes(input: {
   const total = diasDelMes(input.anio, input.mes);
   const ordenes: OrdenDelDiaData[] = [];
   for (let dia = 1; dia <= total; dia += 1) {
+    const diurno = siguienteDia(input.anio, input.mes, dia);
+    if (!diurno) continue;
+    const mismoMes = diurno.anio === input.anio && diurno.mes === input.mes;
     ordenes.push(
       buildOrdenDelDia({
-        anio: input.anio,
-        mes: input.mes,
-        dia,
-        planes: input.planes,
-        planesMesAnterior: input.planesMesAnterior,
+        anio: diurno.anio,
+        mes: diurno.mes,
+        dia: diurno.dia,
+        planes: mismoMes ? input.planes : input.planesMesSiguiente,
+        planesMesAnterior: mismoMes ? input.planesMesAnterior : input.planes,
         lineasMembrete: input.lineasMembrete,
         directorNombre: input.directorNombre,
         nocturnoConfig: input.nocturnoConfig,
@@ -140,7 +145,12 @@ export async function GET(request: Request) {
 
   const mesAnterior = mes === 1 ? 12 : mes - 1;
   const anioAnterior = mes === 1 ? anio - 1 : anio;
-  const planesMesAnterior = await cargarPlanes(anioAnterior, mesAnterior);
+  const mesSiguiente = mes === 12 ? 1 : mes + 1;
+  const anioSiguiente = mes === 12 ? anio + 1 : anio;
+  const [planesMesAnterior, planesMesSiguiente] = await Promise.all([
+    cargarPlanes(anioAnterior, mesAnterior),
+    cargarPlanes(anioSiguiente, mesSiguiente),
+  ]);
 
   const logoIzqKind: MembreteLogoKind =
     membrete && isMembreteLogoKind(membrete.logoIzq) ? membrete.logoIzq : "ejercito";
@@ -150,6 +160,7 @@ export async function GET(request: Request) {
   const comunes = {
     planes,
     planesMesAnterior,
+    planesMesSiguiente,
     lineasMembrete: membrete?.lineas,
     directorNombre: convocatoria?.comandanteNombre,
     nocturnoConfig,

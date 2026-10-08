@@ -162,24 +162,24 @@ function columnWidths(
   const longestText = Math.max(longestMembrete, titulo.length);
   if (!longestText && !hasLogo) return base;
 
-  const flanked = columns.length >= FEW_COLUMNS && hasLogo;
-  const textGoal = Math.ceil(Math.max(longestText, 42) / 2);
-  const logoGoal = flanked ? 24 : hasLogo ? 6 : 0;
-  const target = Math.max(68, textGoal + logoGoal);
+  const sideGutters = columns.length >= 3 && hasLogo;
+  const textGoal = Math.ceil(Math.max(longestMembrete, 42) / 1.7);
+  const titleGoal = titulo ? Math.ceil(titulo.length * 1.35) : 0;
+  const target = Math.max(sideGutters ? 76 : 68, textGoal + (sideGutters ? 28 : 0), titleGoal);
 
   const weights = columns.map((col, index) => {
     const content = samples[index]!.reduce(
       (max, text) => Math.max(max, Math.min(longestLine(text.split(/\r?\n/)[0] ?? ""), 32)),
       col.label.length,
     );
-    const side = flanked && (index === 0 || index === columns.length - 1);
-    return Math.max(2, side ? content * 0.4 : content);
+    const side = sideGutters && (index === 0 || index === columns.length - 1);
+    return side ? 0.15 : Math.max(2, content);
   });
 
   const next = [...base];
-  if (flanked) {
-    next[0] = Math.max(next[0] ?? 0, 12);
-    next[next.length - 1] = Math.max(next[next.length - 1] ?? 0, 12);
+  if (sideGutters) {
+    if ((base[0] ?? 0) <= 16) next[0] = Math.max(next[0] ?? 0, 14);
+    if ((base[base.length - 1] ?? 0) <= 18) next[next.length - 1] = Math.max(next[next.length - 1] ?? 0, 14);
   }
   const deficit = target - next.reduce((sum, width) => sum + width, 0);
   if (deficit <= 0.5) return next.map((width) => Math.round(width * 10) / 10);
@@ -341,19 +341,13 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
   if (titulo) {
     const titleRow = offset + 1;
     if (lastCol > 1) ws.mergeCells(titleRow, 1, titleRow, lastCol);
-    const titleFill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF1F5F9" } };
-    for (let c = 1; c <= lastCol; c++) {
-      const side = ws.getCell(titleRow, c);
-      side.fill = titleFill;
-      applyCellBorder(side);
-    }
     const title = ws.getCell(titleRow, 1);
     title.value = titulo;
-    title.font = { name: "Arial", size: 14, bold: true, color: { argb: "FF0F172A" } };
+    title.font = { name: "Arial", size: 13, bold: true, color: { argb: "FF0F172A" } };
     title.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    const chars = Math.max(18, Math.floor(widths.reduce((sum, width) => sum + width, 0) * 1.05));
+    const chars = Math.max(18, Math.floor(widths.reduce((sum, width) => sum + width, 0) * 0.95));
     const lines = Math.max(1, Math.ceil(titulo.length / chars));
-    ws.getRow(titleRow).height = Math.min(48, Math.max(26, lines * 18));
+    ws.getRow(titleRow).height = Math.min(40, Math.max(22, lines * 18));
   }
   const colHeaderRow = offset + titleRows + 1;
   const dataStartRow = offset + titleRows + 2;

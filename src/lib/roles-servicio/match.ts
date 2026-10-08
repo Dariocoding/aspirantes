@@ -20,6 +20,13 @@ function tokens(value: string): string[] {
     .filter((token) => token.length > 1);
 }
 
+function igualesEnElMismoLugar(a: string, b: string): number {
+  let iguales = 0;
+  const limite = Math.min(a.length, b.length);
+  for (let i = 0; i < limite; i++) if (a[i] === b[i]) iguales += 1;
+  return iguales;
+}
+
 function levenshtein(a: string, b: string): number {
   const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
   const curr = Array.from({ length: b.length + 1 }, () => 0);
@@ -45,6 +52,15 @@ function puntajeToken(consulta: string, candidato: string): number {
   const distancia = levenshtein(consulta, candidato);
   if (corto >= 5 && distancia <= 1) return 0.85;
   if (corto >= 7 && distancia <= 2) return 0.75;
+  if (
+    consulta.length === candidato.length &&
+    consulta.length >= 7 &&
+    distancia <= 3 &&
+    consulta.slice(0, 2) === candidato.slice(0, 2) &&
+    igualesEnElMismoLugar(consulta, candidato) >= 4
+  ) {
+    return 0.82;
+  }
   return 0;
 }
 

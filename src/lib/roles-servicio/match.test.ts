@@ -32,6 +32,16 @@ test("no vincula cuando dos aspirantes comparten el nombre del rol", () => {
   assert.equal(resultado.status, "ambiguo");
 });
 
+test("LEANDRO CONTRERAS del rol queda como LEONDER CONTRERAS", () => {
+  const personas: AspiranteParaRol[] = [
+    { id: "leonder", nombres: "LEONDER", apellidos: "CONTRERAS" },
+    { id: "yein", nombres: "YEIN DANIEL", apellidos: "CONTRERAS ARAY" },
+  ];
+  const resultado = coincidenciaRol("LEANDRO CONTRERAS", personas);
+  assert.equal(resultado.status, "vinculado");
+  if (resultado.status === "vinculado") assert.equal(resultado.aspiranteId, "leonder");
+});
+
 test("un nombre vacío no coincide", () => {
   assert.equal(coincidenciaRol("   ", CENSO).status, "sin_coincidencia");
 });

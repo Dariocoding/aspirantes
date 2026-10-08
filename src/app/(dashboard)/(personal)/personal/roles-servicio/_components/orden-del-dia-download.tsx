@@ -67,6 +67,14 @@ function etiquetaCorta({ anio, mes, dia }: FechaOrden): string {
   });
 }
 
+function diurnoDe(fechaOrden: FechaOrden): FechaOrden {
+  return sumarDias(fechaOrden, 1);
+}
+
+function detalleOrden(fechaOrden: FechaOrden): string {
+  return `${etiquetaCorta(fechaOrden)} · nocturno de esa noche · diurno ${etiquetaCorta(diurnoDe(fechaOrden))}`;
+}
+
 export function ordenDelDiaPdfUrl({ anio, mes, dia }: FechaOrden): string {
   return `/api/roles-servicio/orden-del-dia/pdf?ambito=dia&anio=${anio}&mes=${mes}&dia=${dia}`;
 }
@@ -85,12 +93,15 @@ export function OrdenDelDiaDownloadButton({
   const hoy = fechaDeHoy();
   const seleccionado: FechaOrden = { anio, mes, dia: diaSeleccionado };
 
-  // La mañana (diurno) es la orden de ese día. El nocturno es la noche anterior.
-  const ordenAyer = sumarDias(hoy, -1);
-  const ordenHoy = hoy;
+  // La orden de un día lleva el nocturno de esa noche y el diurno del día siguiente.
+  const fechaAyer = sumarDias(hoy, -1);
+  const fechaHoy = hoy;
+  const fechaManana = sumarDias(hoy, 1);
 
   const seleccionadoEsEspecial =
-    !mismaFecha(seleccionado, ordenAyer) && !mismaFecha(seleccionado, ordenHoy);
+    !mismaFecha(seleccionado, fechaAyer) &&
+    !mismaFecha(seleccionado, fechaHoy) &&
+    !mismaFecha(seleccionado, fechaManana);
 
   const [calendarioAbierto, setCalendarioAbierto] = useState(false);
   const [vistaAnio, setVistaAnio] = useState(anio);
@@ -105,7 +116,7 @@ export function OrdenDelDiaDownloadButton({
 
   const abrirOrdenDelDia = (dia: number) => {
     window.open(
-      ordenDelDiaPdfUrl({ anio: vistaAnio, mes: vistaMes, dia }),
+      ordenDelDiaPdfUrl(diurnoDe({ anio: vistaAnio, mes: vistaMes, dia })),
       "_blank",
       "noopener,noreferrer",
     );
@@ -131,14 +142,14 @@ export function OrdenDelDiaDownloadButton({
           nativeButton={false}
           closeOnClick
           render={
-            <a href={ordenDelDiaPdfUrl(ordenAyer)} target="_blank" rel="noopener noreferrer" />
+            <a href={ordenDelDiaPdfUrl(diurnoDe(fechaAyer))} target="_blank" rel="noopener noreferrer" />
           }
         >
           <Moon className="size-3.5" aria-hidden />
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de ayer</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(ordenAyer)} · diurno de ayer · nocturno de la noche anterior
+              {detalleOrden(fechaAyer)}
             </span>
           </span>
         </DropdownMenuItem>
@@ -146,14 +157,14 @@ export function OrdenDelDiaDownloadButton({
           nativeButton={false}
           closeOnClick
           render={
-            <a href={ordenDelDiaPdfUrl(ordenHoy)} target="_blank" rel="noopener noreferrer" />
+            <a href={ordenDelDiaPdfUrl(diurnoDe(fechaHoy))} target="_blank" rel="noopener noreferrer" />
           }
         >
           <Sun className="size-3.5" aria-hidden />
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de hoy</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(ordenHoy)} · diurno de hoy · nocturno de anoche
+              {detalleOrden(fechaHoy)}
             </span>
           </span>
         </DropdownMenuItem>
@@ -161,14 +172,14 @@ export function OrdenDelDiaDownloadButton({
           nativeButton={false}
           closeOnClick
           render={
-            <a href={ordenDelDiaPdfUrl(ordenHoy)} target="_blank" rel="noopener noreferrer" />
+            <a href={ordenDelDiaPdfUrl(diurnoDe(fechaManana))} target="_blank" rel="noopener noreferrer" />
           }
         >
           <Sunrise className="size-3.5" aria-hidden />
           <span className="min-w-0">
             <span className="block text-sm font-medium">Orden de mañana</span>
             <span className="block text-[11px] text-muted-foreground">
-              {etiquetaCorta(ordenHoy)} · diurno de hoy · nocturno de anoche
+              {detalleOrden(fechaManana)}
             </span>
           </span>
         </DropdownMenuItem>
@@ -181,7 +192,7 @@ export function OrdenDelDiaDownloadButton({
               closeOnClick
               render={
                 <a
-                  href={ordenDelDiaPdfUrl(seleccionado)}
+                  href={ordenDelDiaPdfUrl(diurnoDe(seleccionado))}
                   target="_blank"
                   rel="noopener noreferrer"
                 />
@@ -191,7 +202,7 @@ export function OrdenDelDiaDownloadButton({
               <span className="min-w-0">
                 <span className="block text-sm">Día seleccionado ({diaSeleccionado})</span>
                 <span className="block text-[11px] text-muted-foreground">
-                  {etiquetaCorta(seleccionado)} · diurno de ese día · nocturno de la noche anterior
+                  {detalleOrden(seleccionado)}
                 </span>
               </span>
             </DropdownMenuItem>
@@ -236,7 +247,7 @@ export function OrdenDelDiaDownloadButton({
         <DialogHeader>
           <DialogTitle>Orden de servicio</DialogTitle>
           <DialogDescription>
-            Elige el día. El diurno es de esa fecha y el nocturno, de la noche anterior.
+            El día que eliges es la fecha de la orden. El nocturno es de esa noche y el diurno, del día siguiente.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 px-5 py-4">

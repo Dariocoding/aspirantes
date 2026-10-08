@@ -160,11 +160,49 @@ test("el membrete ocupa solo las columnas exportadas y no queda inmovilizado", a
   await wb.xlsx.load(buffer);
   const ws = wb.getWorksheet("Censo");
   assert.ok(ws);
-  assert.ok(ws.model.merges.some((range) => range.startsWith("A1:C")));
+  assert.equal(ws.getCell("B1").value, "República Bolivariana de Venezuela");
+  assert.equal(ws.getCell("B5").value, PLANTILLA_MEMBRETE_CEFOA45[4]);
+  assert.equal(ws.getCell("A6").value, "N°");
+  assert.equal(Boolean(ws.getCell("A1").value), false);
+  assert.equal(ws.getImages().length, 2);
   assert.equal(ws.model.merges.some((range) => /:[D-Z]/.test(range)), false);
   assert.equal((ws.views ?? []).some((view) => view.state === "frozen"), false);
   assert.ok(ws.getTable("Censo"));
   const sum = [1, 2, 3].reduce((total, col) => total + (ws.getColumn(col).width ?? 0), 0);
   assert.ok(sum > 6 + 8 + 12);
   assert.ok((ws.getColumn(2).width ?? 0) >= (ws.getColumn(1).width ?? 0));
+});
+
+test("con pocas columnas los escudos flanquean el texto y el título no baja de fila", async () => {
+  const titulo = "CENSO DE ASPIRANTES — Oficiales asimilados 2026-2027";
+  const buffer = await buildAspirantesCensoXlsxBuffer({
+    convocatoriaNombre: "Oficiales asimilados 2026-2027",
+    convocatoriaCodigo: "N46-ASI",
+    anio: 2026,
+    rows: [sampleRow()],
+    columnIds: ["numero", "nombreCompleto", "cedula"],
+    generatedAt: new Date("2026-10-08T12:00:00Z"),
+    titulo,
+    membrete: {
+      lineas: [...PLANTILLA_MEMBRETE_CEFOA45],
+      logoIzq: "ejercito",
+      logoDer: "cefoa",
+    },
+  });
+
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buffer);
+  const ws = wb.getWorksheet("Censo");
+  assert.ok(ws);
+  assert.equal(ws.getCell("B1").value, "República Bolivariana de Venezuela");
+  assert.equal(ws.getCell("A1").value ?? null, null);
+  assert.equal(ws.getCell("C1").value ?? null, null);
+  assert.equal(ws.getCell("A6").value, titulo);
+  assert.equal(ws.getCell("A7").value, "N°");
+  assert.equal(ws.getImages().length, 2);
+  const cols = ws.getImages().map((image) => image.range.tl.nativeCol);
+  assert.ok(Math.min(...cols) < 1);
+  assert.ok(Math.max(...cols) >= 2);
+  const sum = [1, 2, 3].reduce((total, col) => total + (ws.getColumn(col).width ?? 0), 0);
+  assert.ok(sum > titulo.length);
 });

@@ -214,7 +214,8 @@ function etiquetaServicioDiurno(nombreRol: string): string {
 
 export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData {
   const { anio, mes, dia } = input;
-  // El diurno y la fecha de la orden son el día pedido. El nocturno es la noche anterior.
+  // El día pedido es el diurno. En el rol esa guardia es la del día siguiente:
+  // el nocturno es el día anterior, y esa es la fecha de la orden.
   const noche = diaAnterior(anio, mes, dia);
   const mismaHoja = noche.anio === anio && noche.mes === mes;
   const planesNoche = mismaHoja ? input.planes : (input.planesMesAnterior ?? []);
@@ -239,22 +240,22 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
       ? input.lineasMembrete.map((l) => l.toUpperCase())
       : [...PLANTILLA_MEMBRETE_CEFOA45].map((l) => l.toUpperCase());
 
-  const fecha = etiquetaFechaOrden(anio, mes, dia);
+  const fecha = etiquetaFechaOrden(noche.anio, noche.mes, noche.dia);
   const diaMes = etiquetaDiaMesOrden(anio, mes, dia);
   const diaMesNoche = etiquetaDiaMesOrden(noche.anio, noche.mes, noche.dia);
 
   return {
-    anio,
-    mes,
-    dia,
-    numeroOrden: numeroOrdenDelDia(anio, mes, dia),
+    anio: noche.anio,
+    mes: noche.mes,
+    dia: noche.dia,
+    numeroOrden: numeroOrdenDelDia(noche.anio, noche.mes, noche.dia),
     lineasMembrete: lineas,
     lugar: (input.lugar ?? LUGAR_ORDEN_DEFAULT).toUpperCase(),
     fechaDocumento: fecha,
-    aniversarios: aniversariosInstitucionales(anio),
-    transcripciones: trioTranscripcionesDelDia(anio, mes, dia),
+    aniversarios: aniversariosInstitucionales(noche.anio),
+    transcripciones: trioTranscripcionesDelDia(noche.anio, noche.mes, noche.dia),
     diurnosTitulo: `1. SERVICIO DIURNO PARA EL DÍA ${diaMes} DEL AÑO ${anio}.`,
-    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA EL DÍA ${diaMesNoche} DEL AÑO ${noche.anio}.`,
+    nocturnosTitulo: `2. SERVICIO NOCTURNO PARA HOY ${diaMesNoche} DEL AÑO ${noche.anio}.`,
     diurnos,
     nocturnos,
     disposicionGeneral: input.disposicionGeneral ?? DISPOSICION_GENERAL_DEFAULT,
