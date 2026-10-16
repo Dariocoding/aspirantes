@@ -17,8 +17,10 @@ export const authConfig = {
       if (
         path.startsWith("/login") ||
         path.startsWith("/api/auth") ||
+        path.startsWith("/api/cron") ||
         path.startsWith("/actualizar-datos")
       ) {
+        // /api/cron/* se autentica con CRON_SECRET en la propia ruta
         return true;
       }
       return !!auth?.user;

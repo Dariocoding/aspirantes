@@ -63,6 +63,8 @@ Protegidos con:
 
 Query opcional: `?dryRun=1` arma el mensaje y **no** lo envía (útil para probar auth/carga).
 
+Estas rutas **no** usan sesión de usuario: van con `CRON_SECRET`. Sin el header, responden `401` (no redirigen a `/login`).
+
 Si no hay nadie / ninguna efeméride en la ventana, el endpoint responde `ok` **sin** enviar mensaje.
 
 ## 4. Scheduled Tasks en Coolify
