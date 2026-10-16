@@ -1,6 +1,13 @@
 import type { PrismaClient } from "@src/generated/prisma";
 import { labelEfemerideTipo } from "@src/lib/efemeride-tipo";
 import { siguienteDia } from "@src/lib/roles-servicio/orden-del-dia/fechas";
+import {
+  encabezadoInstitucional,
+  escapeHtml,
+  lineaSeccion,
+  nroPad,
+  pieMilitar,
+} from "@src/lib/telegram/format-militar";
 import { fechaEnCaracas, type FechaCaracas } from "@src/lib/telegram/load-orden-hoy";
 
 export type EfemerideAvisoItem = {
@@ -27,13 +34,6 @@ function sumarDiasCaracas(base: FechaCaracas, delta: number): FechaCaracas {
     cur = next;
   }
   return cur;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 /**
@@ -81,30 +81,53 @@ export async function cargarAvisosEfemerides(
   return avisos;
 }
 
+const ROMANOS = ["I", "II"] as const;
+
 /** Mensaje HTML; `null` si no hay efemérides hoy ni mañana. */
 export function formatAvisosEfemerides(avisos: AvisoEfemerides[]): string | null {
-  const conGente = avisos.filter((a) => a.items.length > 0);
-  if (conGente.length === 0) return null;
+  const conItems = avisos.filter((a) => a.items.length > 0);
+  if (conItems.length === 0) return null;
 
-  const lineas: string[] = [`<b>Efemérides</b>`, ""];
+  const total = conItems.reduce((n, a) => n + a.items.length, 0);
+  const lineas: string[] = [
+    ...encabezadoInstitucional("EFEMÉRIDES INSTITUCIONALES"),
+    `<b>CONMEMORACIONES:</b> ${total}`,
+  ];
 
-  for (const aviso of conGente) {
+  conItems.forEach((aviso, i) => {
     const fechaTxt = `${String(aviso.fecha.dia).padStart(2, "0")}/${String(aviso.fecha.mes).padStart(2, "0")}/${aviso.fecha.anio}`;
-    lineas.push(`<b>${escapeHtml(aviso.etiqueta)}</b> <i>(${fechaTxt})</i>`);
+    const tituloSeccion =
+      aviso.offset === 0
+        ? `Conmemoración de hoy (${fechaTxt})`
+        : `Aviso — conmemoración mañana (${fechaTxt})`;
+
+    lineas.push(...lineaSeccion(ROMANOS[i] ?? String(i + 1), tituloSeccion));
+
+    let n = 1;
     for (const item of aviso.items) {
       const tipo = labelEfemerideTipo(item.tipo);
-      lineas.push(`· <b>${escapeHtml(item.nombre)}</b> <i>(${escapeHtml(tipo)})</i>`);
+      lineas.push(
+        `<b>${nroPad(n)}.</b> <b>${escapeHtml(item.nombre)}</b>`,
+        `     <code>${escapeHtml(tipo)}</code>`,
+      );
       if (item.descripcion?.trim()) {
-        lineas.push(`  ${escapeHtml(item.descripcion.trim())}`);
+        lineas.push(`     <i>${escapeHtml(item.descripcion.trim())}</i>`);
       }
+      lineas.push("");
+      n += 1;
     }
-    lineas.push("");
-  }
+  });
 
-  if (conGente.some((a) => a.offset === 0)) {
-    lineas.push("<i>Conmemoraciones de hoy.</i>");
+  if (conItems.some((a) => a.offset === 0)) {
+    lineas.push(
+      ...pieMilitar(
+        "Honrar la memoria y el legado que estas fechas representan para la institución.",
+      ),
+    );
   } else {
-    lineas.push("<i>Aviso anticipado de efemérides.</i>");
+    lineas.push(
+      ...pieMilitar("Aviso anticipado para preparar actos y menciones del día."),
+    );
   }
 
   return lineas.join("\n");

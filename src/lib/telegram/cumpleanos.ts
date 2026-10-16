@@ -1,7 +1,14 @@
 import type { PrismaClient } from "@src/generated/prisma";
 import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
-import { fechaEnCaracas, type FechaCaracas } from "@src/lib/telegram/load-orden-hoy";
 import { siguienteDia } from "@src/lib/roles-servicio/orden-del-dia/fechas";
+import {
+  encabezadoInstitucional,
+  escapeHtml,
+  lineaSeccion,
+  nroPad,
+  pieMilitar,
+} from "@src/lib/telegram/format-militar";
+import { fechaEnCaracas, type FechaCaracas } from "@src/lib/telegram/load-orden-hoy";
 
 export type CumpleanoPersona = {
   id: string;
@@ -107,39 +114,55 @@ export async function cargarAvisosCumpleanos(
   return avisos;
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+const ROMANOS = ["I", "II", "III"] as const;
 
 /** Mensaje HTML; `null` si no hay nadie en los tres avisos. */
 export function formatAvisosCumpleanos(avisos: AvisoCumpleanos[]): string | null {
   const conGente = avisos.filter((a) => a.personas.length > 0);
   if (conGente.length === 0) return null;
 
-  const lineas: string[] = [`<b>Cumpleaños</b>`, ""];
+  const total = conGente.reduce((n, a) => n + a.personas.length, 0);
+  const lineas: string[] = [
+    ...encabezadoInstitucional("CUMPLEAÑOS DEL PERSONAL"),
+    `<b>PERSONAL EN AVISO:</b> ${total}`,
+  ];
 
-  for (const aviso of conGente) {
+  conGente.forEach((aviso, i) => {
     const fechaTxt = `${String(aviso.fecha.dia).padStart(2, "0")}/${String(aviso.fecha.mes).padStart(2, "0")}/${aviso.fecha.anio}`;
-    lineas.push(`<b>${escapeHtml(aviso.etiqueta)}</b> <i>(${fechaTxt})</i>`);
+    const tituloSeccion =
+      aviso.offset === 0
+        ? `Felicitaciones — cumple hoy (${fechaTxt})`
+        : aviso.offset === 1
+          ? `Aviso — cumple mañana (${fechaTxt})`
+          : `Aviso — cumple en 2 días (${fechaTxt})`;
+
+    lineas.push(...lineaSeccion(ROMANOS[i] ?? String(i + 1), tituloSeccion));
+
+    let n = 1;
     for (const p of aviso.personas) {
       const nombre = `${p.nombres} ${p.apellidos}`.trim().toUpperCase();
       const edad =
-        p.edadQueCumple != null ? ` — cumple ${p.edadQueCumple} años` : "";
-      const felicitacion = aviso.offset === 0 ? " 🎉" : "";
+        p.edadQueCumple != null ? `Cumple ${p.edadQueCumple} años` : "Fecha de nacimiento registrada";
       lineas.push(
-        `· ${escapeHtml(p.grado)} <b>${escapeHtml(nombre)}</b>${escapeHtml(edad)}${felicitacion}`,
+        `<b>${nroPad(n)}.</b> <code>${escapeHtml(p.grado)}</code>`,
+        `     <b>${escapeHtml(nombre)}</b>`,
+        `     <i>${escapeHtml(edad)}</i>`,
+        "",
       );
+      n += 1;
     }
-    lineas.push("");
-  }
+  });
 
   if (conGente.some((a) => a.offset === 0)) {
-    lineas.push("<i>¡Felicitaciones a quienes cumplen años hoy!</i>");
+    lineas.push(
+      ...pieMilitar(
+        "El mando y el resto del personal extienden su felicitación a los homenajeados de hoy.",
+      ),
+    );
   } else {
-    lineas.push("<i>Avisos anticipados de cumpleaños.</i>");
+    lineas.push(
+      ...pieMilitar("Aviso anticipado para coordinar felicitaciones y actividades del día."),
+    );
   }
 
   return lineas.join("\n");
