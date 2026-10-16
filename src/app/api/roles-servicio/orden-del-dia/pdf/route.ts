@@ -1,5 +1,6 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
+import { PDFDocument } from "pdf-lib";
 import { NextResponse } from "next/server";
 import { auth } from "@src/auth";
 import { writeAuditLog } from "@src/lib/audit/log";
@@ -23,9 +24,13 @@ import { diasDelMes, etiquetaMes, marcasDesdeJson } from "@src/lib/roles-servici
 import { prisma } from "@src/lib/prisma";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+/** Un mes ≈ 62 páginas; el render por lotes puede superar 2 min en servidores chicos. */
+export const maxDuration = 300;
 
 registerFichaTecnicaPdfFonts();
+
+/** Órdenes por lote (2 páginas c/u). Evita tumbar el proceso con un mes completo. */
+const ORDEN_RENDER_CHUNK = 4;
 
 function logoUri(kind: MembreteLogoKind): string | null {
   if (kind === "cefoa") return boletaCefoaLogoUri();
@@ -100,6 +105,40 @@ function construirOrdenesMes(input: {
     );
   }
   return ordenes;
+}
+
+type OrdenPdfProps = {
+  ordenes: OrdenDelDiaData[];
+  logoIzq: string | null;
+  logoDer: string | null;
+  titulo: string;
+};
+
+async function renderOrdenesChunk(props: OrdenPdfProps): Promise<Buffer> {
+  const doc = createElement(OrdenDelDiaPdfFile, props);
+  return renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
+}
+
+/**
+ * Un día: un solo render. Un mes: lotes pequeños + merge con pdf-lib.
+ * @react-pdf con ~60 páginas a la vez dispara OOM / 502 en el servidor.
+ */
+async function renderOrdenesPdf(props: OrdenPdfProps): Promise<Buffer> {
+  if (props.ordenes.length <= ORDEN_RENDER_CHUNK) {
+    return renderOrdenesChunk(props);
+  }
+
+  const merged = await PDFDocument.create();
+  for (let i = 0; i < props.ordenes.length; i += ORDEN_RENDER_CHUNK) {
+    const chunk = props.ordenes.slice(i, i + ORDEN_RENDER_CHUNK);
+    const bytes = await renderOrdenesChunk({ ...props, ordenes: chunk });
+    const src = await PDFDocument.load(bytes);
+    const pages = await merged.copyPages(src, src.getPageIndices());
+    for (const page of pages) merged.addPage(page);
+    // Cede el event loop entre lotes para no congelar el proceso.
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+  return Buffer.from(await merged.save());
 }
 
 export async function GET(request: Request) {
@@ -190,13 +229,12 @@ export async function GET(request: Request) {
 
   let buffer: Buffer;
   try {
-    const doc = createElement(OrdenDelDiaPdfFile, {
+    buffer = await renderOrdenesPdf({
       ordenes,
       logoIzq: logoUri(logoIzqKind),
       logoDer: logoUri(logoDerKind),
       titulo,
     });
-    buffer = await renderToBuffer(doc as Parameters<typeof renderToBuffer>[0]);
   } catch (error) {
     console.error("[orden-del-dia/pdf]", error);
     return NextResponse.json({ message: "No se pudo generar el PDF" }, { status: 500 });
