@@ -3,9 +3,19 @@
 Envía al grupo:
 
 - **07:00** (America/Caracas): servicios **diurnos + nocturnos** del día.
+- **07:05**: **cumpleaños** — felicitaciones (hoy) + avisos (mañana y en 2 días).
+- **07:10**: **efemérides** — hoy y mañana (solo activas).
 - **18:00** (America/Caracas): **recordatorio nocturno** (solo nocturnos).
 
 No usa Vercel Cron. Coolify llama a las API internas con un secreto.
+
+## Datos en vivo
+
+Cada corrida **consulta la base de datos en el momento**:
+
+- Si cambias la **fecha de nacimiento** de un aspirante, el próximo cron/envío manual ya usa esa fecha.
+- Si creas, editas o desactivas una **efeméride**, el próximo aviso refleja el cambio.
+- No hay caché ni lista fija en el bot.
 
 ## 1. Crear el bot y el grupo
 
@@ -47,9 +57,13 @@ Protegidos con:
 | Ruta | Uso |
 |---|---|
 | `POST /api/cron/telegram/servicios-manana` | 7:00 — diurnos + nocturnos |
+| `POST /api/cron/telegram/cumpleanos` | 7:05 — hoy / mañana / en 2 días |
+| `POST /api/cron/telegram/efemerides` | 7:10 — hoy y mañana |
 | `POST /api/cron/telegram/recordatorio-nocturno` | 18:00 — solo nocturnos |
 
 Query opcional: `?dryRun=1` arma el mensaje y **no** lo envía (útil para probar auth/carga).
+
+Si no hay nadie / ninguna efeméride en la ventana, el endpoint responde `ok` **sin** enviar mensaje.
 
 ## 4. Scheduled Tasks en Coolify
 
@@ -58,13 +72,27 @@ Venezuela es **UTC−4** todo el año. Si el cron de Coolify corre en UTC:
 | Cron (UTC) | Hora Caracas | Comando |
 |---|---|---|
 | `0 11 * * *` | 07:00 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/servicios-manana` |
+| `5 11 * * *` | 07:05 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/cumpleanos` |
+| `10 11 * * *` | 07:10 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/efemerides` |
 | `0 22 * * *` | 18:00 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/recordatorio-nocturno` |
 
-Si Coolify usa la TZ del contenedor y ya pusiste `TZ=America/Caracas`, puedes usar `0 7 * * *` y `0 18 * * *`.
+Si Coolify usa la TZ del contenedor y ya pusiste `TZ=America/Caracas`, puedes usar `0 7 * * *`, `5 7 * * *`, `10 7 * * *` y `0 18 * * *`.
 
 Sustituye `TU_DOMINIO` por la URL pública de la app. Asegúrate de que `$CRON_SECRET` esté disponible en el entorno de la tarea (misma app o valor pegado).
 
-## 5. Prueba local
+## 5. Envío manual desde la app
+
+En **Personal → Roles de servicio**, el botón **Telegram** permite enviar al grupo:
+
+- **Servicio de hoy** — diurnos de hoy  
+- **Servicio de esta noche** — nocturnos de esta noche  
+- **Servicio de mañana** — diurnos de mañana  
+- **Cumpleaños** — felicitaciones (hoy) + avisos (mañana y en 2 días)  
+- **Efemérides** — hoy y mañana (solo activas)  
+
+Requiere `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` configurados, y permiso de lectura de aspirantes.
+
+## 6. Prueba local
 
 ```bash
 # Vista previa (no envía)
@@ -89,4 +117,4 @@ curl -fsS -X POST \
 
 - La fecha del mensaje es la civil en `America/Caracas`.
 - Diurnos = roles del día; nocturnos = guardia de **esa misma noche** (estacionamiento / turnos).
-- Si no hay plan del mes (o del mes siguiente al cruzar de mes), el endpoint responde error 500 con el motivo.
+- Si no hay plan del mes (o del mes siguiente al cruzar de mes), el endpoint de servicios responde error 500 con el motivo.

@@ -26,6 +26,7 @@ import {
 import { Input } from "@src/components/ui/input";
 import { OrdenDelDiaDownloadButton } from "./orden-del-dia-download";
 import { RestantesMesDownloadButton } from "./restantes-mes-download";
+import { TelegramEnviarButton } from "./telegram-enviar-button";
 import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { routes } from "@src/lib/apps/routes";
 import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
@@ -395,6 +396,7 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                   diaSeleccionado={diaSeleccionado}
                 />
                 <RestantesMesDownloadButton anio={anio} mes={mes} planes={planes} />
+                <TelegramEnviarButton />
               </>
             ) : null}
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">

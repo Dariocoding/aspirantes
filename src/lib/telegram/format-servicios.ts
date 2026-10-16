@@ -58,16 +58,34 @@ export function formatServiciosManana(input: {
   ].join("\n");
 }
 
-/** Mensaje 18:00 — solo nocturnos del día. */
+/** Solo diurnos (hoy / mañana desde la UI). */
+export function formatServiciosDiurnos(input: {
+  titulo: string;
+  anio: number;
+  mes: number;
+  dia: number;
+  diurnos: OrdenDelDiaData;
+}): string {
+  const fecha = etiquetaFechaOrden(input.anio, input.mes, input.dia);
+  return [
+    `<b>${escapeHtml(input.titulo)}</b>`,
+    escapeHtml(fecha),
+    "",
+    bloqueDiurnos(input.diurnos),
+  ].join("\n");
+}
+
+/** Mensaje 18:00 / botón “esta noche” — solo nocturnos del día. */
 export function formatRecordatorioNocturno(input: {
   anio: number;
   mes: number;
   dia: number;
   nocturnos: OrdenDelDiaData;
+  titulo?: string;
 }): string {
   const fecha = etiquetaFechaOrden(input.anio, input.mes, input.dia);
   return [
-    `<b>Recordatorio nocturno</b>`,
+    `<b>${escapeHtml(input.titulo ?? "Recordatorio nocturno")}</b>`,
     escapeHtml(fecha),
     "",
     bloqueNocturnos(input.nocturnos),
