@@ -33,11 +33,20 @@ const s = StyleSheet.create({
     fontSize: 9,
     lineHeight: 1.3,
   },
-  /** Columna a altura fija de carta: reparte bloques de arriba a abajo. */
+  /**
+   * Columna a altura fija de carta. Contenido compacto arriba;
+   * el hueco sobrante lo absorbe un spacer (no se reparte entre citas/tablas).
+   */
   sheet: {
     height: CONTENT_H,
     flexDirection: "column",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
+  },
+  /** Empuja CONTINUACIÓN / firma al pie sin abrir huecos entre bloques. */
+  spacerGrow: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 8,
   },
   block: {
     flexDirection: "column",
@@ -91,15 +100,13 @@ const s = StyleSheet.create({
     fontWeight: "bold",
     textTransform: "uppercase",
   },
-  /** Ocupa el hueco entre membrete y servicios; reparte las 3 citas. */
+  /** Citas compactas; el espacio libre va al spacer, no entre párrafos. */
   transcripciones: {
-    flexGrow: 1,
-    flexShrink: 1,
     flexDirection: "column",
-    justifyContent: "space-evenly",
-    paddingVertical: 4,
+    marginTop: 10,
+    marginBottom: 10,
   },
-  quoteBlock: { marginBottom: 4 },
+  quoteBlock: { marginBottom: 8 },
   quoteHead: { fontSize: 8.4, fontWeight: "bold", marginBottom: 3 },
   quoteText: { fontSize: 8.2, textAlign: "justify", lineHeight: 1.45 },
   quoteAttr: {
@@ -170,8 +177,11 @@ const s = StyleSheet.create({
   page2Body: {
     flexGrow: 1,
     flexDirection: "column",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     marginTop: 12,
+  },
+  page2Section: {
+    marginBottom: 14,
   },
   continuacionHead: {
     flexGrow: 1,
@@ -200,7 +210,7 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
   firma: {
-    marginTop: 40,
+    marginTop: 28,
     alignItems: "center",
   },
   firmaNombre: { fontSize: 9.5, fontWeight: "bold", textAlign: "center" },
@@ -389,7 +399,7 @@ function TablaNocturnos({ filas }: { filas: OrdenDelDiaData["nocturnos"] }) {
 
 /**
  * Exactamente 2 hojas carta por orden.
- * justifyContent: space-between reparte bloques en toda la altura.
+ * Contenido compacto arriba; spacerGrow absorbe el hueco (p. ej. diurno vacío).
  */
 function OrdenDelDiaPages({
   data,
@@ -414,12 +424,13 @@ function OrdenDelDiaPages({
             <TablaDiurnos filas={data.diurnos} />
           </View>
 
+          <View style={s.spacerGrow} />
           <Text style={s.continuacionFoot}>CONTINUACIÓN...</Text>
         </View>
       </Page>
 
       <Page size={[PAGE_W, PAGE_H]} style={s.page} wrap={false}>
-        <View style={[s.sheet, { justifyContent: "flex-start" }]}>
+        <View style={s.sheet}>
           <View style={s.page2Top} wrap={false}>
             <Crest src={logoIzq} />
             <Text style={s.continuacionHead}>...CONTINUACIÓN</Text>
@@ -427,20 +438,22 @@ function OrdenDelDiaPages({
           </View>
 
           <View style={s.page2Body}>
-            <View style={s.block} wrap={false}>
+            <View style={[s.block, s.page2Section]} wrap={false}>
               <Text style={s.subSection}>{data.nocturnosTitulo}</Text>
               <TablaNocturnos filas={data.nocturnos} />
             </View>
 
-            <View style={s.block} wrap={false}>
+            <View style={[s.block, s.page2Section]} wrap={false}>
               <Text style={s.sectionTitle}>C. DISPOSICIONES DE CARÁCTER GENERAL</Text>
               <Text style={s.bodyText}>{data.disposicionGeneral}</Text>
             </View>
 
-            <View style={s.block} wrap={false}>
+            <View style={[s.block, s.page2Section]} wrap={false}>
               <Text style={s.sectionTitle}>D. DISPOSICIONES DE CARÁCTER PARTICULAR</Text>
               <Text style={s.particular}>{data.disposicionParticular}</Text>
             </View>
+
+            <View style={s.spacerGrow} />
 
             <View style={s.block} wrap={false}>
               <Text style={s.cumplase}>CÚMPLASE</Text>
