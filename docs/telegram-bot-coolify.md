@@ -67,18 +67,24 @@ Si no hay nadie / ninguna efeméride en la ventana, el endpoint responde `ok` **
 
 ## 4. Scheduled Tasks en Coolify
 
+Las tareas corren **dentro del contenedor**. La imagen incluye `curl` (stage `runner` del Dockerfile). Comando típico:
+
+```bash
+curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/telegram/servicios-manana
+```
+
 Venezuela es **UTC−4** todo el año. Si el cron de Coolify corre en UTC:
 
 | Cron (UTC) | Hora Caracas | Comando |
 |---|---|---|
-| `0 11 * * *` | 07:00 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/servicios-manana` |
-| `5 11 * * *` | 07:05 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/cumpleanos` |
-| `10 11 * * *` | 07:10 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/efemerides` |
-| `0 22 * * *` | 18:00 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://TU_DOMINIO/api/cron/telegram/recordatorio-nocturno` |
+| `0 11 * * *` | 07:00 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/telegram/servicios-manana` |
+| `5 11 * * *` | 07:05 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/telegram/cumpleanos` |
+| `10 11 * * *` | 07:10 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/telegram/efemerides` |
+| `0 22 * * *` | 18:00 | `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/telegram/recordatorio-nocturno` |
 
-Si Coolify usa la TZ del contenedor y ya pusiste `TZ=America/Caracas`, puedes usar `0 7 * * *`, `5 7 * * *`, `10 7 * * *` y `0 18 * * *`.
+Si Coolify usa la TZ del contenedor/servidor y ya pusiste `TZ=America/Caracas`, puedes usar `0 7 * * *`, `5 7 * * *`, `10 7 * * *` y `0 18 * * *`.
 
-Sustituye `TU_DOMINIO` por la URL pública de la app. Asegúrate de que `$CRON_SECRET` esté disponible en el entorno de la tarea (misma app o valor pegado).
+`$CRON_SECRET` debe estar en las Environment Variables de la misma app.
 
 ## 5. Envío manual desde la app
 
