@@ -17,7 +17,8 @@
     "seed": "tsx prisma/seed.ts",
     "seed:cefoa46": "tsx prisma/seed-cefoa46-aspirantes.ts",
     "seed:roles": "tsx prisma/seed-roles-servicio.ts",
-    "seed:autoridades": "tsx prisma/seed-autoridades.ts"
+    "seed:autoridades": "tsx prisma/seed-autoridades.ts",
+    "telegram:dry-run": "tsx scripts/telegram-dry-run.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

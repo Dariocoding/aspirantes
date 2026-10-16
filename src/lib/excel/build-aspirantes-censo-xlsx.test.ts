@@ -174,9 +174,9 @@ test("el membrete ocupa solo las columnas exportadas y no queda inmovilizado", a
 });
 
 test("con pocas columnas los escudos flanquean el texto y el título no baja de fila", async () => {
-  const titulo = "CENSO DE ASPIRANTES — Oficiales asimilados 2026-2027";
+  const titulo = "CENSO DE ASPIRANTES — Oficiales asimilados y asimilados técnicos";
   const buffer = await buildAspirantesCensoXlsxBuffer({
-    convocatoriaNombre: "Oficiales asimilados 2026-2027",
+    convocatoriaNombre: "Oficiales asimilados y asimilados técnicos",
     convocatoriaCodigo: "N46-ASI",
     anio: 2026,
     rows: [sampleRow()],
