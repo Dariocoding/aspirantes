@@ -36,6 +36,13 @@ function sampleRow(): AspiranteCensoExportRow {
     contactoNombre: null,
     contactoParentesco: null,
     contactoTelefono: null,
+    contactoDireccion: null,
+    madreNombres: null,
+    madreApellidos: null,
+    madreCedula: null,
+    padreNombres: null,
+    padreApellidos: null,
+    padreCedula: null,
     estaturaCm: null,
     pesoKg: 100,
     tipoSangre: null,
@@ -98,6 +105,51 @@ test("el contacto de emergencia sale con el teléfono en formato 04xx-xxxxxxx", 
   assert.equal(parsed.rows[0]?.values.telefono, "0426-2672790");
   assert.equal(parsed.rows[0]?.values.contactoTelefono, "0424-3321795");
   assert.equal(parsed.rows[0]?.values.contactoEmergencia, "MARIA OSUNA · Mama · 0424-3321795");
+});
+
+test("la dirección de emergencia se exporta e importa en su columna", async () => {
+  const row = sampleRow();
+  row.contactoNombre = "MARIA OSUNA";
+  row.contactoParentesco = "Mama";
+  row.contactoTelefono = "4243321795";
+  row.contactoDireccion = "Calle 5, casa 12, Caracas";
+
+  const buffer = await buildAspirantesCensoXlsxBuffer({
+    convocatoriaNombre: "CEFOA 46",
+    convocatoriaCodigo: "CEFOA-46",
+    anio: 2026,
+    rows: [row],
+    columnIds: ["numero", "nombreCompleto", "cedula", "contactoDireccion"],
+    generatedAt: new Date("2026-09-19T12:00:00Z"),
+    membrete: null,
+  });
+
+  const parsed = await parseAspirantesCensoXlsxBuffer(buffer);
+  assert.ok(parsed.columnIds.includes("contactoDireccion"));
+  assert.equal(parsed.rows[0]?.values.contactoDireccion, "Calle 5, casa 12, Caracas");
+});
+
+test("madre y padre salen en columnas propias y sin dato usan N/A", async () => {
+  const row = sampleRow();
+  row.madreNombres = "ANA";
+  row.madreApellidos = "PEREZ";
+  row.madreCedula = "12345678";
+
+  const buffer = await buildAspirantesCensoXlsxBuffer({
+    convocatoriaNombre: "CEFOA 46",
+    convocatoriaCodigo: "CEFOA-46",
+    anio: 2026,
+    rows: [row],
+    columnIds: ["numero", "nombreCompleto", "cedula", "madreNombre", "madreCedula", "padreNombre", "padreCedula"],
+    generatedAt: new Date("2026-09-19T12:00:00Z"),
+    membrete: null,
+  });
+
+  const parsed = await parseAspirantesCensoXlsxBuffer(buffer);
+  assert.equal(parsed.rows[0]?.values.madreNombre, "ANA PEREZ");
+  assert.equal(parsed.rows[0]?.values.madreCedula, "12345678");
+  assert.equal(parsed.rows[0]?.values.padreNombre, "N/A");
+  assert.equal(parsed.rows[0]?.values.padreCedula, "N/A");
 });
 
 test("el membrete con escudos del Ejército y C.E.F.O.A. sigue importándose", async () => {

@@ -4,6 +4,7 @@ import {
   examenIdFromExportColumn,
   getCensusExportColumn,
   isExamExportColumnId,
+  normalizeCensusCedula,
 } from "@src/lib/aspirantes/census-export-columns";
 import { ESTADO_CIVIL_LABELS, isEstadoCivilValue, labelEstadoCivil, type EstadoCivilValue } from "@src/lib/aspirantes/estado-civil";
 import { parseCondicionMilitar } from "@src/lib/aspirantes/condicion-militar";
@@ -203,6 +204,37 @@ function splitNombreCompletoNew(full: string): { nombres: string; apellidos: str
   return { nombres: words.slice(0, mid).join(" "), apellidos: words.slice(mid).join(" ") };
 }
 
+function parseCedulaFamiliar(raw: string | null): string | null {
+  if (raw == null) return null;
+  const digits = normalizeCensusCedula(raw);
+  return digits || null;
+}
+
+function applyNombreFamiliar(
+  data: Prisma.AspiranteCreateInput | Prisma.AspiranteUpdateInput,
+  kind: "madre" | "padre",
+  full: string | null,
+) {
+  if (full == null) {
+    if (kind === "madre") {
+      data.madreNombres = null;
+      data.madreApellidos = null;
+    } else {
+      data.padreNombres = null;
+      data.padreApellidos = null;
+    }
+    return;
+  }
+  const split = splitNombreCompletoNew(full);
+  if (kind === "madre") {
+    data.madreNombres = split.nombres || null;
+    data.madreApellidos = split.apellidos || null;
+  } else {
+    data.padreNombres = split.nombres || null;
+    data.padreApellidos = split.apellidos || null;
+  }
+}
+
 function telefonoEmergenciaImport(ids: Set<string>, values: Record<string, string>): string | undefined {
   if (!hasColumn(ids, "contactoTelefono")) return undefined;
   return blankToNull(values.contactoTelefono) ?? "—";
@@ -222,12 +254,16 @@ function parseContacto(raw: string | null): { nombre: string; parentesco: string
 function contactoDesdeFila(
   ids: Set<string>,
   values: Record<string, string>,
-): { nombre: string; parentesco: string; telefono: string } | null {
+): { nombre: string; parentesco: string; telefono: string; direccion: string | null } | null {
   if (!hasColumn(ids, "contactoEmergencia")) return null;
   const contacto = parseContacto(blankToNull(values.contactoEmergencia));
   if (!contacto) return null;
   const tel = telefonoEmergenciaImport(ids, values);
-  return tel === undefined ? contacto : { ...contacto, telefono: tel };
+  const withTel = tel === undefined ? contacto : { ...contacto, telefono: tel };
+  const direccion = hasColumn(ids, "contactoDireccion")
+    ? blankToNull(values.contactoDireccion)
+    : null;
+  return { ...withTel, direccion };
 }
 
 function matchPeloton(
@@ -450,6 +486,28 @@ export async function applyCensusXlsxImport(
                 : null,
               nombreUniversidad: hasColumn(ids, "universidad") ? blankToNull(v.universidad) : null,
               paisUniversidad: hasColumn(ids, "paisUniversidad") ? blankToNull(v.paisUniversidad) : null,
+              ...(hasColumn(ids, "madreNombre")
+                ? (() => {
+                    const full = blankToNull(v.madreNombre);
+                    if (full == null) return { madreNombres: null, madreApellidos: null };
+                    const split = splitNombreCompletoNew(full);
+                    return { madreNombres: split.nombres || null, madreApellidos: split.apellidos || null };
+                  })()
+                : {}),
+              ...(hasColumn(ids, "madreCedula")
+                ? { madreCedula: parseCedulaFamiliar(blankToNull(v.madreCedula)) }
+                : {}),
+              ...(hasColumn(ids, "padreNombre")
+                ? (() => {
+                    const full = blankToNull(v.padreNombre);
+                    if (full == null) return { padreNombres: null, padreApellidos: null };
+                    const split = splitNombreCompletoNew(full);
+                    return { padreNombres: split.nombres || null, padreApellidos: split.apellidos || null };
+                  })()
+                : {}),
+              ...(hasColumn(ids, "padreCedula")
+                ? { padreCedula: parseCedulaFamiliar(blankToNull(v.padreCedula)) }
+                : {}),
               datosFisicos: {
                 create: {
                   estaturaCm: hasColumn(ids, "estatura") ? homologarEstaturaCm(blankToNull(v.estatura)) : null,
@@ -482,6 +540,7 @@ export async function applyCensusXlsxImport(
                 nombre: contacto.nombre,
                 parentesco: contacto.parentesco,
                 telefono: contacto.telefono,
+                direccion: contacto.direccion,
               },
             });
           }
@@ -580,6 +639,10 @@ export async function applyCensusXlsxImport(
         }
         if (hasColumn(ids, "universidad")) data.nombreUniversidad = blankToNull(v.universidad);
         if (hasColumn(ids, "paisUniversidad")) data.paisUniversidad = blankToNull(v.paisUniversidad);
+        if (hasColumn(ids, "madreNombre")) applyNombreFamiliar(data, "madre", blankToNull(v.madreNombre));
+        if (hasColumn(ids, "madreCedula")) data.madreCedula = parseCedulaFamiliar(blankToNull(v.madreCedula));
+        if (hasColumn(ids, "padreNombre")) applyNombreFamiliar(data, "padre", blankToNull(v.padreNombre));
+        if (hasColumn(ids, "padreCedula")) data.padreCedula = parseCedulaFamiliar(blankToNull(v.padreCedula));
 
         const fisicoPatch: {
           estaturaCm?: number | null;
@@ -647,6 +710,7 @@ export async function applyCensusXlsxImport(
           !fisicoChanged &&
           !hasColumn(ids, "contactoEmergencia") &&
           !hasColumn(ids, "contactoTelefono") &&
+          !hasColumn(ids, "contactoDireccion") &&
           !examIds.length
         ) {
           unchanged += 1;
@@ -665,31 +729,40 @@ export async function applyCensusXlsxImport(
           });
         }
 
-        if (hasColumn(ids, "contactoEmergencia")) {
+        if (hasColumn(ids, "contactoEmergencia") || hasColumn(ids, "contactoDireccion")) {
           const parsedContacto = contactoDesdeFila(ids, v);
           const existingContacto = current.contactos[0];
           if (parsedContacto) {
+            const contactoData = {
+              nombre: parsedContacto.nombre,
+              parentesco: parsedContacto.parentesco,
+              telefono: parsedContacto.telefono,
+              ...(hasColumn(ids, "contactoDireccion") ? { direccion: parsedContacto.direccion } : {}),
+            };
             if (existingContacto) {
               await tx.contactoEmergencia.update({
                 where: { id: existingContacto.id },
-                data: {
-                  nombre: parsedContacto.nombre,
-                  parentesco: parsedContacto.parentesco,
-                  telefono: parsedContacto.telefono,
-                },
+                data: contactoData,
               });
             } else {
               await tx.contactoEmergencia.create({
                 data: {
                   aspiranteId: current.id,
-                  nombre: parsedContacto.nombre,
-                  parentesco: parsedContacto.parentesco,
-                  telefono: parsedContacto.telefono,
+                  ...contactoData,
                 },
               });
             }
-          } else if (existingContacto) {
+          } else if (hasColumn(ids, "contactoEmergencia") && existingContacto) {
             await tx.contactoEmergencia.delete({ where: { id: existingContacto.id } });
+          } else if (
+            hasColumn(ids, "contactoDireccion") &&
+            !hasColumn(ids, "contactoEmergencia") &&
+            existingContacto
+          ) {
+            await tx.contactoEmergencia.update({
+              where: { id: existingContacto.id },
+              data: { direccion: blankToNull(v.contactoDireccion) },
+            });
           }
         }
 

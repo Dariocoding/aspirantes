@@ -51,6 +51,13 @@ export type AspiranteCensoExportRow = {
   contactoNombre: string | null;
   contactoParentesco: string | null;
   contactoTelefono: string | null;
+  contactoDireccion: string | null;
+  madreNombres: string | null;
+  madreApellidos: string | null;
+  madreCedula: string | null;
+  padreNombres: string | null;
+  padreApellidos: string | null;
+  padreCedula: string | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tipoSangre: string | null;
@@ -113,6 +120,16 @@ function formatCarreraConNivel(titulo: string | null, tipoEstudio: string | null
 function dash(value: string | null | undefined): string {
   const t = value?.trim();
   return t ? t : "—";
+}
+
+function naOr(value: string | null | undefined): string {
+  const t = value?.trim();
+  return t ? t : "N/A";
+}
+
+function formatNombreFamiliar(nombres: string | null | undefined, apellidos: string | null | undefined): string {
+  const full = [nombres?.trim(), apellidos?.trim()].filter(Boolean).join(" ").trim();
+  return full || "N/A";
 }
 
 function optionalNumber(value: number | null | undefined): string | number {
@@ -265,6 +282,16 @@ function cellValue(
       return formatContacto(r);
     case "contactoTelefono":
       return formatTelefonoExport(r.contactoTelefono);
+    case "contactoDireccion":
+      return dash(r.contactoDireccion);
+    case "madreNombre":
+      return formatNombreFamiliar(r.madreNombres, r.madreApellidos);
+    case "madreCedula":
+      return naOr(r.madreCedula);
+    case "padreNombre":
+      return formatNombreFamiliar(r.padreNombres, r.padreApellidos);
+    case "padreCedula":
+      return naOr(r.padreCedula);
     case "universidad":
       return dash(r.nombreUniversidad);
     case "paisUniversidad":
@@ -390,7 +417,12 @@ export async function buildAspirantesCensoXlsxBuffer(params: BuildAspirantesCens
         const text = String(value);
         cell.numFmt = "@";
         cell.value = { richText: [{ font: { name: "Arial", size: 12, bold: true }, text }] };
-      } else if (col.id === "telefono" || col.id === "contactoTelefono") {
+      } else if (
+        col.id === "telefono" ||
+        col.id === "contactoTelefono" ||
+        col.id === "madreCedula" ||
+        col.id === "padreCedula"
+      ) {
         cell.numFmt = "@";
         cell.value = String(value);
       } else if (col.id === "estatura" && typeof value === "number") {

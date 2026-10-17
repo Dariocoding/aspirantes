@@ -4,6 +4,7 @@ export const CENSUS_EXPORT_COLUMN_GROUPS = [
   "Identidad",
   "Postulación",
   "Contacto",
+  "Familia",
   "Estudios",
   "Datos físicos",
   "Tallas",
@@ -48,6 +49,11 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "hijos", label: "Hijos", group: "Contacto", width: 8, align: "center" },
   { id: "contactoEmergencia", label: "Contacto de emergencia", group: "Contacto", width: 28, align: "left" },
   { id: "contactoTelefono", label: "Teléfono de emergencia", group: "Contacto", width: 18, align: "center" },
+  { id: "contactoDireccion", label: "Dirección de emergencia", group: "Contacto", width: 28, align: "left" },
+  { id: "madreNombre", label: "Nombre de la madre", group: "Familia", width: 28, align: "left" },
+  { id: "madreCedula", label: "Cédula de la madre", group: "Familia", width: 16, align: "center" },
+  { id: "padreNombre", label: "Nombre del padre", group: "Familia", width: 28, align: "left" },
+  { id: "padreCedula", label: "Cédula del padre", group: "Familia", width: 16, align: "center" },
   { id: "universidad", label: "Universidad", group: "Estudios", width: 24, align: "left" },
   { id: "paisUniversidad", label: "País de estudio", group: "Estudios", width: 16, align: "left" },
   { id: "tipoSangre", label: "Tipo de sangre", group: "Datos físicos", width: 12, align: "center" },
@@ -159,6 +165,14 @@ HEADER_TO_COLUMN_ID.set("factorrh", "tipoSangre");
 HEADER_TO_COLUMN_ID.set("telefonoemergencia", "contactoTelefono");
 HEADER_TO_COLUMN_ID.set("telefonodeemergencia", "contactoTelefono");
 HEADER_TO_COLUMN_ID.set("contactodeemergencia", "contactoEmergencia");
+HEADER_TO_COLUMN_ID.set("direccionemergencia", "contactoDireccion");
+HEADER_TO_COLUMN_ID.set("direcciondeemergencia", "contactoDireccion");
+HEADER_TO_COLUMN_ID.set("nombredelamadre", "madreNombre");
+HEADER_TO_COLUMN_ID.set("nombresdelamadre", "madreNombre");
+HEADER_TO_COLUMN_ID.set("ceduladelamadre", "madreCedula");
+HEADER_TO_COLUMN_ID.set("nombredelpadre", "padreNombre");
+HEADER_TO_COLUMN_ID.set("nombresdelpadre", "padreNombre");
+HEADER_TO_COLUMN_ID.set("ceduladelpadre", "padreCedula");
 
 export function censusExportColumnIdFromHeader(header: string): string | undefined {
   const folded = foldCensusHeader(header);
