@@ -122,6 +122,7 @@ export default async function AspirantePerfilPage({
                 twitter: a.twitter,
                 facebook: a.facebook,
                 padresVenezolanos: a.padresVenezolanos,
+                hijosCantidad: a.hijosCantidad,
                 madreNombres: a.madreNombres,
                 madreApellidos: a.madreApellidos,
                 madreCedula: a.madreCedula,

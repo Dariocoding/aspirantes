@@ -387,6 +387,10 @@ export const aspiranteQuickUpdateSchema = z
       (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
       z.string().min(1).nullable(),
     ),
+    hijosCantidad: z.preprocess(
+      (v) => (v === "" || v === null || v === undefined ? 0 : v),
+      z.coerce.number().int().min(0).max(30),
+    ),
     estaturaCm: optionalEstaturaCm(),
     pesoKg: optionalFloat(400),
     tensionArterial: z.string().trim().max(20).optional().nullable(),

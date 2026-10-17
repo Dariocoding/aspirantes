@@ -108,6 +108,7 @@ export type AspiranteQuickInitial = {
   twitter: string | null;
   facebook: string | null;
   padresVenezolanos: boolean | null;
+  hijosCantidad?: number;
   madreNombres: string | null;
   madreApellidos: string | null;
   madreCedula: string | null;
@@ -466,6 +467,20 @@ function AspiranteQuickForm({
                   <option value="SI">Sí</option>
                   <option value="NO">No</option>
                 </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-hijos">Cantidad de hijos</Label>
+                <Input
+                  id="quick-hijos"
+                  name="hijosCantidad"
+                  type="number"
+                  min={0}
+                  max={30}
+                  inputMode="numeric"
+                  defaultValue={initial?.hijosCantidad ?? 0}
+                  className="h-8"
+                />
+                <FieldError message={state.errors.hijosCantidad} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="quick-madre-nombres">Nombres de la madre</Label>
