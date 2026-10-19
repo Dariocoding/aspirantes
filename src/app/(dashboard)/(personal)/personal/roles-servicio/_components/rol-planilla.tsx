@@ -7,7 +7,6 @@ import {
   actualizarMarcasAsignacion,
   actualizarMarcasLote,
 } from "@src/app/actions/roles-servicio-marcas";
-import { contarDsFs } from "@src/lib/roles-servicio/generar-rotacion";
 import {
   esColumnaAmarilla,
   letraSemana,
@@ -120,14 +119,20 @@ export function RolPlanilla({
         </p>
       ) : null}
 
-      <div className="overflow-x-auto overscroll-x-contain">
+      <div className="min-w-0">
         <table className="w-max border-collapse text-[11px] text-slate-900">
           <thead>
             <tr>
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-30 w-8 border border-slate-400 bg-slate-100 px-1 py-1 font-bold"
+              >
+                №
+              </th>
               {todosLosRoles ? (
                 <th
                   rowSpan={2}
-                  className="sticky left-0 z-30 border border-slate-400 bg-slate-100 px-2 py-1 text-left font-bold uppercase"
+                  className="sticky left-8 z-30 w-[6.5rem] min-w-[6.5rem] max-w-[6.5rem] border border-slate-400 bg-slate-100 px-1.5 py-1 text-left font-bold uppercase"
                 >
                   Rol
                 </th>
@@ -135,26 +140,8 @@ export function RolPlanilla({
               <th
                 rowSpan={2}
                 className={cn(
-                  "sticky z-30 border border-slate-400 bg-slate-100 px-1.5 py-1 font-bold",
-                  todosLosRoles ? "left-[7.5rem]" : "left-0",
-                )}
-              >
-                №
-              </th>
-              <th
-                rowSpan={2}
-                className={cn(
-                  "sticky z-30 border border-slate-400 bg-slate-100 px-2 py-1 text-left font-bold uppercase",
-                  todosLosRoles ? "left-[9.25rem]" : "left-[1.75rem]",
-                )}
-              >
-                Grado / Jquia
-              </th>
-              <th
-                rowSpan={2}
-                className={cn(
-                  "sticky z-30 min-w-48 border border-slate-400 bg-slate-100 px-2 py-1 text-left font-bold uppercase",
-                  todosLosRoles ? "left-[15.5rem]" : "left-[7.5rem]",
+                  "sticky z-30 w-44 min-w-44 border border-slate-400 bg-slate-100 px-2 py-1 text-left font-bold uppercase",
+                  todosLosRoles ? "left-[8.5rem]" : "left-8",
                 )}
               >
                 Nombres y apellidos
@@ -165,7 +152,7 @@ export function RolPlanilla({
                   <th
                     key={`l-${dia}`}
                     className={cn(
-                      "min-w-7 w-7 border border-slate-400 px-0 py-0.5 text-center font-bold",
+                      "min-w-6 w-6 border border-slate-400 px-0 py-0.5 text-center font-bold",
                       amarilla ? "bg-amber-300" : "bg-white",
                       dia === diaHoy && "ring-2 ring-inset ring-sky-500",
                     )}
@@ -181,15 +168,6 @@ export function RolPlanilla({
                   </th>
                 );
               })}
-              {(["D/S", "F/S", "TOTAL", "FIRMA"] as const).map((label) => (
-                <th
-                  key={label}
-                  rowSpan={2}
-                  className="min-w-10 border border-slate-400 bg-sky-200 px-1.5 py-1 font-bold uppercase"
-                >
-                  {label}
-                </th>
-              ))}
             </tr>
             <tr>
               {dias.map((dia) => {
@@ -199,7 +177,7 @@ export function RolPlanilla({
                   <th
                     key={`n-${dia}`}
                     className={cn(
-                      "min-w-7 w-7 border border-slate-400 px-0 py-0.5 text-center font-bold tabular-nums",
+                      "min-w-6 w-6 border border-slate-400 px-0 py-0.5 text-center font-bold tabular-nums",
                       amarilla ? "bg-amber-300" : "bg-white",
                       sel && "bg-teal-100",
                       dia === diaHoy && "ring-2 ring-inset ring-sky-500",
@@ -214,36 +192,25 @@ export function RolPlanilla({
             </tr>
           </thead>
           <tbody>
-            {filas.map(({ plan, asignacion }, index) => {
-              const resumen = contarDsFs(asignacion.dias, anio, mes, esColumnaAmarilla);
-              return (
+            {filas.map(({ plan, asignacion }, index) => (
                 <tr key={`${plan.clave}-${asignacion.id}`}>
+                  <td className="sticky left-0 z-20 w-8 border border-slate-400 bg-white px-1 py-0.5 text-center tabular-nums">
+                    {asignacion.orden || index + 1}
+                  </td>
                   {todosLosRoles ? (
-                    <td className="sticky left-0 z-20 max-w-[7.5rem] truncate border border-slate-400 bg-white px-2 py-0.5 text-[10px] font-medium">
+                    <td
+                      className="sticky left-8 z-20 w-[6.5rem] min-w-[6.5rem] max-w-[6.5rem] truncate border border-slate-400 bg-white px-1.5 py-0.5 text-[10px] font-medium"
+                      title={plan.nombre}
+                    >
                       {plan.nombre}
                     </td>
                   ) : null}
                   <td
                     className={cn(
-                      "sticky z-20 border border-slate-400 bg-white px-1.5 py-0.5 text-center tabular-nums",
-                      todosLosRoles ? "left-[7.5rem]" : "left-0",
+                      "sticky z-20 w-44 min-w-44 truncate border border-slate-400 bg-white px-2 py-0.5 font-medium uppercase",
+                      todosLosRoles ? "left-[8.5rem]" : "left-8",
                     )}
-                  >
-                    {asignacion.orden || index + 1}
-                  </td>
-                  <td
-                    className={cn(
-                      "sticky z-20 border border-slate-400 bg-white px-2 py-0.5 text-center uppercase",
-                      todosLosRoles ? "left-[9.25rem]" : "left-[1.75rem]",
-                    )}
-                  >
-                    {asignacion.grado || "—"}
-                  </td>
-                  <td
-                    className={cn(
-                      "sticky z-20 min-w-48 border border-slate-400 bg-white px-2 py-0.5 font-medium uppercase",
-                      todosLosRoles ? "left-[15.5rem]" : "left-[7.5rem]",
-                    )}
+                    title={nombreFila(asignacion)}
                   >
                     {nombreFila(asignacion)}
                   </td>
@@ -254,7 +221,7 @@ export function RolPlanilla({
                       <td
                         key={dia}
                         className={cn(
-                          "min-w-7 w-7 border border-slate-400 px-0 py-0.5 text-center align-middle",
+                          "min-w-6 w-6 border border-slate-400 px-0 py-0.5 text-center align-middle",
                           amarilla ? "bg-amber-200/90" : "bg-white",
                           dia === diaHoy && "ring-1 ring-inset ring-sky-400",
                         )}
@@ -283,19 +250,8 @@ export function RolPlanilla({
                       </td>
                     );
                   })}
-                  <td className="border border-slate-400 bg-sky-100 px-1.5 py-0.5 text-center tabular-nums">
-                    {resumen.ds || "**"}
-                  </td>
-                  <td className="border border-slate-400 bg-sky-100 px-1.5 py-0.5 text-center tabular-nums">
-                    {resumen.fs || "**"}
-                  </td>
-                  <td className="border border-slate-400 bg-sky-100 px-1.5 py-0.5 text-center font-semibold tabular-nums">
-                    {resumen.total || "**"}
-                  </td>
-                  <td className="border border-slate-400 bg-sky-100 px-1.5 py-0.5" />
                 </tr>
-              );
-            })}
+            ))}
           </tbody>
         </table>
       </div>

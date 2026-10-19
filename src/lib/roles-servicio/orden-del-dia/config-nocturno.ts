@@ -1,6 +1,6 @@
 /**
  * Configuración de la sección NOCTURNO de la Orden del Día.
- * Editable desde Roles de servicio → Orden nocturna.
+ * La UI de edición se retiró; se usará otro flujo más adelante.
  */
 
 export const ORDEN_NOCTURNO_CONFIG_ID = "orden_nocturno";

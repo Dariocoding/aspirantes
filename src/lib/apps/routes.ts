@@ -17,6 +17,7 @@ export const routes = {
     permisosFormato: "/personal/permisos/formato",
     rolesServicio: "/personal/roles-servicio",
     configuracion: "/personal/configuracion",
+    autoridades: "/personal/configuracion/autoridades",
     convocatorias: "/personal/convocatorias",
     membretes: "/personal/membretes",
   },

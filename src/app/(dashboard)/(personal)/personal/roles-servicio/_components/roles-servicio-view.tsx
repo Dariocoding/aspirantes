@@ -10,7 +10,6 @@ import {
   LayoutGrid,
   Maximize2,
   Search,
-  Shield,
   UserRound,
 } from "lucide-react";
 import { Badge } from "@src/components/ui/badge";
@@ -187,16 +186,6 @@ export function RolesServicioView({
     setCuadriculaAmpliada(false);
   };
 
-  const vinculados = planes.reduce(
-    (total, plan) => total + plan.asignaciones.filter((item) => estaVinculado(item)).length,
-    0,
-  );
-  const conNombre = planes.reduce(
-    (total, plan) => total + plan.asignaciones.filter((item) => item.nombre.trim()).length,
-    0,
-  );
-  const cobertura = conNombre > 0 ? Math.round((vinculados / conNombre) * 100) : 0;
-
   const servicioDelDia = useMemo(() => {
     const lista: ServicioDia[] = [];
     for (const plan of planesAlcance) {
@@ -319,105 +308,7 @@ export function RolesServicioView({
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <header className="overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/80">
-        <div className="border-b border-slate-200/80 bg-linear-to-br from-slate-50 via-white to-teal-50/40 px-4 py-4 sm:px-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm shadow-slate-900/20">
-                <Shield className="size-5" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium tracking-[0.14em] text-slate-500 uppercase">
-                  Cuadro de servicio · {planes[0]?.curso ?? "CEFOA"}
-                </p>
-                <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.7rem]">
-                  {todosLosRoles ? "Todos los roles" : planActivo?.nombre}
-                </h1>
-                <p className="mt-1 text-sm text-slate-600">
-                  <span className="font-medium text-slate-800">{etiquetaMes(anio, mes)}</span>
-                  <span className="text-slate-300"> · </span>
-                  {planes.length} roles publicados
-                  {diaHoy != null ? (
-                    <>
-                      <span className="text-slate-300"> · </span>
-                      <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-950">
-                        Hoy es {diaHoy}
-                      </span>
-                    </>
-                  ) : null}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg bg-slate-200/80 ring-1 ring-slate-200 sm:min-w-72">
-              <Kpi label="Roles" value={String(planes.length)} />
-              <Kpi label="Vinculados" value={`${vinculados}/${conNombre || 0}`} />
-              <Kpi label="Cobertura" value={`${cobertura}%`} hint={cobertura >= 90 ? "Censo al día" : "Revisar nombres"} />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="inline-flex rounded-lg bg-slate-100 p-1">
-            {(
-              [
-                { id: "dia", label: "Día", icon: UserRound },
-                { id: "mes", label: "Mes", icon: CalendarDays },
-                { id: "cuadricula", label: "Cuadrícula", icon: LayoutGrid },
-              ] as const
-            ).map((item) => {
-              const Icon = item.icon;
-              const activoModo = modo === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setModo(item.id)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                    activoModo
-                      ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80"
-                      : "text-slate-600 hover:text-slate-900",
-                  )}
-                >
-                  <Icon className="size-3.5" aria-hidden />
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {planes.length > 0 ? (
-              <>
-                <OrdenDelDiaDownloadButton
-                  anio={anio}
-                  mes={mes}
-                  diaSeleccionado={diaSeleccionado}
-                />
-                <RestantesMesDownloadButton anio={anio} mes={mes} planes={planes} />
-                <TelegramEnviarButton />
-              </>
-            ) : null}
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-teal-500" /> Servicio
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-2.5 rounded-sm bg-indigo-300" /> Autoridad
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-2.5 rounded-sm bg-slate-200" /> Fin de semana
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-2.5 rounded-sm bg-amber-300" /> Hoy
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="flex flex-col gap-4">
       {planes.length === 0 ? (
         <Card className="shadow-sm ring-slate-200/80">
           <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
@@ -429,14 +320,17 @@ export function RolesServicioView({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[16.5rem_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[15.5rem_minmax(0,1fr)]">
           <aside className="min-w-0">
             <Card className="gap-0 py-0 shadow-sm ring-slate-200/80 xl:sticky xl:top-4">
-              <CardHeader className="border-b border-slate-200/80 px-3 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-sm">Roles</CardTitle>
-                    <CardDescription className="text-[11px]">{planesFiltrados.length} visibles</CardDescription>
+              <CardHeader className="space-y-3 border-b border-slate-200/80 px-3 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <CardTitle className="text-sm">Cuadro de servicio</CardTitle>
+                    <CardDescription className="text-[11px]">
+                      {etiquetaMes(anio, mes)}
+                      {diaHoy != null ? ` · hoy ${diaHoy}` : ""}
+                    </CardDescription>
                   </div>
                   <Button
                     type="button"
@@ -445,12 +339,92 @@ export function RolesServicioView({
                     className="xl:hidden"
                     onClick={() => setNavAbierta((v) => !v)}
                     aria-expanded={navAbierta}
-                    aria-label="Mostrar u ocultar lista de roles"
+                    aria-label="Mostrar u ocultar panel lateral"
                   >
                     <ChevronsUpDown />
                   </Button>
                 </div>
-                <div className="relative mt-2">
+
+                <div className={cn("space-y-3", !navAbierta && "hidden xl:block")}>
+                  <div>
+                    <p className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
+                      Vista
+                    </p>
+                    <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
+                      {(
+                        [
+                          { id: "dia", label: "Día", icon: UserRound },
+                          { id: "mes", label: "Mes", icon: CalendarDays },
+                          { id: "cuadricula", label: "Cuad.", icon: LayoutGrid },
+                        ] as const
+                      ).map((item) => {
+                        const Icon = item.icon;
+                        const activoModo = modo === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setModo(item.id)}
+                            className={cn(
+                              "inline-flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[10px] font-medium transition-all",
+                              activoModo
+                                ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80"
+                                : "text-slate-600 hover:text-slate-900",
+                            )}
+                          >
+                            <Icon className="size-3.5" aria-hidden />
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
+                      Acciones
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      <OrdenDelDiaDownloadButton
+                        anio={anio}
+                        mes={mes}
+                        diaSeleccionado={diaSeleccionado}
+                        className="w-full justify-between"
+                      />
+                      <RestantesMesDownloadButton
+                        anio={anio}
+                        mes={mes}
+                        planes={planes}
+                        className="w-full justify-start"
+                      />
+                      <TelegramEnviarButton className="w-full flex-col items-stretch gap-1 [&_button]:w-full [&_button]:justify-between" />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[10px] text-slate-500">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="size-2 rounded-full bg-teal-500" /> Servicio
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="size-2 rounded-sm bg-indigo-300" /> Autoridad
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="size-2 rounded-sm bg-slate-200" /> FDS
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="size-2 rounded-sm bg-amber-300" /> Hoy
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <div className={cn("border-b border-slate-200/80 px-3 py-2.5", !navAbierta && "hidden xl:block")}>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
+                    Roles · {planesFiltrados.length}
+                  </p>
+                </div>
+                <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
                   <Input
                     value={filtroRol}
@@ -459,7 +433,8 @@ export function RolesServicioView({
                     className="h-8 bg-white pl-8 text-xs"
                   />
                 </div>
-              </CardHeader>
+              </div>
+
               <CardContent
                 className={cn(
                   "max-h-112 overflow-y-auto px-2 py-2",
@@ -684,7 +659,7 @@ export function RolesServicioView({
             ) : null}
 
             {modo === "cuadricula" ? (
-              <Card className="gap-0 overflow-hidden py-0 shadow-sm ring-slate-200/80">
+              <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
                 <CardHeader className="border-b border-slate-200/80 px-4 py-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div className="min-w-0">
@@ -694,7 +669,7 @@ export function RolesServicioView({
                       <CardDescription className="text-xs">
                         {todosLosRoles
                           ? "Todos los roles del mes. Elige un rol en la barra para editar o generar la rotación."
-                          : `${planActivo?.curso}. Vista tipo Excel: V/S/D en amarillo · D/S · F/S · TOTAL · FIRMA.`}
+                          : `${planActivo?.curso}. Vista tipo Excel: V/S/D en amarillo.`}
                       </CardDescription>
                     </div>
                     <div className="flex w-full max-w-md flex-wrap items-center gap-2 lg:justify-end">
@@ -722,7 +697,7 @@ export function RolesServicioView({
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="min-w-0 p-0">
                   {filasCuadricula.length === 0 ? (
                     <p className="px-4 py-10 text-center text-sm text-slate-500">
                       {busqueda.trim()
@@ -731,7 +706,10 @@ export function RolesServicioView({
                     </p>
                   ) : (
                     <>
-                      <div ref={cuadriculaScrollRef}>
+                      <div
+                        ref={cuadriculaScrollRef}
+                        className="min-w-0 overflow-x-auto overscroll-x-contain"
+                      >
                         <RolPlanilla
                           filas={filasCuadricula}
                           dias={dias}
@@ -750,7 +728,7 @@ export function RolesServicioView({
                       {cuadriculaDesborda ? (
                         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 px-4 py-2">
                           <p className="text-[11px] text-slate-500">
-                            La cuadrícula no cabe en pantalla. Desplace horizontalmente o ábrala a pantalla completa.
+                            Desplace horizontalmente para ver todo el mes, o ábrala a pantalla completa.
                           </p>
                           <Button
                             type="button"
@@ -793,7 +771,7 @@ export function RolesServicioView({
                     />
                   </div>
                 </DialogHeader>
-                <div className="min-h-0 flex-1 overflow-auto">
+                <div className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain">
                   {filasCuadricula.length === 0 ? (
                     <p className="px-4 py-10 text-center text-sm text-slate-500">
                       {busqueda.trim()
@@ -822,16 +800,6 @@ export function RolesServicioView({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="bg-white px-3 py-2.5">
-      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">{label}</p>
-      <p className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums">{value}</p>
-      {hint ? <p className="mt-0.5 truncate text-[10px] text-slate-500">{hint}</p> : null}
     </div>
   );
 }

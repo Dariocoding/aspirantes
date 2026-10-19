@@ -23,6 +23,7 @@ import {
   Settings2,
   Shield,
   Stamp,
+  UserCog,
   Users,
 } from "lucide-react";
 
@@ -144,6 +145,7 @@ const personalMainLinks: AppNavLink[] = [
       routes.personal.esquelas,
       routes.personal.membretes,
       routes.personal.convocatorias,
+      routes.personal.autoridades,
     ],
   },
 ];
@@ -170,6 +172,13 @@ export const personalConfigCards: ConfigCard[] = [
     description: "Encabezados institucionales para documentos y exportaciones.",
     icon: Stamp,
     tone: "bg-sky-50 text-sky-800",
+  },
+  {
+    href: routes.personal.autoridades,
+    label: "Autoridades",
+    description: "Oficiales y personal de autoridad del cuadro de servicio.",
+    icon: UserCog,
+    tone: "bg-violet-50 text-violet-800",
   },
   {
     href: routes.personal.convocatorias,

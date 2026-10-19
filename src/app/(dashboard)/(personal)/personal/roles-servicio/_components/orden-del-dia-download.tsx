@@ -137,7 +137,7 @@ export function OrdenDelDiaDownloadButton({
         Imprimir órdenes
         <ChevronDown className="size-3 opacity-70" aria-hidden />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-64">
+      <DropdownMenuContent align="start" className="min-w-64">
         <DropdownMenuItem
           nativeButton={false}
           closeOnClick
