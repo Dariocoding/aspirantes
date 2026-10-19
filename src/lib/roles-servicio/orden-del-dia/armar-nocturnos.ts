@@ -162,7 +162,7 @@ function filasDeBloqueFijo(input: {
 /**
  * Arma la tabla nocturna según config:
  * 1) RONDA (= oficial de día)
- * 2) RONDIN ×2 (= inspección, 1.er turno)
+ * 2) RONDIN ×2 (= inspección; sin turno por defecto, como Ronda)
  * 3) Binomios: imaginaria por turno (aula / cuartelero / baño)
  * 4) Guardia de estacionamiento, con el turno que trae la marca (T1/T2/T3)
  */

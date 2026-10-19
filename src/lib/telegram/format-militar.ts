@@ -32,7 +32,6 @@ export function pieMilitar(cierre?: string): string[] {
     "",
     SEP_GRUESA,
     `<i>${escapeHtml(cierre ?? "Disciplina, puntualidad y sentido del deber.")}</i>`,
-    "<i>¡Listos para servir a la Patria!</i>",
     "",
     "<b>CÚMPLASE</b>",
   ];

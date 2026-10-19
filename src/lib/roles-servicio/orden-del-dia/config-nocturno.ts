@@ -31,7 +31,8 @@ export type OrdenNocturnoConfig = {
   /** Turno mostrado junto a RONDA (vacío = sin turno). */
   rondaTurno: TurnoNocturnoEtiqueta | "";
   /**
-   * Rondín: 2 puestos del personal de inspección en el 1.er turno (después de Ronda).
+   * Rondín: 2 puestos del personal de inspección (después de Ronda).
+   * Por defecto sin turno (como Ronda). Completa con OMITIR si faltan personas.
    */
   rondinRolClaves: string[];
   rondinServicioEtiqueta: string;
@@ -65,10 +66,10 @@ export function defaultOrdenNocturnoConfig(): OrdenNocturnoConfig {
   return {
     rondaRolClaves: [],
     rondaServicioEtiqueta: "RONDA",
-    rondaTurno: "1ER",
+    rondaTurno: "",
     rondinRolClaves: [],
     rondinServicioEtiqueta: "RONDIN",
-    rondinTurno: "1ER",
+    rondinTurno: "",
     binomios: [
       {
         id: "binomio-1er",
@@ -117,7 +118,8 @@ export function normalizeOrdenNocturnoConfig(raw: unknown): OrdenNocturnoConfig 
       ? o.rondaServicioEtiqueta.trim()
       : base.rondaServicioEtiqueta;
 
-  const rondaTurno = normalizeTurno(o.rondaTurno, base.rondaTurno);
+  const rondaTurno =
+    o.rondaTurno === undefined ? "" : normalizeTurno(o.rondaTurno, base.rondaTurno);
 
   const rondinRolClaves = Array.isArray(o.rondinRolClaves)
     ? o.rondinRolClaves.filter((x): x is string => typeof x === "string")
@@ -128,7 +130,8 @@ export function normalizeOrdenNocturnoConfig(raw: unknown): OrdenNocturnoConfig 
       ? o.rondinServicioEtiqueta.trim()
       : base.rondinServicioEtiqueta;
 
-  const rondinTurno = normalizeTurno(o.rondinTurno, base.rondinTurno);
+  const rondinTurno =
+    o.rondinTurno === undefined ? "" : normalizeTurno(o.rondinTurno, base.rondinTurno);
 
   let binomios = base.binomios;
   if (Array.isArray(o.binomios) && o.binomios.length > 0) {

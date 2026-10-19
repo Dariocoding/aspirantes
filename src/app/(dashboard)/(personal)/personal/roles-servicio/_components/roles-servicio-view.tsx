@@ -38,38 +38,12 @@ import {
   letraSemana,
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
-import type { JerarquiaAutoridad } from "@src/generated/prisma";
 import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { cn } from "@src/lib/utils";
+import { RolPlanilla } from "./rol-planilla";
+import type { AsignacionVista, PlanVista } from "./types";
 
-export type AsignacionVista = {
-  id: string;
-  orden: number;
-  grado: string;
-  nombre: string;
-  dias: MarcaDia[];
-  aspirante: {
-    id: string;
-    nombres: string;
-    apellidos: string;
-    cedula: string;
-    fotoKey: string | null;
-  } | null;
-  autoridad: {
-    id: string;
-    nombres: string;
-    apellidos: string;
-    cedula: string | null;
-    jerarquia: JerarquiaAutoridad;
-  } | null;
-};
-
-export type PlanVista = {
-  clave: string;
-  nombre: string;
-  curso: string;
-  asignaciones: AsignacionVista[];
-};
+export type { AsignacionVista, PlanVista };
 
 type Props = {
   anio: number;
@@ -78,6 +52,7 @@ type Props = {
   /** Clave del rol inicial desde la URL; `null` = todos los roles. */
   rolInicial: string | null;
   diaHoy: number | null;
+  canWrite?: boolean;
 };
 
 type ModoVista = "dia" | "mes" | "cuadricula";
@@ -149,9 +124,17 @@ function densidadClase(count: number, max: number): string {
   return "bg-teal-200/80 text-teal-950 border-teal-400/80 hover:border-teal-600";
 }
 
-export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Props) {
+export function RolesServicioView({
+  anio,
+  mes,
+  planes: planesProp,
+  rolInicial,
+  diaHoy,
+  canWrite = false,
+}: Props) {
   const totalDias = diasDelMes(anio, mes);
   const dias = useMemo(() => Array.from({ length: totalDias }, (_, i) => i + 1), [totalDias]);
+  const [planes, setPlanes] = useState(planesProp);
   const [rolClave, setRolClave] = useState<string | null>(rolInicial);
   const [modo, setModo] = useState<ModoVista>(diaHoy != null ? "dia" : "cuadricula");
   const [diaSeleccionado, setDiaSeleccionado] = useState<number>(diaHoy ?? 1);
@@ -162,12 +145,30 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
   const [cuadriculaDesborda, setCuadriculaDesborda] = useState(false);
   const cuadriculaScrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    setPlanes(planesProp);
+  }, [planesProp]);
+
   const planActivo = useMemo(
     () => (rolClave ? planes.find((plan) => plan.clave === rolClave) ?? null : null),
     [planes, rolClave],
   );
   const planesAlcance = planActivo ? [planActivo] : planes;
   const todosLosRoles = rolClave == null;
+
+  const aplicarMarcasLocal = (cambios: Array<{ asignacionId: string; dias: MarcaDia[] }>) => {
+    if (cambios.length === 0) return;
+    const mapa = new Map(cambios.map((c) => [c.asignacionId, c.dias]));
+    setPlanes((prev) =>
+      prev.map((plan) => ({
+        ...plan,
+        asignaciones: plan.asignaciones.map((asignacion) => {
+          const diasNext = mapa.get(asignacion.id);
+          return diasNext ? { ...asignacion, dias: diasNext } : asignacion;
+        }),
+      })),
+    );
+  };
 
   useEffect(() => {
     const url = rolClave
@@ -688,12 +689,12 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div className="min-w-0">
                       <CardTitle className="text-base">
-                        {todosLosRoles ? "Cuadrícula consolidada" : planActivo?.nombre}
+                        {todosLosRoles ? "Planilla consolidada" : planActivo?.nombre}
                       </CardTitle>
                       <CardDescription className="text-xs">
                         {todosLosRoles
-                          ? "Todos los roles del mes. Filtra por nombre o selecciona un rol en la barra lateral."
-                          : `${planActivo?.curso}. Cada celda marcada es un día de servicio.`}
+                          ? "Todos los roles del mes. Elige un rol en la barra para editar o generar la rotación."
+                          : `${planActivo?.curso}. Vista tipo Excel: V/S/D en amarillo · D/S · F/S · TOTAL · FIRMA.`}
                       </CardDescription>
                     </div>
                     <div className="flex w-full max-w-md flex-wrap items-center gap-2 lg:justify-end">
@@ -730,8 +731,8 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                     </p>
                   ) : (
                     <>
-                      <div ref={cuadriculaScrollRef} className="overflow-x-auto overscroll-x-contain">
-                        <CuadriculaTable
+                      <div ref={cuadriculaScrollRef}>
+                        <RolPlanilla
                           filas={filasCuadricula}
                           dias={dias}
                           anio={anio}
@@ -739,7 +740,11 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                           diaHoy={diaHoy}
                           diaSeleccionado={diaSeleccionado}
                           todosLosRoles={todosLosRoles}
+                          canWrite={canWrite}
+                          planes={planes}
+                          planUnico={planActivo}
                           onSelectDia={abrirDiaDesdeCuadricula}
+                          onMarcasChange={aplicarMarcasLocal}
                         />
                       </div>
                       {cuadriculaDesborda ? (
@@ -772,10 +777,11 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
               >
                 <DialogHeader className="shrink-0 border-b border-slate-200 px-4 py-3 pr-12 sm:px-5">
                   <DialogTitle>
-                    {todosLosRoles ? "Cuadrícula consolidada" : planActivo?.nombre}
+                    {todosLosRoles ? "Planilla consolidada" : planActivo?.nombre}
                   </DialogTitle>
                   <DialogDescription>
-                    Vista ampliada · {etiquetaMes(anio, mes)} · {filasCuadricula.length} personas
+                    Vista ampliada tipo Excel · {etiquetaMes(anio, mes)} · {filasCuadricula.length}{" "}
+                    personas
                   </DialogDescription>
                   <div className="relative mt-2 max-w-xs">
                     <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
@@ -795,7 +801,7 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                         : "No hay personal asignado en la selección actual."}
                     </p>
                   ) : (
-                    <CuadriculaTable
+                    <RolPlanilla
                       filas={filasCuadricula}
                       dias={dias}
                       anio={anio}
@@ -803,7 +809,11 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
                       diaHoy={diaHoy}
                       diaSeleccionado={diaSeleccionado}
                       todosLosRoles={todosLosRoles}
+                      canWrite={canWrite}
+                      planes={planes}
+                      planUnico={planActivo}
                       onSelectDia={abrirDiaDesdeCuadricula}
+                      onMarcasChange={aplicarMarcasLocal}
                     />
                   )}
                 </div>
@@ -813,133 +823,6 @@ export function RolesServicioView({ anio, mes, planes, rolInicial, diaHoy }: Pro
         </div>
       )}
     </div>
-  );
-}
-
-function CuadriculaTable({
-  filas,
-  dias,
-  anio,
-  mes,
-  diaHoy,
-  diaSeleccionado,
-  todosLosRoles,
-  onSelectDia,
-}: {
-  filas: FilaCuadricula[];
-  dias: number[];
-  anio: number;
-  mes: number;
-  diaHoy: number | null;
-  diaSeleccionado: number;
-  todosLosRoles: boolean;
-  onSelectDia: (dia: number) => void;
-}) {
-  return (
-    <table className="w-max border-collapse text-xs">
-      <thead>
-        <tr className="border-b border-slate-200">
-          {todosLosRoles ? (
-            <th className="sticky left-0 z-20 min-w-40 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-              Rol
-            </th>
-          ) : null}
-          <th
-            className={cn(
-              "sticky z-20 min-w-56 bg-slate-50 px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-slate-500 uppercase",
-              todosLosRoles ? "left-40" : "left-0",
-            )}
-          >
-            Personal
-            <span className="ml-1 font-normal normal-case tabular-nums text-slate-400">
-              ({filas.length})
-            </span>
-          </th>
-          {dias.map((dia) => {
-            const fin = esFinDeSemana(anio, mes, dia);
-            const hoy = dia === diaHoy;
-            const sel = dia === diaSeleccionado;
-            return (
-              <th
-                key={dia}
-                className={cn(
-                  "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center font-semibold text-slate-600",
-                  fin && "bg-slate-100/80",
-                  hoy && "bg-amber-100 text-amber-950",
-                  sel && !hoy && "bg-teal-50 text-teal-950",
-                )}
-              >
-                <button
-                  type="button"
-                  className="mx-auto flex w-full flex-col items-center rounded-md px-0.5 py-0.5 hover:bg-black/5"
-                  onClick={() => onSelectDia(dia)}
-                  title={`Ver servicio del día ${dia}`}
-                >
-                  <span className="text-[9px] font-medium text-slate-400">
-                    {letraSemana(anio, mes, dia)}
-                  </span>
-                  <span className="tabular-nums">{dia}</span>
-                </button>
-              </th>
-            );
-          })}
-          {/* Respiro para que el día 31 no quede pegado al borde redondeado */}
-          <th aria-hidden className="w-3 min-w-3 bg-slate-50 p-0" />
-        </tr>
-      </thead>
-      <tbody>
-        {filas.map(({ plan, asignacion }, index) => (
-          <tr
-            key={`${plan.clave}-${asignacion.id}`}
-            className={cn(
-              "border-b border-slate-100 transition-colors hover:bg-slate-50/70",
-              index % 2 === 1 && "bg-slate-50/40",
-            )}
-          >
-            {todosLosRoles ? (
-              <td className="sticky left-0 z-10 min-w-40 bg-white px-3 py-2.5 align-middle text-[10px] font-medium text-slate-600 shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]">
-                {plan.nombre}
-              </td>
-            ) : null}
-            <td
-              className={cn(
-                "sticky z-10 min-w-56 bg-white px-3 py-2.5 align-middle shadow-[4px_0_8px_-6px_rgba(15,23,42,0.18)]",
-                todosLosRoles ? "left-40" : "left-0",
-              )}
-            >
-              <div className="flex items-start gap-2.5">
-                <AvatarAsignacion asignacion={asignacion} size="sm" />
-                <div className="min-w-0">
-                  <p className="text-[10px] tracking-wide text-slate-400 uppercase">
-                    {asignacion.orden}. {asignacion.grado}
-                  </p>
-                  <PersonaRol asignacion={asignacion} compact />
-                </div>
-              </div>
-            </td>
-            {dias.map((dia) => {
-              const marca = marcaDelDia(asignacion, dia);
-              const fin = esFinDeSemana(anio, mes, dia);
-              const hoy = dia === diaHoy;
-              return (
-                <td
-                  key={dia}
-                  className={cn(
-                    "min-w-9 w-9 shrink-0 px-0 py-1.5 text-center align-middle",
-                    fin && "bg-slate-50/80",
-                    hoy && "bg-amber-50/70",
-                    dia === diaSeleccionado && !hoy && "bg-teal-50/50",
-                  )}
-                >
-                  {marca ? <MarcaCelda marca={marca} /> : <span className="text-slate-200">·</span>}
-                </td>
-              );
-            })}
-            <td aria-hidden className="w-3 min-w-3 p-0" />
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
 

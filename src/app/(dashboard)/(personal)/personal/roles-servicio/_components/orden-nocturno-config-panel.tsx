@@ -258,8 +258,8 @@ export function OrdenNocturnoConfigPanel({ roles, initialConfig, canWrite }: Pro
         <CardHeader className="border-b border-slate-100 px-4 py-3">
           <CardTitle className="text-base">2. Rondín (×2)</CardTitle>
           <CardDescription className="text-xs">
-            Dos puestos en el 1.er turno, justo después de la Ronda. Toman el personal de Inspección
-            (si falta alguien, aparece OMITIR).
+            Dos puestos justo después de la Ronda (sin turno, como la Ronda). Toman el personal de
+            Inspección; si falta alguien, aparece OMITIR.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-4">

@@ -81,7 +81,7 @@ const efemeridesVenezuela = [
 ];
 
 const MEMBRETE_CEFOA45_ID = "membrete_cefoa45";
-const MEMBRETE_CEFOA45_NOMBRE = "CEFOA — Oficiales asimilados Nro. 45";
+const MEMBRETE_CEFOA45_NOMBRE = "CEFOA — Oficiales asimilado y asimilado técnico";
 
 async function seedMembreteCefoa45(client: PrismaClient) {
   const byId = await client.membrete.findUnique({ where: { id: MEMBRETE_CEFOA45_ID } });

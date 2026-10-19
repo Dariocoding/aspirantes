@@ -64,6 +64,7 @@ export function RolesServicioShell(props: Props) {
           planes={props.planes}
           rolInicial={props.rolInicial}
           diaHoy={props.diaHoy}
+          canWrite={props.canWrite}
         />
       ) : null}
       {seccion === "nocturno" ? (

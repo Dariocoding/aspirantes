@@ -52,3 +52,12 @@ export function esFinDeSemana(anio: number, mes: number, dia: number): boolean {
   const semana = new Date(anio, mes - 1, dia).getDay();
   return semana === 0 || semana === 6;
 }
+
+/**
+ * Columnas amarillas del rol tipo planilla: viernes, sábado y domingo (V / S / D).
+ * Coincide con el Excel de roles de servicio.
+ */
+export function esColumnaAmarilla(anio: number, mes: number, dia: number): boolean {
+  const semana = new Date(anio, mes - 1, dia).getDay();
+  return semana === 0 || semana === 5 || semana === 6;
+}
