@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   CalendarDays,
   CalendarRange,
@@ -12,6 +12,7 @@ import {
   Search,
   UserRound,
 } from "lucide-react";
+import { actualizarMarcasLote } from "@src/app/actions/roles-servicio-marcas";
 import { Badge } from "@src/components/ui/badge";
 import { Button } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
@@ -23,9 +24,8 @@ import {
   DialogTitle,
 } from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
-import { OrdenDelDiaDownloadButton } from "./orden-del-dia-download";
-import { RestantesMesDownloadButton } from "./restantes-mes-download";
-import { TelegramEnviarButton } from "./telegram-enviar-button";
+import { GenerarCalendarioDialog } from "./generar-calendario-dialog";
+import { RolesServicioAccionesMenu } from "./roles-servicio-acciones-menu";
 import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { routes } from "@src/lib/apps/routes";
 import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
@@ -135,13 +135,19 @@ export function RolesServicioView({
   const dias = useMemo(() => Array.from({ length: totalDias }, (_, i) => i + 1), [totalDias]);
   const [planes, setPlanes] = useState(planesProp);
   const [rolClave, setRolClave] = useState<string | null>(rolInicial);
-  const [modo, setModo] = useState<ModoVista>(diaHoy != null ? "dia" : "cuadricula");
+  const [modo, setModo] = useState<ModoVista>(() => {
+    // Cuadrícula solo tiene sentido con un rol concreto.
+    if (rolInicial == null) return "dia";
+    return diaHoy != null ? "dia" : "cuadricula";
+  });
   const [diaSeleccionado, setDiaSeleccionado] = useState<number>(diaHoy ?? 1);
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("");
   const [navAbierta, setNavAbierta] = useState(false);
   const [cuadriculaAmpliada, setCuadriculaAmpliada] = useState(false);
   const [cuadriculaDesborda, setCuadriculaDesborda] = useState(false);
+  const [generarOpen, setGenerarOpen] = useState(false);
+  const [generarPending, startGenerarTransition] = useTransition();
   const cuadriculaScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -179,6 +185,10 @@ export function RolesServicioView({
   useEffect(() => {
     if (modo !== "cuadricula") setCuadriculaAmpliada(false);
   }, [modo]);
+
+  useEffect(() => {
+    if (todosLosRoles && modo === "cuadricula") setModo("dia");
+  }, [todosLosRoles, modo]);
 
   const abrirDiaDesdeCuadricula = (dia: number) => {
     setDiaSeleccionado(dia);
@@ -304,6 +314,7 @@ export function RolesServicioView({
 
   const seleccionarRol = (clave: string | null) => {
     setRolClave(clave);
+    if (clave == null && modo === "cuadricula") setModo("dia");
     setNavAbierta(false);
   };
 
@@ -320,13 +331,23 @@ export function RolesServicioView({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[15.5rem_minmax(0,1fr)]">
+        <div className="grid w-full gap-4 xl:grid-cols-[15.5rem_minmax(0,1fr)]">
           <aside className="min-w-0">
             <Card className="gap-0 py-0 shadow-sm ring-slate-200/80 xl:sticky xl:top-4">
               <CardHeader className="space-y-3 border-b border-slate-200/80 px-3 py-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <CardTitle className="text-sm">Cuadro de servicio</CardTitle>
+                    <div className="flex items-center gap-0.5">
+                      <CardTitle className="text-sm">Cuadro de servicio</CardTitle>
+                      <RolesServicioAccionesMenu
+                        anio={anio}
+                        mes={mes}
+                        diaSeleccionado={diaSeleccionado}
+                        planes={planes}
+                        canGenerar={canWrite && planes.some((p) => p.asignaciones.length > 0)}
+                        onGenerarCalendario={() => setGenerarOpen(true)}
+                      />
+                    </div>
                     <CardDescription className="text-[11px]">
                       {etiquetaMes(anio, mes)}
                       {diaHoy != null ? ` · hoy ${diaHoy}` : ""}
@@ -345,75 +366,46 @@ export function RolesServicioView({
                   </Button>
                 </div>
 
-                <div className={cn("space-y-3", !navAbierta && "hidden xl:block")}>
-                  <div>
-                    <p className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
-                      Vista
-                    </p>
-                    <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
-                      {(
-                        [
-                          { id: "dia", label: "Día", icon: UserRound },
-                          { id: "mes", label: "Mes", icon: CalendarDays },
-                          { id: "cuadricula", label: "Cuad.", icon: LayoutGrid },
-                        ] as const
-                      ).map((item) => {
-                        const Icon = item.icon;
-                        const activoModo = modo === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => setModo(item.id)}
-                            className={cn(
-                              "inline-flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[10px] font-medium transition-all",
-                              activoModo
+                <div className={cn(!navAbierta && "hidden xl:block")}>
+                  <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
+                    {(
+                      [
+                        { id: "dia", label: "Día", icon: UserRound },
+                        { id: "mes", label: "Mes", icon: CalendarDays },
+                        { id: "cuadricula", label: "Cuad.", icon: LayoutGrid },
+                      ] as const
+                    ).map((item) => {
+                      const Icon = item.icon;
+                      const activoModo = modo === item.id;
+                      const deshabilitado = item.id === "cuadricula" && todosLosRoles;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          disabled={deshabilitado}
+                          title={
+                            deshabilitado
+                              ? "Elige un rol para ver la cuadrícula"
+                              : undefined
+                          }
+                          onClick={() => {
+                            if (deshabilitado) return;
+                            setModo(item.id);
+                          }}
+                          className={cn(
+                            "inline-flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[10px] font-medium transition-all",
+                            deshabilitado
+                              ? "cursor-not-allowed text-slate-400 opacity-50"
+                              : activoModo
                                 ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80"
                                 : "text-slate-600 hover:text-slate-900",
-                            )}
-                          >
-                            <Icon className="size-3.5" aria-hidden />
-                            {item.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
-                      Acciones
-                    </p>
-                    <div className="flex flex-col gap-1.5">
-                      <OrdenDelDiaDownloadButton
-                        anio={anio}
-                        mes={mes}
-                        diaSeleccionado={diaSeleccionado}
-                        className="w-full justify-between"
-                      />
-                      <RestantesMesDownloadButton
-                        anio={anio}
-                        mes={mes}
-                        planes={planes}
-                        className="w-full justify-start"
-                      />
-                      <TelegramEnviarButton className="w-full flex-col items-stretch gap-1 [&_button]:w-full [&_button]:justify-between" />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[10px] text-slate-500">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="size-2 rounded-full bg-teal-500" /> Servicio
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="size-2 rounded-sm bg-indigo-300" /> Autoridad
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="size-2 rounded-sm bg-slate-200" /> FDS
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <span className="size-2 rounded-sm bg-amber-300" /> Hoy
-                    </span>
+                          )}
+                        >
+                          <Icon className="size-3.5" aria-hidden />
+                          {item.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </CardHeader>
@@ -498,7 +490,7 @@ export function RolesServicioView({
             </Card>
           </aside>
 
-          <div className="flex min-w-0 flex-col gap-5">
+          <div className="flex w-full min-w-0 flex-col gap-5">
             {modo === "dia" ? (
               <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
                 <CardHeader className="border-b border-slate-200/80 bg-linear-to-br from-amber-50/80 to-white px-4 py-3">
@@ -659,18 +651,18 @@ export function RolesServicioView({
             ) : null}
 
             {modo === "cuadricula" ? (
-              <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
+              <Card className="w-full gap-0 py-0 shadow-sm ring-slate-200/80">
                 <CardHeader className="border-b border-slate-200/80 px-4 py-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div className="min-w-0">
                       <CardTitle className="text-base">
                         {todosLosRoles ? "Planilla consolidada" : planActivo?.nombre}
                       </CardTitle>
-                      <CardDescription className="text-xs">
-                        {todosLosRoles
-                          ? "Todos los roles del mes. Elige un rol en la barra para editar o generar la rotación."
-                          : `${planActivo?.curso}. Vista tipo Excel: V/S/D en amarillo.`}
-                      </CardDescription>
+                      {planActivo?.curso || todosLosRoles ? (
+                        <CardDescription className="text-xs">
+                          {todosLosRoles ? `${planes.length} roles` : planActivo?.curso}
+                        </CardDescription>
+                      ) : null}
                     </div>
                     <div className="flex w-full max-w-md flex-wrap items-center gap-2 lg:justify-end">
                       {cuadriculaDesborda ? (
@@ -697,7 +689,7 @@ export function RolesServicioView({
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="min-w-0 p-0">
+                <CardContent className="w-full min-w-0 p-0">
                   {filasCuadricula.length === 0 ? (
                     <p className="px-4 py-10 text-center text-sm text-slate-500">
                       {busqueda.trim()
@@ -708,7 +700,7 @@ export function RolesServicioView({
                     <>
                       <div
                         ref={cuadriculaScrollRef}
-                        className="min-w-0 overflow-x-auto overscroll-x-contain"
+                        className="w-full min-w-0 overflow-x-auto overscroll-x-contain"
                       >
                         <RolPlanilla
                           filas={filasCuadricula}
@@ -719,8 +711,6 @@ export function RolesServicioView({
                           diaSeleccionado={diaSeleccionado}
                           todosLosRoles={todosLosRoles}
                           canWrite={canWrite}
-                          planes={planes}
-                          planUnico={planActivo}
                           onSelectDia={abrirDiaDesdeCuadricula}
                           onMarcasChange={aplicarMarcasLocal}
                         />
@@ -788,8 +778,6 @@ export function RolesServicioView({
                       diaSeleccionado={diaSeleccionado}
                       todosLosRoles={todosLosRoles}
                       canWrite={canWrite}
-                      planes={planes}
-                      planUnico={planActivo}
                       onSelectDia={abrirDiaDesdeCuadricula}
                       onMarcasChange={aplicarMarcasLocal}
                     />
@@ -797,6 +785,24 @@ export function RolesServicioView({
                 </div>
               </DialogContent>
             </Dialog>
+
+            {canWrite ? (
+              <GenerarCalendarioDialog
+                open={generarOpen}
+                onOpenChange={setGenerarOpen}
+                planes={planes}
+                rolInicialClave={planActivo?.clave ?? null}
+                ultimoDia={dias[dias.length - 1] ?? 31}
+                pending={generarPending}
+                onApply={(cambios) => {
+                  aplicarMarcasLocal(cambios);
+                  startGenerarTransition(async () => {
+                    const result = await actualizarMarcasLote(cambios);
+                    if (result.ok) setGenerarOpen(false);
+                  });
+                }}
+              />
+            ) : null}
           </div>
         </div>
       )}

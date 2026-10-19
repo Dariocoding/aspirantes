@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, Wand2 } from "lucide-react";
-import { Button } from "@src/components/ui/button";
-import {
-  actualizarMarcasAsignacion,
-  actualizarMarcasLote,
-} from "@src/app/actions/roles-servicio-marcas";
+import { Loader2 } from "lucide-react";
+import { actualizarMarcasAsignacion } from "@src/app/actions/roles-servicio-marcas";
 import {
   esColumnaAmarilla,
   letraSemana,
@@ -14,7 +10,6 @@ import {
 } from "@src/lib/roles-servicio/marcas";
 import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { cn } from "@src/lib/utils";
-import { GenerarCalendarioDialog } from "./generar-calendario-dialog";
 import type { AsignacionVista, PlanVista } from "./types";
 
 type Fila = {
@@ -31,10 +26,6 @@ type Props = {
   diaSeleccionado: number;
   todosLosRoles: boolean;
   canWrite: boolean;
-  /** Todos los planes del mes (para el generador multi-rol). */
-  planes: PlanVista[];
-  /** Rol activo, si hay uno; preselección en el dialog. */
-  planUnico: PlanVista | null;
   onSelectDia: (dia: number) => void;
   onMarcasChange: (
     cambios: Array<{ asignacionId: string; dias: MarcaDia[] }>,
@@ -64,13 +55,10 @@ export function RolPlanilla({
   diaSeleccionado,
   todosLosRoles,
   canWrite,
-  planes,
-  planUnico,
   onSelectDia,
   onMarcasChange,
 }: Props) {
   const [pending, startTransition] = useTransition();
-  const [generarOpen, setGenerarOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const toggleCelda = (asignacion: AsignacionVista, dia: number) => {
@@ -88,51 +76,36 @@ export function RolPlanilla({
     });
   };
 
-  const hayPersonal = planes.some((p) => p.asignaciones.length > 0);
-
   return (
-    <div className="flex flex-col gap-2">
-      {canWrite ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 pt-3">
-          <p className="text-[11px] text-slate-500">
-            {todosLosRoles
-              ? "Elija roles y genere el calendario (nadie con dos servicios el mismo día)."
-              : "Clic en una celda para poner o quitar X. Genere el calendario multi-rol con máximo espacio."}
-          </p>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5 text-xs"
-            onClick={() => setGenerarOpen(true)}
-            disabled={pending || !hayPersonal}
-          >
-            <Wand2 className="size-3.5" aria-hidden />
-            Generar calendario
-          </Button>
-        </div>
-      ) : null}
-
+    <div className="flex w-full min-w-0 flex-col">
       {error ? (
-        <p className="px-3 text-xs text-red-700" role="alert">
+        <p className="px-3 py-2 text-xs text-red-700" role="alert">
           {error}
         </p>
       ) : null}
 
-      <div className="min-w-0">
-        <table className="w-max border-collapse text-[11px] text-slate-900">
+      <div className="w-full min-w-0">
+        <table className="w-full table-fixed border-collapse text-[11px] text-slate-900">
+          <colgroup>
+            <col className="w-8" />
+            {todosLosRoles ? <col className="w-[6.5rem]" /> : null}
+            <col className="w-44" />
+            {dias.map((dia) => (
+              <col key={`c-${dia}`} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
               <th
                 rowSpan={2}
-                className="sticky left-0 z-30 w-8 border border-slate-400 bg-slate-100 px-1 py-1 font-bold"
+                className="sticky left-0 z-30 border border-slate-400 bg-slate-100 px-1 py-1 font-bold"
               >
                 №
               </th>
               {todosLosRoles ? (
                 <th
                   rowSpan={2}
-                  className="sticky left-8 z-30 w-[6.5rem] min-w-[6.5rem] max-w-[6.5rem] border border-slate-400 bg-slate-100 px-1.5 py-1 text-left font-bold uppercase"
+                  className="sticky left-8 z-30 border border-slate-400 bg-slate-100 px-1.5 py-1 text-left font-bold uppercase"
                 >
                   Rol
                 </th>
@@ -140,7 +113,7 @@ export function RolPlanilla({
               <th
                 rowSpan={2}
                 className={cn(
-                  "sticky z-30 w-44 min-w-44 border border-slate-400 bg-slate-100 px-2 py-1 text-left font-bold uppercase",
+                  "sticky z-30 border border-slate-400 bg-slate-100 px-2 py-1 text-left font-bold uppercase",
                   todosLosRoles ? "left-[8.5rem]" : "left-8",
                 )}
               >
@@ -152,7 +125,7 @@ export function RolPlanilla({
                   <th
                     key={`l-${dia}`}
                     className={cn(
-                      "min-w-6 w-6 border border-slate-400 px-0 py-0.5 text-center font-bold",
+                      "border border-slate-400 px-0 py-0.5 text-center font-bold",
                       amarilla ? "bg-amber-300" : "bg-white",
                       dia === diaHoy && "ring-2 ring-inset ring-sky-500",
                     )}
@@ -177,7 +150,7 @@ export function RolPlanilla({
                   <th
                     key={`n-${dia}`}
                     className={cn(
-                      "min-w-6 w-6 border border-slate-400 px-0 py-0.5 text-center font-bold tabular-nums",
+                      "border border-slate-400 px-0 py-0.5 text-center font-bold tabular-nums",
                       amarilla ? "bg-amber-300" : "bg-white",
                       sel && "bg-teal-100",
                       dia === diaHoy && "ring-2 ring-inset ring-sky-500",
@@ -194,12 +167,12 @@ export function RolPlanilla({
           <tbody>
             {filas.map(({ plan, asignacion }, index) => (
                 <tr key={`${plan.clave}-${asignacion.id}`}>
-                  <td className="sticky left-0 z-20 w-8 border border-slate-400 bg-white px-1 py-0.5 text-center tabular-nums">
+                  <td className="sticky left-0 z-20 border border-slate-400 bg-white px-1 py-0.5 text-center tabular-nums">
                     {asignacion.orden || index + 1}
                   </td>
                   {todosLosRoles ? (
                     <td
-                      className="sticky left-8 z-20 w-[6.5rem] min-w-[6.5rem] max-w-[6.5rem] truncate border border-slate-400 bg-white px-1.5 py-0.5 text-[10px] font-medium"
+                      className="sticky left-8 z-20 truncate border border-slate-400 bg-white px-1.5 py-0.5 text-[10px] font-medium"
                       title={plan.nombre}
                     >
                       {plan.nombre}
@@ -207,7 +180,7 @@ export function RolPlanilla({
                   ) : null}
                   <td
                     className={cn(
-                      "sticky z-20 w-44 min-w-44 truncate border border-slate-400 bg-white px-2 py-0.5 font-medium uppercase",
+                      "sticky z-20 truncate border border-slate-400 bg-white px-2 py-0.5 font-medium uppercase",
                       todosLosRoles ? "left-[8.5rem]" : "left-8",
                     )}
                     title={nombreFila(asignacion)}
@@ -221,7 +194,7 @@ export function RolPlanilla({
                       <td
                         key={dia}
                         className={cn(
-                          "min-w-6 w-6 border border-slate-400 px-0 py-0.5 text-center align-middle",
+                          "border border-slate-400 px-0 py-0.5 text-center align-middle",
                           amarilla ? "bg-amber-200/90" : "bg-white",
                           dia === diaHoy && "ring-1 ring-inset ring-sky-400",
                         )}
@@ -232,7 +205,7 @@ export function RolPlanilla({
                             disabled={pending}
                             onClick={() => toggleCelda(asignacion, dia)}
                             className={cn(
-                              "flex h-6 w-full items-center justify-center font-bold hover:bg-black/5",
+                              "flex h-7 w-full items-center justify-center font-bold hover:bg-black/5",
                               marca ? "text-slate-900" : "text-transparent hover:text-slate-300",
                             )}
                             title={marca ? `Quitar ${marca}` : `Marcar día ${dia}`}
@@ -256,30 +229,8 @@ export function RolPlanilla({
         </table>
       </div>
 
-      {canWrite ? (
-        <GenerarCalendarioDialog
-          open={generarOpen}
-          onOpenChange={setGenerarOpen}
-          planes={planes}
-          rolInicialClave={planUnico?.clave ?? null}
-          ultimoDia={dias[dias.length - 1] ?? 31}
-          pending={pending}
-          onApply={(cambios) => {
-            onMarcasChange(cambios);
-            startTransition(async () => {
-              const result = await actualizarMarcasLote(cambios);
-              if (!result.ok) setError(result.message);
-              else {
-                setError(null);
-                setGenerarOpen(false);
-              }
-            });
-          }}
-        />
-      ) : null}
-
       {pending ? (
-        <p className="flex items-center gap-1.5 px-3 pb-2 text-[11px] text-slate-500">
+        <p className="flex items-center gap-1.5 px-3 py-2 text-[11px] text-slate-500">
           <Loader2 className="size-3 animate-spin" aria-hidden />
           Guardando…
         </p>
