@@ -115,12 +115,12 @@ function grupoDeRol(nombre: string): string {
 }
 
 function densidadClase(count: number, max: number): string {
-  if (count <= 0) return "bg-white text-slate-400 hover:border-slate-300";
+  if (count <= 0) return "bg-white text-slate-400 hover:bg-slate-50";
   const ratio = max <= 0 ? 0 : count / max;
-  if (ratio < 0.25) return "bg-emerald-50 text-emerald-900 border-emerald-200/80 hover:border-emerald-400";
-  if (ratio < 0.5) return "bg-emerald-100 text-emerald-950 border-emerald-300/80 hover:border-emerald-500";
-  if (ratio < 0.75) return "bg-teal-100 text-teal-950 border-teal-300/80 hover:border-teal-500";
-  return "bg-teal-200/80 text-teal-950 border-teal-400/80 hover:border-teal-600";
+  if (ratio < 0.25) return "bg-emerald-50 text-emerald-900 hover:bg-emerald-100/80";
+  if (ratio < 0.5) return "bg-emerald-100 text-emerald-950 hover:bg-emerald-100";
+  if (ratio < 0.75) return "bg-teal-100 text-teal-950 hover:bg-teal-100";
+  return "bg-teal-200/90 text-teal-950 hover:bg-teal-200";
 }
 
 export function RolesServicioView({
@@ -337,33 +337,33 @@ export function RolesServicioView({
               <CardHeader className="space-y-3 border-b border-slate-200/80 px-3 py-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-0.5">
-                      <CardTitle className="text-sm">Cuadro de servicio</CardTitle>
-                      <RolesServicioAccionesMenu
-                        anio={anio}
-                        mes={mes}
-                        diaSeleccionado={diaSeleccionado}
-                        planes={planes}
-                        canGenerar={canWrite && planes.some((p) => p.asignaciones.length > 0)}
-                        onGenerarCalendario={() => setGenerarOpen(true)}
-                      />
-                    </div>
+                    <CardTitle className="text-sm">Cuadro de servicio</CardTitle>
                     <CardDescription className="text-[11px]">
                       {etiquetaMes(anio, mes)}
                       {diaHoy != null ? ` · hoy ${diaHoy}` : ""}
                     </CardDescription>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="xl:hidden"
-                    onClick={() => setNavAbierta((v) => !v)}
-                    aria-expanded={navAbierta}
-                    aria-label="Mostrar u ocultar panel lateral"
-                  >
-                    <ChevronsUpDown />
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <RolesServicioAccionesMenu
+                      anio={anio}
+                      mes={mes}
+                      diaSeleccionado={diaSeleccionado}
+                      planes={planes}
+                      canGenerar={canWrite && planes.some((p) => p.asignaciones.length > 0)}
+                      onGenerarCalendario={() => setGenerarOpen(true)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="xl:hidden"
+                      onClick={() => setNavAbierta((v) => !v)}
+                      aria-expanded={navAbierta}
+                      aria-label="Mostrar u ocultar panel lateral"
+                    >
+                      <ChevronsUpDown />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className={cn(!navAbierta && "hidden xl:block")}>
@@ -592,59 +592,78 @@ export function RolesServicioView({
             ) : null}
 
             {modo === "mes" ? (
-              <Card className="gap-0 py-0 shadow-sm ring-slate-200/80">
+              <Card className="w-full max-w-xl gap-0 py-0 shadow-sm ring-slate-200/80">
                 <CardHeader className="border-b border-slate-200/80 px-4 py-3">
-                  <CardTitle className="text-base">Calendario de {etiquetaMes(anio, mes)}</CardTitle>
+                  <CardTitle className="text-base">{etiquetaMes(anio, mes)}</CardTitle>
                   <CardDescription className="text-xs">
-                    Intensidad según personas de servicio
-                    {todosLosRoles ? " en todos los roles" : ` en «${planActivo?.nombre}»`}. Pulsa un día para ver el
-                    detalle.
+                    {todosLosRoles ? "Todos los roles" : planActivo?.nombre}
+                    {" · "}
+                    pulsa un día para el detalle
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                    {DIAS_SEMANA.map((letra, index) => (
-                      <div
-                        key={`${letra}-${index}`}
-                        className="pb-1 text-center text-[10px] font-semibold tracking-wide text-slate-400 uppercase"
-                      >
-                        {letra}
-                      </div>
-                    ))}
-                    {celdasCalendario.map((dia, index) => {
-                      if (dia == null) {
-                        return <div key={`empty-${index}`} className="aspect-square rounded-lg bg-slate-50/50" />;
-                      }
-                      const count = conteoPorDia.get(dia) ?? 0;
-                      const seleccionado = dia === diaSeleccionado;
-                      const hoy = dia === diaHoy;
-                      return (
-                        <button
-                          key={dia}
-                          type="button"
-                          onClick={() => {
-                            setDiaSeleccionado(dia);
-                            setModo("dia");
-                          }}
-                          className={cn(
-                            "relative flex aspect-square flex-col items-center justify-center rounded-lg border text-sm transition-all",
-                            densidadClase(count, maxConteo),
-                            esFinDeSemana(anio, mes, dia) && count === 0 && "bg-slate-50",
-                            seleccionado && "ring-2 ring-slate-900 ring-offset-2",
-                            hoy && "border-amber-400 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.7)]",
-                          )}
+                <CardContent className="p-3 sm:p-4">
+                  <div className="overflow-hidden rounded-lg border border-slate-200">
+                    <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+                      {DIAS_SEMANA.map((letra, index) => (
+                        <div
+                          key={`${letra}-${index}`}
+                          className="py-1.5 text-center text-[10px] font-semibold tracking-wide text-slate-500 uppercase"
                         >
-                          <span className="text-[10px] font-medium text-slate-500">{letraSemana(anio, mes, dia)}</span>
-                          <span className="text-base leading-none font-semibold tabular-nums">{dia}</span>
-                          <span className="mt-0.5 text-[10px] tabular-nums opacity-80">
-                            {count > 0 ? count : "·"}
-                          </span>
-                          {hoy ? (
-                            <span className="absolute top-1 right-1 size-1.5 rounded-full bg-amber-500" aria-hidden />
-                          ) : null}
-                        </button>
-                      );
-                    })}
+                          {letra}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7">
+                      {celdasCalendario.map((dia, index) => {
+                        if (dia == null) {
+                          return (
+                            <div
+                              key={`empty-${index}`}
+                              className="h-11 border-r border-b border-slate-100 bg-slate-50/40 last:border-r-0 sm:h-12"
+                            />
+                          );
+                        }
+                        const count = conteoPorDia.get(dia) ?? 0;
+                        const seleccionado = dia === diaSeleccionado;
+                        const hoy = dia === diaHoy;
+                        const finDeColumna = (index + 1) % 7 === 0;
+                        return (
+                          <button
+                            key={dia}
+                            type="button"
+                            onClick={() => {
+                              setDiaSeleccionado(dia);
+                              setModo("dia");
+                            }}
+                            className={cn(
+                              "relative flex h-11 flex-col items-center justify-center gap-0.5 border-r border-b border-slate-100 transition-colors sm:h-12",
+                              finDeColumna && "border-r-0",
+                              densidadClase(count, maxConteo),
+                              esFinDeSemana(anio, mes, dia) && count === 0 && "bg-slate-50",
+                              seleccionado && "z-10 ring-2 ring-inset ring-slate-900",
+                              hoy && !seleccionado && "ring-2 ring-inset ring-amber-400",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "text-xs leading-none font-semibold tabular-nums sm:text-[13px]",
+                                hoy && "text-amber-700",
+                              )}
+                            >
+                              {dia}
+                            </span>
+                            <span
+                              className={cn(
+                                "text-[10px] leading-none tabular-nums",
+                                count > 0 ? "font-medium opacity-80" : "text-slate-300",
+                              )}
+                            >
+                              {count > 0 ? count : "·"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

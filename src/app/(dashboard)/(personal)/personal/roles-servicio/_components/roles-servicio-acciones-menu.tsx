@@ -261,7 +261,7 @@ export function RolesServicioAccionesMenu({
         >
           {pending ? <Loader2 className="animate-spin" aria-hidden /> : <EllipsisVertical aria-hidden />}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-64">
+        <DropdownMenuContent align="end" className="min-w-64">
           {feedback ? (
             <div
               className={cn(
