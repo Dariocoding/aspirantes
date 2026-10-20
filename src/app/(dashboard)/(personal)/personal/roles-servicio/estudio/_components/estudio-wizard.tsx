@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,21 +13,15 @@ import {
   Moon,
   Plus,
   Shield,
-  UserRound,
   Users,
 } from "lucide-react";
-import {
-  buscarAspirantesEstudio,
-  publicarEstudio,
-  type AspiranteEstudio,
-  type RolEstudioInput,
-} from "@src/app/actions/roles-servicio-estudio";
+import { publicarEstudio, type RolEstudioInput } from "@src/app/actions/roles-servicio-estudio";
+import { AsignarCenso, type AspiranteCenso } from "./asignar-censo";
 import { Badge } from "@src/components/ui/badge";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import { Input } from "@src/components/ui/input";
 import { Label } from "@src/components/ui/label";
 import { routes } from "@src/lib/apps/routes";
-import { formatCedulaMillares } from "@src/lib/aspirantes/cedula";
 import {
   CATEGORIAS_ROL,
   cuposSugeridos,
@@ -73,8 +67,11 @@ type Props = {
   curso: string;
   /** El mes ya tiene marcas. El estudio no las toca hasta que el usuario elija días y roles. */
   mesConMarcas: boolean;
+  /** Abre directo en la asignación del censo y guarda sin rehacer los días. */
+  modoAsignar?: boolean;
   rolesIniciales: RolEstudioInicial[];
   autoridades: AutoridadEstudio[];
+  censo: AspiranteCenso[];
 };
 
 const PASOS = [
@@ -95,8 +92,9 @@ function mesVecino(anio: number, mes: number, delta: number): { anio: number; me
   return { anio: fecha.getFullYear(), mes: fecha.getMonth() + 1 };
 }
 
-function hrefMes(anio: number, mes: number): string {
-  return `${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`;
+function hrefMes(anio: number, mes: number, asignar: boolean): string {
+  const base = `${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`;
+  return asignar ? `${base}&asignar=1` : base;
 }
 
 function todosLosDias(anio: number, mes: number): number[] {
@@ -121,13 +119,15 @@ export function EstudioWizard({
   mes,
   curso,
   mesConMarcas,
+  modoAsignar = false,
   rolesIniciales,
   autoridades,
+  censo,
 }: Props) {
   const router = useRouter();
   const total = diasDelMes(anio, mes);
   const universo = useMemo(() => todosLosDias(anio, mes), [anio, mes]);
-  const [paso, setPaso] = useState(0);
+  const [paso, setPaso] = useState(modoAsignar ? 2 : 0);
   const [modo, setModo] = useState<"mes" | "parte">(mesConMarcas ? "parte" : "mes");
   const [dias, setDias] = useState<number[]>(mesConMarcas ? [] : universo);
   const [roles, setRoles] = useState<RolLocal[]>(() =>
@@ -135,9 +135,6 @@ export function EstudioWizard({
   );
   const [editando, setEditando] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
-  const [abierto, setAbierto] = useState<string | null>(
-    rolesIniciales.find((rol) => rol.incluido)?.id ?? null,
-  );
   const [seed, setSeed] = useState(nuevaSemilla);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -204,13 +201,13 @@ export function EstudioWizard({
     });
   };
 
-  const publicar = () => {
+  const publicar = (soloPersonal = false) => {
     setError(null);
     startTransition(async () => {
       const result = await publicarEstudio({
         anio,
         mes,
-        dias,
+        dias: soloPersonal ? [] : dias,
         seed,
         curso,
         roles: roles.map((rol) => ({
@@ -241,7 +238,7 @@ export function EstudioWizard({
         : true;
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 pb-8">
+    <div className={cn("mx-auto flex w-full flex-col gap-4 pb-8", paso === 2 ? "max-w-5xl" : "max-w-3xl")}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <Link
@@ -251,16 +248,20 @@ export function EstudioWizard({
             <ArrowLeft className="size-3.5" aria-hidden />
             Volver al cuadro
           </Link>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Armar el mes</h1>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">
+            {modoAsignar ? "Asignar personal" : "Armar el mes"}
+          </h1>
           <p className="text-sm text-slate-500">
-            {mesConMarcas
-              ? "Este mes ya tiene servicio. Elige días y roles; lo que no marques se queda igual."
-              : "Prepara los roles y los días. El cuadro se actualiza al guardar."}
+            {modoAsignar
+              ? "Toca a cada aspirante del censo para ponerlo o quitarlo del rol. Guardar personal no cambia los días."
+              : mesConMarcas
+                ? "Este mes ya tiene servicio. Elige días y roles; lo que no marques se queda igual."
+                : "Prepara los roles y los días. El cuadro se actualiza al guardar."}
           </p>
         </div>
         <div className="flex items-center gap-1">
           <Link
-            href={hrefMes(mesVecino(anio, mes, -1).anio, mesVecino(anio, mes, -1).mes)}
+            href={hrefMes(mesVecino(anio, mes, -1).anio, mesVecino(anio, mes, -1).mes, modoAsignar)}
             className={cn(buttonVariants({ variant: "outline", size: "icon-sm" }))}
             aria-label="Mes anterior"
           >
@@ -268,7 +269,7 @@ export function EstudioWizard({
           </Link>
           <p className="min-w-36 text-center text-sm font-medium capitalize">{etiquetaMes(anio, mes)}</p>
           <Link
-            href={hrefMes(mesVecino(anio, mes, 1).anio, mesVecino(anio, mes, 1).mes)}
+            href={hrefMes(mesVecino(anio, mes, 1).anio, mesVecino(anio, mes, 1).mes, modoAsignar)}
             className={cn(buttonVariants({ variant: "outline", size: "icon-sm" }))}
             aria-label="Mes siguiente"
           >
@@ -344,13 +345,7 @@ export function EstudioWizard({
       ) : null}
 
       {paso === 2 ? (
-        <PasoPersonas
-          roles={roles}
-          autoridades={autoridades}
-          abierto={abierto}
-          onAbierto={setAbierto}
-          onChange={setRoles}
-        />
+        <AsignarCenso roles={roles} autoridades={autoridades} censo={censo} onChange={setRoles} />
       ) : null}
 
       {paso === 3 ? (
@@ -375,15 +370,32 @@ export function EstudioWizard({
         >
           Atrás
         </Button>
-        {paso < 3 ? (
-          <Button type="button" disabled={!puedeSeguir} onClick={() => setPaso((actual) => actual + 1)}>
-            Continuar
-          </Button>
-        ) : (
-          <Button type="button" disabled={pending || incluidos.length === 0} onClick={publicar}>
-            {pending ? "Guardando…" : dias.length === 0 ? "Guardar roles" : "Generar y guardar"}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {paso === 2 ? (
+            <Button
+              type="button"
+              variant={modoAsignar ? "default" : "outline"}
+              disabled={pending || incluidos.length === 0}
+              onClick={() => publicar(true)}
+            >
+              {pending ? "Guardando…" : "Guardar personal"}
+            </Button>
+          ) : null}
+          {paso < 3 ? (
+            <Button
+              type="button"
+              variant={modoAsignar && paso === 2 ? "outline" : "default"}
+              disabled={!puedeSeguir}
+              onClick={() => setPaso((actual) => actual + 1)}
+            >
+              {modoAsignar && paso === 2 ? "Seguir al calendario" : "Continuar"}
+            </Button>
+          ) : (
+            <Button type="button" disabled={pending || incluidos.length === 0} onClick={() => publicar(false)}>
+              {pending ? "Guardando…" : dias.length === 0 ? "Guardar roles" : "Generar y guardar"}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -830,258 +842,6 @@ function CamposRol({
         </div>
       </fieldset>
     </div>
-  );
-}
-
-function PasoPersonas({
-  roles,
-  autoridades,
-  abierto,
-  onAbierto,
-  onChange,
-}: {
-  roles: RolLocal[];
-  autoridades: AutoridadEstudio[];
-  abierto: string | null;
-  onAbierto: (clave: string | null) => void;
-  onChange: (roles: RolLocal[]) => void;
-}) {
-  const incluidos = roles.filter((rol) => rol.incluido);
-  return (
-    <section className="flex flex-col gap-3">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-950">¿Quién cubre cada rol?</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          En los de autoridad eliges oficiales. En los demás, aspirantes. También defines cuántos cubren el puesto cada día.
-        </p>
-      </div>
-      {incluidos.length === 0 ? (
-        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Vuelve al paso anterior y marca al menos un rol.
-        </p>
-      ) : (
-        incluidos.map((rol) => (
-          <PersonaRolCard
-            key={rol.claveLocal}
-            rol={rol}
-            autoridades={autoridades}
-            abierto={abierto === rol.claveLocal}
-            onToggle={() => onAbierto(abierto === rol.claveLocal ? null : rol.claveLocal)}
-            onChange={(parcial) =>
-              onChange(roles.map((item) => (item.claveLocal === rol.claveLocal ? { ...item, ...parcial } : item)))
-            }
-          />
-        ))
-      )}
-    </section>
-  );
-}
-
-function PersonaRolCard({
-  rol,
-  autoridades,
-  abierto,
-  onToggle,
-  onChange,
-}: {
-  rol: RolLocal;
-  autoridades: AutoridadEstudio[];
-  abierto: boolean;
-  onToggle: () => void;
-  onChange: (parcial: Partial<RolLocal>) => void;
-}) {
-  const [consulta, setConsulta] = useState("");
-  const [resultados, setResultados] = useState<AspiranteEstudio[]>([]);
-  const [buscando, setBuscando] = useState(false);
-
-  useEffect(() => {
-    if (!abierto || rol.conAutoridad) return;
-    const q = consulta.trim();
-    if (q.length < 2) {
-      setResultados([]);
-      return;
-    }
-    let vivo = true;
-    const timer = window.setTimeout(() => {
-      setBuscando(true);
-      void buscarAspirantesEstudio(q).then((rows) => {
-        if (!vivo) return;
-        setResultados(rows);
-        setBuscando(false);
-      });
-    }, 250);
-    return () => {
-      vivo = false;
-      window.clearTimeout(timer);
-    };
-  }, [abierto, consulta, rol.conAutoridad]);
-
-  const agregar = (persona: RolEstudioInput["personas"][number]) => {
-    if (rol.personas.some((item) => clavePersonaLocal(item) === clavePersonaLocal(persona))) return;
-    onChange({ personas: [...rol.personas, persona] });
-  };
-
-  const autoridadesVisibles = autoridades.filter((autoridad) => {
-    const q = foldBusqueda(consulta.trim());
-    if (!q) return true;
-    return foldBusqueda(`${autoridad.nombres} ${autoridad.apellidos} ${autoridad.cedula ?? ""}`).includes(q);
-  });
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
-        <span>
-          <span className="block text-sm font-semibold text-slate-950">{rol.nombre}</span>
-          <span className="mt-0.5 block text-xs text-slate-500">
-            {rol.personas.length} personas · {rol.cuposPorDia} por día · {etiquetaPapelNocturno(rol.papelNocturno)}
-          </span>
-        </span>
-        <ChevronRight className={cn("size-4 text-slate-400 transition-transform", abierto && "rotate-90")} />
-      </button>
-      {abierto ? (
-        <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor={`cupos-${rol.claveLocal}`}>Personas por día</Label>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-sm"
-                onClick={() => onChange({ cuposPorDia: Math.max(1, rol.cuposPorDia - 1) })}
-                aria-label="Menos personas por día"
-              >
-                −
-              </Button>
-              <span className="w-6 text-center text-sm font-semibold tabular-nums">{rol.cuposPorDia}</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-sm"
-                onClick={() => onChange({ cuposPorDia: Math.min(8, rol.cuposPorDia + 1) })}
-                aria-label="Más personas por día"
-              >
-                +
-              </Button>
-            </div>
-          </div>
-          {rol.personas.length > 0 ? (
-            <ul className="flex flex-wrap gap-1.5">
-              {rol.personas.map((persona) => (
-                <li key={clavePersonaLocal(persona)}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onChange({
-                        personas: rol.personas.filter(
-                          (item) => clavePersonaLocal(item) !== clavePersonaLocal(persona),
-                        ),
-                      })
-                    }
-                    className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-800 hover:bg-red-50 hover:text-red-800"
-                    title="Quitar"
-                  >
-                    {persona.nombre} ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-slate-500">Todavía no hay nadie en este rol.</p>
-          )}
-          <div className="relative">
-            <UserRound className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={consulta}
-              onChange={(event) => setConsulta(event.target.value)}
-              placeholder={rol.conAutoridad ? "Buscar autoridad…" : "Buscar aspirante por nombre o cédula…"}
-              className="pl-8"
-            />
-          </div>
-          {rol.conAutoridad ? (
-            <ul className="max-h-56 overflow-y-auto rounded-lg border border-slate-200">
-              {autoridadesVisibles.length === 0 ? (
-                <li className="px-3 py-4 text-center text-xs text-slate-500">No hay autoridades con ese nombre.</li>
-              ) : (
-                autoridadesVisibles.map((autoridad) => {
-                  const ya = rol.personas.some((item) => item.autoridadId === autoridad.id);
-                  return (
-                    <li key={autoridad.id} className="border-b border-slate-100 last:border-0">
-                      <button
-                        type="button"
-                        disabled={ya}
-                        onClick={() =>
-                          agregar({
-                            asignacionId: null,
-                            aspiranteId: null,
-                            autoridadId: autoridad.id,
-                            nombre: `${autoridad.nombres} ${autoridad.apellidos}`,
-                            grado: autoridad.grado,
-                          })
-                        }
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        <span>
-                          <span className="font-medium text-slate-950">
-                            {autoridad.nombres} {autoridad.apellidos}
-                          </span>
-                          <span className="mt-0.5 block text-[11px] text-indigo-700">
-                            {labelJerarquiaAutoridad(autoridad.jerarquia)}
-                            {autoridad.cedula ? ` · ${formatCedulaMillares(autoridad.cedula)}` : ""}
-                          </span>
-                        </span>
-                        <span className="text-[11px] text-slate-400">{ya ? "Ya está" : "Agregar"}</span>
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          ) : (
-            <ul className="max-h-56 overflow-y-auto rounded-lg border border-slate-200">
-              {consulta.trim().length < 2 ? (
-                <li className="px-3 py-4 text-center text-xs text-slate-500">Escribe al menos 2 letras.</li>
-              ) : buscando ? (
-                <li className="px-3 py-4 text-center text-xs text-slate-500">Buscando…</li>
-              ) : resultados.length === 0 ? (
-                <li className="px-3 py-4 text-center text-xs text-slate-500">Nadie coincide.</li>
-              ) : (
-                resultados.map((aspirante) => {
-                  const ya = rol.personas.some((item) => item.aspiranteId === aspirante.id);
-                  return (
-                    <li key={aspirante.id} className="border-b border-slate-100 last:border-0">
-                      <button
-                        type="button"
-                        disabled={ya}
-                        onClick={() =>
-                          agregar({
-                            asignacionId: null,
-                            aspiranteId: aspirante.id,
-                            autoridadId: null,
-                            nombre: `${aspirante.nombres} ${aspirante.apellidos}`,
-                            grado: aspirante.grado,
-                          })
-                        }
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        <span>
-                          <span className="font-medium text-slate-950">
-                            {aspirante.nombres} {aspirante.apellidos}
-                          </span>
-                          <span className="mt-0.5 block font-mono text-[11px] text-slate-500">
-                            {formatCedulaMillares(aspirante.cedula)}
-                          </span>
-                        </span>
-                        <span className="text-[11px] text-slate-400">{ya ? "Ya está" : "Agregar"}</span>
-                      </button>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          )}
-        </div>
-      ) : null}
-    </article>
   );
 }
 

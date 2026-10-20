@@ -11,6 +11,7 @@ import {
   Maximize2,
   Search,
   UserRound,
+  Users,
   Wand2,
 } from "lucide-react";
 import { actualizarMarcasLote } from "@src/app/actions/roles-servicio-marcas";
@@ -330,13 +331,22 @@ export function RolesServicioView({
               Arma el mes en el estudio, o publica el Excel mensual para ver el cuadro.
             </p>
             {canWrite ? (
-              <Link
-                href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`}
-                className={cn(buttonVariants({ size: "sm" }), "mt-2 gap-1.5")}
-              >
-                <Wand2 className="size-3.5" aria-hidden />
-                Armar el mes
-              </Link>
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                <Link
+                  href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}&asignar=1`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+                >
+                  <Users className="size-3.5" aria-hidden />
+                  Asignar personal
+                </Link>
+                <Link
+                  href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`}
+                  className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+                >
+                  <Wand2 className="size-3.5" aria-hidden />
+                  Armar el mes
+                </Link>
+              </div>
             ) : null}
           </CardContent>
         </Card>
@@ -355,13 +365,22 @@ export function RolesServicioView({
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">
                     {canWrite ? (
-                      <Link
-                        href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`}
-                        className={cn(buttonVariants({ variant: "outline", size: "xs" }), "gap-1")}
-                      >
-                        <Wand2 className="size-3" aria-hidden />
-                        Armar
-                      </Link>
+                      <>
+                        <Link
+                          href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}&asignar=1`}
+                          className={cn(buttonVariants({ variant: "outline", size: "xs" }), "gap-1")}
+                        >
+                          <Users className="size-3" aria-hidden />
+                          Personal
+                        </Link>
+                        <Link
+                          href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`}
+                          className={cn(buttonVariants({ variant: "outline", size: "xs" }), "gap-1")}
+                        >
+                          <Wand2 className="size-3" aria-hidden />
+                          Armar
+                        </Link>
+                      </>
                     ) : null}
                     <RolesServicioAccionesMenu
                       anio={anio}

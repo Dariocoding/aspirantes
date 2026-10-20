@@ -1,4 +1,5 @@
 import { unauthorized } from "next/navigation";
+import type { AspiranteCenso } from "./_components/asignar-censo";
 import { EstudioWizard, type RolEstudioInicial } from "./_components/estudio-wizard";
 import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
@@ -13,6 +14,7 @@ import {
   type CategoriaRol,
   type PapelNocturno,
 } from "@src/lib/roles-servicio/catalogo-rol";
+import { abrevJerarquiaAspirante } from "@src/lib/aspirantes/jerarquia-aspirante";
 import { loadOrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/load-config-nocturno";
 import { prisma } from "@src/lib/prisma";
 
@@ -24,7 +26,7 @@ function numero(value: string | undefined, fallback: number): number {
 export default async function EstudioRolesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ anio?: string; mes?: string }>;
+  searchParams: Promise<{ anio?: string; mes?: string; asignar?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) unauthorized();
@@ -32,6 +34,7 @@ export default async function EstudioRolesPage({
   if (!hasPermission(ctx, Permission.ASPIRANTES_WRITE)) unauthorized();
 
   const params = await searchParams;
+  const modoAsignar = params.asignar === "1";
   const hoy = new Date();
   const reciente = await prisma.planRolServicio.findFirst({
     orderBy: [{ anio: "desc" }, { mes: "desc" }],
@@ -43,7 +46,7 @@ export default async function EstudioRolesPage({
   const mesOk = mes >= 1 && mes <= 12 ? mes : hoy.getMonth() + 1;
   const previo = mesOk === 1 ? { anio: anioOk - 1, mes: 12 } : { anio: anioOk, mes: mesOk - 1 };
 
-  const [rolesDb, autoridades, config] = await Promise.all([
+  const [rolesDb, autoridades, config, aspirantes] = await Promise.all([
     prisma.rolServicio.findMany({
       where: { activo: true },
       orderBy: { sortOrder: "asc" },
@@ -73,6 +76,18 @@ export default async function EstudioRolesPage({
       select: { id: true, nombres: true, apellidos: true, cedula: true, jerarquia: true },
     }),
     loadOrdenNocturnoConfig(),
+    prisma.aspirante.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
+      select: {
+        id: true,
+        nombres: true,
+        apellidos: true,
+        cedula: true,
+        jerarquia: true,
+        peloton: { select: { nombre: true, numero: true } },
+      },
+    }),
   ]);
 
   const hayPlanEsteMes = rolesDb.some((rol) =>
@@ -111,7 +126,7 @@ export default async function EstudioRolesPage({
       categoria,
       conAutoridad,
       papelNocturno: papel,
-      incluido: !hayPlanEsteMes,
+      incluido: modoAsignar ? (hayPlanEsteMes ? planMes != null : true) : !hayPlanEsteMes,
       cuposPorDia: cuposSugeridos(rol.nombre, papel, categoria),
       teniaPersonas: (planMes?.asignaciones.length ?? 0) > 0,
       personas,
@@ -128,13 +143,25 @@ export default async function EstudioRolesPage({
     ),
   );
 
+  const censo: AspiranteCenso[] = aspirantes.map((item) => ({
+    id: item.id,
+    nombres: item.nombres,
+    apellidos: item.apellidos,
+    cedula: item.cedula,
+    grado: abrevJerarquiaAspirante(item.jerarquia),
+    peloton: item.peloton?.nombre ?? "Sin pelotón",
+    pelotonNumero: item.peloton?.numero ?? 999,
+  }));
+
   return (
     <EstudioWizard
       anio={anioOk}
       mes={mesOk}
       curso={curso}
       mesConMarcas={mesConMarcas}
+      modoAsignar={modoAsignar}
       rolesIniciales={roles}
+      censo={censo}
       autoridades={autoridades.map((item) => ({
         id: item.id,
         nombres: item.nombres,
