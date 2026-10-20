@@ -7,6 +7,11 @@
  */
 import dotenv from "dotenv";
 import { Prisma, PrismaClient } from "../src/generated/prisma";
+import {
+  inferirCategoria,
+  inferirConAutoridad,
+  inferirPapelNocturno,
+} from "../src/lib/roles-servicio/catalogo-rol";
 import { parsearRolesExcel } from "../src/lib/roles-servicio/parse-excel";
 import { vincularPersonaRol } from "../src/lib/roles-servicio/vincular";
 
@@ -103,6 +108,7 @@ async function main() {
     if (dryRun) continue;
 
     const ahora = new Date();
+    const tieneAutoridad = filas.some((fila) => Boolean(fila.autoridadId));
     const registro = await prisma.rolServicio.upsert({
       where: { clave: rol.clave },
       create: {
@@ -110,12 +116,18 @@ async function main() {
         nombre: rol.nombre,
         curso: rol.curso,
         sortOrder: rol.sortOrder,
+        categoria: inferirCategoria(rol.nombre),
+        conAutoridad: inferirConAutoridad(rol.nombre, tieneAutoridad),
+        papelNocturno: inferirPapelNocturno(rol.nombre),
       },
       update: {
         nombre: rol.nombre,
         curso: rol.curso,
         sortOrder: rol.sortOrder,
         activo: true,
+        categoria: inferirCategoria(rol.nombre),
+        conAutoridad: inferirConAutoridad(rol.nombre, tieneAutoridad),
+        papelNocturno: inferirPapelNocturno(rol.nombre),
       },
     });
     const plan = await prisma.planRolServicio.upsert({

@@ -14,15 +14,26 @@ export type RolParaCalendario = {
   personas: PersonaClave[];
   /** Cupos por día para este rol (default 1). */
   cuposPorDia?: number;
+  /** Marca de este rol. Si no viene, usa la del lote. */
+  marca?: string;
+  /** Marca distinta por cupo dentro de este rol (T1, T2, T3). */
+  marcasPorCupo?: string[];
 };
 
 export type GenerarCalendarioMultiRolInput = {
   roles: RolParaCalendario[];
   desdeDia: number;
   hastaDia: number;
+  /**
+   * Si viene, solo estos días reciben marca.
+   * Sirve para saltar feriados o armar una parte del mes.
+   */
+  dias?: number[];
   /** Cupos por día si el rol no define los suyos. */
   cuposPorDia?: number;
   marca?: string;
+  /** Marca distinta por cupo (0 = T1, 1 = T2…). Si falta, usa `marca`. */
+  marcasPorCupo?: string[];
   /** Semilla para barajar (mismo seed → mismo resultado). */
   seed: number;
 };
@@ -78,12 +89,27 @@ export function sugerirCuposPorNombreRol(nombre: string): number {
  * Calendario multi-rol: baraja cada rol, rellena día a día maximizando el hueco
  * desde la última marca de cada persona, sin que nadie tenga dos marcas el mismo día.
  */
+function diasObjetivo(input: GenerarCalendarioMultiRolInput): number[] {
+  if (input.dias && input.dias.length > 0) {
+    return [...new Set(input.dias.map((dia) => Math.floor(dia)))]
+      .filter((dia) => dia >= 1 && dia <= 31)
+      .sort((a, b) => a - b);
+  }
+  const desde = Math.max(1, Math.min(31, Math.floor(input.desdeDia)));
+  const hasta = Math.max(desde, Math.min(31, Math.floor(input.hastaDia)));
+  const dias: number[] = [];
+  for (let dia = desde; dia <= hasta; dia += 1) dias.push(dia);
+  return dias;
+}
+
 export function generarCalendarioMultiRol(
   input: GenerarCalendarioMultiRolInput,
 ): GenerarCalendarioMultiRolResult {
-  const desde = Math.max(1, Math.min(31, Math.floor(input.desdeDia)));
-  const hasta = Math.max(desde, Math.min(31, Math.floor(input.hastaDia)));
+  const dias = diasObjetivo(input);
   const marca = (input.marca ?? "X").trim().toUpperCase() || "X";
+  const marcasPorCupo = (input.marcasPorCupo ?? []).map(
+    (item) => item.trim().toUpperCase() || marca,
+  );
   const cuposDefault = Math.max(1, Math.floor(input.cuposPorDia ?? 1));
   const rng = crearRng(input.seed >>> 0);
 
@@ -97,6 +123,8 @@ export function generarCalendarioMultiRol(
   type RolEstado = {
     clave: string;
     cupos: number;
+    marca: string;
+    marcasPorCupo: string[];
     slots: Slot[];
     cursor: number;
     /** Último día de servicio por clave de persona (en este rol). */
@@ -108,9 +136,14 @@ export function generarCalendarioMultiRol(
     const personas = rol.personas.filter((p) => p.asignacionId);
     if (personas.length === 0) continue;
     const barajadas = barajar(personas, rng);
+    const marcaRol = (rol.marca ?? marca).trim().toUpperCase() || marca;
     roles.push({
       clave: rol.clave,
       cupos: Math.max(1, Math.min(barajadas.length, Math.floor(rol.cuposPorDia ?? cuposDefault))),
+      marca: marcaRol,
+      marcasPorCupo: (rol.marcasPorCupo ?? marcasPorCupo).map(
+        (item) => item.trim().toUpperCase() || marcaRol,
+      ),
       slots: barajadas.map((persona, ordenBaraja) => ({
         persona,
         clave: clavePersona(persona),
@@ -135,7 +168,7 @@ export function generarCalendarioMultiRol(
   let totalMarcas = 0;
   let cuposVacios = 0;
 
-  for (let dia = desde; dia <= hasta; dia += 1) {
+  for (const dia of dias) {
     const ocupadasHoy = ocupadasPorDia.get(dia) ?? new Set<string>();
     ocupadasPorDia.set(dia, ocupadasHoy);
 
@@ -169,7 +202,7 @@ export function generarCalendarioMultiRol(
         }
 
         const lista = marcasPorId.get(mejor.persona.asignacionId)!;
-        lista.push({ dia, marca });
+        lista.push({ dia, marca: rol.marcasPorCupo[cupo] ?? rol.marca });
         ocupadasHoy.add(mejor.clave);
         usadasEnRolHoy.add(mejor.clave);
         rol.ultimoDiaPorClave.set(mejor.clave, dia);
@@ -229,20 +262,25 @@ export function generarRotacion(input: GenerarRotacionInput): GenerarRotacionRes
   return { porPersona, totalMarcas: result.totalMarcas };
 }
 
-/** Fusiona marcas nuevas con las existentes. Fuera del rango se conservan. */
+/** Fusiona marcas nuevas con las existentes. Fuera de los días elegidos se conservan. */
 export function fusionarMarcas(params: {
   existentes: MarcaDia[];
   nuevas: MarcaDia[];
   desdeDia: number;
   hastaDia: number;
+  /** Si viene, solo estos días se reemplazan (aunque caigan dentro del rango). */
+  dias?: number[];
   /** Si true, borra marcas del rango antes de escribir las nuevas. */
   reemplazarRango: boolean;
 }): MarcaDia[] {
   const { desdeDia, hastaDia, reemplazarRango } = params;
-  const fuera = params.existentes.filter((m) => m.dia < desdeDia || m.dia > hastaDia);
+  const conjunto = params.dias ? new Set(params.dias) : null;
+  const enAlcance = (dia: number) =>
+    conjunto ? conjunto.has(dia) : dia >= desdeDia && dia <= hastaDia;
+  const fuera = params.existentes.filter((m) => !enAlcance(m.dia));
   const enRangoPrevias = reemplazarRango
     ? []
-    : params.existentes.filter((m) => m.dia >= desdeDia && m.dia <= hastaDia);
+    : params.existentes.filter((m) => enAlcance(m.dia));
   const porDia = new Map<number, string>();
   for (const m of fuera) porDia.set(m.dia, m.marca);
   for (const m of enRangoPrevias) porDia.set(m.dia, m.marca);

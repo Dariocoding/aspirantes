@@ -489,6 +489,30 @@ model Autoridad {
   @@index([jerarquia])
 }
 
+enum CategoriaRolServicio {
+  OFICIAL
+  SANIDAD
+  INSPECCION
+  CUARTEL
+  BANO
+  COMEDOR
+  AULA
+  ESTACIONAMIENTO
+  OTROS
+}
+
+/// Cómo entra el rol en la sección nocturna de la orden del día.
+enum PapelNocturnoRol {
+  NINGUNO
+  RONDA
+  RONDIN
+  TURNO_1
+  TURNO_2
+  TURNO_3
+  /// La celda trae T1, T2 o T3 (guardia de estacionamiento).
+  MARCA_TURNO
+}
+
 /// Catálogo de un rol de servicio (enfermería, comedor, cuartelero…).
 model RolServicio {
   id        String   @id @default(cuid())
@@ -499,6 +523,10 @@ model RolServicio {
   curso     String
   sortOrder Int      @default(0)
   activo    Boolean  @default(true)
+  categoria CategoriaRolServicio @default(OTROS)
+  /// El personal del rol son autoridades (oficiales), no aspirantes.
+  conAutoridad Boolean @default(false)
+  papelNocturno PapelNocturnoRol @default(NINGUNO)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   planes    PlanRolServicio[]

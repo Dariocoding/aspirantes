@@ -11,10 +11,11 @@ import {
   Maximize2,
   Search,
   UserRound,
+  Wand2,
 } from "lucide-react";
 import { actualizarMarcasLote } from "@src/app/actions/roles-servicio-marcas";
 import { Badge } from "@src/components/ui/badge";
-import { Button } from "@src/components/ui/button";
+import { Button, buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
 import {
   Dialog,
@@ -326,8 +327,17 @@ export function RolesServicioView({
             <CalendarRange className="size-8 text-slate-300" aria-hidden />
             <p className="text-sm font-medium text-slate-800">No hay roles cargados para este mes</p>
             <p className="max-w-sm text-xs text-slate-500">
-              Publica el Excel mensual para ver el cuadro de servicio, el calendario y la cuadrícula.
+              Arma el mes en el estudio, o publica el Excel mensual para ver el cuadro.
             </p>
+            {canWrite ? (
+              <Link
+                href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`}
+                className={cn(buttonVariants({ size: "sm" }), "mt-2 gap-1.5")}
+              >
+                <Wand2 className="size-3.5" aria-hidden />
+                Armar el mes
+              </Link>
+            ) : null}
           </CardContent>
         </Card>
       ) : (
@@ -344,6 +354,15 @@ export function RolesServicioView({
                     </CardDescription>
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">
+                    {canWrite ? (
+                      <Link
+                        href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`}
+                        className={cn(buttonVariants({ variant: "outline", size: "xs" }), "gap-1")}
+                      >
+                        <Wand2 className="size-3" aria-hidden />
+                        Armar
+                      </Link>
+                    ) : null}
                     <RolesServicioAccionesMenu
                       anio={anio}
                       mes={mes}

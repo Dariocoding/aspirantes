@@ -63,6 +63,7 @@ export async function cargarPlanesOrden(
     clave: plan.rol.clave,
     nombre: plan.rol.nombre,
     curso: plan.rol.curso,
+    turnoEnMarca: plan.rol.papelNocturno === "MARCA_TURNO",
     asignaciones: plan.asignaciones.map((asignacion) => ({
       orden: asignacion.orden,
       grado: asignacion.grado,

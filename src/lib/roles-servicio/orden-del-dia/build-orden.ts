@@ -20,7 +20,7 @@ import {
   type Transcripcion,
 } from "@src/lib/roles-servicio/orden-del-dia/transcripciones";
 import type { MarcaDia } from "@src/lib/roles-servicio/marcas";
-import { esRolConTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
+import { planUsaTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
 import type { JerarquiaAutoridad } from "@src/generated/prisma";
 import { PLANTILLA_MEMBRETE_CEFOA45 } from "@src/lib/membrete";
@@ -45,6 +45,8 @@ export type PlanOrdenInput = {
   clave: string;
   nombre: string;
   curso: string;
+  /** La celda es T1/T2/T3 aunque el nombre no diga estacionamiento. */
+  turnoEnMarca?: boolean;
   asignaciones: PersonaOrdenInput[];
 };
 
@@ -148,7 +150,7 @@ function filasDelDia(
 ): Array<{ plan: PlanOrdenInput; persona: PersonaOrdenInput }> {
   const filas: Array<{ plan: PlanOrdenInput; persona: PersonaOrdenInput }> = [];
   for (const plan of planes) {
-    if (esRolConTurnoEnMarca(plan.nombre)) continue;
+    if (planUsaTurnoEnMarca(plan)) continue;
     if (clasificarTurnoServicio(plan.nombre) !== turno) continue;
     for (const persona of plan.asignaciones) {
       if (!marcaDelDia(persona.dias, dia)) continue;

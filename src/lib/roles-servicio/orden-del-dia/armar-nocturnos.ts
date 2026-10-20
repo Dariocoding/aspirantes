@@ -7,8 +7,8 @@ import type { OrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/
 import type { MarcaDia } from "@src/lib/roles-servicio/marcas";
 import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
 import {
-  esRolConTurnoEnMarca,
   etiquetaServicioTurnoEnMarca,
+  planUsaTurnoEnMarca,
   turnoDesdeMarca,
 } from "@src/lib/roles-servicio/turnos-marca";
 
@@ -39,7 +39,7 @@ function gradoMostrado(persona: PersonaOrdenInput): string {
 function clavesSinTurnoEnMarca(claves: string[], planes: PlanOrdenInput[]): string[] {
   if (claves.length === 0) return claves;
   const excluir = new Set(
-    planes.filter((plan) => esRolConTurnoEnMarca(plan.nombre)).map((plan) => plan.clave),
+    planes.filter((plan) => planUsaTurnoEnMarca(plan)).map((plan) => plan.clave),
   );
   return claves.filter((clave) => !excluir.has(clave));
 }
@@ -51,7 +51,7 @@ function clavesSinTurnoEnMarca(claves: string[], planes: PlanOrdenInput[]): stri
 function filasTurnoEnMarca(planes: PlanOrdenInput[], dia: number): FilaServicioNocturno[] {
   const filas: Array<FilaServicioNocturno & { ordenTurno: number; ordenPersona: number }> = [];
   for (const plan of planes) {
-    if (!esRolConTurnoEnMarca(plan.nombre)) continue;
+    if (!planUsaTurnoEnMarca(plan)) continue;
     const servicio = etiquetaServicioTurnoEnMarca(plan.nombre);
     for (const persona of plan.asignaciones) {
       const marca = marcaDelDia(persona.dias, dia);

@@ -123,6 +123,40 @@ test("seeds distintos pueden cambiar el orden", () => {
   assert.notEqual(dia1A, dia1B);
 });
 
+test("dias sueltos no marcan los huecos", () => {
+  const personas = [persona("a", "ANA"), persona("b", "BETO"), persona("c", "CARLA")];
+  const { porAsignacion, totalMarcas } = generarCalendarioMultiRol({
+    roles: [{ clave: "insp", personas, cuposPorDia: 1 }],
+    desdeDia: 1,
+    hastaDia: 31,
+    dias: [1, 2, 10],
+    seed: 3,
+  });
+  assert.equal(totalMarcas, 3);
+  const dias = porAsignacion.flatMap((row) => row.dias.map((item) => item.dia));
+  assert.deepEqual(dias.sort((a, b) => a - b), [1, 2, 10]);
+});
+
+test("fusionarMarcas conserva los días que no se eligieron", () => {
+  const out = fusionarMarcas({
+    existentes: [
+      { dia: 1, marca: "X" },
+      { dia: 2, marca: "X" },
+      { dia: 3, marca: "X" },
+    ],
+    nuevas: [{ dia: 1, marca: "T1" }, { dia: 3, marca: "T2" }],
+    desdeDia: 1,
+    hastaDia: 3,
+    dias: [1, 3],
+    reemplazarRango: true,
+  });
+  assert.deepEqual(out, [
+    { dia: 1, marca: "T1" },
+    { dia: 2, marca: "X" },
+    { dia: 3, marca: "T2" },
+  ]);
+});
+
 test("fusionarMarcas reemplaza solo el rango", () => {
   const out = fusionarMarcas({
     existentes: [

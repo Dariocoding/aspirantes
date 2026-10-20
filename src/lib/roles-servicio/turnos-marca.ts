@@ -24,6 +24,13 @@ export function esRolConTurnoEnMarca(nombreRol: string): boolean {
   return /estacionamiento/i.test(nombreRol);
 }
 
+export function planUsaTurnoEnMarca(plan: {
+  nombre: string;
+  turnoEnMarca?: boolean;
+}): boolean {
+  return plan.turnoEnMarca === true || esRolConTurnoEnMarca(plan.nombre);
+}
+
 export function etiquetaServicioTurnoEnMarca(nombreRol: string): string {
   const limpio = nombreRol
     .replace(/\bnocturn[oa]\b/gi, "")
