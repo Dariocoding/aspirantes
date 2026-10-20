@@ -5,6 +5,7 @@ import { auth } from "@src/auth";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
+import { esRolConTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { prisma } from "@src/lib/prisma";
 
 export default async function RolesServicioPage({
@@ -66,6 +67,8 @@ export default async function RolesServicioPage({
     clave: plan.rol.clave,
     nombre: plan.rol.nombre,
     curso: plan.rol.curso,
+    turnoEnMarca:
+      plan.rol.papelNocturno === "MARCA_TURNO" || esRolConTurnoEnMarca(plan.rol.nombre),
     asignaciones: plan.asignaciones.map((asignacion) => ({
       id: asignacion.id,
       orden: asignacion.orden,

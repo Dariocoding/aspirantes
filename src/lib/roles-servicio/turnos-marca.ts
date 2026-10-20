@@ -13,9 +13,25 @@ export type MarcaTurno = keyof typeof TURNOS_EN_MARCA;
 
 export type TurnoEnMarca = (typeof TURNOS_EN_MARCA)[MarcaTurno];
 
+export function listarTurnosEnMarca(): Array<{
+  marca: MarcaTurno;
+  nombre: string;
+  etiqueta: string;
+  orden: number;
+}> {
+  return (Object.entries(TURNOS_EN_MARCA) as Array<[MarcaTurno, TurnoEnMarca]>)
+    .map(([marca, turno]) => ({
+      marca,
+      nombre: turno.nombre,
+      etiqueta: turno.etiqueta,
+      orden: turno.orden,
+    }))
+    .sort((a, b) => a.orden - b.orden);
+}
+
 export function turnoDesdeMarca(marca: string): TurnoEnMarca | null {
   const clave = marca.trim().toUpperCase();
-  if (clave === "T1" || clave === "T2" || clave === "T3") return TURNOS_EN_MARCA[clave];
+  if (clave in TURNOS_EN_MARCA) return TURNOS_EN_MARCA[clave as MarcaTurno];
   return null;
 }
 

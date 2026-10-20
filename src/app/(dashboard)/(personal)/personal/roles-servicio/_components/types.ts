@@ -27,5 +27,7 @@ export type PlanVista = {
   clave: string;
   nombre: string;
   curso: string;
+  /** La celda se marca T1, T2 o T3 (guardia de estacionamiento). */
+  turnoEnMarca?: boolean;
   asignaciones: AsignacionVista[];
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { actualizarMarcasAsignacion } from "@src/app/actions/roles-servicio-marcas";
 import {
@@ -8,7 +8,7 @@ import {
   letraSemana,
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
-import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
+import { listarTurnosEnMarca, planUsaTurnoEnMarca, turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { cn } from "@src/lib/utils";
 import type { AsignacionVista, PlanVista } from "./types";
 
@@ -30,6 +30,14 @@ type Props = {
   onMarcasChange: (
     cambios: Array<{ asignacionId: string; dias: MarcaDia[] }>,
   ) => void;
+};
+
+type MenuTurno = {
+  x: number;
+  y: number;
+  asignacion: AsignacionVista;
+  dia: number;
+  actual: string | null;
 };
 
 function marcaDelDia(asignacion: AsignacionVista, dia: number): string | null {
@@ -60,19 +68,62 @@ export function RolPlanilla({
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<MenuTurno | null>(null);
 
-  const toggleCelda = (asignacion: AsignacionVista, dia: number) => {
+  useEffect(() => {
+    if (!menu) return;
+    const cerrar = () => setMenu(null);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") cerrar();
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", cerrar, true);
+    window.addEventListener("resize", cerrar);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", cerrar, true);
+      window.removeEventListener("resize", cerrar);
+    };
+  }, [menu]);
+
+  const guardarMarca = (asignacion: AsignacionVista, dia: number, marca: string | null) => {
     if (!canWrite || pending) return;
-    const actual = marcaDelDia(asignacion, dia);
-    const next: MarcaDia[] = actual
-      ? asignacion.dias.filter((item) => item.dia !== dia)
-      : [...asignacion.dias, { dia, marca: "X" }].sort((a, b) => a.dia - b.dia);
-
+    const sinDia = asignacion.dias.filter((item) => item.dia !== dia);
+    const next: MarcaDia[] = marca
+      ? [...sinDia, { dia, marca }].sort((a, b) => a.dia - b.dia)
+      : sinDia;
     onMarcasChange([{ asignacionId: asignacion.id, dias: next }]);
+    setMenu(null);
     startTransition(async () => {
       const result = await actualizarMarcasAsignacion(asignacion.id, next);
       if (!result.ok) setError(result.message);
       else setError(null);
+    });
+  };
+
+  const toggleCelda = (asignacion: AsignacionVista, dia: number) => {
+    const actual = marcaDelDia(asignacion, dia);
+    guardarMarca(asignacion, dia, actual ? null : "X");
+  };
+
+  const abrirMenuTurno = (
+    event: { clientX: number; clientY: number; preventDefault: () => void; currentTarget: EventTarget | null },
+    asignacion: AsignacionVista,
+    dia: number,
+    desdeCelda: boolean,
+  ) => {
+    if (!canWrite || pending) return;
+    event.preventDefault();
+    const rect =
+      event.currentTarget instanceof HTMLElement ? event.currentTarget.getBoundingClientRect() : null;
+    const x = desdeCelda && rect ? rect.left : event.clientX;
+    const y = desdeCelda && rect ? rect.bottom + 4 : event.clientY;
+    setMenu({
+      x: Math.min(x, window.innerWidth - 180),
+      y: Math.min(y, window.innerHeight - 180),
+      asignacion,
+      dia,
+      actual: marcaDelDia(asignacion, dia),
     });
   };
 
@@ -190,6 +241,7 @@ export function RolPlanilla({
                   {dias.map((dia) => {
                     const marca = marcaDelDia(asignacion, dia);
                     const amarilla = esColumnaAmarilla(anio, mes, dia);
+                    const conTurno = planUsaTurnoEnMarca(plan);
                     return (
                       <td
                         key={dia}
@@ -203,14 +255,32 @@ export function RolPlanilla({
                           <button
                             type="button"
                             disabled={pending}
-                            onClick={() => toggleCelda(asignacion, dia)}
+                            onClick={(event) =>
+                              conTurno
+                                ? abrirMenuTurno(event, asignacion, dia, true)
+                                : toggleCelda(asignacion, dia)
+                            }
+                            onContextMenu={(event) => {
+                              if (!conTurno) return;
+                              abrirMenuTurno(event, asignacion, dia, false);
+                            }}
                             className={cn(
                               "flex h-7 w-full items-center justify-center font-bold hover:bg-black/5",
                               marca ? "text-slate-900" : "text-transparent hover:text-slate-300",
                             )}
-                            title={marca ? `Quitar ${marca}` : `Marcar día ${dia}`}
+                            title={
+                              conTurno
+                                ? "Clic derecho: 1.er, 2.do o 3.er turno"
+                                : marca
+                                  ? `Quitar ${marca}`
+                                  : `Marcar día ${dia}`
+                            }
                             aria-label={
-                              marca ? `Quitar marca del día ${dia}` : `Marcar día ${dia}`
+                              conTurno
+                                ? `Elegir turno del día ${dia}`
+                                : marca
+                                  ? `Quitar marca del día ${dia}`
+                                  : `Marcar día ${dia}`
                             }
                           >
                             {marca ? <MarcaTexto marca={marca} /> : "·"}
@@ -228,6 +298,56 @@ export function RolPlanilla({
           </tbody>
         </table>
       </div>
+
+      {menu ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default"
+            aria-label="Cerrar opciones de turno"
+            onClick={() => setMenu(null)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setMenu(null);
+            }}
+          />
+          <div
+            role="menu"
+            className="fixed z-50 w-40 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+            style={{ left: menu.x, top: menu.y }}
+          >
+            <p className="px-3 py-1 text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+              Día {menu.dia}
+            </p>
+            {listarTurnosEnMarca().map((turno) => {
+              const activo = (menu.actual ?? "").toUpperCase() === turno.marca;
+              return (
+                <button
+                  key={turno.marca}
+                  type="button"
+                  role="menuitem"
+                  className={cn(
+                    "flex w-full items-center justify-between px-3 py-1.5 text-left text-sm hover:bg-slate-50",
+                    activo && "bg-slate-100 font-semibold",
+                  )}
+                  onClick={() => guardarMarca(menu.asignacion, menu.dia, turno.marca)}
+                >
+                  <span>{turno.nombre}</span>
+                  <span className="font-mono text-[11px] text-slate-500">{turno.marca}</span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full px-3 py-1.5 text-left text-sm text-slate-600 hover:bg-slate-50"
+              onClick={() => guardarMarca(menu.asignacion, menu.dia, null)}
+            >
+              Quitar
+            </button>
+          </div>
+        </>
+      ) : null}
 
       {pending ? (
         <p className="flex items-center gap-1.5 px-3 py-2 text-[11px] text-slate-500">
