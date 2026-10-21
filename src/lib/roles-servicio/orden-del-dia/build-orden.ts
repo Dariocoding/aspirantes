@@ -24,6 +24,7 @@ import { planUsaTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { labelJerarquiaAutoridad } from "@src/lib/roles-servicio/jerarquia-autoridad";
 import type { JerarquiaAutoridad } from "@src/generated/prisma";
 import { PLANTILLA_MEMBRETE_CEFOA45 } from "@src/lib/membrete";
+import { configDesdePapelesDelMes, type PapelNocturno } from "@src/lib/roles-servicio/catalogo-rol";
 
 export type PersonaOrdenInput = {
   orden: number;
@@ -47,6 +48,8 @@ export type PlanOrdenInput = {
   curso: string;
   /** La celda es T1/T2/T3 aunque el nombre no diga estacionamiento. */
   turnoEnMarca?: boolean;
+  /** Papel nocturno de este mes. Si viene, arma el nocturno sin usar el de otros meses. */
+  papelNocturno?: PapelNocturno | null;
   asignaciones: PersonaOrdenInput[];
 };
 
@@ -225,7 +228,10 @@ export function buildOrdenDelDia(input: BuildOrdenDelDiaInput): OrdenDelDiaData 
   const rawDiurnos = filasDelDia(input.planes, dia, "diurno");
 
   const configNocturna = hidratarSugerenciasClaves(
-    input.nocturnoConfig ?? defaultOrdenNocturnoConfig(),
+    configDesdePapelesDelMes(
+      input.nocturnoConfig ?? defaultOrdenNocturnoConfig(),
+      planesNoche.length > 0 ? planesNoche : input.planes,
+    ),
     planesNoche.length > 0 ? planesNoche : input.planes,
   );
   const nocturnos = construirFilasNocturnas(planesNoche, noche.dia, configNocturna);

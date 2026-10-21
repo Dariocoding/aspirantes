@@ -19,6 +19,7 @@ export const routes = {
     rolesServicioEstudio: "/personal/roles-servicio/estudio",
     configuracion: "/personal/configuracion",
     autoridades: "/personal/configuracion/autoridades",
+    telegram: "/personal/configuracion/telegram",
     convocatorias: "/personal/convocatorias",
     membretes: "/personal/membretes",
   },

@@ -283,7 +283,7 @@ export default async function AspirantePerfilPage({
           .sort((x, y) => y.plan.anio - x.plan.anio || y.plan.mes - x.plan.mes || x.plan.rol.sortOrder - y.plan.rol.sortOrder)
           .map((asignacion) => ({
             id: asignacion.id,
-            rol: asignacion.plan.rol.nombre,
+            rol: asignacion.plan.nombre,
             curso: asignacion.plan.rol.curso,
             anio: asignacion.plan.anio,
             mes: asignacion.plan.mes,

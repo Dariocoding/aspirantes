@@ -30,6 +30,10 @@ type Props = {
   onMarcasChange: (
     cambios: Array<{ asignacionId: string; dias: MarcaDia[] }>,
   ) => void;
+  /** Si devuelve texto, no se escribe la marca. */
+  choqueAlMarcar?: (asignacion: AsignacionVista, dia: number) => string | null;
+  /** Muestra el nombre guardado en la guardia, no el del censo. */
+  nombreFijo?: boolean;
 };
 
 type MenuTurno = {
@@ -44,7 +48,8 @@ function marcaDelDia(asignacion: AsignacionVista, dia: number): string | null {
   return asignacion.dias.find((item) => item.dia === dia)?.marca ?? null;
 }
 
-function nombreFila(asignacion: AsignacionVista): string {
+function nombreFila(asignacion: AsignacionVista, nombreFijo: boolean): string {
+  if (nombreFijo && asignacion.nombre.trim()) return asignacion.nombre.trim().toUpperCase();
   if (asignacion.aspirante) {
     return `${asignacion.aspirante.nombres} ${asignacion.aspirante.apellidos}`.toUpperCase();
   }
@@ -65,6 +70,8 @@ export function RolPlanilla({
   canWrite,
   onSelectDia,
   onMarcasChange,
+  choqueAlMarcar,
+  nombreFijo = false,
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +95,14 @@ export function RolPlanilla({
 
   const guardarMarca = (asignacion: AsignacionVista, dia: number, marca: string | null) => {
     if (!canWrite || pending) return;
+    if (marca) {
+      const choque = choqueAlMarcar?.(asignacion, dia) ?? null;
+      if (choque) {
+        setMenu(null);
+        setError(choque);
+        return;
+      }
+    }
     const sinDia = asignacion.dias.filter((item) => item.dia !== dia);
     const next: MarcaDia[] = marca
       ? [...sinDia, { dia, marca }].sort((a, b) => a.dia - b.dia)
@@ -234,9 +249,9 @@ export function RolPlanilla({
                       "sticky z-20 truncate border border-slate-400 bg-white px-2 py-0.5 font-medium uppercase",
                       todosLosRoles ? "left-[8.5rem]" : "left-8",
                     )}
-                    title={nombreFila(asignacion)}
+                    title={nombreFila(asignacion, nombreFijo)}
                   >
-                    {nombreFila(asignacion)}
+                    {nombreFila(asignacion, nombreFijo)}
                   </td>
                   {dias.map((dia) => {
                     const marca = marcaDelDia(asignacion, dia);

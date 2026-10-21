@@ -335,10 +335,10 @@ model Aspirante {
   id                    String               @id @default(cuid())
   nombres               String
   apellidos             String
-  /// La calcula Postgres con fold_busqueda(nombres). No se escribe desde la app.
-  nombresBusqueda       String               @default(dbgenerated("fold_busqueda(\"nombres\")"))
-  /// La calcula Postgres con fold_busqueda(apellidos). No se escribe desde la app.
-  apellidosBusqueda     String               @default(dbgenerated("fold_busqueda(\"apellidos\")"))
+  /// Columna generada (fold_busqueda de nombres). Postgres la mantiene; la app no la escribe.
+  nombresBusqueda       String               @default(dbgenerated())
+  /// Columna generada (fold_busqueda de apellidos). Postgres la mantiene; la app no la escribe.
+  apellidosBusqueda     String               @default(dbgenerated())
   cedula                String
   sexo                  Sexo
   /// Edad se calcula en runtime desde esta fecha (no hay columna `edad`).
@@ -539,6 +539,13 @@ model PlanRolServicio {
   rol           RolServicio           @relation(fields: [rolServicioId], references: [id], onDelete: Cascade)
   anio          Int
   mes           Int
+  /// El mes quedó cerrado: personal y marcas de estas guardias no se reescriben.
+  sellado       Boolean               @default(false)
+  /// Copia del rol para este mes. No sigue al catálogo si otro mes lo cambia.
+  nombre        String
+  categoria     CategoriaRolServicio  @default(OTROS)
+  conAutoridad  Boolean               @default(false)
+  papelNocturno PapelNocturnoRol      @default(NINGUNO)
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
   asignaciones  AsignacionRolServicio[]
@@ -583,6 +590,14 @@ model FormatoPermiso {
   firmanteCargo  String   @default("")
   nota           String   @default("")
   updatedAt      DateTime @updatedAt
+}
+
+/// Token y chat del bot de Telegram. Una sola fila (`telegram_bot`).
+model TelegramBotConfig {
+  id        String   @id
+  botToken  String   @default("")
+  chatId    String   @default("")
+  updatedAt DateTime @updatedAt
 }
 
 /// Configuración de la sección nocturna de la Orden del Día (singleton JSON).

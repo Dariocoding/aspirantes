@@ -61,9 +61,10 @@ export async function cargarPlanesOrden(
 
   return planesDb.map((plan) => ({
     clave: plan.rol.clave,
-    nombre: plan.rol.nombre,
+    nombre: plan.nombre,
     curso: plan.rol.curso,
-    turnoEnMarca: plan.rol.papelNocturno === "MARCA_TURNO",
+    papelNocturno: plan.papelNocturno,
+    turnoEnMarca: plan.papelNocturno === "MARCA_TURNO" || /estacionamiento/i.test(plan.nombre),
     asignaciones: plan.asignaciones.map((asignacion) => ({
       orden: asignacion.orden,
       grado: asignacion.grado,

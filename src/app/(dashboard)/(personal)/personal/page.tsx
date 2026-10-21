@@ -96,7 +96,7 @@ export default async function PersonalDashboardPage() {
         const cedulaRaw = asignacion.aspirante?.cedula ?? asignacion.autoridad?.cedula ?? null;
         return {
           id: asignacion.id,
-          rolNombre: plan.rol.nombre,
+          rolNombre: plan.nombre,
           rolClave: plan.rol.clave,
           grado: asignacion.grado,
           nombre,

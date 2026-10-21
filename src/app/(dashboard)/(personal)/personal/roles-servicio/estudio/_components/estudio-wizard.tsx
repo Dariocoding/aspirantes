@@ -15,6 +15,7 @@ import {
   Shield,
   Users,
 } from "lucide-react";
+import { DuplicarRolesControl } from "../../_components/duplicar-roles-control";
 import { publicarEstudio, type RolEstudioInput } from "@src/app/actions/roles-servicio-estudio";
 import { AsignarCenso, type AspiranteCenso } from "./asignar-censo";
 import { Badge } from "@src/components/ui/badge";
@@ -69,6 +70,8 @@ type Props = {
   mesConMarcas: boolean;
   /** Abre directo en la asignación del censo y guarda sin rehacer los días. */
   modoAsignar?: boolean;
+  /** El mes está sellado: guardar no reescribe sus guardias. */
+  sellado?: boolean;
   rolesIniciales: RolEstudioInicial[];
   autoridades: AutoridadEstudio[];
   censo: AspiranteCenso[];
@@ -120,6 +123,7 @@ export function EstudioWizard({
   curso,
   mesConMarcas,
   modoAsignar = false,
+  sellado = false,
   rolesIniciales,
   autoridades,
   censo,
@@ -202,6 +206,10 @@ export function EstudioWizard({
   };
 
   const publicar = (soloPersonal = false) => {
+    if (sellado) {
+      setError("Este mes está sellado. Las guardias no se modifican.");
+      return;
+    }
     setError(null);
     startTransition(async () => {
       const result = await publicarEstudio({
@@ -242,7 +250,7 @@ export function EstudioWizard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <Link
-            href={routes.personal.rolesServicio}
+            href={`${routes.personal.rolesServicio}?anio=${anio}&mes=${mes}`}
             className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900"
           >
             <ArrowLeft className="size-3.5" aria-hidden />
@@ -252,7 +260,9 @@ export function EstudioWizard({
             {modoAsignar ? "Asignar personal" : "Armar el mes"}
           </h1>
           <p className="text-sm text-slate-500">
-            {modoAsignar
+            {sellado
+              ? "Este mes está sellado. Las guardias no cambian. El personal nuevo se guarda en otro mes."
+              : modoAsignar
               ? "Toca a cada aspirante del censo para ponerlo o quitarlo del rol. Guardar personal no cambia los días."
               : mesConMarcas
                 ? "Este mes ya tiene servicio. Elige días y roles; lo que no marques se queda igual."
@@ -277,6 +287,12 @@ export function EstudioWizard({
           </Link>
         </div>
       </div>
+      <DuplicarRolesControl
+        anio={anio}
+        mes={mes}
+        tieneRoles={rolesIniciales.length > 0}
+        sellado={sellado}
+      />
 
       <ol className="grid grid-cols-4 gap-2">
         {PASOS.map((item, index) => {
@@ -375,7 +391,7 @@ export function EstudioWizard({
             <Button
               type="button"
               variant={modoAsignar ? "default" : "outline"}
-              disabled={pending || incluidos.length === 0}
+              disabled={pending || sellado || incluidos.length === 0}
               onClick={() => publicar(true)}
             >
               {pending ? "Guardando…" : "Guardar personal"}
@@ -391,7 +407,7 @@ export function EstudioWizard({
               {modoAsignar && paso === 2 ? "Seguir al calendario" : "Continuar"}
             </Button>
           ) : (
-            <Button type="button" disabled={pending || incluidos.length === 0} onClick={() => publicar(false)}>
+            <Button type="button" disabled={pending || sellado || incluidos.length === 0} onClick={() => publicar(false)}>
               {pending ? "Guardando…" : dias.length === 0 ? "Guardar roles" : "Generar y guardar"}
             </Button>
           )}

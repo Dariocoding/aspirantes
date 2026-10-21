@@ -137,6 +137,33 @@ test("dias sueltos no marcan los huecos", () => {
   assert.deepEqual(dias.sort((a, b) => a - b), [1, 2, 10]);
 });
 
+test("un diurno no pisa una guardia diurna que ya existe fuera del lote", () => {
+  const ana = persona("ana-aula", "ANA", { aspiranteId: "asp-ana" });
+  const beto = persona("beto-aula", "BETO", { aspiranteId: "asp-beto" });
+  const claveAna = clavePersona(ana);
+  const { porAsignacion } = generarCalendarioMultiRol({
+    roles: [{ clave: "aula", personas: [ana, beto], cuposPorDia: 1, diurno: true }],
+    desdeDia: 1,
+    hastaDia: 2,
+    seed: 1,
+    ocupadasDiurnasPrevias: [{ clave: claveAna, dia: 1 }],
+  });
+  const dia1 = porAsignacion.find((row) => row.dias.some((item) => item.dia === 1));
+  assert.equal(dia1?.asignacionId, "beto-aula");
+});
+
+test("un nocturno sí puede coincidir con una guardia diurna previa", () => {
+  const ana = persona("ana-noche", "ANA", { aspiranteId: "asp-ana" });
+  const { porAsignacion } = generarCalendarioMultiRol({
+    roles: [{ clave: "ronda", personas: [ana], cuposPorDia: 1, diurno: false }],
+    desdeDia: 1,
+    hastaDia: 1,
+    seed: 1,
+    ocupadasDiurnasPrevias: [{ clave: clavePersona(ana), dia: 1 }],
+  });
+  assert.equal(porAsignacion[0]?.dias[0]?.dia, 1);
+});
+
 test("fusionarMarcas conserva los días que no se eligieron", () => {
   const out = fusionarMarcas({
     existentes: [

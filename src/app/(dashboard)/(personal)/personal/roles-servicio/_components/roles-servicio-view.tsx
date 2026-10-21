@@ -1,20 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   CalendarDays,
   CalendarRange,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   ChevronsUpDown,
   LayoutGrid,
+  Lock,
   Maximize2,
   Search,
   UserRound,
   Users,
+  ShieldAlert,
   Wand2,
 } from "lucide-react";
 import { actualizarMarcasLote } from "@src/app/actions/roles-servicio-marcas";
+import { sellarMesRoles } from "@src/app/actions/roles-servicio-sello";
 import { Badge } from "@src/components/ui/badge";
 import { Button, buttonVariants } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
@@ -27,6 +33,8 @@ import {
 } from "@src/components/ui/dialog";
 import { Input } from "@src/components/ui/input";
 import { GenerarCalendarioDialog } from "./generar-calendario-dialog";
+import { DuplicarRolesControl } from "./duplicar-roles-control";
+import { VerificarDiurnoDialog } from "./verificar-diurno-dialog";
 import { RolesServicioAccionesMenu } from "./roles-servicio-acciones-menu";
 import { AspiranteFotoThumbnail } from "@dashboard/aspirantes/_components/aspirante-foto";
 import { routes } from "@src/lib/apps/routes";
@@ -40,6 +48,11 @@ import {
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
 import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
+import {
+  aPlanDiurno,
+  detectarRepeticionesDiurnas,
+  mensajeChoqueDiurno,
+} from "@src/lib/roles-servicio/repeticiones-diurno";
 import { cn } from "@src/lib/utils";
 import { RolPlanilla } from "./rol-planilla";
 import type { AsignacionVista, PlanVista } from "./types";
@@ -54,6 +67,8 @@ type Props = {
   rolInicial: string | null;
   diaHoy: number | null;
   canWrite?: boolean;
+  /** El mes está cerrado: personal y marcas no se reescriben. */
+  sellado?: boolean;
 };
 
 type ModoVista = "dia" | "mes" | "cuadricula";
@@ -70,6 +85,116 @@ type FilaCuadricula = {
 };
 
 const DIAS_SEMANA = ["D", "L", "M", "M", "J", "V", "S"] as const;
+
+const MESES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+] as const;
+
+function desplazarMes(anio: number, mes: number, delta: number): { anio: number; mes: number } {
+  const fecha = new Date(anio, mes - 1 + delta, 1);
+  return { anio: fecha.getFullYear(), mes: fecha.getMonth() + 1 };
+}
+
+function aniosSeleccionables(anio: number): number[] {
+  const actual = new Date().getFullYear();
+  return [...new Set([actual - 1, actual, actual + 1, anio])]
+    .filter((valor) => valor >= 2000 && valor <= 2100)
+    .sort((a, b) => a - b);
+}
+
+function SelectorMesCuadro({
+  anio,
+  mes,
+  diaHoy,
+  sellado,
+  onIr,
+}: {
+  anio: number;
+  mes: number;
+  diaHoy: number | null;
+  sellado: boolean;
+  onIr: (fecha: { anio: number; mes: number }) => void;
+}) {
+  const [vistaAnio, setVistaAnio] = useState(anio);
+  const [vistaMes, setVistaMes] = useState(mes);
+  useEffect(() => {
+    setVistaAnio(anio);
+    setVistaMes(mes);
+  }, [anio, mes]);
+
+  const ir = (fecha: { anio: number; mes: number }) => {
+    setVistaAnio(fecha.anio);
+    setVistaMes(fecha.mes);
+    onIr(fecha);
+  };
+
+  const campo =
+    "h-7 rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-800";
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          aria-label="Mes anterior"
+          onClick={() => ir(desplazarMes(vistaAnio, vistaMes, -1))}
+        >
+          <ChevronLeft className="size-3.5" />
+        </button>
+        <select
+          className={cn(campo, "min-w-0 flex-1")}
+          aria-label="Mes"
+          value={vistaMes}
+          onChange={(event) => ir({ anio: vistaAnio, mes: Number(event.target.value) })}
+        >
+          {MESES.map((nombre, index) => (
+            <option key={nombre} value={index + 1}>
+              {nombre}
+            </option>
+          ))}
+        </select>
+        <select
+          className={cn(campo, "w-[4.6rem]")}
+          aria-label="Año"
+          value={vistaAnio}
+          onChange={(event) => ir({ anio: Number(event.target.value), mes: vistaMes })}
+        >
+          {aniosSeleccionables(vistaAnio).map((valor) => (
+            <option key={valor} value={valor}>
+              {valor}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          aria-label="Mes siguiente"
+          onClick={() => ir(desplazarMes(vistaAnio, vistaMes, 1))}
+        >
+          <ChevronRight className="size-3.5" />
+        </button>
+      </div>
+      {diaHoy != null || sellado ? (
+        <p className="text-[11px] text-slate-500">
+          {diaHoy != null ? `Hoy ${diaHoy}` : null}
+          {diaHoy != null && sellado ? " · " : null}
+          {sellado ? "Sellado" : null}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 const GRUPOS_ROL: { id: string; label: string; match: (nombre: string) => boolean }[] = [
   { id: "oficial", label: "Oficiales", match: (n) => /oficial/i.test(n) },
@@ -132,7 +257,9 @@ export function RolesServicioView({
   rolInicial,
   diaHoy,
   canWrite = false,
+  sellado = false,
 }: Props) {
+  const router = useRouter();
   const totalDias = diasDelMes(anio, mes);
   const dias = useMemo(() => Array.from({ length: totalDias }, (_, i) => i + 1), [totalDias]);
   const [planes, setPlanes] = useState(planesProp);
@@ -149,7 +276,19 @@ export function RolesServicioView({
   const [cuadriculaAmpliada, setCuadriculaAmpliada] = useState(false);
   const [cuadriculaDesborda, setCuadriculaDesborda] = useState(false);
   const [generarOpen, setGenerarOpen] = useState(false);
+  const [verificarOpen, setVerificarOpen] = useState(false);
   const [generarPending, startGenerarTransition] = useTransition();
+  const [verificarPending, startVerificarTransition] = useTransition();
+  const [selloAbierto, setSelloAbierto] = useState(false);
+  const [selloPending, startSelloTransition] = useTransition();
+  const [selloError, setSelloError] = useState<string | null>(null);
+  const puedeEditar = canWrite && !sellado;
+  const mesSiguiente = useMemo(() => desplazarMes(anio, mes, 1), [anio, mes]);
+  const irAMes = (fecha: { anio: number; mes: number }) => {
+    router.push(`${routes.personal.rolesServicio}?anio=${fecha.anio}&mes=${fecha.mes}`);
+  };
+  const hrefPersonal = `${routes.personal.rolesServicioEstudio}?anio=${sellado ? mesSiguiente.anio : anio}&mes=${sellado ? mesSiguiente.mes : mes}&asignar=1`;
+  const hrefArmar = `${routes.personal.rolesServicioEstudio}?anio=${sellado ? mesSiguiente.anio : anio}&mes=${sellado ? mesSiguiente.mes : mes}`;
   const cuadriculaScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -178,11 +317,17 @@ export function RolesServicioView({
   };
 
   useEffect(() => {
-    const url = rolClave
-      ? `${routes.personal.rolesServicio}?rol=${encodeURIComponent(rolClave)}`
-      : routes.personal.rolesServicio;
-    window.history.replaceState(null, "", url);
-  }, [rolClave]);
+    setRolClave(rolInicial);
+    setDiaSeleccionado(diaHoy ?? 1);
+  }, [anio, mes, rolInicial, diaHoy]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set("anio", String(anio));
+    params.set("mes", String(mes));
+    if (rolClave) params.set("rol", rolClave);
+    window.history.replaceState(null, "", `${routes.personal.rolesServicio}?${params.toString()}`);
+  }, [anio, mes, rolClave]);
 
   useEffect(() => {
     if (modo !== "cuadricula") setCuadriculaAmpliada(false);
@@ -313,6 +458,13 @@ export function RolesServicioView({
   }, [modo, filasCuadricula, dias, todosLosRoles]);
 
   const esHoySeleccionado = diaHoy != null && diaSeleccionado === diaHoy;
+  const planesDiurno = useMemo(() => aPlanDiurno(planes), [planes]);
+  const repeticionesDiurnas = useMemo(
+    () => detectarRepeticionesDiurnas(planesDiurno).length,
+    [planesDiurno],
+  );
+  const choqueAlMarcar = (asignacion: AsignacionVista, dia: number) =>
+    mensajeChoqueDiurno(planesDiurno, asignacion.id, dia);
 
   const seleccionarRol = (clave: string | null) => {
     setRolClave(clave);
@@ -326,12 +478,16 @@ export function RolesServicioView({
         <Card className="shadow-sm ring-slate-200/80">
           <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
             <CalendarRange className="size-8 text-slate-300" aria-hidden />
-            <p className="text-sm font-medium text-slate-800">No hay roles cargados para este mes</p>
+            <p className="text-sm font-medium text-slate-800">No hay roles en {etiquetaMes(anio, mes)}</p>
             <p className="max-w-sm text-xs text-slate-500">
-              Arma el mes en el estudio, o publica el Excel mensual para ver el cuadro.
+              Trae los roles de otro mes o arma este desde cero. Cada mes conserva los suyos.
             </p>
+            <div className="mt-2 w-full max-w-xs">
+              <SelectorMesCuadro anio={anio} mes={mes} diaHoy={diaHoy} sellado={sellado} onIr={irAMes} />
+            </div>
             {canWrite ? (
-              <div className="mt-2 flex flex-wrap justify-center gap-2">
+              <div className="mt-2 w-full max-w-md space-y-3">
+                <DuplicarRolesControl anio={anio} mes={mes} tieneRoles={false} sellado={sellado} />
                 <Link
                   href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}&asignar=1`}
                   className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
@@ -355,39 +511,19 @@ export function RolesServicioView({
           <aside className="min-w-0">
             <Card className="gap-0 py-0 shadow-sm ring-slate-200/80 xl:sticky xl:top-4">
               <CardHeader className="space-y-3 border-b border-slate-200/80 px-3 py-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <CardTitle className="text-sm">Cuadro de servicio</CardTitle>
-                    <CardDescription className="text-[11px]">
-                      {etiquetaMes(anio, mes)}
-                      {diaHoy != null ? ` · hoy ${diaHoy}` : ""}
-                    </CardDescription>
-                  </div>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-sm">Cuadro de servicio</CardTitle>
                   <div className="flex shrink-0 items-center gap-0.5">
-                    {canWrite ? (
-                      <>
-                        <Link
-                          href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}&asignar=1`}
-                          className={cn(buttonVariants({ variant: "outline", size: "xs" }), "gap-1")}
-                        >
-                          <Users className="size-3" aria-hidden />
-                          Personal
-                        </Link>
-                        <Link
-                          href={`${routes.personal.rolesServicioEstudio}?anio=${anio}&mes=${mes}`}
-                          className={cn(buttonVariants({ variant: "outline", size: "xs" }), "gap-1")}
-                        >
-                          <Wand2 className="size-3" aria-hidden />
-                          Armar
-                        </Link>
-                      </>
-                    ) : null}
                     <RolesServicioAccionesMenu
                       anio={anio}
                       mes={mes}
                       diaSeleccionado={diaSeleccionado}
                       planes={planes}
-                      canGenerar={canWrite && planes.some((p) => p.asignaciones.length > 0)}
+                      canWrite={canWrite}
+                      sellado={sellado}
+                      hrefPersonal={hrefPersonal}
+                      hrefArmar={hrefArmar}
+                      canGenerar={puedeEditar && planes.some((p) => p.asignaciones.length > 0)}
                       onGenerarCalendario={() => setGenerarOpen(true)}
                     />
                     <Button
@@ -403,6 +539,13 @@ export function RolesServicioView({
                     </Button>
                   </div>
                 </div>
+                <SelectorMesCuadro
+                  anio={anio}
+                  mes={mes}
+                  diaHoy={diaHoy}
+                  sellado={sellado}
+                  onIr={irAMes}
+                />
 
                 <div className={cn(!navAbierta && "hidden xl:block")}>
                   <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
@@ -446,6 +589,44 @@ export function RolesServicioView({
                     })}
                   </div>
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full justify-start gap-1.5 text-xs"
+                  onClick={() => setVerificarOpen(true)}
+                >
+                  <ShieldAlert className="size-3.5" aria-hidden />
+                  Verificar diurno
+                  {repeticionesDiurnas > 0 ? (
+                    <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">
+                      {repeticionesDiurnas}
+                    </span>
+                  ) : null}
+                </Button>
+                {canWrite ? (
+                  <Button
+                    type="button"
+                    variant={sellado ? "secondary" : "outline"}
+                    size="sm"
+                    className="h-8 w-full justify-start gap-1.5 text-xs"
+                    onClick={() => {
+                      setSelloError(null);
+                      setSelloAbierto(true);
+                    }}
+                  >
+                    <Lock className="size-3.5" aria-hidden />
+                    {sellado ? "Mes sellado" : `Sellar ${etiquetaMes(anio, mes)}`}
+                  </Button>
+                ) : sellado ? (
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <Lock className="size-3.5" aria-hidden />
+                    Mes sellado
+                  </p>
+                  ) : null}
+                {canWrite ? (
+                  <DuplicarRolesControl anio={anio} mes={mes} tieneRoles={planes.length > 0} sellado={sellado} />
+                ) : null}
               </CardHeader>
 
               <div className={cn("border-b border-slate-200/80 px-3 py-2.5", !navAbierta && "hidden xl:block")}>
@@ -600,7 +781,7 @@ export function RolesServicioView({
                                   {plan.nombre}
                                 </p>
                               ) : null}
-                              <PersonaRol asignacion={asignacion} compact />
+                              <PersonaRol asignacion={asignacion} compact nombreFijo={sellado} />
                               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                                 <Badge variant="outline" className="font-mono text-[10px]">
                                   {asignacion.grado}
@@ -767,9 +948,11 @@ export function RolesServicioView({
                           diaHoy={diaHoy}
                           diaSeleccionado={diaSeleccionado}
                           todosLosRoles={todosLosRoles}
-                          canWrite={canWrite}
+                          canWrite={puedeEditar}
                           onSelectDia={abrirDiaDesdeCuadricula}
                           onMarcasChange={aplicarMarcasLocal}
+                          choqueAlMarcar={choqueAlMarcar}
+                          nombreFijo={sellado}
                         />
                       </div>
                       {cuadriculaDesborda ? (
@@ -834,16 +1017,73 @@ export function RolesServicioView({
                       diaHoy={diaHoy}
                       diaSeleccionado={diaSeleccionado}
                       todosLosRoles={todosLosRoles}
-                      canWrite={canWrite}
+                      canWrite={puedeEditar}
                       onSelectDia={abrirDiaDesdeCuadricula}
                       onMarcasChange={aplicarMarcasLocal}
+                      choqueAlMarcar={choqueAlMarcar}
+                      nombreFijo={sellado}
                     />
                   )}
                 </div>
               </DialogContent>
             </Dialog>
 
-            {canWrite ? (
+            <VerificarDiurnoDialog
+              open={verificarOpen}
+              onOpenChange={setVerificarOpen}
+              planes={planes}
+              anio={anio}
+              mes={mes}
+              canWrite={puedeEditar}
+              pending={verificarPending}
+              onApply={(cambios) => {
+                aplicarMarcasLocal(cambios);
+                startVerificarTransition(async () => {
+                  await actualizarMarcasLote(cambios);
+                });
+              }}
+            />
+
+            <Dialog open={selloAbierto} onOpenChange={setSelloAbierto}>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>
+                    {sellado ? `Abrir ${etiquetaMes(anio, mes)}` : `Sellar ${etiquetaMes(anio, mes)}`}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {sellado
+                      ? "Al quitar el sello, el personal y las marcas de este mes vuelven a poder editarse."
+                      : "Las guardias de este mes quedan fijas. Un cambio de personal arma el mes siguiente y no reescribe estas."}
+                  </DialogDescription>
+                </DialogHeader>
+                {selloError ? <p className="px-5 text-sm text-red-700">{selloError}</p> : null}
+                <div className="flex justify-end gap-2 px-5 py-4">
+                  <Button type="button" variant="outline" disabled={selloPending} onClick={() => setSelloAbierto(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={selloPending}
+                    onClick={() => {
+                      setSelloError(null);
+                      startSelloTransition(async () => {
+                        const result = await sellarMesRoles(anio, mes, !sellado);
+                        if (!result.ok) {
+                          setSelloError(result.message);
+                          return;
+                        }
+                        setSelloAbierto(false);
+                        router.refresh();
+                      });
+                    }}
+                  >
+                    {sellado ? "Quitar sello" : "Sellar"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {puedeEditar ? (
               <GenerarCalendarioDialog
                 open={generarOpen}
                 onOpenChange={setGenerarOpen}
@@ -948,7 +1188,30 @@ function MarcaCelda({ marca }: { marca: string }) {
   );
 }
 
-function PersonaRol({ asignacion, compact = false }: { asignacion: AsignacionVista; compact?: boolean }) {
+function PersonaRol({
+  asignacion,
+  compact = false,
+  nombreFijo = false,
+}: {
+  asignacion: AsignacionVista;
+  compact?: boolean;
+  nombreFijo?: boolean;
+}) {
+  if (nombreFijo && asignacion.nombre.trim()) {
+    const aspirante = asignacion.aspirante;
+    return (
+      <p>
+        <span className={cn("font-medium text-slate-900", compact ? "text-xs" : "text-sm")}>
+          {asignacion.nombre}
+        </span>
+        {aspirante && !compact ? (
+          <span className="mt-0.5 block font-mono text-[10px] tabular-nums text-slate-500">
+            {formatCedulaMillares(aspirante.cedula)}
+          </span>
+        ) : null}
+      </p>
+    );
+  }
   if (!asignacion.nombre.trim()) {
     return <p className={cn("text-slate-400", compact ? "text-xs" : "text-sm")}>Sin nombre en el rol</p>;
   }

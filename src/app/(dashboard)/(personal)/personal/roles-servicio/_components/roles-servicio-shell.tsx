@@ -9,6 +9,7 @@ type Props = {
   rolInicial: string | null;
   diaHoy: number | null;
   canWrite: boolean;
+  sellado?: boolean;
 };
 
 export function RolesServicioShell(props: Props) {
@@ -20,6 +21,7 @@ export function RolesServicioShell(props: Props) {
       rolInicial={props.rolInicial}
       diaHoy={props.diaHoy}
       canWrite={props.canWrite}
+      sellado={props.sellado ?? false}
     />
   );
 }

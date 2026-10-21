@@ -14,12 +14,14 @@ import {
   DialogTitle,
 } from "@src/components/ui/dialog";
 import {
+  clavePersona,
   fusionarMarcas,
   generarCalendarioMultiRol,
   sugerirCuposPorNombreRol,
   type PersonaClave,
   type RolParaCalendario,
 } from "@src/lib/roles-servicio/generar-rotacion";
+import { esGuardiaDiurna } from "@src/lib/roles-servicio/repeticiones-diurno";
 import type { MarcaDia } from "@src/lib/roles-servicio/marcas";
 import type { AsignacionVista, PlanVista } from "./types";
 
@@ -92,8 +94,24 @@ export function GenerarCalendarioDialog({
         cuposPorDia: usarCuposSugeridos
           ? sugerirCuposPorNombreRol(plan.nombre)
           : cuposGlobal,
+        diurno: esGuardiaDiurna(plan),
       }));
   }, [planes, seleccionados, usarCuposSugeridos, cuposGlobal]);
+
+  const ocupadasDiurnasPrevias = useMemo(() => {
+    const lista: Array<{ clave: string; dia: number }> = [];
+    for (const plan of planes) {
+      if (seleccionados.includes(plan.clave) || !esGuardiaDiurna(plan)) continue;
+      for (const asignacion of plan.asignaciones) {
+        const clave = clavePersona(personaDeAsignacion(asignacion));
+        for (const marca of asignacion.dias) {
+          if (marca.dia < desdeDia || marca.dia > hastaDia) continue;
+          lista.push({ clave, dia: marca.dia });
+        }
+      }
+    }
+    return lista;
+  }, [planes, seleccionados, desdeDia, hastaDia]);
 
   const preview = useMemo(() => {
     if (rolesInput.length === 0) {
@@ -106,8 +124,9 @@ export function GenerarCalendarioDialog({
       cuposPorDia: cuposGlobal,
       marca,
       seed,
+      ocupadasDiurnasPrevias,
     });
-  }, [rolesInput, desdeDia, hastaDia, cuposGlobal, marca, seed]);
+  }, [rolesInput, desdeDia, hastaDia, cuposGlobal, marca, seed, ocupadasDiurnasPrevias]);
 
   const toggleRol = (clave: string) => {
     setSeleccionados((prev) =>
@@ -159,7 +178,7 @@ export function GenerarCalendarioDialog({
           </DialogTitle>
           <DialogDescription className="text-xs">
             Elija los roles, baraje el orden y se arma la diagonal con el mayor espacio posible.
-            Nadie tiene dos servicios el mismo día entre los roles seleccionados.
+            Nadie tiene dos servicios el mismo día entre los roles seleccionados. En diurno, tampoco pisa una guardia que la persona ya tenga en un rol que no entra en esta generación.
           </DialogDescription>
         </DialogHeader>
 

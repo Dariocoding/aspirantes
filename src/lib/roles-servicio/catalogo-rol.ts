@@ -198,3 +198,22 @@ export function aplicarPapelNocturno(
   }
   return { ...limpio, binomios };
 }
+
+/** El nocturno de un mes sale de los papeles de ese mes, no del catálogo compartido. */
+export function configDesdePapelesDelMes(
+  base: OrdenNocturnoConfig,
+  planes: Array<{ clave: string; papelNocturno?: PapelNocturno | null }>,
+): OrdenNocturnoConfig {
+  const conPapel = planes.filter((plan) => plan.papelNocturno);
+  if (conPapel.length === 0) return base;
+  let config: OrdenNocturnoConfig = {
+    ...base,
+    rondaRolClaves: [],
+    rondinRolClaves: [],
+    binomios: base.binomios.map((binomio) => ({ ...binomio, rolClaves: [] })),
+  };
+  for (const plan of conPapel) {
+    config = aplicarPapelNocturno(config, plan.clave, plan.papelNocturno!);
+  }
+  return config;
+}

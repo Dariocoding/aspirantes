@@ -10,12 +10,10 @@ import {
   esPapelNocturno,
   gradoAutoridadCorto,
   inferirCategoria,
-  papelDesdeConfig,
   type CategoriaRol,
   type PapelNocturno,
 } from "@src/lib/roles-servicio/catalogo-rol";
 import { abrevJerarquiaAspirante } from "@src/lib/aspirantes/jerarquia-aspirante";
-import { loadOrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/load-config-nocturno";
 import { prisma } from "@src/lib/prisma";
 
 function numero(value: string | undefined, fallback: number): number {
@@ -44,20 +42,14 @@ export default async function EstudioRolesPage({
   const mes = numero(params.mes, reciente?.mes ?? hoy.getMonth() + 1);
   const anioOk = anio >= 2000 && anio <= 2100 ? anio : hoy.getFullYear();
   const mesOk = mes >= 1 && mes <= 12 ? mes : hoy.getMonth() + 1;
-  const previo = mesOk === 1 ? { anio: anioOk - 1, mes: 12 } : { anio: anioOk, mes: mesOk - 1 };
 
-  const [rolesDb, autoridades, config, aspirantes] = await Promise.all([
+  const [rolesDb, autoridades, aspirantes] = await Promise.all([
     prisma.rolServicio.findMany({
       where: { activo: true },
       orderBy: { sortOrder: "asc" },
       include: {
         planes: {
-          where: {
-            OR: [
-              { anio: anioOk, mes: mesOk },
-              { anio: previo.anio, mes: previo.mes },
-            ],
-          },
+          where: { anio: anioOk, mes: mesOk },
           include: {
             asignaciones: {
               orderBy: { orden: "asc" },
@@ -75,7 +67,6 @@ export default async function EstudioRolesPage({
       orderBy: [{ jerarquia: "asc" }, { apellidos: "asc" }],
       select: { id: true, nombres: true, apellidos: true, cedula: true, jerarquia: true },
     }),
-    loadOrdenNocturnoConfig(),
     prisma.aspirante.findMany({
       where: { deletedAt: null },
       orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
@@ -90,23 +81,15 @@ export default async function EstudioRolesPage({
     }),
   ]);
 
-  const hayPlanEsteMes = rolesDb.some((rol) =>
-    rol.planes.some((plan) => plan.anio === anioOk && plan.mes === mesOk),
-  );
-
-  const roles: RolEstudioInicial[] = rolesDb.map((rol) => {
+  const roles: RolEstudioInicial[] = rolesDb.flatMap((rol) => {
     const planMes = rol.planes.find((plan) => plan.anio === anioOk && plan.mes === mesOk) ?? null;
-    const planPrevio = rol.planes.find((plan) => plan.anio === previo.anio && plan.mes === previo.mes) ?? null;
-    const fuente =
-      planMes && planMes.asignaciones.length > 0 ? planMes : !planMes ? planPrevio : null;
-    const conservarId = fuente === planMes;
-    const categoria: CategoriaRol = esCategoriaRol(rol.categoria) && rol.categoria !== "OTROS"
-      ? rol.categoria
-      : inferirCategoria(rol.nombre);
-    const papelDb: PapelNocturno = esPapelNocturno(rol.papelNocturno) ? rol.papelNocturno : "NINGUNO";
-    const papel = papelDesdeConfig(rol.clave, config) ?? papelDb;
-    const personas = (fuente?.asignaciones ?? []).map((item) => ({
-      asignacionId: conservarId ? item.id : null,
+    if (!planMes) return [];
+    const categoria: CategoriaRol = esCategoriaRol(planMes.categoria) && planMes.categoria !== "OTROS"
+      ? planMes.categoria
+      : inferirCategoria(planMes.nombre);
+    const papel: PapelNocturno = esPapelNocturno(planMes.papelNocturno) ? planMes.papelNocturno : "NINGUNO";
+    const personas = planMes.asignaciones.map((item) => ({
+      asignacionId: item.id,
       aspiranteId: item.aspiranteId,
       autoridadId: item.autoridadId,
       nombre: item.aspirante
@@ -118,19 +101,19 @@ export default async function EstudioRolesPage({
     }));
     const hayAspirantes = personas.some((item) => item.aspiranteId);
     const hayAutoridades = personas.some((item) => item.autoridadId);
-    const conAutoridad = !hayAspirantes && (rol.conAutoridad || hayAutoridades);
+    const conAutoridad = !hayAspirantes && (planMes.conAutoridad || hayAutoridades);
 
-    return {
+    return [{
       id: rol.id,
-      nombre: rol.nombre,
+      nombre: planMes.nombre,
       categoria,
       conAutoridad,
       papelNocturno: papel,
-      incluido: modoAsignar ? (hayPlanEsteMes ? planMes != null : true) : !hayPlanEsteMes,
-      cuposPorDia: cuposSugeridos(rol.nombre, papel, categoria),
-      teniaPersonas: (planMes?.asignaciones.length ?? 0) > 0,
+      incluido: modoAsignar,
+      cuposPorDia: cuposSugeridos(planMes.nombre, papel, categoria),
+      teniaPersonas: personas.length > 0,
       personas,
-    };
+    }];
   });
 
   const curso = rolesDb.find((rol) => rol.curso.trim())?.curso ?? "CEFOA";
@@ -160,6 +143,9 @@ export default async function EstudioRolesPage({
       curso={curso}
       mesConMarcas={mesConMarcas}
       modoAsignar={modoAsignar}
+      sellado={rolesDb.some((rol) =>
+        rol.planes.some((plan) => plan.anio === anioOk && plan.mes === mesOk && plan.sellado),
+      )}
       rolesIniciales={roles}
       censo={censo}
       autoridades={autoridades.map((item) => ({

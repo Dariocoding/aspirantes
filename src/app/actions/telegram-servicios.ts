@@ -7,6 +7,7 @@ import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { prisma } from "@src/lib/prisma";
 import { ejecutarEnvioCumpleanos } from "@src/lib/telegram/run-cumpleanos";
 import { ejecutarEnvioEfemerides } from "@src/lib/telegram/run-efemerides";
+import { resolveTelegramCredentials } from "@src/lib/telegram/credenciales";
 import {
   ejecutarEnvioTelegram,
   type ModoEnvioManual,
@@ -44,9 +45,10 @@ export type EnviarEfemeridesResult =
 
 const MODOS: ModoEnvioManual[] = ["hoy", "esta-noche", "manana"];
 
-function telegramConfigurado(): string | null {
-  if (!process.env.TELEGRAM_BOT_TOKEN?.trim() || !process.env.TELEGRAM_CHAT_ID?.trim()) {
-    return "Telegram no está configurado (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID).";
+async function telegramConfigurado(): Promise<string | null> {
+  const credenciales = await resolveTelegramCredentials();
+  if (!credenciales) {
+    return "Telegram no está configurado. El token y el chat se definen en Configuración.";
   }
   return null;
 }
@@ -64,7 +66,7 @@ export async function enviarServiciosTelegram(
     return { ok: false, message: "Modo de envío inválido." };
   }
 
-  const configError = telegramConfigurado();
+  const configError = await telegramConfigurado();
   if (configError) return { ok: false, message: configError };
 
   try {
@@ -109,7 +111,7 @@ export async function enviarCumpleanosTelegram(): Promise<EnviarCumpleanosResult
     return { ok: false, message: "Sin permiso para enviar al grupo." };
   }
 
-  const configError = telegramConfigurado();
+  const configError = await telegramConfigurado();
   if (configError) return { ok: false, message: configError };
 
   try {
@@ -159,7 +161,7 @@ export async function enviarEfemeridesTelegram(): Promise<EnviarEfemeridesResult
     return { ok: false, message: "Sin permiso para enviar al grupo." };
   }
 
-  const configError = telegramConfigurado();
+  const configError = await telegramConfigurado();
   if (configError) return { ok: false, message: configError };
 
   try {

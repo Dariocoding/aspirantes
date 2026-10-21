@@ -1,25 +1,58 @@
+import { resolveTelegramCredentials } from "@src/lib/telegram/credenciales";
+
 export type TelegramSendResult = {
   messageId: number;
 };
 
-function requireEnv(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`Falta la variable de entorno ${name}`);
-  }
-  return value;
+async function leerTelegram(response: Response): Promise<{
+  ok?: boolean;
+  description?: string;
+  result?: { message_id?: number; username?: string; title?: string };
+}> {
+  return (await response.json()) as {
+    ok?: boolean;
+    description?: string;
+    result?: { message_id?: number; username?: string; title?: string };
+  };
 }
 
-export function telegramConfig() {
+/** Comprueba el token con getMe y que el chat exista. */
+export async function verificarTelegramBot(
+  token: string,
+  chatId: string,
+): Promise<{ ok: true; username: string; chat: string } | { ok: false; message: string }> {
+  const limpio = token.trim();
+  const chat = chatId.trim();
+  if (!limpio || !chat) return { ok: false, message: "Faltan el token del bot o el chat." };
+
+  const me = await fetch(`https://api.telegram.org/bot${limpio}/getMe`);
+  const mePayload = await leerTelegram(me);
+  if (!me.ok || !mePayload.ok || !mePayload.result?.username) {
+    return { ok: false, message: mePayload.description ?? "El token del bot no es válido." };
+  }
+
+  const destino = await fetch(
+    `https://api.telegram.org/bot${limpio}/getChat?chat_id=${encodeURIComponent(chat)}`,
+  );
+  const destinoPayload = await leerTelegram(destino);
+  if (!destino.ok || !destinoPayload.ok) {
+    return { ok: false, message: destinoPayload.description ?? "No se pudo abrir ese chat." };
+  }
+
   return {
-    token: requireEnv("TELEGRAM_BOT_TOKEN"),
-    chatId: requireEnv("TELEGRAM_CHAT_ID"),
+    ok: true,
+    username: mePayload.result.username,
+    chat: destinoPayload.result?.title ?? chat,
   };
 }
 
 /** Envía un mensaje HTML al grupo configurado. */
 export async function sendTelegramMessage(text: string): Promise<TelegramSendResult> {
-  const { token, chatId } = telegramConfig();
+  const credenciales = await resolveTelegramCredentials();
+  if (!credenciales) {
+    throw new Error("Telegram no está configurado.");
+  }
+  const { token, chatId } = credenciales;
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   const response = await fetch(url, {
     method: "POST",

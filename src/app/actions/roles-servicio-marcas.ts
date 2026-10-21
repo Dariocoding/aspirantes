@@ -42,9 +42,12 @@ export async function actualizarMarcasAsignacion(
   try {
     const existe = await prisma.asignacionRolServicio.findUnique({
       where: { id: asignacionId },
-      select: { id: true },
+      select: { id: true, plan: { select: { sellado: true } } },
     });
     if (!existe) return { ok: false, message: "Asignación no encontrada." };
+    if (existe.plan.sellado) {
+      return { ok: false, message: "Este mes está sellado. Las guardias no se modifican." };
+    }
 
     await prisma.asignacionRolServicio.update({
       where: { id: asignacionId },
@@ -71,6 +74,14 @@ export async function actualizarMarcasLote(
   if (cambios.length === 0) return { ok: true };
 
   try {
+    const filas = await prisma.asignacionRolServicio.findMany({
+      where: { id: { in: cambios.map((cambio) => cambio.asignacionId) } },
+      select: { plan: { select: { sellado: true } } },
+    });
+    if (filas.some((fila) => fila.plan.sellado)) {
+      return { ok: false, message: "Este mes está sellado. Las guardias no se modifican." };
+    }
+
     await prisma.$transaction(
       cambios.map((cambio) =>
         prisma.asignacionRolServicio.update({

@@ -21,6 +21,7 @@ import type { OrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/
 import { loadOrdenNocturnoConfig } from "@src/lib/roles-servicio/orden-del-dia/load-config-nocturno";
 import { siguienteDia } from "@src/lib/roles-servicio/orden-del-dia/fechas";
 import { diasDelMes, etiquetaMes, marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
+import { esRolConTurnoEnMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { prisma } from "@src/lib/prisma";
 
 export const runtime = "nodejs";
@@ -62,9 +63,10 @@ async function cargarPlanes(anio: number, mes: number): Promise<PlanOrdenInput[]
 
   return planesDb.map((plan) => ({
     clave: plan.rol.clave,
-    nombre: plan.rol.nombre,
+    nombre: plan.nombre,
     curso: plan.rol.curso,
-    turnoEnMarca: plan.rol.papelNocturno === "MARCA_TURNO",
+    papelNocturno: plan.papelNocturno,
+    turnoEnMarca: plan.papelNocturno === "MARCA_TURNO" || esRolConTurnoEnMarca(plan.nombre),
     asignaciones: plan.asignaciones.map((asignacion) => ({
       orden: asignacion.orden,
       grado: asignacion.grado,

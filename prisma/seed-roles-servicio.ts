@@ -142,6 +142,10 @@ async function main() {
         rolServicioId: registro.id,
         anio: libro.anio,
         mes: libro.mes,
+        nombre: rol.nombre,
+        categoria: inferirCategoria(rol.nombre),
+        conAutoridad: inferirConAutoridad(rol.nombre, tieneAutoridad),
+        papelNocturno: inferirPapelNocturno(rol.nombre),
       },
       update: {},
     });

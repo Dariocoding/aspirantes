@@ -19,7 +19,7 @@ export function ConfiguracionView({ cards }: Props) {
             Configuración
           </h1>
           <p className="text-xs text-slate-500">
-            Herramientas institucionales: efemérides, documentos, autoridades y períodos.
+            Herramientas institucionales: efemérides, documentos, autoridades, Telegram y períodos.
           </p>
         </div>
       </header>

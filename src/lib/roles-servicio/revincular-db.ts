@@ -21,7 +21,7 @@ export async function revincularRolesServicioMesDb(
       select: { id: true, nombres: true, apellidos: true },
     }),
     prisma.asignacionRolServicio.findMany({
-      where: { plan: { anio: reciente.anio, mes: reciente.mes } },
+      where: { plan: { anio: reciente.anio, mes: reciente.mes, sellado: false } },
       select: { id: true, nombre: true, grado: true },
     }),
   ]);

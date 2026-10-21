@@ -20,6 +20,7 @@ import {
   KeyRound,
   LayoutGrid,
   Medal,
+  Send,
   Settings2,
   Shield,
   Stamp,
@@ -187,6 +188,13 @@ export const personalConfigCards: ConfigCard[] = [
     icon: BookMarked,
     tone: "bg-indigo-50 text-indigo-800",
     permission: Permission.CONVOCATORIAS_MANAGE,
+  },
+  {
+    href: routes.personal.telegram,
+    label: "Telegram",
+    description: "Bot del grupo y envío de servicios, cumpleaños y efemérides.",
+    icon: Send,
+    tone: "bg-sky-50 text-sky-800",
   },
 ];
 

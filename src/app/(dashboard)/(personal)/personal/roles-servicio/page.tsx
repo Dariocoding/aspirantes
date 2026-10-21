@@ -11,7 +11,7 @@ import { prisma } from "@src/lib/prisma";
 export default async function RolesServicioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ rol?: string }>;
+  searchParams: Promise<{ rol?: string; anio?: string; mes?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) unauthorized();
@@ -19,33 +19,24 @@ export default async function RolesServicioPage({
   if (!hasPermission(ctx, Permission.ASPIRANTES_READ)) unauthorized();
 
   const canWrite = hasPermission(ctx, Permission.ASPIRANTES_WRITE);
-  const { rol } = await searchParams;
-  const reciente = await prisma.planRolServicio.findFirst({
-    orderBy: [{ anio: "desc" }, { mes: "desc" }],
-    select: { anio: true, mes: true },
-  });
+  const { rol, anio: anioRaw, mes: mesRaw } = await searchParams;
 
   const hoy = new Date();
-  const diaHoy =
-    reciente && hoy.getFullYear() === reciente.anio && hoy.getMonth() + 1 === reciente.mes
-      ? hoy.getDate()
-      : null;
-
-  if (!reciente) {
-    return (
-      <RolesServicioShell
-        anio={hoy.getFullYear()}
-        mes={hoy.getMonth() + 1}
-        planes={[]}
-        rolInicial={null}
-        diaHoy={null}
-        canWrite={canWrite}
-      />
-    );
-  }
+  const anioPedido = Number(anioRaw);
+  const mesPedido = Number(mesRaw);
+  const pedidoValido =
+    Number.isInteger(anioPedido) &&
+    anioPedido >= 2000 &&
+    anioPedido <= 2100 &&
+    Number.isInteger(mesPedido) &&
+    mesPedido >= 1 &&
+    mesPedido <= 12;
+  const anio = pedidoValido ? anioPedido : hoy.getFullYear();
+  const mes = pedidoValido ? mesPedido : hoy.getMonth() + 1;
+  const diaHoy = hoy.getFullYear() === anio && hoy.getMonth() + 1 === mes ? hoy.getDate() : null;
 
   const planesDb = await prisma.planRolServicio.findMany({
-    where: { anio: reciente.anio, mes: reciente.mes },
+    where: { anio, mes },
     orderBy: { rol: { sortOrder: "asc" } },
     include: {
       rol: true,
@@ -65,10 +56,10 @@ export default async function RolesServicioPage({
 
   const planes: PlanVista[] = planesDb.map((plan) => ({
     clave: plan.rol.clave,
-    nombre: plan.rol.nombre,
+    nombre: plan.nombre,
     curso: plan.rol.curso,
     turnoEnMarca:
-      plan.rol.papelNocturno === "MARCA_TURNO" || esRolConTurnoEnMarca(plan.rol.nombre),
+      plan.papelNocturno === "MARCA_TURNO" || esRolConTurnoEnMarca(plan.nombre),
     asignaciones: plan.asignaciones.map((asignacion) => ({
       id: asignacion.id,
       orden: asignacion.orden,
@@ -84,12 +75,13 @@ export default async function RolesServicioPage({
 
   return (
     <RolesServicioShell
-      anio={reciente.anio}
-      mes={reciente.mes}
+      anio={anio}
+      mes={mes}
       planes={planes}
       rolInicial={rolInicial}
       diaHoy={diaHoy}
       canWrite={canWrite}
+      sellado={planesDb.length > 0 && planesDb.every((plan) => plan.sellado)}
     />
   );
 }

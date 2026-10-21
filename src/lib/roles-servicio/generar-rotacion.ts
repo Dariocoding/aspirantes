@@ -18,6 +18,8 @@ export type RolParaCalendario = {
   marca?: string;
   /** Marca distinta por cupo dentro de este rol (T1, T2, T3). */
   marcasPorCupo?: string[];
+  /** Guardia diurna: no pisa un día que la persona ya tenga en otro diurno. */
+  diurno?: boolean;
 };
 
 export type GenerarCalendarioMultiRolInput = {
@@ -36,6 +38,11 @@ export type GenerarCalendarioMultiRolInput = {
   marcasPorCupo?: string[];
   /** Semilla para barajar (mismo seed → mismo resultado). */
   seed: number;
+  /**
+   * Días en los que la persona ya tiene otra guardia diurna
+   * (roles que no entran en este lote). Solo frenan roles con `diurno`.
+   */
+  ocupadasDiurnasPrevias?: ReadonlyArray<{ clave: string; dia: number }>;
 };
 
 export type MarcasPorAsignacion = {
@@ -129,6 +136,7 @@ export function generarCalendarioMultiRol(
     cursor: number;
     /** Último día de servicio por clave de persona (en este rol). */
     ultimoDiaPorClave: Map<string, number>;
+    diurno: boolean;
   };
 
   const roles: RolEstado[] = [];
@@ -151,7 +159,15 @@ export function generarCalendarioMultiRol(
       })),
       cursor: 0,
       ultimoDiaPorClave: new Map(),
+      diurno: rol.diurno === true,
     });
+  }
+
+  const previasDiurnas = new Map<number, Set<string>>();
+  for (const previa of input.ocupadasDiurnasPrevias ?? []) {
+    const set = previasDiurnas.get(previa.dia) ?? new Set<string>();
+    set.add(previa.clave);
+    previasDiurnas.set(previa.dia, set);
   }
 
   const marcasPorId = new Map<string, MarcaDia[]>();
@@ -183,6 +199,7 @@ export function generarCalendarioMultiRol(
           const slot = rol.slots[idx]!;
           if (usadasEnRolHoy.has(slot.clave)) continue;
           if (ocupadasHoy.has(slot.clave)) continue;
+          if (rol.diurno && previasDiurnas.get(dia)?.has(slot.clave)) continue;
 
           const ultimo = rol.ultimoDiaPorClave.get(slot.clave);
           const hueco = ultimo == null ? Number.POSITIVE_INFINITY : dia - ultimo;

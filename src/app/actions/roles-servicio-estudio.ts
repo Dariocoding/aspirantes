@@ -5,7 +5,6 @@ import { abrevJerarquiaAspirante } from "@src/lib/aspirantes/jerarquia-aspirante
 import { routes } from "@src/lib/apps/routes";
 import { requireWriter } from "@src/lib/auth/guards";
 import {
-  aplicarPapelNocturno,
   claveDeRol,
   esCategoriaRol,
   esPapelNocturno,
@@ -19,10 +18,6 @@ import {
   fusionarMarcas,
 } from "@src/lib/roles-servicio/generar-rotacion";
 import { marcasDesdeJson, type MarcaDia } from "@src/lib/roles-servicio/marcas";
-import {
-  loadOrdenNocturnoConfig,
-  saveOrdenNocturnoConfig,
-} from "@src/lib/roles-servicio/orden-del-dia/load-config-nocturno";
 import { foldBusqueda } from "@src/lib/text/fold";
 import { prisma } from "@src/lib/prisma";
 
@@ -124,9 +119,18 @@ export async function publicarEstudio(input: PublicarEstudioInput): Promise<Publ
   const roles = incluidos;
   const curso = input.curso.trim() || "CEFOA";
 
-  try {
-    let config = await loadOrdenNocturnoConfig();
+  const mesSellado = await prisma.planRolServicio.findFirst({
+    where: { anio, mes, sellado: true },
+    select: { id: true },
+  });
+  if (mesSellado) {
+    return {
+      ok: false,
+      message: "Este mes está sellado. Las guardias ya quedaron y un cambio de personal no las modifica.",
+    };
+  }
 
+  try {
     await prisma.$transaction(async (tx) => {
       const existentes = await tx.rolServicio.findMany({ select: { id: true, clave: true } });
       const clavesUsadas = new Set(existentes.map((rol) => rol.clave));
@@ -137,6 +141,9 @@ export async function publicarEstudio(input: PublicarEstudioInput): Promise<Publ
       type RolListo = {
         rolId: string;
         clave: string;
+        nombre: string;
+        categoria: CategoriaRol;
+        conAutoridad: boolean;
         incluido: boolean;
         cupos: number;
         papel: PapelNocturno;
@@ -154,19 +161,15 @@ export async function publicarEstudio(input: PublicarEstudioInput): Promise<Publ
           if (!idsConocidos.has(rol.id)) {
             throw new Error("Uno de los roles ya no existe. Vuelve a abrir el estudio.");
           }
-          const actualizado = await tx.rolServicio.update({
+          const actual = await tx.rolServicio.findUnique({
             where: { id: rol.id },
-            data: {
-              nombre,
-              categoria: rol.categoria,
-              conAutoridad: rol.conAutoridad,
-              papelNocturno: rol.papelNocturno,
-              activo: true,
-            },
             select: { id: true, clave: true },
           });
-          registroId = actualizado.id;
-          clave = actualizado.clave;
+          if (!actual) {
+            throw new Error("Uno de los roles ya no existe. Vuelve a abrir el estudio.");
+          }
+          registroId = actual.id;
+          clave = actual.clave;
         } else {
           clave = claveDeRol(nombre, curso);
           let n = 2;
@@ -192,10 +195,12 @@ export async function publicarEstudio(input: PublicarEstudioInput): Promise<Publ
           clave = creado.clave;
         }
 
-        config = aplicarPapelNocturno(config, clave, rol.papelNocturno);
         listos.push({
           rolId: registroId,
           clave,
+          nombre,
+          categoria: rol.categoria,
+          conAutoridad: rol.conAutoridad,
           incluido: rol.incluido,
           cupos,
           papel: rol.papelNocturno,
@@ -221,8 +226,21 @@ export async function publicarEstudio(input: PublicarEstudioInput): Promise<Publ
           where: {
             rolServicioId_anio_mes: { rolServicioId: rol.rolId, anio, mes },
           },
-          create: { rolServicioId: rol.rolId, anio, mes },
-          update: {},
+          create: {
+            rolServicioId: rol.rolId,
+            anio,
+            mes,
+            nombre: rol.nombre,
+            categoria: rol.categoria,
+            conAutoridad: rol.conAutoridad,
+            papelNocturno: rol.papel,
+          },
+          update: {
+            nombre: rol.nombre,
+            categoria: rol.categoria,
+            conAutoridad: rol.conAutoridad,
+            papelNocturno: rol.papel,
+          },
           select: { id: true },
         });
         const actuales = await tx.asignacionRolServicio.findMany({ where: { planId: plan.id } });
@@ -373,8 +391,8 @@ export async function publicarEstudio(input: PublicarEstudioInput): Promise<Publ
       }
     }, { timeout: 20000 });
 
-    await saveOrdenNocturnoConfig(config);
     revalidatePath(routes.personal.rolesServicio);
+    revalidatePath(routes.personal.rolesServicioEstudio);
     return { ok: true };
   } catch (error) {
     console.error("[roles-servicio-estudio]", error);
