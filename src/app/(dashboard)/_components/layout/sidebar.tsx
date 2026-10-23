@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { PersonalSearchDialog } from "@dashboard/_components/layout/personal-search-dialog";
 import { UserMenu } from "@dashboard/_components/layout/user-menu";
 import { CefoaCrest } from "@src/components/institution/cefoa-crest";
 import { FanbFlagStripe } from "@src/components/institution/fanb-flag-stripe";
@@ -22,7 +23,7 @@ import {
   INSTITUTION_SHORT_NAME,
 } from "@src/lib/branding";
 import { cn } from "@src/lib/utils";
-import { LayoutGrid, Menu } from "lucide-react";
+import { LayoutGrid, Menu, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -123,10 +124,27 @@ function SidebarBrand({ moduleTitle }: { moduleTitle: string }) {
   );
 }
 
+function SidebarSearchTrigger({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mb-2 flex w-full items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-left text-[13px] font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+    >
+      <Search className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+      <span className="min-w-0 flex-1 truncate">Buscar</span>
+      <kbd className="rounded border border-white/15 bg-black/30 px-1.5 py-px text-[10px] font-medium tracking-wide text-slate-400">
+        Ctrl K
+      </kbd>
+    </button>
+  );
+}
+
 function SidebarPanel({
   user,
   onNavLinkClick,
-}: SidebarProps & { onNavLinkClick?: () => void }) {
+  onOpenSearch,
+}: SidebarProps & { onNavLinkClick?: () => void; onOpenSearch?: () => void }) {
   const pathname = usePathname() ?? "";
   const appContext = resolveAppFromPathname(pathname);
   const auth = user.auth!;
@@ -140,6 +158,11 @@ function SidebarPanel({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SidebarBrand moduleTitle={brandTitle} />
+      {appContext === "personal" && onOpenSearch ? (
+        <div className="px-2 pt-2">
+          <SidebarSearchTrigger onClick={onOpenSearch} />
+        </div>
+      ) : null}
       <nav className="min-h-0 flex-1 basis-0 overflow-y-auto px-2 py-2">
         {appContext !== "hub" ? (
           <Link
@@ -195,6 +218,7 @@ function SidebarPanel({
 
 export function Sidebar({ user }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname() ?? "";
   const appContext = resolveAppFromPathname(pathname);
   const mobileTitle =
@@ -203,6 +227,22 @@ export function Sidebar({ user }: SidebarProps) {
       : appContext === "personal"
         ? APPS.personal.shortName
         : APPS.sistema.shortName;
+
+  useEffect(() => {
+    if (appContext !== "personal") setSearchOpen(false);
+  }, [appContext]);
+
+  useEffect(() => {
+    if (appContext !== "personal") return;
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [appContext]);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -239,6 +279,19 @@ export function Sidebar({ user }: SidebarProps) {
               </p>
               <p className="truncate text-xs text-slate-300">{mobileTitle}</p>
             </div>
+            {appContext === "personal" ? (
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "icon" }),
+                  "size-8 shrink-0 text-slate-100 hover:bg-white/5 hover:text-amber-50",
+                )}
+                aria-label="Buscar"
+              >
+                <Search className="h-4 w-4" aria-hidden />
+              </button>
+            ) : null}
             <p className="max-w-[36%] truncate text-right text-[11px] text-slate-400">
               {user.name ?? "Usuario"}
             </p>
@@ -258,6 +311,7 @@ export function Sidebar({ user }: SidebarProps) {
               <SidebarPanel
                 user={user}
                 onNavLinkClick={() => setMobileOpen(false)}
+                onOpenSearch={() => setSearchOpen(true)}
               />
             </div>
           </SheetContent>
@@ -265,8 +319,16 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
 
       <aside className="hidden h-full min-h-0 flex-1 flex-col md:flex">
-        <SidebarPanel user={user} />
+        <SidebarPanel user={user} onOpenSearch={() => setSearchOpen(true)} />
       </aside>
+      {appContext === "personal" && user.auth ? (
+        <PersonalSearchDialog
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          auth={user.auth}
+          onNavigate={() => setMobileOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
