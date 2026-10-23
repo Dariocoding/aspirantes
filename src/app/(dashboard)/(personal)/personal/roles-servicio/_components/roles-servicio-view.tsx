@@ -140,20 +140,21 @@ function SelectorMesCuadro({
   };
 
   const campo =
-    "h-7 rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-800";
+    "h-9 rounded-md border border-slate-200 bg-white px-2.5 text-sm text-slate-800";
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1">
-        <button
+      <div className="flex items-center gap-1.5">
+        <Button
           type="button"
-          className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          variant="outline"
+          size="icon-sm"
           aria-label="Mes anterior"
           onClick={() => ir(desplazarMes(vistaAnio, vistaMes, -1))}
         >
-          <ChevronLeft className="size-3.5" />
-        </button>
+          <ChevronLeft />
+        </Button>
         <select
-          className={cn(campo, "min-w-0 flex-1")}
+          className={cn(campo, "min-w-36")}
           aria-label="Mes"
           value={vistaMes}
           onChange={(event) => ir({ anio: vistaAnio, mes: Number(event.target.value) })}
@@ -165,7 +166,7 @@ function SelectorMesCuadro({
           ))}
         </select>
         <select
-          className={cn(campo, "w-[4.6rem]")}
+          className={cn(campo, "w-24")}
           aria-label="Año"
           value={vistaAnio}
           onChange={(event) => ir({ anio: Number(event.target.value), mes: vistaMes })}
@@ -176,14 +177,15 @@ function SelectorMesCuadro({
             </option>
           ))}
         </select>
-        <button
+        <Button
           type="button"
-          className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          variant="outline"
+          size="icon-sm"
           aria-label="Mes siguiente"
           onClick={() => ir(desplazarMes(vistaAnio, vistaMes, 1))}
         >
-          <ChevronRight className="size-3.5" />
-        </button>
+          <ChevronRight />
+        </Button>
       </div>
       {diaHoy != null || sellado ? (
         <p className="text-[11px] text-slate-500">
@@ -474,6 +476,13 @@ export function RolesServicioView({
 
   return (
     <div className="flex flex-col gap-4">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Roles de servicio</h1>
+          <p className="text-xs text-slate-500">Elige el mes del cuadro.</p>
+        </div>
+        <SelectorMesCuadro anio={anio} mes={mes} diaHoy={diaHoy} sellado={sellado} onIr={irAMes} />
+      </header>
       {planes.length === 0 ? (
         <Card className="shadow-sm ring-slate-200/80">
           <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
@@ -482,9 +491,6 @@ export function RolesServicioView({
             <p className="max-w-sm text-xs text-slate-500">
               Trae los roles de otro mes o arma este desde cero. Cada mes conserva los suyos.
             </p>
-            <div className="mt-2 w-full max-w-xs">
-              <SelectorMesCuadro anio={anio} mes={mes} diaHoy={diaHoy} sellado={sellado} onIr={irAMes} />
-            </div>
             {canWrite ? (
               <div className="mt-2 w-full max-w-md space-y-3">
                 <DuplicarRolesControl anio={anio} mes={mes} tieneRoles={false} sellado={sellado} />
@@ -539,13 +545,6 @@ export function RolesServicioView({
                     </Button>
                   </div>
                 </div>
-                <SelectorMesCuadro
-                  anio={anio}
-                  mes={mes}
-                  diaHoy={diaHoy}
-                  sellado={sellado}
-                  onIr={irAMes}
-                />
 
                 <div className={cn(!navAbierta && "hidden xl:block")}>
                   <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
