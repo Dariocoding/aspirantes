@@ -343,6 +343,22 @@ export function RolesServicioView({
     );
   };
 
+  const aplicarPersonaSacada = (args: { planClave: string; asignacionId: string }) => {
+    setPlanes((prev) =>
+      prev.map((plan) => {
+        if (plan.clave !== args.planClave) return plan;
+        return {
+          ...plan,
+          asignaciones: plan.asignaciones
+            .filter((asignacion) => asignacion.id !== args.asignacionId)
+            .map((asignacion, index) =>
+              asignacion.orden === index + 1 ? asignacion : { ...asignacion, orden: index + 1 },
+            ),
+        };
+      }),
+    );
+  };
+
   useEffect(() => {
     setRolClave(rolInicial);
     setDiaSeleccionado(diaHoy ?? 1);
@@ -976,6 +992,7 @@ export function RolesServicioView({
                           onSelectDia={abrirDiaDesdeCuadricula}
                           onMarcasChange={aplicarMarcasLocal}
                           onPersonaTraida={aplicarPersonaTraida}
+                          onPersonaSacada={aplicarPersonaSacada}
                           choqueAlMarcar={choqueAlMarcar}
                           nombreFijo={sellado}
                         />
@@ -1046,6 +1063,7 @@ export function RolesServicioView({
                       onSelectDia={abrirDiaDesdeCuadricula}
                       onMarcasChange={aplicarMarcasLocal}
                       onPersonaTraida={aplicarPersonaTraida}
+                      onPersonaSacada={aplicarPersonaSacada}
                       choqueAlMarcar={choqueAlMarcar}
                       nombreFijo={sellado}
                     />

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { ArrowRightLeft, Loader2, Search } from "lucide-react";
+import { ArrowRightLeft, Loader2, Search, UserMinus, UserPlus, X } from "lucide-react";
 import {
   buscarCensoParaGuardia,
+  sacarAsignacionDelRol,
   traerPersonaAGuardiaDia,
   type CandidatoCensoGuardia,
 } from "@src/app/actions/roles-servicio-cambio-persona";
@@ -11,6 +12,7 @@ import {
   actualizarMarcasAsignacion,
   actualizarMarcasLote,
 } from "@src/app/actions/roles-servicio-marcas";
+import { Button } from "@src/components/ui/button";
 import { Input } from "@src/components/ui/input";
 import {
   Dialog,
@@ -62,6 +64,8 @@ type Props = {
     origenDias: MarcaDia[];
     asignacion: AsignacionVista;
   }) => void;
+  /** Tras sacar a alguien del rol. */
+  onPersonaSacada?: (args: { planClave: string; asignacionId: string }) => void;
 };
 
 type MenuTurno = {
@@ -141,6 +145,7 @@ export function RolPlanilla({
   choqueAlMarcar,
   nombreFijo = false,
   onPersonaTraida,
+  onPersonaSacada,
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -344,6 +349,48 @@ export function RolPlanilla({
         },
       });
     });
+  };
+
+  const quitarMarcaDelDia = () => {
+    if (!cambioPersona || !canWrite || pending) return;
+    const marca = marcaDelDia(cambioPersona.asignacion, diaSeleccionado);
+    if (!marca) return;
+    const asignacion = cambioPersona.asignacion;
+    setCambioPersona(null);
+    guardarMarca(asignacion, diaSeleccionado, null);
+  };
+
+  const sacarDelRol = () => {
+    if (!cambioPersona || !canWrite || pending) return;
+    const nombre = nombreFila(cambioPersona.asignacion, nombreFijo);
+    const marcas = cambioPersona.asignacion.dias.length;
+    const aviso =
+      marcas > 0
+        ? `¿Sacar a ${nombre} del rol? Se quitan también sus ${marcas} marca${marcas === 1 ? "" : "s"} del mes.`
+        : `¿Sacar a ${nombre} del rol?`;
+    if (!window.confirm(aviso)) return;
+    const planClave = cambioPersona.plan.clave;
+    const asignacionId = cambioPersona.asignacion.id;
+    setCambioPersona(null);
+    startTransition(async () => {
+      const result = await sacarAsignacionDelRol(asignacionId);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setError(null);
+      onPersonaSacada?.({ planClave, asignacionId });
+    });
+  };
+
+  const etiquetaAccionRol = (destino: AsignacionVista): string => {
+    if (!cambioPersona) return "Elegir";
+    const marcaOrigen = marcaDelDia(cambioPersona.asignacion, diaSeleccionado);
+    const marcaDestino = marcaDelDia(destino, diaSeleccionado);
+    if (marcaOrigen && marcaDestino) return "Intercambiar";
+    if (marcaOrigen) return "Pasarle";
+    if (marcaDestino) return "Tomarle";
+    return "Asignar día";
   };
 
   const toggleCelda = (asignacion: AsignacionVista, dia: number) => {
@@ -618,28 +665,61 @@ export function RolPlanilla({
           if (!open) setCambioPersona(null);
         }}
       >
-        <DialogContent className="flex max-h-[min(100dvh-2rem,560px)] max-w-md flex-col gap-0 overflow-hidden p-0">
+        <DialogContent className="flex max-h-[min(100dvh-2rem,640px)] max-w-md flex-col gap-0 overflow-hidden p-0">
           <DialogHeader className="shrink-0 border-b border-slate-200 px-4 py-3">
             <DialogTitle className="flex items-center gap-2 text-base">
               <ArrowRightLeft className="size-4" aria-hidden />
               Cambiar guardia · día {diaSeleccionado}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              {cambioPersona ? (
-                <>
-                  {letraSemana(anio, mes, diaSeleccionado)} {diaSeleccionado} ·{" "}
+              Saca del rol, quita la marca del día, intercambia con alguien del rol o añade del censo
+              {subdivisionLabel ? ` (${subdivisionLabel})` : ""}.
+            </DialogDescription>
+          </DialogHeader>
+
+          {cambioPersona ? (
+            <div className="shrink-0 space-y-2 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold uppercase text-slate-950">
                   {nombreFila(cambioPersona.asignacion, nombreFijo)}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {letraSemana(anio, mes, diaSeleccionado)} {diaSeleccionado}
                   {marcaDelDia(cambioPersona.asignacion, diaSeleccionado)
                     ? ` · marca ${marcaDelDia(cambioPersona.asignacion, diaSeleccionado)}`
                     : " · sin marca ese día"}
-                  .
-                  {subdivisionLabel
-                    ? ` Busca también en el censo (${subdivisionLabel}).`
-                    : " Busca también en el censo a quien aún no está en este rol."}
-                </>
-              ) : null}
-            </DialogDescription>
-          </DialogHeader>
+                  {cambioPersona.asignacion.dias.length > 0
+                    ? ` · ${cambioPersona.asignacion.dias.length} día${cambioPersona.asignacion.dias.length === 1 ? "" : "s"} en el mes`
+                    : ""}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 text-xs"
+                  disabled={pending || !marcaDelDia(cambioPersona.asignacion, diaSeleccionado)}
+                  onClick={quitarMarcaDelDia}
+                >
+                  <X className="size-3.5" aria-hidden />
+                  Quitar marca del día
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  className="h-7 gap-1 text-xs"
+                  disabled={pending}
+                  onClick={sacarDelRol}
+                >
+                  <UserMinus className="size-3.5" aria-hidden />
+                  Sacar del rol
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="shrink-0 border-b border-slate-100 px-4 py-2">
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
@@ -648,18 +728,19 @@ export function RolPlanilla({
                 onChange={(event) => setFiltroCambio(event.target.value)}
                 placeholder={
                   subdivisionLabel
-                    ? `Buscar en el rol o censo (${subdivisionLabel})…`
-                    : "Buscar en el rol o en el censo…"
+                    ? `Buscar para intercambiar o añadir (${subdivisionLabel})…`
+                    : "Buscar para intercambiar o añadir…"
                 }
                 className="h-8 bg-white pl-8 text-xs"
                 autoFocus
               />
             </div>
           </div>
+
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="px-3 pt-2 pb-1">
               <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
-                En este rol
+                Intercambiar · en este rol
               </p>
             </div>
             <ul className="space-y-0.5 px-2 pb-2">
@@ -688,13 +769,7 @@ export function RolPlanilla({
                           </span>
                         </span>
                         <span className="shrink-0 text-[11px] font-medium text-teal-700">
-                          {marcaDelDia(cambioPersona!.asignacion, diaSeleccionado) && marca
-                            ? "Intercambiar"
-                            : marcaDelDia(cambioPersona!.asignacion, diaSeleccionado)
-                              ? "Pasarle"
-                              : marca
-                                ? "Tomarle"
-                                : "Asignar"}
+                          {etiquetaAccionRol(candidato)}
                         </span>
                       </button>
                     </li>
@@ -704,8 +779,9 @@ export function RolPlanilla({
             </ul>
 
             <div className="border-t border-slate-100 px-3 pt-2 pb-1">
-              <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
-                Del censo
+              <p className="flex items-center gap-1 text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                <UserPlus className="size-3" aria-hidden />
+                Añadir · del censo
                 {censoLabel && censoLabel !== "autoridades" ? ` · ${censoLabel}` : ""}
                 {censoPending ? " · buscando…" : ""}
               </p>
@@ -713,13 +789,13 @@ export function RolPlanilla({
             <ul className="space-y-0.5 px-2 pb-3">
               {censoLabel === "autoridades" ? (
                 <li className="px-3 py-3 text-center text-sm text-slate-500">
-                  Este rol es de autoridades; elige a alguien que ya esté en el rol.
+                  Este rol es de autoridades; intercambia con alguien que ya esté en el rol.
                 </li>
               ) : !subdivisionLabel &&
                 foldBusqueda(filtroCambio.trim()).length < 2 &&
                 filtroCambio.replace(/\D/g, "").length < 3 ? (
                 <li className="px-3 py-3 text-center text-sm text-slate-500">
-                  Escribe al menos 2 letras para buscar en el censo.
+                  Escribe al menos 2 letras para buscar a quién añadir.
                 </li>
               ) : censoPending && censo.length === 0 ? (
                 <li className="px-3 py-3 text-center text-sm text-slate-500">Cargando censo…</li>
@@ -744,11 +820,11 @@ export function RolPlanilla({
                         <span className="block text-[11px] text-slate-500">
                           {candidato.grado}
                           {candidato.peloton ? ` · ${candidato.peloton}` : ""}
-                          {" · no está en el rol"}
+                          {" · entra al rol"}
                         </span>
                       </span>
                       <span className="shrink-0 text-[11px] font-medium text-teal-700">
-                        Traer
+                        Añadir
                       </span>
                     </button>
                   </li>

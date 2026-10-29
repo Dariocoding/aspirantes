@@ -296,3 +296,50 @@ export async function traerPersonaAGuardiaDia(input: {
     origenDias,
   };
 }
+
+export type SacarDelRolResult = { ok: true } | { ok: false; message: string };
+
+/** Quita a la persona del rol del mes (y todas sus marcas). */
+export async function sacarAsignacionDelRol(asignacionId: string): Promise<SacarDelRolResult> {
+  const session = await auth();
+  const ctx = session?.user ? authContextFromSession(session) : null;
+  if (!session?.user || !ctx || !hasPermission(ctx, Permission.ASPIRANTES_WRITE)) {
+    return { ok: false, message: "Sin permiso para sacar personal del rol." };
+  }
+
+  const asignacion = await prisma.asignacionRolServicio.findUnique({
+    where: { id: asignacionId },
+    select: {
+      id: true,
+      planId: true,
+      plan: { select: { sellado: true } },
+    },
+  });
+  if (!asignacion) return { ok: false, message: "Asignación no encontrada." };
+  if (asignacion.plan.sellado) {
+    return { ok: false, message: "Este mes está sellado. El personal no se modifica." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.asignacionRolServicio.delete({ where: { id: asignacion.id } });
+    const restantes = await tx.asignacionRolServicio.findMany({
+      where: { planId: asignacion.planId },
+      orderBy: { orden: "asc" },
+      select: { id: true, orden: true },
+    });
+    for (let i = 0; i < restantes.length; i++) {
+      const item = restantes[i]!;
+      const orden = i + 1;
+      if (item.orden !== orden) {
+        await tx.asignacionRolServicio.update({
+          where: { id: item.id },
+          data: { orden },
+        });
+      }
+    }
+  });
+
+  revalidatePath(routes.personal.rolesServicio);
+  revalidatePath(routes.personal.rolesServicioEstudio);
+  return { ok: true };
+}
