@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
-import { actualizarMarcasAsignacion } from "@src/app/actions/roles-servicio-marcas";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { ArrowRightLeft, Loader2, Search } from "lucide-react";
+import {
+  actualizarMarcasAsignacion,
+  actualizarMarcasLote,
+} from "@src/app/actions/roles-servicio-marcas";
+import { Input } from "@src/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@src/components/ui/dialog";
 import {
   esColumnaAmarilla,
   letraSemana,
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
 import { listarTurnosEnMarca, planUsaTurnoEnMarca, turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
+import { foldBusqueda } from "@src/lib/text/fold";
 import { cn } from "@src/lib/utils";
 import type { AsignacionVista, PlanVista } from "./types";
 
@@ -44,6 +56,11 @@ type MenuTurno = {
   actual: string | null;
 };
 
+type CambioPersona = {
+  plan: PlanVista;
+  asignacion: AsignacionVista;
+};
+
 function marcaDelDia(asignacion: AsignacionVista, dia: number): string | null {
   return asignacion.dias.find((item) => item.dia === dia)?.marca ?? null;
 }
@@ -57,6 +74,41 @@ function nombreFila(asignacion: AsignacionVista, nombreFijo: boolean): string {
     return `${asignacion.autoridad.nombres} ${asignacion.autoridad.apellidos}`.toUpperCase();
   }
   return (asignacion.nombre.trim() || "—").toUpperCase();
+}
+
+function conMarcaEnDia(asignacion: AsignacionVista, dia: number, marca: string | null): MarcaDia[] {
+  const sinDia = asignacion.dias.filter((item) => item.dia !== dia);
+  if (!marca) return sinDia;
+  return [...sinDia, { dia, marca }].sort((a, b) => a.dia - b.dia);
+}
+
+/** Intercambia o mueve la marca del día entre dos personas del mismo rol. */
+function cambiosAlReemplazarDia(args: {
+  origen: AsignacionVista;
+  destino: AsignacionVista;
+  dia: number;
+  marcaPorDefecto: string;
+}): Array<{ asignacionId: string; dias: MarcaDia[] }> {
+  const marcaOrigen = marcaDelDia(args.origen, args.dia);
+  const marcaDestino = marcaDelDia(args.destino, args.dia);
+  if (!marcaOrigen && !marcaDestino) {
+    return [
+      {
+        asignacionId: args.destino.id,
+        dias: conMarcaEnDia(args.destino, args.dia, args.marcaPorDefecto),
+      },
+    ];
+  }
+  return [
+    {
+      asignacionId: args.origen.id,
+      dias: conMarcaEnDia(args.origen, args.dia, marcaDestino),
+    },
+    {
+      asignacionId: args.destino.id,
+      dias: conMarcaEnDia(args.destino, args.dia, marcaOrigen),
+    },
+  ];
 }
 
 export function RolPlanilla({
@@ -76,6 +128,8 @@ export function RolPlanilla({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuTurno | null>(null);
+  const [cambioPersona, setCambioPersona] = useState<CambioPersona | null>(null);
+  const [filtroCambio, setFiltroCambio] = useState("");
 
   useEffect(() => {
     if (!menu) return;
@@ -93,6 +147,26 @@ export function RolPlanilla({
     };
   }, [menu]);
 
+  const candidatosCambio = useMemo(() => {
+    if (!cambioPersona) return [];
+    const q = foldBusqueda(filtroCambio.trim());
+    return cambioPersona.plan.asignaciones
+      .filter((item) => item.id !== cambioPersona.asignacion.id)
+      .filter((item) => {
+        if (!q) return true;
+        const texto = foldBusqueda(
+          `${nombreFila(item, nombreFijo)} ${item.grado} ${item.nombre}`,
+        );
+        return texto.includes(q);
+      })
+      .sort((a, b) => {
+        const marcaA = marcaDelDia(a, diaSeleccionado) ? 0 : 1;
+        const marcaB = marcaDelDia(b, diaSeleccionado) ? 0 : 1;
+        if (marcaA !== marcaB) return marcaA - marcaB;
+        return a.orden - b.orden;
+      });
+  }, [cambioPersona, filtroCambio, nombreFijo, diaSeleccionado]);
+
   const guardarMarca = (asignacion: AsignacionVista, dia: number, marca: string | null) => {
     if (!canWrite || pending) return;
     if (marca) {
@@ -103,14 +177,60 @@ export function RolPlanilla({
         return;
       }
     }
-    const sinDia = asignacion.dias.filter((item) => item.dia !== dia);
-    const next: MarcaDia[] = marca
-      ? [...sinDia, { dia, marca }].sort((a, b) => a.dia - b.dia)
-      : sinDia;
+    const next = conMarcaEnDia(asignacion, dia, marca);
     onMarcasChange([{ asignacionId: asignacion.id, dias: next }]);
     setMenu(null);
     startTransition(async () => {
       const result = await actualizarMarcasAsignacion(asignacion.id, next);
+      if (!result.ok) setError(result.message);
+      else setError(null);
+    });
+  };
+
+  const abrirCambioPersona = (plan: PlanVista, asignacion: AsignacionVista) => {
+    if (!canWrite || pending) return;
+    setMenu(null);
+    setFiltroCambio("");
+    setError(null);
+    setCambioPersona({ plan, asignacion });
+  };
+
+  const aplicarCambioPersona = (destino: AsignacionVista) => {
+    if (!cambioPersona || !canWrite || pending) return;
+    const { asignacion: origen } = cambioPersona;
+    const dia = diaSeleccionado;
+    const marcaOrigen = marcaDelDia(origen, dia);
+    const marcaDestino = marcaDelDia(destino, dia);
+
+    // Quien recibe la guardia no debe chocar en otro diurno ese día.
+    if (marcaOrigen && !marcaDestino) {
+      const choque = choqueAlMarcar?.(destino, dia) ?? null;
+      if (choque) {
+        setError(choque);
+        return;
+      }
+    }
+    if (!marcaOrigen && marcaDestino) {
+      const choque = choqueAlMarcar?.(origen, dia) ?? null;
+      if (choque) {
+        setError(choque);
+        return;
+      }
+    }
+    if (!marcaOrigen && !marcaDestino) {
+      const choque = choqueAlMarcar?.(destino, dia) ?? null;
+      if (choque) {
+        setError(choque);
+        return;
+      }
+    }
+
+    const marcaPorDefecto = planUsaTurnoEnMarca(cambioPersona.plan) ? "T1" : "X";
+    const cambios = cambiosAlReemplazarDia({ origen, destino, dia, marcaPorDefecto });
+    onMarcasChange(cambios);
+    setCambioPersona(null);
+    startTransition(async () => {
+      const result = await actualizarMarcasLote(cambios);
       if (!result.ok) setError(result.message);
       else setError(null);
     });
@@ -246,12 +366,30 @@ export function RolPlanilla({
                   ) : null}
                   <td
                     className={cn(
-                      "sticky z-20 truncate border border-slate-400 bg-white px-2 py-0.5 font-medium uppercase",
+                      "sticky z-20 border border-slate-400 bg-white p-0 font-medium uppercase",
                       todosLosRoles ? "left-[8.5rem]" : "left-8",
+                      marcaDelDia(asignacion, diaSeleccionado) && "bg-teal-50",
                     )}
-                    title={nombreFila(asignacion, nombreFijo)}
                   >
-                    {nombreFila(asignacion, nombreFijo)}
+                    {canWrite ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => abrirCambioPersona(plan, asignacion)}
+                        className="block w-full truncate px-2 py-0.5 text-left hover:bg-teal-100/80 hover:underline disabled:opacity-60"
+                        title={`Cambiar quién monta el día ${diaSeleccionado}`}
+                        aria-label={`Cambiar persona de guardia el día ${diaSeleccionado}: ${nombreFila(asignacion, nombreFijo)}`}
+                      >
+                        {nombreFila(asignacion, nombreFijo)}
+                      </button>
+                    ) : (
+                      <span
+                        className="block truncate px-2 py-0.5"
+                        title={nombreFila(asignacion, nombreFijo)}
+                      >
+                        {nombreFila(asignacion, nombreFijo)}
+                      </span>
+                    )}
                   </td>
                   {dias.map((dia) => {
                     const marca = marcaDelDia(asignacion, dia);
@@ -363,6 +501,86 @@ export function RolPlanilla({
           </div>
         </>
       ) : null}
+
+      <Dialog
+        open={cambioPersona != null}
+        onOpenChange={(open) => {
+          if (!open) setCambioPersona(null);
+        }}
+      >
+        <DialogContent className="flex max-h-[min(100dvh-2rem,560px)] max-w-md flex-col gap-0 overflow-hidden p-0">
+          <DialogHeader className="shrink-0 border-b border-slate-200 px-4 py-3">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <ArrowRightLeft className="size-4" aria-hidden />
+              Cambiar guardia · día {diaSeleccionado}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {cambioPersona ? (
+                <>
+                  {letraSemana(anio, mes, diaSeleccionado)} {diaSeleccionado} ·{" "}
+                  {nombreFila(cambioPersona.asignacion, nombreFijo)}
+                  {marcaDelDia(cambioPersona.asignacion, diaSeleccionado)
+                    ? ` · marca ${marcaDelDia(cambioPersona.asignacion, diaSeleccionado)}`
+                    : " · sin marca ese día"}
+                  . Elige a quién pasarle o intercambiarle la guardia.
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="shrink-0 border-b border-slate-100 px-4 py-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={filtroCambio}
+                onChange={(event) => setFiltroCambio(event.target.value)}
+                placeholder="Buscar en este rol…"
+                className="h-8 bg-white pl-8 text-xs"
+                autoFocus
+              />
+            </div>
+          </div>
+          <ul className="min-h-0 flex-1 overflow-y-auto p-2">
+            {candidatosCambio.length === 0 ? (
+              <li className="px-3 py-6 text-center text-sm text-slate-500">
+                Nadie más en este rol coincide con la búsqueda.
+              </li>
+            ) : (
+              candidatosCambio.map((candidato) => {
+                const marca = marcaDelDia(candidato, diaSeleccionado);
+                return (
+                  <li key={candidato.id}>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => aplicarCambioPersona(candidato)}
+                      className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium uppercase text-slate-900">
+                          {nombreFila(candidato, nombreFijo)}
+                        </span>
+                        <span className="block text-[11px] text-slate-500">
+                          {candidato.grado}
+                          {marca ? ` · ya marca ${marca}` : " · libre ese día"}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[11px] font-medium text-teal-700">
+                        {marcaDelDia(cambioPersona!.asignacion, diaSeleccionado) && marca
+                          ? "Intercambiar"
+                          : marcaDelDia(cambioPersona!.asignacion, diaSeleccionado)
+                            ? "Pasarle"
+                            : marca
+                              ? "Tomarle"
+                              : "Asignar"}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </DialogContent>
+      </Dialog>
 
       {pending ? (
         <p className="flex items-center gap-1.5 px-3 py-2 text-[11px] text-slate-500">

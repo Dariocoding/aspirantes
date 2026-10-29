@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Download,
   EllipsisVertical,
+  Eraser,
   FileText,
   Files,
   Moon,
@@ -17,6 +18,7 @@ import {
   Users,
   Wand2,
 } from "lucide-react";
+import { limpiarAsignacionesSinMarcas } from "@src/app/actions/roles-servicio-limpiar";
 import { Button } from "@src/components/ui/button";
 import {
   Dialog,
@@ -152,9 +154,14 @@ export function RolesServicioAccionesMenu({
   onGenerarCalendario,
 }: Props) {
   const router = useRouter();
+  const [limpiarPending, startLimpiarTransition] = useTransition();
   const mesNombre = etiquetaMes(anio, mes);
   const hoy = fechaDeHoy();
   const seleccionado: FechaOrden = { anio, mes, dia: diaSeleccionado };
+  const sinGuardia = planes.reduce(
+    (total, plan) => total + plan.asignaciones.filter((persona) => persona.dias.length === 0).length,
+    0,
+  );
 
   const fechaAyer = sumarDias(hoy, -1);
   const fechaHoy = hoy;
@@ -225,6 +232,36 @@ export function RolesServicioAccionesMenu({
                       sellado
                         ? "Este mes está sellado. El siguiente mes se arma aparte."
                         : "Puestos y días de servicio."
+                    }
+                  />
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={sellado || limpiarPending || sinGuardia === 0}
+                  onClick={() => {
+                    const mensaje =
+                      sinGuardia === 1
+                        ? "Hay 1 persona en la lista sin ningún día de guardia. ¿Quieres quitarla?"
+                        : `Hay ${sinGuardia} personas en la lista sin ningún día de guardia. ¿Quieres quitarlas?`;
+                    if (!window.confirm(mensaje)) return;
+                    startLimpiarTransition(async () => {
+                      const result = await limpiarAsignacionesSinMarcas(anio, mes);
+                      if (!result.ok) {
+                        window.alert(result.message);
+                        return;
+                      }
+                      router.refresh();
+                    });
+                  }}
+                >
+                  <FilaMenu
+                    icon={<Eraser className="size-3.5" aria-hidden />}
+                    titulo={limpiarPending ? "Limpiando…" : "Quitar sin guardia"}
+                    detalle={
+                      sellado
+                        ? "Este mes está sellado."
+                        : sinGuardia === 0
+                          ? "Nadie está en la lista sin días."
+                          : `${sinGuardia} en lista sin montar guardia.`
                     }
                   />
                 </DropdownMenuItem>
