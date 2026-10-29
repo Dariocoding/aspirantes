@@ -199,12 +199,18 @@ export function RolPlanilla({
       setCensoPending(false);
       return;
     }
+
     const texto = filtroCambio.trim();
+    const sub = subdivisionDesdeNombreRol(cambioPersona.plan.nombre);
+    const tieneSubdivision = sub.sexo != null || sub.pelotonNumero != null;
     const q = foldBusqueda(texto);
     const cedula = texto.replace(/\D/g, "");
-    if (q.length < 2 && cedula.length < 3) {
+    const tieneConsulta = q.length >= 2 || cedula.length >= 3;
+
+    // Sin subdivisión y sin texto: no pedir el censo completo.
+    if (!tieneSubdivision && !tieneConsulta) {
       setCenso([]);
-      setCensoLabel(subdivisionLabel);
+      setCensoLabel("");
       setCensoPending(false);
       return;
     }
@@ -228,13 +234,13 @@ export function RolPlanilla({
         setCensoLabel(result.subdivision);
         setCenso(result.candidatos);
       });
-    }, 220);
+    }, tieneConsulta ? 220 : 0);
 
     return () => {
       cancelado = true;
       window.clearTimeout(timer);
     };
-  }, [cambioPersona, filtroCambio, anio, mes, subdivisionLabel]);
+  }, [cambioPersona, filtroCambio, anio, mes]);
 
   const guardarMarca = (asignacion: AsignacionVista, dia: number, marca: string | null) => {
     if (!canWrite || pending) return;
@@ -709,16 +715,18 @@ export function RolPlanilla({
                 <li className="px-3 py-3 text-center text-sm text-slate-500">
                   Este rol es de autoridades; elige a alguien que ya esté en el rol.
                 </li>
-              ) : foldBusqueda(filtroCambio.trim()).length < 2 &&
+              ) : !subdivisionLabel &&
+                foldBusqueda(filtroCambio.trim()).length < 2 &&
                 filtroCambio.replace(/\D/g, "").length < 3 ? (
                 <li className="px-3 py-3 text-center text-sm text-slate-500">
-                  Escribe al menos 2 letras para buscar a quien aún no monta en este rol
-                  {subdivisionLabel ? ` (${subdivisionLabel})` : ""}.
+                  Escribe al menos 2 letras para buscar en el censo.
                 </li>
-              ) : censo.length === 0 && !censoPending ? (
+              ) : censoPending && censo.length === 0 ? (
+                <li className="px-3 py-3 text-center text-sm text-slate-500">Cargando censo…</li>
+              ) : censo.length === 0 ? (
                 <li className="px-3 py-3 text-center text-sm text-slate-500">
-                  Nadie del censo coincide
-                  {censoLabel ? ` en ${censoLabel}` : ""}.
+                  Nadie más del censo queda fuera de este rol
+                  {censoLabel ? ` (${censoLabel})` : ""}.
                 </li>
               ) : (
                 censo.map((candidato) => (

@@ -90,7 +90,11 @@ export async function buscarCensoParaGuardia(input: {
   const texto = input.consulta.trim();
   const q = foldBusqueda(texto);
   const cedula = texto.replace(/\D/g, "");
-  if (q.length < 2 && cedula.length < 3) {
+  const tieneFiltroSubdivision = sub.sexo != null || sub.pelotonNumero != null;
+  const tieneConsulta = q.length >= 2 || cedula.length >= 3;
+
+  // Sin sexo/pelotón en el rol, hace falta buscar por nombre para no volcar el censo entero.
+  if (!tieneFiltroSubdivision && !tieneConsulta) {
     return { ok: true, subdivision: etiquetaSubdivision(sub), candidatos: [] };
   }
 
@@ -112,12 +116,12 @@ export async function buscarCensoParaGuardia(input: {
   const rows = await prisma.aspirante.findMany({
     where: {
       deletedAt: null,
-      OR: or,
+      ...(or.length > 0 ? { OR: or } : {}),
       ...(sub.sexo ? { sexo: sub.sexo } : {}),
       ...(sub.pelotonNumero != null ? { peloton: { numero: sub.pelotonNumero } } : {}),
       ...(yaEnRol.size > 0 ? { id: { notIn: [...yaEnRol] } } : {}),
     },
-    take: 20,
+    take: tieneConsulta ? 30 : 60,
     orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
     select: {
       id: true,
