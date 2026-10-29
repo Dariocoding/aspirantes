@@ -10,6 +10,7 @@ import {
   Download,
   EllipsisVertical,
   Eraser,
+  FileSpreadsheet,
   FileText,
   Files,
   Moon,
@@ -357,6 +358,23 @@ export function RolesServicioAccionesMenu({
           <DropdownMenuGroup>
             <DropdownMenuGroupLabel>Calendario</DropdownMenuGroupLabel>
             <DropdownMenuItem
+              nativeButton={false}
+              closeOnClick
+              disabled={planes.length === 0}
+              render={
+                <a
+                  href={`/api/roles-servicio/export/xlsx?anio=${anio}&mes=${mes}`}
+                  download
+                />
+              }
+            >
+              <FilaMenu
+                icon={<FileSpreadsheet className="size-3.5" aria-hidden />}
+                titulo="Exportar Excel"
+                detalle="Mismo formato oficial · personas y días del mes"
+              />
+            </DropdownMenuItem>
+            <DropdownMenuItem
               disabled={planes.length === 0}
               onClick={() => descargarRestantes(anio, mes, planes)}
             >
@@ -369,8 +387,8 @@ export function RolesServicioAccionesMenu({
             {canGenerar && onGenerarCalendario ? (
               <DropdownMenuItem onClick={onGenerarCalendario}>
                 <FilaMenu
-                icon={<CalendarPlus className="size-3.5" aria-hidden />}
-                titulo="Generar calendario"
+                  icon={<CalendarPlus className="size-3.5" aria-hidden />}
+                  titulo="Generar calendario"
                   detalle="Marcas automáticas de los roles con personal"
                 />
               </DropdownMenuItem>
