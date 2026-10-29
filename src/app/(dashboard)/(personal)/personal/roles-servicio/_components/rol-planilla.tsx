@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { ArrowRightLeft, Loader2, Search } from "lucide-react";
 import {
+  buscarCensoParaGuardia,
+  traerPersonaAGuardiaDia,
+  type CandidatoCensoGuardia,
+} from "@src/app/actions/roles-servicio-cambio-persona";
+import {
   actualizarMarcasAsignacion,
   actualizarMarcasLote,
 } from "@src/app/actions/roles-servicio-marcas";
@@ -19,6 +24,10 @@ import {
   letraSemana,
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
+import {
+  etiquetaSubdivision,
+  subdivisionDesdeNombreRol,
+} from "@src/lib/roles-servicio/subdivision-rol";
 import { listarTurnosEnMarca, planUsaTurnoEnMarca, turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
 import { foldBusqueda } from "@src/lib/text/fold";
 import { cn } from "@src/lib/utils";
@@ -46,6 +55,13 @@ type Props = {
   choqueAlMarcar?: (asignacion: AsignacionVista, dia: number) => string | null;
   /** Muestra el nombre guardado en la guardia, no el del censo. */
   nombreFijo?: boolean;
+  /** Tras traer a alguien del censo al rol y pasarle el día. */
+  onPersonaTraida?: (args: {
+    planClave: string;
+    origenAsignacionId: string;
+    origenDias: MarcaDia[];
+    asignacion: AsignacionVista;
+  }) => void;
 };
 
 type MenuTurno = {
@@ -124,12 +140,16 @@ export function RolPlanilla({
   onMarcasChange,
   choqueAlMarcar,
   nombreFijo = false,
+  onPersonaTraida,
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuTurno | null>(null);
   const [cambioPersona, setCambioPersona] = useState<CambioPersona | null>(null);
   const [filtroCambio, setFiltroCambio] = useState("");
+  const [censo, setCenso] = useState<CandidatoCensoGuardia[]>([]);
+  const [censoLabel, setCensoLabel] = useState("");
+  const [censoPending, setCensoPending] = useState(false);
 
   useEffect(() => {
     if (!menu) return;
@@ -146,6 +166,11 @@ export function RolPlanilla({
       window.removeEventListener("resize", cerrar);
     };
   }, [menu]);
+
+  const subdivisionLabel = useMemo(() => {
+    if (!cambioPersona) return "";
+    return etiquetaSubdivision(subdivisionDesdeNombreRol(cambioPersona.plan.nombre));
+  }, [cambioPersona]);
 
   const candidatosCambio = useMemo(() => {
     if (!cambioPersona) return [];
@@ -166,6 +191,50 @@ export function RolPlanilla({
         return a.orden - b.orden;
       });
   }, [cambioPersona, filtroCambio, nombreFijo, diaSeleccionado]);
+
+  useEffect(() => {
+    if (!cambioPersona) {
+      setCenso([]);
+      setCensoLabel("");
+      setCensoPending(false);
+      return;
+    }
+    const texto = filtroCambio.trim();
+    const q = foldBusqueda(texto);
+    const cedula = texto.replace(/\D/g, "");
+    if (q.length < 2 && cedula.length < 3) {
+      setCenso([]);
+      setCensoLabel(subdivisionLabel);
+      setCensoPending(false);
+      return;
+    }
+
+    let cancelado = false;
+    setCensoPending(true);
+    const timer = window.setTimeout(() => {
+      void buscarCensoParaGuardia({
+        anio,
+        mes,
+        claveRol: cambioPersona.plan.clave,
+        consulta: texto,
+      }).then((result) => {
+        if (cancelado) return;
+        setCensoPending(false);
+        if (!result.ok) {
+          setCenso([]);
+          setError(result.message);
+          return;
+        }
+        setCensoLabel(result.subdivision);
+        setCenso(result.candidatos);
+      });
+    }, 220);
+
+    return () => {
+      cancelado = true;
+      window.clearTimeout(timer);
+    };
+  }, [cambioPersona, filtroCambio, anio, mes, subdivisionLabel]);
 
   const guardarMarca = (asignacion: AsignacionVista, dia: number, marca: string | null) => {
     if (!canWrite || pending) return;
@@ -233,6 +302,41 @@ export function RolPlanilla({
       const result = await actualizarMarcasLote(cambios);
       if (!result.ok) setError(result.message);
       else setError(null);
+    });
+  };
+
+  const traerDelCenso = (candidato: CandidatoCensoGuardia) => {
+    if (!cambioPersona || !canWrite || pending) return;
+    const marcaPorDefecto = planUsaTurnoEnMarca(cambioPersona.plan) ? "T1" : "X";
+    const planClave = cambioPersona.plan.clave;
+    const origenId = cambioPersona.asignacion.id;
+    setCambioPersona(null);
+    startTransition(async () => {
+      const result = await traerPersonaAGuardiaDia({
+        origenAsignacionId: origenId,
+        aspiranteId: candidato.aspiranteId,
+        dia: diaSeleccionado,
+        marcaPorDefecto,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setError(null);
+      onPersonaTraida?.({
+        planClave,
+        origenAsignacionId: origenId,
+        origenDias: result.origenDias,
+        asignacion: {
+          id: result.asignacionId,
+          orden: result.orden,
+          grado: result.grado,
+          nombre: result.nombre,
+          dias: result.dias,
+          aspirante: result.aspirante,
+          autoridad: null,
+        },
+      });
     });
   };
 
@@ -522,7 +626,10 @@ export function RolPlanilla({
                   {marcaDelDia(cambioPersona.asignacion, diaSeleccionado)
                     ? ` · marca ${marcaDelDia(cambioPersona.asignacion, diaSeleccionado)}`
                     : " · sin marca ese día"}
-                  . Elige a quién pasarle o intercambiarle la guardia.
+                  .
+                  {subdivisionLabel
+                    ? ` Busca también en el censo (${subdivisionLabel}).`
+                    : " Busca también en el censo a quien aún no está en este rol."}
                 </>
               ) : null}
             </DialogDescription>
@@ -533,52 +640,114 @@ export function RolPlanilla({
               <Input
                 value={filtroCambio}
                 onChange={(event) => setFiltroCambio(event.target.value)}
-                placeholder="Buscar en este rol…"
+                placeholder={
+                  subdivisionLabel
+                    ? `Buscar en el rol o censo (${subdivisionLabel})…`
+                    : "Buscar en el rol o en el censo…"
+                }
                 className="h-8 bg-white pl-8 text-xs"
                 autoFocus
               />
             </div>
           </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto p-2">
-            {candidatosCambio.length === 0 ? (
-              <li className="px-3 py-6 text-center text-sm text-slate-500">
-                Nadie más en este rol coincide con la búsqueda.
-              </li>
-            ) : (
-              candidatosCambio.map((candidato) => {
-                const marca = marcaDelDia(candidato, diaSeleccionado);
-                return (
-                  <li key={candidato.id}>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="px-3 pt-2 pb-1">
+              <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                En este rol
+              </p>
+            </div>
+            <ul className="space-y-0.5 px-2 pb-2">
+              {candidatosCambio.length === 0 ? (
+                <li className="px-3 py-3 text-center text-sm text-slate-500">
+                  Nadie más de este rol coincide.
+                </li>
+              ) : (
+                candidatosCambio.map((candidato) => {
+                  const marca = marcaDelDia(candidato, diaSeleccionado);
+                  return (
+                    <li key={candidato.id}>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => aplicarCambioPersona(candidato)}
+                        className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium uppercase text-slate-900">
+                            {nombreFila(candidato, nombreFijo)}
+                          </span>
+                          <span className="block text-[11px] text-slate-500">
+                            {candidato.grado}
+                            {marca ? ` · ya marca ${marca}` : " · libre ese día"}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-[11px] font-medium text-teal-700">
+                          {marcaDelDia(cambioPersona!.asignacion, diaSeleccionado) && marca
+                            ? "Intercambiar"
+                            : marcaDelDia(cambioPersona!.asignacion, diaSeleccionado)
+                              ? "Pasarle"
+                              : marca
+                                ? "Tomarle"
+                                : "Asignar"}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+
+            <div className="border-t border-slate-100 px-3 pt-2 pb-1">
+              <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                Del censo
+                {censoLabel && censoLabel !== "autoridades" ? ` · ${censoLabel}` : ""}
+                {censoPending ? " · buscando…" : ""}
+              </p>
+            </div>
+            <ul className="space-y-0.5 px-2 pb-3">
+              {censoLabel === "autoridades" ? (
+                <li className="px-3 py-3 text-center text-sm text-slate-500">
+                  Este rol es de autoridades; elige a alguien que ya esté en el rol.
+                </li>
+              ) : foldBusqueda(filtroCambio.trim()).length < 2 &&
+                filtroCambio.replace(/\D/g, "").length < 3 ? (
+                <li className="px-3 py-3 text-center text-sm text-slate-500">
+                  Escribe al menos 2 letras para buscar a quien aún no monta en este rol
+                  {subdivisionLabel ? ` (${subdivisionLabel})` : ""}.
+                </li>
+              ) : censo.length === 0 && !censoPending ? (
+                <li className="px-3 py-3 text-center text-sm text-slate-500">
+                  Nadie del censo coincide
+                  {censoLabel ? ` en ${censoLabel}` : ""}.
+                </li>
+              ) : (
+                censo.map((candidato) => (
+                  <li key={candidato.aspiranteId}>
                     <button
                       type="button"
-                      disabled={pending}
-                      onClick={() => aplicarCambioPersona(candidato)}
+                      disabled={pending || censoPending}
+                      onClick={() => traerDelCenso(candidato)}
                       className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-60"
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium uppercase text-slate-900">
-                          {nombreFila(candidato, nombreFijo)}
+                          {candidato.nombres} {candidato.apellidos}
                         </span>
                         <span className="block text-[11px] text-slate-500">
                           {candidato.grado}
-                          {marca ? ` · ya marca ${marca}` : " · libre ese día"}
+                          {candidato.peloton ? ` · ${candidato.peloton}` : ""}
+                          {" · no está en el rol"}
                         </span>
                       </span>
                       <span className="shrink-0 text-[11px] font-medium text-teal-700">
-                        {marcaDelDia(cambioPersona!.asignacion, diaSeleccionado) && marca
-                          ? "Intercambiar"
-                          : marcaDelDia(cambioPersona!.asignacion, diaSeleccionado)
-                            ? "Pasarle"
-                            : marca
-                              ? "Tomarle"
-                              : "Asignar"}
+                        Traer
                       </span>
                     </button>
                   </li>
-                );
-              })
-            )}
-          </ul>
+                ))
+              )}
+            </ul>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -318,6 +318,31 @@ export function RolesServicioView({
     );
   };
 
+  const aplicarPersonaTraida = (args: {
+    planClave: string;
+    origenAsignacionId: string;
+    origenDias: MarcaDia[];
+    asignacion: AsignacionVista;
+  }) => {
+    setPlanes((prev) =>
+      prev.map((plan) => {
+        if (plan.clave !== args.planClave) return plan;
+        const sinOrigenActualizado = plan.asignaciones.map((asignacion) =>
+          asignacion.id === args.origenAsignacionId
+            ? { ...asignacion, dias: args.origenDias }
+            : asignacion,
+        );
+        const idx = sinOrigenActualizado.findIndex((item) => item.id === args.asignacion.id);
+        if (idx >= 0) {
+          const next = [...sinOrigenActualizado];
+          next[idx] = args.asignacion;
+          return { ...plan, asignaciones: next };
+        }
+        return { ...plan, asignaciones: [...sinOrigenActualizado, args.asignacion] };
+      }),
+    );
+  };
+
   useEffect(() => {
     setRolClave(rolInicial);
     setDiaSeleccionado(diaHoy ?? 1);
@@ -950,6 +975,7 @@ export function RolesServicioView({
                           canWrite={puedeEditar}
                           onSelectDia={abrirDiaDesdeCuadricula}
                           onMarcasChange={aplicarMarcasLocal}
+                          onPersonaTraida={aplicarPersonaTraida}
                           choqueAlMarcar={choqueAlMarcar}
                           nombreFijo={sellado}
                         />
@@ -1019,6 +1045,7 @@ export function RolesServicioView({
                       canWrite={puedeEditar}
                       onSelectDia={abrirDiaDesdeCuadricula}
                       onMarcasChange={aplicarMarcasLocal}
+                      onPersonaTraida={aplicarPersonaTraida}
                       choqueAlMarcar={choqueAlMarcar}
                       nombreFijo={sellado}
                     />
