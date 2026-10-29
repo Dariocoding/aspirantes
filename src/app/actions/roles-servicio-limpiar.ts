@@ -44,7 +44,7 @@ export async function limpiarAsignacionesSinMarcas(
       id: true,
       asignaciones: {
         orderBy: { orden: "asc" },
-        select: { id: true, dias: true },
+        select: { id: true, orden: true, dias: true },
       },
     },
   });
