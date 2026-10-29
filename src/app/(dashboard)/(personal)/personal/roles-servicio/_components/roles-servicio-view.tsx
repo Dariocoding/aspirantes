@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
+  ArrowDownUp,
   CalendarDays,
   CalendarRange,
   ChevronLeft,
@@ -20,6 +21,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { actualizarMarcasLote } from "@src/app/actions/roles-servicio-marcas";
+import { ordenarRolEscalera } from "@src/app/actions/roles-servicio-ordenar";
 import { sellarMesRoles } from "@src/app/actions/roles-servicio-sello";
 import { Badge } from "@src/components/ui/badge";
 import { Button, buttonVariants } from "@src/components/ui/button";
@@ -48,6 +50,7 @@ import {
   type MarcaDia,
 } from "@src/lib/roles-servicio/marcas";
 import { turnoDesdeMarca } from "@src/lib/roles-servicio/turnos-marca";
+import { ordenarAsignacionesEscalera } from "@src/lib/roles-servicio/ordenar-escalera";
 import {
   aPlanDiurno,
   detectarRepeticionesDiurnas,
@@ -281,6 +284,7 @@ export function RolesServicioView({
   const [verificarOpen, setVerificarOpen] = useState(false);
   const [generarPending, startGenerarTransition] = useTransition();
   const [verificarPending, startVerificarTransition] = useTransition();
+  const [escaleraPending, startEscaleraTransition] = useTransition();
   const [selloAbierto, setSelloAbierto] = useState(false);
   const [selloPending, startSelloTransition] = useTransition();
   const [selloError, setSelloError] = useState<string | null>(null);
@@ -357,6 +361,29 @@ export function RolesServicioView({
         };
       }),
     );
+  };
+
+  const aplicarEscaleraLocal = (clave: string) => {
+    setPlanes((prev) =>
+      prev.map((plan) =>
+        plan.clave === clave
+          ? { ...plan, asignaciones: ordenarAsignacionesEscalera(plan.asignaciones) }
+          : plan,
+      ),
+    );
+  };
+
+  const ordenarEscalera = () => {
+    if (!planActivo || !puedeEditar || escaleraPending) return;
+    const clave = planActivo.clave;
+    aplicarEscaleraLocal(clave);
+    startEscaleraTransition(async () => {
+      const result = await ordenarRolEscalera(anio, mes, clave);
+      if (!result.ok) {
+        window.alert(result.message);
+      }
+      router.refresh();
+    });
   };
 
   useEffect(() => {
@@ -943,6 +970,20 @@ export function RolesServicioView({
                       ) : null}
                     </div>
                     <div className="flex w-full max-w-md flex-wrap items-center gap-2 lg:justify-end">
+                      {puedeEditar && planActivo ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1.5 text-xs"
+                          disabled={escaleraPending || planActivo.asignaciones.length < 2}
+                          onClick={ordenarEscalera}
+                          title="Ordena las filas por el primer día de guardia (diagonal)"
+                        >
+                          <ArrowDownUp className="size-3.5" aria-hidden />
+                          {escaleraPending ? "Ordenando…" : "Escalera"}
+                        </Button>
+                      ) : null}
                       {cuadriculaDesborda ? (
                         <Button
                           type="button"
@@ -1033,14 +1074,30 @@ export function RolesServicioView({
                     Vista ampliada tipo Excel · {etiquetaMes(anio, mes)} · {filasCuadricula.length}{" "}
                     personas
                   </DialogDescription>
-                  <div className="relative mt-2 max-w-xs">
-                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
-                    <Input
-                      value={busqueda}
-                      onChange={(e) => setBusqueda(e.target.value)}
-                      placeholder="Filtrar personal…"
-                      className="h-8 bg-white pl-8 text-xs"
-                    />
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {puedeEditar && planActivo ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1.5 text-xs"
+                        disabled={escaleraPending || planActivo.asignaciones.length < 2}
+                        onClick={ordenarEscalera}
+                        title="Ordena las filas por el primer día de guardia (diagonal)"
+                      >
+                        <ArrowDownUp className="size-3.5" aria-hidden />
+                        {escaleraPending ? "Ordenando…" : "Escalera"}
+                      </Button>
+                    ) : null}
+                    <div className="relative min-w-0 flex-1 basis-40 max-w-xs">
+                      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        placeholder="Filtrar personal…"
+                        className="h-8 bg-white pl-8 text-xs"
+                      />
+                    </div>
                   </div>
                 </DialogHeader>
                 <div className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain">
