@@ -90,6 +90,7 @@ export type AspiranteQuickInitial = {
   correo: string | null;
   direccion: string | null;
   pelotonId: string | null;
+  codigoBinomio: string | null;
   contactoNombre: string | null;
   contactoParentesco: string | null;
   contactoTelefono: string | null;
@@ -452,6 +453,18 @@ function AspiranteQuickForm({
                   ))}
                 </select>
                 <FieldError message={state.errors.pelotonId} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="quick-codigo-binomio">Código binomio / cazare</Label>
+                <input
+                  id="quick-codigo-binomio"
+                  name="codigoBinomio"
+                  defaultValue={initial?.codigoBinomio ?? ""}
+                  placeholder="Ej. A01, B15"
+                  maxLength={8}
+                  className={`${selectClass} uppercase`}
+                />
+                <FieldError message={state.errors.codigoBinomio} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="quick-padres-ve">Padres venezolanos</Label>

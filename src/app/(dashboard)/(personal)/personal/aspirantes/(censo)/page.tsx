@@ -24,6 +24,7 @@ import { routes } from "@src/lib/apps/routes";
 import { prisma } from "@src/lib/prisma";
 import type { Prisma } from "@src/generated/prisma";
 import { labelPeloton } from "@src/lib/pelotones";
+import { codigoCompaneroBinomio } from "@src/lib/aspirantes/binomio";
 
 const PAGE_SIZE = 10;
 
@@ -87,6 +88,9 @@ function toCensusRow(
     calificacionAdmision: a.calificacionAdmision,
     pelotonId: a.pelotonId,
     pelotonLabel: a.peloton ? labelPeloton(a.peloton) : null,
+    codigoBinomio: a.codigoBinomio,
+    codigoCazare: null,
+    companeroBinomioLabel: null,
     telefono: a.telefono,
     correo: a.correo,
     direccion: a.direccion,
@@ -290,7 +294,41 @@ export default async function AspirantesPage({
     }
   }
 
-  const censusRows = aspirantes.map(toCensusRow);
+  const codigosCompaneroNecesarios = [
+    ...new Set(
+      aspirantes
+        .map((a) => codigoCompaneroBinomio(a.codigoBinomio))
+        .filter((c): c is string => Boolean(c)),
+    ),
+  ];
+  const companerosExtra =
+    codigosCompaneroNecesarios.length > 0
+      ? await prisma.aspirante.findMany({
+          where: {
+            convocatoriaId: convocatoriaFiltroId,
+            deletedAt: null,
+            codigoBinomio: { in: codigosCompaneroNecesarios },
+          },
+          select: { codigoBinomio: true, nombres: true, apellidos: true },
+        })
+      : [];
+  const porCodigoBinomio = new Map(
+    [
+      ...aspirantesOrdenados.filter((a) => a.codigoBinomio),
+      ...companerosExtra.filter((a) => a.codigoBinomio),
+    ].map((a) => [a.codigoBinomio!, `${a.nombres} ${a.apellidos}`.trim()]),
+  );
+  const censusRows = aspirantes.map((a) => {
+    const row = toCensusRow(a);
+    const codigoCazare = codigoCompaneroBinomio(a.codigoBinomio);
+    return {
+      ...row,
+      codigoCazare,
+      companeroBinomioLabel: codigoCazare
+        ? (porCodigoBinomio.get(codigoCazare) ?? null)
+        : null,
+    };
+  });
   const censusGrouping = {
     groupByCarrera,
     groupByNacimientoMes,

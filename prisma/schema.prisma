@@ -385,6 +385,8 @@ model Aspirante {
   /// Pelotón del curso al que pertenece el aspirante (misma convocatoria).
   pelotonId             String?
   peloton               Peloton?             @relation(fields: [pelotonId], references: [id], onDelete: SetNull)
+  /// Código de binomio / cazare (ej. A01, B15). Pareja = impar/par consecutivo (A01↔A02).
+  codigoBinomio         String?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   datosFisicos          DatosFisicosMedicos?
@@ -430,11 +432,13 @@ model Aspirante {
   deletedByEmail           String?
 
   @@unique([cedula, convocatoriaId])
+  @@unique([convocatoriaId, codigoBinomio])
   @@index([calificacionAdmision])
   @@index([unidadPostulante])
   @@index([condicionMilitar])
   @@index([jerarquia])
   @@index([pelotonId])
+  @@index([codigoBinomio])
   @@index([deletedAt])
 }
 

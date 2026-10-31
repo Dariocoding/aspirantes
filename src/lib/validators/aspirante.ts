@@ -21,12 +21,25 @@ import {
 } from "@src/lib/aspirantes/tallas-familia";
 import { TIPO_ESTUDIO_ALL_VALUES } from "@src/lib/aspirantes/tipo-estudio";
 import { ESTATURA_M_MAX, ESTATURA_M_MIN, homologarEstaturaM } from "@src/lib/aspirantes/medidas";
+import { normalizarCodigoBinomio } from "@src/lib/aspirantes/binomio";
 import {
   ageFromBirthDate,
   FECHA_NACIMIENTO_PENDIENTE,
   hasRealBirthDate,
   parseDateInputLocal,
 } from "@src/lib/date";
+
+/** Vacío → null; `a1` → `A01`; texto no vacío inválido → marcador para el refine. */
+const codigoBinomioField = z.preprocess((v) => {
+  if (v === null || v === undefined || String(v).trim() === "") return null;
+  const n = normalizarCodigoBinomio(String(v));
+  return n ?? "__INVALID__";
+}, z.union([
+  z.null(),
+  z
+    .string()
+    .regex(/^[A-Z]\d{2}$/, "Código binomio inválido (ej. A01, B15)"),
+]));
 
 const sexoEnum = z.enum(["MASCULINO", "FEMENINO"]);
 const calificacionAdmisionEnum = z.enum(["APTO", "NO_APTO", "EN_EVALUACION"]);
@@ -318,6 +331,7 @@ const aspiranteStaffBaseSchema = z.object({
     (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
     z.string().min(1).nullable(),
   ),
+  codigoBinomio: codigoBinomioField,
   estaturaCm: optionalEstaturaCm(),
   pesoKg: optionalFloat(400),
   tensionArterial: z.string().trim().max(20).optional().nullable(),
@@ -387,6 +401,7 @@ export const aspiranteQuickUpdateSchema = z
       (v) => (v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim()),
       z.string().min(1).nullable(),
     ),
+    codigoBinomio: codigoBinomioField,
     hijosCantidad: z.preprocess(
       (v) => (v === "" || v === null || v === undefined ? 0 : v),
       z.coerce.number().int().min(0).max(30),

@@ -104,6 +104,7 @@ export default async function AspirantePerfilPage({
                 correo: a.correo,
                 direccion: a.direccion,
                 pelotonId: a.pelotonId,
+                codigoBinomio: a.codigoBinomio,
                 contactoNombre: c?.nombre ?? null,
                 contactoParentesco: c?.parentesco ?? null,
                 contactoTelefono: c?.telefono ?? null,

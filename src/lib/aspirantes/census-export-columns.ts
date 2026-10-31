@@ -40,6 +40,22 @@ const BASE_EXPORT_COLUMNS: readonly CensusExportColumn[] = [
   { id: "carrera", label: "Carrera", group: "Postulación", width: 34, align: "left" },
   { id: "calificacion", label: "Calificación", group: "Postulación", width: 14, align: "center" },
   { id: "peloton", label: "Pelotón", group: "Postulación", width: 16, align: "left" },
+  { id: "codigoBinomio", label: "Código binomio", group: "Postulación", width: 14, align: "center" },
+  {
+    id: "codigoCazare",
+    label: "Código cazare",
+    group: "Postulación",
+    width: 14,
+    align: "center",
+  },
+  { id: "companeroBinomio", label: "Compañero / cazare", group: "Postulación", width: 36, align: "left" },
+  {
+    id: "nombreConCompaneroBinomio",
+    label: "Nombre completo con cazare",
+    group: "Postulación",
+    width: 52,
+    align: "left",
+  },
   { id: "telefono", label: "Teléfono", group: "Contacto", width: 14, align: "center" },
   { id: "correo", label: "Correo", group: "Contacto", width: 24, align: "left" },
   { id: "direccion", label: "Dirección", group: "Contacto", width: 28, align: "left" },
@@ -84,7 +100,13 @@ export const CENSUS_EXPORT_COLUMNS: readonly CensusExportColumn[] = [...BASE_EXP
 export const CENSUS_EXPORT_DEFAULT_IDS = ["numero", "nombreCompleto", "cedula"] as const;
 
 /** Columnas de exportación que no se escriben al importar. */
-export const CENSUS_IMPORT_SKIP_IDS = new Set(["numero", "edad"]);
+export const CENSUS_IMPORT_SKIP_IDS = new Set([
+  "numero",
+  "edad",
+  "codigoCazare",
+  "companeroBinomio",
+  "nombreConCompaneroBinomio",
+]);
 
 const COLUMN_BY_ID = new Map(CENSUS_EXPORT_COLUMNS.map((c) => [c.id, c]));
 
@@ -152,6 +174,16 @@ HEADER_TO_COLUMN_ID.set("condicionmilitar", "condicion");
 HEADER_TO_COLUMN_ID.set("jerarquia", "jerarquia");
 HEADER_TO_COLUMN_ID.set("aspofic", "jerarquia");
 HEADER_TO_COLUMN_ID.set("distinguido", "jerarquia");
+HEADER_TO_COLUMN_ID.set("codigobinomio", "codigoBinomio");
+HEADER_TO_COLUMN_ID.set("binomio", "codigoBinomio");
+HEADER_TO_COLUMN_ID.set("codigocazare", "codigoCazare");
+HEADER_TO_COLUMN_ID.set("cazare", "codigoCazare");
+HEADER_TO_COLUMN_ID.set("codigocompanero", "codigoCazare");
+HEADER_TO_COLUMN_ID.set("companerobinomio", "companeroBinomio");
+HEADER_TO_COLUMN_ID.set("parejabinomio", "companeroBinomio");
+HEADER_TO_COLUMN_ID.set("nombrecompletocomcompanero", "nombreConCompaneroBinomio");
+HEADER_TO_COLUMN_ID.set("nombreconcompanerobinomio", "nombreConCompaneroBinomio");
+HEADER_TO_COLUMN_ID.set("nombrecompletoconcazare", "nombreConCompaneroBinomio");
 HEADER_TO_COLUMN_ID.set("religion", "religion");
 HEADER_TO_COLUMN_ID.set("credo", "religion");
 HEADER_TO_COLUMN_ID.set("deporte", "deporte");

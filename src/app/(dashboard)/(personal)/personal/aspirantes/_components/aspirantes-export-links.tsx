@@ -210,6 +210,23 @@ export function AspirantesExportLinks({
                   <span className="text-xs text-muted-foreground">Por mes: nombre, cédula, nacimiento y edad</span>
                 </span>
               </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={Boolean(busyLabel)}
+                onClick={() =>
+                  void runDownload(
+                    `${base}?format=xlsx&variant=binomios&${membreteQuery()}${suffix}`,
+                    "binomios-aspirantes.xlsx",
+                    "el Excel de binomios",
+                  )
+                }
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">Binomios / cazares</span>
+                  <span className="text-xs text-muted-foreground">
+                    Pareja en la misma fila con códigos al lado
+                  </span>
+                </span>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

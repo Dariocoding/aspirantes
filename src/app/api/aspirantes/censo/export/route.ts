@@ -16,9 +16,11 @@ import {
   normalizeExcelTitle,
 } from "@src/lib/excel/excel-export-name";
 import { buildAspirantesCumpleanosXlsxBuffer } from "@src/lib/excel/build-aspirantes-cumpleanos-xlsx";
+import { buildAspirantesBinomiosXlsxBuffer } from "@src/lib/excel/build-aspirantes-binomios-xlsx";
 import { isMembreteLogoKind, MEMBRETE_NONE_ID, type MembreteSpec } from "@src/lib/membrete";
 import { ageFromBirthDate } from "@src/lib/date";
 import { labelPeloton } from "@src/lib/pelotones";
+import { codigoCompaneroBinomio } from "@src/lib/aspirantes/binomio";
 import { AspirantesCensoPdfDocument } from "@src/lib/pdf/aspirantes-censo-document";
 import { AspiranteFichasTecnicasBulkPdfDocument } from "@src/lib/pdf/aspirante-ficha-tecnica-document";
 import { buildDocumentosAcademicosBulkPdf } from "@src/lib/pdf/build-documentos-academicos-bulk-pdf";
@@ -96,10 +98,15 @@ export async function GET(request: Request) {
       : format === "pdf" && variantRaw === "documentos-academicos"
         ? "documentos-academicos"
         : "censo";
-  const xlsxVariant = format === "xlsx" && variantRaw === "cumpleanos" ? "cumpleanos" : "censo";
+  const xlsxVariant =
+    format === "xlsx" && variantRaw === "cumpleanos"
+      ? "cumpleanos"
+      : format === "xlsx" && variantRaw === "binomios"
+        ? "binomios"
+        : "censo";
   if (format === "xlsx" && variantRaw && xlsxVariant === "censo" && variantRaw !== "censo") {
     return NextResponse.json(
-      { message: "Parámetro variant inválido (use censo o cumpleanos)" },
+      { message: "Parámetro variant inválido (use censo, cumpleanos o binomios)" },
       { status: 400 },
     );
   }
@@ -191,8 +198,18 @@ export async function GET(request: Request) {
 
   const generatedAt = new Date();
 
+  const porCodigoBinomio = new Map(
+    rows
+      .filter((a) => a.codigoBinomio)
+      .map((a) => [a.codigoBinomio!, `${a.nombres} ${a.apellidos}`.trim()]),
+  );
+
   const exportRows = rows.map((a) => {
     const contacto = a.contactos[0];
+    const codigoCazare = codigoCompaneroBinomio(a.codigoBinomio);
+    const companeroBinomioLabel = codigoCazare
+      ? (porCodigoBinomio.get(codigoCazare) ?? null)
+      : null;
     return {
       nombres: a.nombres,
       apellidos: a.apellidos,
@@ -211,6 +228,9 @@ export async function GET(request: Request) {
       lugarNacimiento: a.lugarNacimiento ?? "",
       calificacionAdmision: a.calificacionAdmision,
       pelotonLabel: a.peloton ? labelPeloton(a.peloton) : null,
+      codigoBinomio: a.codigoBinomio,
+      codigoCazare,
+      companeroBinomioLabel,
       telefono: a.telefono,
       correo: a.correo,
       direccion: a.direccion,
@@ -262,7 +282,9 @@ export async function GET(request: Request) {
       format === "xlsx"
         ? xlsxVariant === "cumpleanos"
           ? "CENSO_EXPORT_XLSX_CUMPLEANOS"
-          : "CENSO_EXPORT_XLSX"
+          : xlsxVariant === "binomios"
+            ? "CENSO_EXPORT_XLSX_BINOMIOS"
+            : "CENSO_EXPORT_XLSX"
         : pdfVariant === "fichas-tecnicas"
           ? "CENSO_EXPORT_PDF_FICHAS_TECNICAS"
           : pdfVariant === "documentos-academicos"
@@ -304,6 +326,35 @@ export async function GET(request: Request) {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="cumpleanos-aspirantes-${codigoSafe}-${dateSafe}.xlsx"`,
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
+
+  if (format === "xlsx" && xlsxVariant === "binomios") {
+    const buffer = await buildAspirantesBinomiosXlsxBuffer({
+      convocatoriaNombre: convocatoriaActual.nombre,
+      convocatoriaCodigo: convocatoriaActual.codigo,
+      anio: convocatoriaActual.anio,
+      rows: rows.map((a) => ({
+        nombres: a.nombres,
+        apellidos: a.apellidos,
+        cedula: a.cedula,
+        sexo: a.sexo,
+        codigoBinomio: a.codigoBinomio,
+        pelotonLabel: a.peloton ? labelPeloton(a.peloton) : null,
+        pelotonNumero: a.peloton?.numero ?? null,
+      })),
+      generatedAt,
+      membrete,
+    });
+
+    return new NextResponse(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="binomios-aspirantes-${codigoSafe}-${dateSafe}.xlsx"`,
         "Cache-Control": "private, no-store",
       },
     });

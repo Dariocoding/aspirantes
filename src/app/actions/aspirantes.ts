@@ -40,6 +40,7 @@ import {
 } from "@src/lib/aspirantes/apply-fotos";
 import { isDocumentoFotoKind, saveAspiranteDocumentoFoto } from "@src/lib/aspirantes/save-documento-foto";
 import { resolvePelotonIdForConvocatoria } from "@src/lib/pelotones";
+import { resolveCodigoBinomioForAspirante } from "@src/lib/aspirantes/binomio";
 
 function toPrismaFichaEvaluacion(
   payload: object | null | undefined,
@@ -235,6 +236,7 @@ export async function createAspirante(
     religion: emptyToNull(formData.get("religion")),
     deporte: emptyToNull(formData.get("deporte")),
     pelotonId: emptyToNull(formData.get("pelotonId")),
+    codigoBinomio: emptyToNull(formData.get("codigoBinomio")),
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
     tensionArterial: emptyToNull(formData.get("tensionArterial")),
@@ -286,6 +288,17 @@ export async function createAspirante(
     return { ok: false, errors: { pelotonId: pelotonResolved.error } };
   }
 
+  const sexoCreate = d.sexo === "FEMENINO" ? Sexo.FEMENINO : Sexo.MASCULINO;
+  const binomioResolved = await resolveCodigoBinomioForAspirante(prisma, {
+    convocatoriaId: convocatoria.id,
+    codigoBinomio: d.codigoBinomio,
+    sexo: sexoCreate,
+    pelotonId: pelotonResolved.pelotonId,
+  });
+  if (!binomioResolved.ok) {
+    return { ok: false, errors: { codigoBinomio: binomioResolved.error } };
+  }
+
   const contactoNombre = d.contactoNombre.trim();
   const hasContacto = Boolean(contactoNombre);
 
@@ -304,7 +317,7 @@ export async function createAspirante(
         nombres: d.nombres,
         apellidos: d.apellidos,
         cedula: d.cedula,
-        sexo: d.sexo === "FEMENINO" ? Sexo.FEMENINO : Sexo.MASCULINO,
+        sexo: sexoCreate,
         fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
         lugarNacimiento: d.lugarNacimiento,
         direccion: d.direccion ?? null,
@@ -318,6 +331,7 @@ export async function createAspirante(
         ...familiaWrite(d),
         convocatoriaId: convocatoria.id,
         pelotonId: pelotonResolved.pelotonId,
+        codigoBinomio: binomioResolved.codigoBinomio,
         tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
         nombreUniversidad: d.nombreUniversidad ?? null,
         tituloUniversidad: d.tituloUniversidad ?? null,
@@ -566,6 +580,7 @@ export async function updateAspirante(
     religion: emptyToNull(formData.get("religion")),
     deporte: emptyToNull(formData.get("deporte")),
     pelotonId: emptyToNull(formData.get("pelotonId")),
+    codigoBinomio: emptyToNull(formData.get("codigoBinomio")),
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
     tensionArterial: emptyToNull(formData.get("tensionArterial")),
@@ -632,6 +647,18 @@ export async function updateAspirante(
     return { ok: false, errors: { pelotonId: pelotonResolved.error } };
   }
 
+  const sexoUpdate = d.sexo === "FEMENINO" ? Sexo.FEMENINO : Sexo.MASCULINO;
+  const binomioResolved = await resolveCodigoBinomioForAspirante(prisma, {
+    convocatoriaId: convocatoria.id,
+    aspiranteId,
+    codigoBinomio: d.codigoBinomio,
+    sexo: sexoUpdate,
+    pelotonId: pelotonResolved.pelotonId,
+  });
+  if (!binomioResolved.ok) {
+    return { ok: false, errors: { codigoBinomio: binomioResolved.error } };
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.aspirante.update({
@@ -649,7 +676,7 @@ export async function updateAspirante(
           nombres: d.nombres,
           apellidos: d.apellidos,
           cedula: d.cedula,
-          sexo: d.sexo === "FEMENINO" ? Sexo.FEMENINO : Sexo.MASCULINO,
+          sexo: sexoUpdate,
           fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
           lugarNacimiento: d.lugarNacimiento,
           direccion: d.direccion ?? null,
@@ -662,6 +689,7 @@ export async function updateAspirante(
           ...redesWrite(d),
           ...familiaWrite(d),
           pelotonId: pelotonResolved.pelotonId,
+          codigoBinomio: binomioResolved.codigoBinomio,
           tipoEstudio: normalizeTipoEstudio(d.tipoEstudio) ?? null,
           nombreUniversidad: d.nombreUniversidad ?? null,
           tituloUniversidad: d.tituloUniversidad ?? null,
@@ -771,6 +799,7 @@ export async function updateAspiranteQuick(
     correo: emptyToNull(formData.get("correo")),
     direccion: emptyToNull(formData.get("direccion")),
     pelotonId: emptyToNull(formData.get("pelotonId")),
+    codigoBinomio: emptyToNull(formData.get("codigoBinomio")),
     hijosCantidad: formData.get("hijosCantidad") || "0",
     estaturaCm: formData.get("estaturaCm"),
     pesoKg: formData.get("pesoKg"),
@@ -828,6 +857,23 @@ export async function updateAspiranteQuick(
     return { ok: false, errors: { pelotonId: pelotonResolved.error } };
   }
 
+  const sexoQuick =
+    d.sexo === "FEMENINO"
+      ? Sexo.FEMENINO
+      : d.sexo === "MASCULINO"
+        ? Sexo.MASCULINO
+        : existing.sexo;
+  const binomioResolved = await resolveCodigoBinomioForAspirante(prisma, {
+    convocatoriaId: convocatoria.id,
+    aspiranteId: d.aspiranteId,
+    codigoBinomio: d.codigoBinomio,
+    sexo: sexoQuick,
+    pelotonId: pelotonResolved.pelotonId,
+  });
+  if (!binomioResolved.ok) {
+    return { ok: false, errors: { codigoBinomio: binomioResolved.error } };
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       await tx.aspirante.update({
@@ -836,12 +882,7 @@ export async function updateAspiranteQuick(
           nombres: d.nombres,
           apellidos: d.apellidos,
           cedula: d.cedula,
-          sexo:
-            d.sexo === "FEMENINO"
-              ? Sexo.FEMENINO
-              : d.sexo === "MASCULINO"
-                ? Sexo.MASCULINO
-                : existing.sexo,
+          sexo: sexoQuick,
           fechaNacimiento: d.fechaNacimiento ?? ASPIRANTE_FECHA_NACIMIENTO_PENDIENTE,
           lugarNacimiento: d.lugarNacimiento,
           condicionMilitar: condicionMilitarWrite(d.condicionMilitar),
@@ -850,6 +891,7 @@ export async function updateAspiranteQuick(
           correo: d.correo ?? null,
           direccion: d.direccion ?? null,
           pelotonId: pelotonResolved.pelotonId,
+          codigoBinomio: binomioResolved.codigoBinomio,
           hijosCantidad: d.hijosCantidad,
           ...redesWrite(d),
           ...familiaWrite(d),

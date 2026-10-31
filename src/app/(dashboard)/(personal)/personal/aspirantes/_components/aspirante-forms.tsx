@@ -135,6 +135,7 @@ function seedFromForm(
     religion: formStr(fd, "religion") || null,
     deporte: formStr(fd, "deporte") || null,
     pelotonId: formStr(fd, "pelotonId") || null,
+    codigoBinomio: formStr(fd, "codigoBinomio") || null,
     estaturaCm: formNumOrNull(fd, "estaturaCm"),
     pesoKg: formNumOrNull(fd, "pesoKg"),
     tensionArterial: formStr(fd, "tensionArterial") || null,
@@ -233,6 +234,7 @@ export type AspiranteRegistroInitial = {
   religion?: string | null;
   deporte?: string | null;
   pelotonId?: string | null;
+  codigoBinomio?: string | null;
   estaturaCm: number | null;
   pesoKg: number | null;
   tensionArterial: string | null;
@@ -393,6 +395,7 @@ export function AspiranteRegistroForm({
       religion: seed?.religion ?? "",
       deporte: seed?.deporte ?? "",
       pelotonId: seed?.pelotonId ?? "",
+      codigoBinomio: seed?.codigoBinomio ?? "",
       telefono: seed?.telefono ?? "",
       correo: seed?.correo ?? "",
       direccion: seed?.direccion ?? "",
@@ -844,6 +847,23 @@ export function AspiranteRegistroForm({
                   </p>
                 </>
               )}
+            </div>
+            <div>
+              <Label htmlFor="codigoBinomio">Código binomio / cazare</Label>
+              <Input
+                id="codigoBinomio"
+                name="codigoBinomio"
+                defaultValue={defaults.codigoBinomio}
+                placeholder="Ej. A01, B15"
+                maxLength={8}
+                className="uppercase"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Pareja = códigos impar/par consecutivos del mismo pelotón (A01↔A02). Mismo sexo.
+              </p>
+              {state.errors.codigoBinomio ? (
+                <p className="mt-1 text-xs text-rose-600">{state.errors.codigoBinomio}</p>
+              ) : null}
             </div>
             <div>
               <Label>Padres venezolanos</Label>

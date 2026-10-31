@@ -27,6 +27,7 @@ import { calificacionAdmisionEtiqueta, sexoEtiqueta } from "@src/lib/aspirantes/
 import { homologarDatosSangre, type FactorRhValue } from "@src/lib/aspirantes/senaletica";
 import { homologarEstaturaCm } from "@src/lib/aspirantes/medidas";
 import { isTallaUniformePatriota } from "@src/lib/aspirantes/tallas-familia";
+import { normalizarCodigoBinomio } from "@src/lib/aspirantes/binomio";
 
 const EMPTY = new Set(["", "—", "-", "–", "n/a", "na"]);
 
@@ -415,6 +416,25 @@ export async function applyCensusXlsxImport(
           continue;
         }
 
+        let codigoBinomio: string | null | undefined;
+        if (hasColumn(ids, "codigoBinomio")) {
+          const rawCodigo = blankToNull(v.codigoBinomio);
+          if (rawCodigo == null) {
+            codigoBinomio = null;
+          } else {
+            const n = normalizarCodigoBinomio(rawCodigo);
+            if (!n) {
+              errors.push({
+                excelRow: row.excelRow,
+                cedula: row.cedula,
+                message: "Código binomio inválido (ej. A01, B15).",
+              });
+              continue;
+            }
+            codigoBinomio = n;
+          }
+        }
+
         const pelotonId = hasColumn(ids, "peloton")
           ? (matchPeloton(blankToNull(v.peloton), pelotones) as { ok: true; id: string | null }).id
           : undefined;
@@ -480,6 +500,7 @@ export async function applyCensusXlsxImport(
               deporte: hasColumn(ids, "deporte") ? blankToNull(v.deporte) : null,
               hijosCantidad: hasColumn(ids, "hijos") ? (parseHijos(blankToNull(v.hijos)) ?? 0) : 0,
               pelotonId: pelotonId === undefined ? null : pelotonId,
+              ...(codigoBinomio !== undefined ? { codigoBinomio } : {}),
               tituloUniversidad: hasColumn(ids, "carrera") ? parseCarrera(blankToNull(v.carrera)).titulo : null,
               tipoEstudio: hasColumn(ids, "carrera")
                 ? parseCarrera(blankToNull(v.carrera)).nivel
@@ -631,6 +652,9 @@ export async function applyCensusXlsxImport(
         }
         if (hasColumn(ids, "peloton") && pelotonId !== (current.pelotonId ?? null)) {
           data.peloton = pelotonId ? { connect: { id: pelotonId } } : { disconnect: true };
+        }
+        if (codigoBinomio !== undefined && codigoBinomio !== (current.codigoBinomio ?? null)) {
+          data.codigoBinomio = codigoBinomio;
         }
         if (hasColumn(ids, "carrera")) {
           const carrera = parseCarrera(blankToNull(v.carrera));

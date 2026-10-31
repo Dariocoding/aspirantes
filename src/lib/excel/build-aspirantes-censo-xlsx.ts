@@ -39,6 +39,10 @@ export type AspiranteCensoExportRow = {
   lugarNacimiento: string;
   calificacionAdmision: string;
   pelotonLabel: string | null;
+  codigoBinomio: string | null;
+  /** Código del compañero (cazare): A01 → A02. */
+  codigoCazare: string | null;
+  companeroBinomioLabel: string | null;
   telefono: string | null;
   correo: string | null;
   direccion: string | null;
@@ -264,6 +268,29 @@ function cellValue(
       return calificacionAdmisionEtiqueta(r.calificacionAdmision);
     case "peloton":
       return dash(r.pelotonLabel);
+    case "codigoBinomio":
+      return dash(r.codigoBinomio);
+    case "codigoCazare":
+      return dash(r.codigoCazare);
+    case "companeroBinomio": {
+      const codigo = r.codigoCazare?.trim();
+      const nombre = r.companeroBinomioLabel?.trim();
+      if (codigo && nombre) return `${codigo} · ${nombre}`;
+      if (codigo) return codigo;
+      return dash(nombre);
+    }
+    case "nombreConCompaneroBinomio": {
+      const propio = `${r.nombres} ${r.apellidos}`.trim();
+      const propioCod = r.codigoBinomio?.trim();
+      const companero = r.companeroBinomioLabel?.trim();
+      const cazareCod = r.codigoCazare?.trim();
+      const izq = propioCod ? `${propio} (${propioCod})` : propio;
+      if (!companero && !cazareCod) return izq || "—";
+      const der = cazareCod && companero
+        ? `${companero} (${cazareCod})`
+        : cazareCod || companero || "";
+      return `${izq} / ${der}`;
+    }
     case "telefono":
       return formatTelefonoExport(r.telefono);
     case "correo":

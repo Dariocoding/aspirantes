@@ -15,6 +15,9 @@ export type CensusOptionalColumnId =
   | "lugarNacimiento"
   | "calificacion"
   | "peloton"
+  | "codigoBinomio"
+  | "codigoCazare"
+  | "companeroBinomio"
   | "telefono"
   | "correo"
   | "direccion"
@@ -107,6 +110,30 @@ export const CENSUS_OPTIONAL_COLUMNS: readonly CensusOptionalColumn[] = [
     minWidthRem: 8,
   },
   { id: "peloton", label: "Pelotón", group: "Postulación", defaultVisible: false, headClassName: "w-[9rem]", minWidthRem: 9 },
+  {
+    id: "codigoBinomio",
+    label: "Código binomio",
+    group: "Postulación",
+    defaultVisible: true,
+    headClassName: "w-[7.5rem]",
+    minWidthRem: 7.5,
+  },
+  {
+    id: "codigoCazare",
+    label: "Código cazare",
+    group: "Postulación",
+    defaultVisible: true,
+    headClassName: "w-[7.5rem]",
+    minWidthRem: 7.5,
+  },
+  {
+    id: "companeroBinomio",
+    label: "Compañero / cazare",
+    group: "Postulación",
+    defaultVisible: false,
+    headClassName: "w-[16rem]",
+    minWidthRem: 16,
+  },
   { id: "telefono", label: "Teléfono", group: "Contacto", defaultVisible: false, headClassName: "w-[9rem]", minWidthRem: 9 },
   { id: "correo", label: "Correo", group: "Contacto", defaultVisible: false, headClassName: "w-[12rem]", minWidthRem: 12 },
   {

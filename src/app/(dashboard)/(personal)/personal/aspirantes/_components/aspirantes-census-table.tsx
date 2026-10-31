@@ -97,6 +97,9 @@ export type AspirantesCensusRow = {
   calificacionAdmision: string;
   pelotonId: string | null;
   pelotonLabel: string | null;
+  codigoBinomio: string | null;
+  codigoCazare: string | null;
+  companeroBinomioLabel: string | null;
   telefono: string | null;
   correo: string | null;
   direccion: string | null;
@@ -373,6 +376,25 @@ function renderOptionalCell(col: CensusOptionalColumn, a: AspirantesCensusRow): 
       );
     case "peloton":
       return <TextCell value={a.pelotonLabel} />;
+    case "codigoBinomio":
+      return a.codigoBinomio?.trim() ? (
+        <span className="font-mono tabular-nums font-semibold text-slate-800">{a.codigoBinomio.trim()}</span>
+      ) : (
+        <EmptyDash />
+      );
+    case "codigoCazare":
+      return a.codigoCazare?.trim() ? (
+        <span className="font-mono tabular-nums font-semibold text-slate-800">{a.codigoCazare.trim()}</span>
+      ) : (
+        <EmptyDash />
+      );
+    case "companeroBinomio": {
+      const codigo = a.codigoCazare?.trim();
+      const nombre = a.companeroBinomioLabel?.trim();
+      if (!codigo && !nombre) return <EmptyDash />;
+      const value = codigo && nombre ? `${codigo} · ${nombre}` : codigo || nombre;
+      return <TextCell value={value} clamp />;
+    }
     case "telefono":
       return a.telefono?.trim() ? (
         <span className="font-mono tabular-nums text-slate-700">{a.telefono.trim()}</span>
