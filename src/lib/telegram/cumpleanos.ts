@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@src/generated/prisma";
-import { ageFromBirthDate, hasRealBirthDate } from "@src/lib/date";
+import { hasRealBirthDate } from "@src/lib/date";
 import { siguienteDia } from "@src/lib/roles-servicio/orden-del-dia/fechas";
 import {
   encabezadoInstitucional,
@@ -16,7 +16,6 @@ export type CumpleanoPersona = {
   apellidos: string;
   grado: string;
   fechaNacimiento: Date;
-  edadQueCumple: number | null;
 };
 
 export type AvisoCumpleanos = {
@@ -90,17 +89,12 @@ export async function cargarAvisosCumpleanos(
       const md = mesDiaEnCaracas(a.fechaNacimiento);
       if (md.mes !== fecha.mes || md.dia !== fecha.dia) continue;
 
-      // Edad que cumple ese día (año de la fecha del aviso).
-      const ref = new Date(fecha.anio, fecha.mes - 1, fecha.dia, 12, 0, 0, 0);
-      const edad = ageFromBirthDate(a.fechaNacimiento, ref);
-
       personas.push({
         id: a.id,
         nombres: a.nombres,
         apellidos: a.apellidos,
         grado: etiquetaGrado(a.jerarquia),
         fechaNacimiento: a.fechaNacimiento,
-        edadQueCumple: edad,
       });
     }
 
@@ -141,12 +135,9 @@ export function formatAvisosCumpleanos(avisos: AvisoCumpleanos[]): string | null
     let n = 1;
     for (const p of aviso.personas) {
       const nombre = `${p.nombres} ${p.apellidos}`.trim().toUpperCase();
-      const edad =
-        p.edadQueCumple != null ? `Cumple ${p.edadQueCumple} años` : "Fecha de nacimiento registrada";
       lineas.push(
         `<b>${nroPad(n)}.</b> <code>${escapeHtml(p.grado)}</code>`,
         `     <b>${escapeHtml(nombre)}</b>`,
-        `     <i>${escapeHtml(edad)}</i>`,
         "",
       );
       n += 1;

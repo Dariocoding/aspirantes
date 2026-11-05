@@ -1,6 +1,8 @@
 import type { PrismaClient } from "@src/generated/prisma";
 import { siguienteDia } from "@src/lib/roles-servicio/orden-del-dia/fechas";
 import { sendTelegramMessage } from "@src/lib/telegram/client";
+import { resolveTelegramCredentials } from "@src/lib/telegram/credenciales";
+import { registrarMensajeTelegram } from "@src/lib/telegram/mensajes";
 import {
   formatRecordatorioNocturno,
   formatServiciosDiurnos,
@@ -63,6 +65,16 @@ function armarTexto(
   }
 }
 
+/** Arma el texto de un modo para una fecha ya resuelta, sin enviarlo. */
+export async function construirTextoTelegram(
+  db: PrismaClient,
+  modo: ModoEnvioTelegram,
+  fecha: FechaCaracas,
+): Promise<string> {
+  const cargado = await loadOrdenTelegramDia(db, fecha);
+  return armarTexto(modo, cargado.fecha, cargado.ordenDiurno, cargado.ordenNocturnoDelDia);
+}
+
 export async function ejecutarEnvioTelegram(
   db: PrismaClient,
   modo: ModoEnvioTelegram,
@@ -97,6 +109,7 @@ export async function ejecutarEnvioTelegram(
   }
 
   const enviado = await sendTelegramMessage(texto);
+  await guardarCopiaMensaje(modo, texto, fecha, enviado.messageId);
   return {
     ok: true as const,
     dryRun: false as const,
@@ -106,4 +119,25 @@ export async function ejecutarEnvioTelegram(
     diurnos: ordenDiurno.diurnos.length,
     nocturnos: ordenNocturnoDelDia.nocturnos.length,
   };
+}
+
+async function guardarCopiaMensaje(
+  tipo: string,
+  texto: string,
+  fecha: FechaCaracas,
+  messageId: number,
+): Promise<void> {
+  try {
+    const credenciales = await resolveTelegramCredentials();
+    if (!credenciales) return;
+    await registrarMensajeTelegram({
+      chatId: credenciales.chatId,
+      messageId,
+      tipo,
+      texto,
+      fecha,
+    });
+  } catch (error) {
+    console.error("[telegram-mensaje]", error);
+  }
 }

@@ -30,6 +30,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@src/components/ui/dialog";
@@ -231,6 +232,52 @@ function nombreMostrado(asignacion: AsignacionVista): string {
   return asignacion.nombre.trim() || "Sin nombre";
 }
 
+const NOMBRE_DIA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"] as const;
+
+function clavePersonaAsignacion(asignacion: AsignacionVista): string {
+  if (asignacion.aspirante) return `aspirante:${asignacion.aspirante.id}`;
+  if (asignacion.autoridad) return `autoridad:${asignacion.autoridad.id}`;
+  return `rol:${asignacion.grado}|${asignacion.nombre.trim().toLowerCase()}`;
+}
+
+function etiquetaMarcaGuardia(marca: string): string {
+  const turno = turnoDesdeMarca(marca);
+  if (turno) return turno.nombre;
+  if (marca.toUpperCase() === "X") return "En servicio";
+  return `Marca ${marca}`;
+}
+
+type GuardiasRolMes = {
+  plan: PlanVista;
+  dias: MarcaDia[];
+};
+
+function guardiasDelMes(planes: PlanVista[], origen: AsignacionVista): GuardiasRolMes[] {
+  const clave = clavePersonaAsignacion(origen);
+  const porPlan = new Map<string, GuardiasRolMes>();
+  for (const plan of planes) {
+    for (const asignacion of plan.asignaciones) {
+      if (clavePersonaAsignacion(asignacion) !== clave || asignacion.dias.length === 0) continue;
+      const actual = porPlan.get(plan.clave);
+      if (!actual) {
+        porPlan.set(plan.clave, { plan, dias: [...asignacion.dias] });
+        continue;
+      }
+      const vistos = new Set(actual.dias.map((item) => `${item.dia}:${item.marca}`));
+      for (const dia of asignacion.dias) {
+        const claveDia = `${dia.dia}:${dia.marca}`;
+        if (vistos.has(claveDia)) continue;
+        actual.dias.push(dia);
+        vistos.add(claveDia);
+      }
+    }
+  }
+  return [...porPlan.values()].map((grupo) => ({
+    ...grupo,
+    dias: [...grupo.dias].sort((a, b) => a.dia - b.dia || a.marca.localeCompare(b.marca)),
+  }));
+}
+
 function iniciales(texto: string): string {
   const partes = texto.trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "?";
@@ -288,6 +335,7 @@ export function RolesServicioView({
   const [selloAbierto, setSelloAbierto] = useState(false);
   const [selloPending, startSelloTransition] = useTransition();
   const [selloError, setSelloError] = useState<string | null>(null);
+  const [personaGuardias, setPersonaGuardias] = useState<AsignacionVista | null>(null);
   const puedeEditar = canWrite && !sellado;
   const mesSiguiente = useMemo(() => desplazarMes(anio, mes, 1), [anio, mes]);
   const irAMes = (fecha: { anio: number; mes: number }) => {
@@ -831,22 +879,32 @@ export function RolesServicioView({
                   ) : (
                     <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                       {servicioDelDia.map(({ plan, asignacion, marca }) => (
-                        <li
-                          key={`${plan.clave}-${asignacion.id}`}
-                          className={cn(
-                            "group rounded-xl border bg-white p-3 transition-colors hover:bg-slate-50/60",
-                            todosLosRoles
-                              ? "border-slate-200/90 hover:border-slate-300"
-                              : "border-teal-300/90 ring-1 ring-teal-200/70",
-                          )}
-                        >
+                        <li key={`${plan.clave}-${asignacion.id}`}>
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setPersonaGuardias(asignacion)}
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter" && event.key !== " ") return;
+                              event.preventDefault();
+                              setPersonaGuardias(asignacion);
+                            }}
+                            aria-label={`Ver guardias de ${nombreMostrado(asignacion)} en ${etiquetaMes(anio, mes)}`}
+                            className={cn(
+                              "group w-full cursor-pointer rounded-xl border bg-white p-3 text-left transition-colors hover:bg-slate-50/60",
+                              "focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:outline-none",
+                              todosLosRoles
+                                ? "border-slate-200/90 hover:border-slate-300"
+                                : "border-teal-300/90 ring-1 ring-teal-200/70",
+                            )}
+                          >
                           <div className="flex items-start gap-3">
                             <AvatarAsignacion asignacion={asignacion} size="md" />
                             <div className="min-w-0 flex-1">
                               {todosLosRoles ? (
-                                <p className="truncate text-[10px] font-medium tracking-wide text-slate-500 uppercase">
+                                <span className="block truncate text-[10px] font-medium tracking-wide text-slate-500 uppercase">
                                   {plan.nombre}
-                                </p>
+                                </span>
                               ) : null}
                               <PersonaRol asignacion={asignacion} compact nombreFijo={sellado} />
                               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -868,6 +926,7 @@ export function RolesServicioView({
                                 )}
                               </div>
                             </div>
+                          </div>
                           </div>
                         </li>
                       ))}
@@ -1145,6 +1204,15 @@ export function RolesServicioView({
               }}
             />
 
+            <GuardiasMesDialog
+              asignacion={personaGuardias}
+              planes={planes}
+              anio={anio}
+              mes={mes}
+              diaSeleccionado={diaSeleccionado}
+              onClose={() => setPersonaGuardias(null)}
+            />
+
             <Dialog open={selloAbierto} onOpenChange={setSelloAbierto}>
               <DialogContent className="max-w-sm">
                 <DialogHeader>
@@ -1301,7 +1369,7 @@ function PersonaRol({
   if (nombreFijo && asignacion.nombre.trim()) {
     const aspirante = asignacion.aspirante;
     return (
-      <p>
+      <span className="block">
         <span className={cn("font-medium text-slate-900", compact ? "text-xs" : "text-sm")}>
           {asignacion.nombre}
         </span>
@@ -1310,11 +1378,11 @@ function PersonaRol({
             {formatCedulaMillares(aspirante.cedula)}
           </span>
         ) : null}
-      </p>
+      </span>
     );
   }
   if (!asignacion.nombre.trim()) {
-    return <p className={cn("text-slate-400", compact ? "text-xs" : "text-sm")}>Sin nombre en el rol</p>;
+    return <span className={cn("block text-slate-400", compact ? "text-xs" : "text-sm")}>Sin nombre en el rol</span>;
   }
   if (asignacion.autoridad) {
     const { autoridad } = asignacion;
@@ -1322,7 +1390,7 @@ function PersonaRol({
       ? formatCedulaMillares(autoridad.cedula)
       : null;
     return (
-      <p>
+      <span className="block">
         <span className={cn("font-medium text-slate-900", compact ? "text-xs" : "text-sm")}>
           {autoridad.nombres} {autoridad.apellidos}
         </span>
@@ -1337,27 +1405,24 @@ function PersonaRol({
             " · Sin cédula"
           )}
         </span>
-      </p>
+      </span>
     );
   }
   if (!asignacion.aspirante) {
     return (
-      <p>
+      <span className="block">
         <span className={cn("font-medium text-slate-900", compact ? "text-xs" : "text-sm")}>{asignacion.nombre}</span>
         <span className="mt-0.5 block text-[10px] text-amber-700">Sin coincidencia en el censo</span>
-      </p>
+      </span>
     );
   }
   const { aspirante } = asignacion;
   const cedula = formatCedulaMillares(aspirante.cedula);
   return (
-    <p>
-      <Link
-        href={routes.personal.aspirante(aspirante.id)}
-        className={cn("font-medium text-slate-900 hover:underline", compact ? "text-xs" : "text-sm")}
-      >
+    <span className="block">
+      <span className={cn("font-medium text-slate-900", compact ? "text-xs" : "text-sm")}>
         {aspirante.nombres} {aspirante.apellidos}
-      </Link>
+      </span>
       {!compact ? (
         <span className="mt-0.5 block text-[11px] text-slate-500">
           En el rol: {asignacion.nombre} · <span className="font-mono tabular-nums">{cedula}</span>
@@ -1365,6 +1430,93 @@ function PersonaRol({
       ) : (
         <span className="mt-0.5 block truncate font-mono text-[10px] tabular-nums text-slate-500">{cedula}</span>
       )}
-    </p>
+    </span>
+  );
+}
+
+function GuardiasMesDialog({
+  asignacion,
+  planes,
+  anio,
+  mes,
+  diaSeleccionado,
+  onClose,
+}: {
+  asignacion: AsignacionVista | null;
+  planes: PlanVista[];
+  anio: number;
+  mes: number;
+  diaSeleccionado: number;
+  onClose: () => void;
+}) {
+  const grupos = asignacion ? guardiasDelMes(planes, asignacion) : [];
+  const total = grupos.reduce((suma, grupo) => suma + grupo.dias.length, 0);
+  const aspirante = asignacion?.aspirante ?? null;
+  const cedula = aspirante
+    ? formatCedulaMillares(aspirante.cedula)
+    : asignacion?.autoridad?.cedula?.trim()
+      ? formatCedulaMillares(asignacion.autoridad.cedula)
+      : null;
+
+  return (
+    <Dialog open={asignacion != null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader className="pr-8">
+          <DialogTitle>{asignacion ? nombreMostrado(asignacion) : "Guardias"}</DialogTitle>
+          <DialogDescription>
+            {total === 0
+              ? `Sin guardias en ${etiquetaMes(anio, mes)}`
+              : `${total} ${total === 1 ? "guardia" : "guardias"} en ${etiquetaMes(anio, mes)}`}
+            {cedula ? ` · ${cedula}` : ""}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="px-5 py-4">
+          {grupos.length === 0 ? (
+            <p className="text-sm text-slate-500">No tiene días marcados en este mes.</p>
+          ) : (
+            <ul className="space-y-4">
+              {grupos.map((grupo) => (
+                <li key={grupo.plan.clave}>
+                  <p className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
+                    {grupo.plan.nombre}
+                  </p>
+                  <ul className="mt-1.5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
+                    {grupo.dias.map((item) => {
+                      const semana = NOMBRE_DIA[new Date(anio, mes - 1, item.dia).getDay()] ?? "";
+                      const esDiaAbierto = item.dia === diaSeleccionado;
+                      return (
+                        <li
+                          key={`${grupo.plan.clave}-${item.dia}-${item.marca}`}
+                          className={cn(
+                            "flex items-center justify-between gap-3 px-3 py-2 text-sm",
+                            esDiaAbierto && "bg-amber-50",
+                          )}
+                        >
+                          <span className="min-w-0 text-slate-900">
+                            <span className="font-semibold tabular-nums">{item.dia}</span>
+                            <span className="ml-1.5 capitalize text-slate-500">{semana}</span>
+                          </span>
+                          <span className="shrink-0 text-xs text-slate-600">{etiquetaMarcaGuardia(item.marca)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {aspirante ? (
+          <DialogFooter className="sm:justify-stretch">
+            <Link
+              href={routes.personal.aspirante(aspirante.id)}
+              className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+            >
+              Visualizar perfil
+            </Link>
+          </DialogFooter>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }

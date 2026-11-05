@@ -30,20 +30,9 @@ const ZEBRA_A = { type: "pattern" as const, pattern: "solid" as const, fgColor: 
 const ZEBRA_B = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFFFFF" } };
 const SOLO_FILL = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFF7ED" } };
 
-const HEADERS = [
-  "N°",
-  "BINOMIO",
-  "CÓDIGO 1",
-  "NOMBRE 1",
-  "CÉDULA 1",
-  "CÓDIGO 2",
-  "NOMBRE 2",
-  "CÉDULA 2",
-  "PELOTÓN",
-  "SEXO",
-] as const;
+const HEADERS = ["N°", "BINOMIO", "CÓDIGO", "NOMBRE", "CÉDULA", "PELOTÓN", "SEXO"] as const;
 
-const COL_WIDTHS = [6, 10, 10, 36, 14, 10, 36, 14, 14, 12] as const;
+const COL_WIDTHS = [6, 12, 12, 42, 16, 16, 14] as const;
 const LAST_COL = HEADERS.length;
 
 function applyCellBorder(cell: ExcelJS.Cell) {
@@ -67,7 +56,7 @@ export async function buildAspirantesBinomiosXlsxBuffer(
   const ws = wb.addWorksheet("Binomios", {
     properties: { defaultRowHeight: 20 },
     pageSetup: {
-      orientation: "landscape",
+      orientation: "portrait",
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
@@ -112,39 +101,49 @@ export async function buildAspirantesBinomiosXlsxBuffer(
   let idx = 0;
   for (const fila of parejas) {
     const zebra = idx % 2 === 0 ? ZEBRA_A : ZEBRA_B;
-    const solo = !fila.p1 || !fila.p2;
+    const personas = [fila.p1, fila.p2].filter((p): p is NonNullable<typeof fila.p1> => p != null);
+    const solo = personas.length < 2;
     const fill = solo ? SOLO_FILL : zebra;
-    const row = ws.getRow(rowNum);
-    const values: Array<string | number> = [
-      idx + 1,
-      fila.clave,
-      fila.p1?.codigo ?? "",
-      fila.p1?.nombre ?? "",
-      fila.p1?.cedula ?? "",
-      fila.p2?.codigo ?? "",
-      fila.p2?.nombre ?? "",
-      fila.p2?.cedula ?? "",
-      fila.pelotonLabel,
-      fila.sexo,
-    ];
-    values.forEach((value, i) => {
-      const cell = row.getCell(i + 1);
-      cell.value = value;
-      cell.fill = fill;
-      cell.font = {
-        name: i === 2 || i === 4 || i === 5 || i === 7 ? "Consolas" : "Calibri",
-        size: 11,
-        bold: i === 1,
-        color: { argb: "FF0F172A" },
-      };
-      cell.alignment = {
-        vertical: "middle",
-        horizontal: i === 3 || i === 6 ? "left" : "center",
-      };
-      applyCellBorder(cell);
+    const inicio = rowNum;
+
+    personas.forEach((persona, personaIdx) => {
+      const row = ws.getRow(rowNum);
+      const values: Array<string | number> = [
+        personaIdx === 0 ? idx + 1 : "",
+        personaIdx === 0 ? fila.clave : "",
+        persona.codigo,
+        persona.nombre,
+        persona.cedula,
+        personaIdx === 0 ? fila.pelotonLabel : "",
+        personaIdx === 0 ? fila.sexo : "",
+      ];
+      values.forEach((value, i) => {
+        const cell = row.getCell(i + 1);
+        cell.value = value;
+        cell.fill = fill;
+        cell.font = {
+          name: i === 2 || i === 4 ? "Consolas" : "Calibri",
+          size: 11,
+          bold: i === 1,
+          color: { argb: "FF0F172A" },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: i === 3 ? "left" : "center",
+        };
+        applyCellBorder(cell);
+      });
+      rowNum += 1;
     });
+
+    if (personas.length === 2) {
+      for (const col of [1, 2, 6, 7]) {
+        ws.mergeCells(inicio, col, inicio + 1, col);
+        ws.getCell(inicio, col).alignment = { vertical: "middle", horizontal: "center" };
+      }
+    }
+
     idx += 1;
-    rowNum += 1;
   }
 
   if (sinCodigo.length) {
@@ -171,9 +170,6 @@ export async function buildAspirantesBinomiosXlsxBuffer(
         "",
         nombreCompleto(r),
         r.cedula,
-        "",
-        "",
-        "",
         r.pelotonLabel?.trim() || "—",
         sexoEtiqueta(r.sexo),
       ];
@@ -181,7 +177,7 @@ export async function buildAspirantesBinomiosXlsxBuffer(
         const cell = row.getCell(i + 1);
         cell.value = value;
         cell.fill = zebra;
-        cell.font = { name: "Calibri", size: 11, color: { argb: "FF0F172A" } };
+        cell.font = { name: i === 4 ? "Consolas" : "Calibri", size: 11, color: { argb: "FF0F172A" } };
         cell.alignment = { vertical: "middle", horizontal: i === 3 ? "left" : "center" };
         applyCellBorder(cell);
       });

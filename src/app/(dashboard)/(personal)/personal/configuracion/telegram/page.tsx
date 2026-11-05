@@ -6,6 +6,7 @@ import { routes } from "@src/lib/apps/routes";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { enmascararToken, loadTelegramBotStored } from "@src/lib/telegram/credenciales";
+import { listarMensajesTelegram } from "@src/lib/telegram/mensajes";
 import { TelegramConfigPanel } from "./_components/telegram-config-panel";
 
 export default async function TelegramConfigPage() {
@@ -22,6 +23,7 @@ export default async function TelegramConfigPage() {
   const chatGuardado = stored?.chatId ?? "";
   const tokenActivo = tokenGuardado || envToken;
   const chatActivo = chatGuardado || envChat;
+  const mensajes = await listarMensajesTelegram();
 
   return (
     <div className="mx-auto min-w-0 max-w-3xl space-y-4">
@@ -36,7 +38,7 @@ export default async function TelegramConfigPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-slate-900">Telegram</h1>
           <p className="text-xs text-slate-500">
-            Bot del grupo y envío manual de servicios, cumpleaños y efemérides.
+            Bot del grupo, envío manual y corrección de mensajes ya publicados.
           </p>
         </div>
       </header>
@@ -48,6 +50,7 @@ export default async function TelegramConfigPage() {
         tokenEnConfiguracion={Boolean(tokenGuardado)}
         chatId={chatActivo}
         chatEnConfiguracion={Boolean(chatGuardado)}
+        mensajes={mensajes}
       />
     </div>
   );

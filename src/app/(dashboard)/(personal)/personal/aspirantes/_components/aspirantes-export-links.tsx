@@ -223,7 +223,7 @@ export function AspirantesExportLinks({
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">Binomios / cazares</span>
                   <span className="text-xs text-muted-foreground">
-                    Pareja en la misma fila con códigos al lado
+                    Cada pareja: el cazare queda en la fila de abajo
                   </span>
                 </span>
               </DropdownMenuItem>

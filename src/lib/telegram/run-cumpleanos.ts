@@ -1,5 +1,7 @@
 import type { PrismaClient } from "@src/generated/prisma";
 import { sendTelegramMessage } from "@src/lib/telegram/client";
+import { resolveTelegramCredentials } from "@src/lib/telegram/credenciales";
+import { registrarMensajeTelegram } from "@src/lib/telegram/mensajes";
 import {
   cargarAvisosCumpleanos,
   formatAvisosCumpleanos,
@@ -50,6 +52,20 @@ export async function ejecutarEnvioCumpleanos(
   }
 
   const enviado = await sendTelegramMessage(texto);
+  try {
+    const credenciales = await resolveTelegramCredentials();
+    if (credenciales) {
+      await registrarMensajeTelegram({
+        chatId: credenciales.chatId,
+        messageId: enviado.messageId,
+        tipo: "cumpleanos",
+        texto,
+        fecha: hoy,
+      });
+    }
+  } catch (error) {
+    console.error("[telegram-mensaje]", error);
+  }
   return {
     ok: true as const,
     dryRun: false as const,

@@ -604,6 +604,24 @@ model TelegramBotConfig {
   updatedAt DateTime @updatedAt
 }
 
+/// Mensaje que el bot ya publicó. Sirve para editarlo en el grupo sin enviar otro.
+model TelegramMensaje {
+  id        String   @id @default(cuid())
+  chatId    String
+  messageId Int
+  /// hoy, esta-noche, manana, servicios-manana, recordatorio-nocturno, cumpleanos, efemerides
+  tipo      String
+  texto     String   @db.Text
+  anio      Int
+  mes       Int
+  dia       Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chatId, messageId])
+  @@index([chatId, createdAt])
+}
+
 /// Configuración de la sección nocturna de la Orden del Día (singleton JSON).
 model OrdenNocturnoConfig {
   id        String   @id
