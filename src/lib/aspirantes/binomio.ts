@@ -137,15 +137,37 @@ export function agruparFilasBinomio(rows: AspiranteParaBinomio[]): {
     }
   }
 
-  const parejas = [...byClave.values()].sort((a, b) => {
-    if (a.pelotonNumero !== b.pelotonNumero) return a.pelotonNumero - b.pelotonNumero;
-    if (a.letra !== b.letra) return a.letra.localeCompare(b.letra);
-    return a.numeroClave - b.numeroClave;
-  });
+  const parejas = intercalarParejasBinomio([...byClave.values()]);
 
   sinCodigo.sort((a, b) => nombreCompletoBinomio(a).localeCompare(nombreCompletoBinomio(b), "es"));
 
   return { parejas, sinCodigo };
+}
+
+function compararParejaBinomio(a: FilaBinomioAgrupada, b: FilaBinomioAgrupada): number {
+  if (a.pelotonNumero !== b.pelotonNumero) return a.pelotonNumero - b.pelotonNumero;
+  if (a.letra !== b.letra) return a.letra.localeCompare(b.letra);
+  return a.numeroClave - b.numeroClave;
+}
+
+function esFilaFemenina(fila: FilaBinomioAgrupada): boolean {
+  return fila.sexo.trim().toLowerCase().startsWith("f");
+}
+
+/** Un binomio femenino y luego uno masculino. El sexo que sobre queda al final. */
+export function intercalarParejasBinomio(filas: FilaBinomioAgrupada[]): FilaBinomioAgrupada[] {
+  const ordenadas = [...filas].sort(compararParejaBinomio);
+  const femeninas = ordenadas.filter(esFilaFemenina);
+  const masculinas = ordenadas.filter((fila) => !esFilaFemenina(fila));
+  const parejas: FilaBinomioAgrupada[] = [];
+  const tope = Math.max(femeninas.length, masculinas.length);
+  for (let i = 0; i < tope; i++) {
+    const femenina = femeninas[i];
+    const masculina = masculinas[i];
+    if (femenina) parejas.push(femenina);
+    if (masculina) parejas.push(masculina);
+  }
+  return parejas;
 }
 
 export type CompaneroBinomioCheck = {

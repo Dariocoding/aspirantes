@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition, type KeyboardEvent } from "react";
 import {
   ArrowDownUp,
   CalendarDays,
@@ -19,7 +19,9 @@ import {
   Users,
   ShieldAlert,
   Wand2,
+  X,
 } from "lucide-react";
+import { buscarPersonalGlobal, type PersonaBusqueda } from "@src/app/actions/busqueda-personal";
 import { actualizarMarcasLote } from "@src/app/actions/roles-servicio-marcas";
 import { ordenarRolEscalera } from "@src/app/actions/roles-servicio-ordenar";
 import { sellarMesRoles } from "@src/app/actions/roles-servicio-sello";
@@ -57,6 +59,7 @@ import {
   detectarRepeticionesDiurnas,
   mensajeChoqueDiurno,
 } from "@src/lib/roles-servicio/repeticiones-diurno";
+import { foldBusqueda } from "@src/lib/text/fold";
 import { cn } from "@src/lib/utils";
 import { RolPlanilla } from "./rol-planilla";
 import type { AsignacionVista, PlanVista } from "./types";
@@ -252,12 +255,39 @@ type GuardiasRolMes = {
   dias: MarcaDia[];
 };
 
+function cedulasDe(asignacion: AsignacionVista): string[] {
+  return [asignacion.aspirante?.cedula, asignacion.autoridad?.cedula]
+    .filter((valor): valor is string => Boolean(valor?.trim()))
+    .map((valor) => valor.replace(/\D/g, ""))
+    .filter((valor) => valor.length >= 6);
+}
+
+function tokensPersona(asignacion: AsignacionVista): string[] {
+  return [...new Set(tokensNombre(`${nombreMostrado(asignacion)} ${asignacion.nombre}`))].sort();
+}
+
+function mismaFirma(a: string[], b: string[]): boolean {
+  return a.length >= 2 && a.length === b.length && a.every((token, index) => token === b[index]);
+}
+
+/** Misma persona aunque el rol solo tenga el nombre y el censo tenga la ficha. */
+function mismaPersonaEnRol(a: AsignacionVista, b: AsignacionVista): boolean {
+  if (a.aspirante && b.aspirante) return a.aspirante.id === b.aspirante.id;
+  if (a.autoridad && b.autoridad) return a.autoridad.id === b.autoridad.id;
+  const cedulasA = cedulasDe(a);
+  const mismaCedula = cedulasA.length > 0 && cedulasA.some((cedula) => cedulasDe(b).includes(cedula));
+  if ((a.aspirante && b.autoridad) || (a.autoridad && b.aspirante)) return mismaCedula;
+  if (mismaCedula) return true;
+  const hayFilaSinFicha = (!a.aspirante && !a.autoridad) || (!b.aspirante && !b.autoridad);
+  if (hayFilaSinFicha && mismaFirma(tokensPersona(a), tokensPersona(b))) return true;
+  return clavePersonaAsignacion(a) === clavePersonaAsignacion(b);
+}
+
 function guardiasDelMes(planes: PlanVista[], origen: AsignacionVista): GuardiasRolMes[] {
-  const clave = clavePersonaAsignacion(origen);
   const porPlan = new Map<string, GuardiasRolMes>();
   for (const plan of planes) {
     for (const asignacion of plan.asignaciones) {
-      if (clavePersonaAsignacion(asignacion) !== clave || asignacion.dias.length === 0) continue;
+      if (!mismaPersonaEnRol(origen, asignacion)) continue;
       const actual = porPlan.get(plan.clave);
       if (!actual) {
         porPlan.set(plan.clave, { plan, dias: [...asignacion.dias] });
@@ -272,10 +302,333 @@ function guardiasDelMes(planes: PlanVista[], origen: AsignacionVista): GuardiasR
       }
     }
   }
-  return [...porPlan.values()].map((grupo) => ({
-    ...grupo,
-    dias: [...grupo.dias].sort((a, b) => a.dia - b.dia || a.marca.localeCompare(b.marca)),
-  }));
+  return [...porPlan.values()]
+    .map((grupo) => ({
+      ...grupo,
+      dias: [...grupo.dias].sort((a, b) => a.dia - b.dia || a.marca.localeCompare(b.marca)),
+    }))
+    .sort((a, b) => a.plan.nombre.localeCompare(b.plan.nombre, "es"));
+}
+
+function asignacionDesdeCenso(persona: PersonaBusqueda): AsignacionVista {
+  return {
+    id: `censo:${persona.id}`,
+    orden: 0,
+    grado: persona.grado,
+    nombre: `${persona.nombres} ${persona.apellidos}`,
+    dias: [],
+    aspirante: {
+      id: persona.id,
+      nombres: persona.nombres,
+      apellidos: persona.apellidos,
+      cedula: persona.cedula,
+      fotoKey: persona.fotoKey,
+    },
+    autoridad: null,
+  };
+}
+
+function tokensNombre(consulta: string): string[] {
+  return foldBusqueda(consulta.trim())
+    .split(/\s+/)
+    .filter((token) => token.length >= 2 && /[a-z]/.test(token));
+}
+
+function consultaPersonaLista(consulta: string): boolean {
+  const texto = consulta.trim();
+  return tokensNombre(texto).length > 0 || texto.replace(/\D/g, "").length >= 3;
+}
+
+function asignacionCoincide(asignacion: AsignacionVista, consulta: string): boolean {
+  const tokens = tokensNombre(consulta);
+  const cedula = consulta.replace(/\D/g, "");
+  const texto = foldBusqueda(
+    [
+      nombreMostrado(asignacion),
+      asignacion.nombre,
+      asignacion.grado,
+      asignacion.aspirante?.cedula,
+      asignacion.autoridad?.cedula,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+  const porNombre = tokens.length > 0 && tokens.every((token) => texto.includes(token));
+  const cedulas = [asignacion.aspirante?.cedula, asignacion.autoridad?.cedula].filter(
+    (valor): valor is string => Boolean(valor?.trim()),
+  );
+  const porCedula =
+    cedula.length >= 3 && cedulas.some((valor) => valor.replace(/\D/g, "").includes(cedula));
+  return porNombre || porCedula;
+}
+
+function BuscadorPersonaMes({
+  planes,
+  anio,
+  mes,
+  onElegir,
+}: {
+  planes: PlanVista[];
+  anio: number;
+  mes: number;
+  onElegir: (asignacion: AsignacionVista) => void;
+}) {
+  const listId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const seq = useRef(0);
+  const [consulta, setConsulta] = useState("");
+  const [abierto, setAbierto] = useState(false);
+  const [activo, setActivo] = useState(0);
+  const [censo, setCenso] = useState<PersonaBusqueda[]>([]);
+  const [consultaResuelta, setConsultaResuelta] = useState("");
+
+  const texto = consulta.trim();
+  const consultaLista = consultaPersonaLista(texto);
+
+  const locales = useMemo(() => {
+    if (!consultaLista) return [] as AsignacionVista[];
+    const vistos = new Set<string>();
+    const lista: AsignacionVista[] = [];
+    for (const plan of planes) {
+      for (const asignacion of plan.asignaciones) {
+        const clave = clavePersonaAsignacion(asignacion);
+        if (vistos.has(clave)) continue;
+        if (nombreMostrado(asignacion) === "Sin nombre") continue;
+        if (!asignacionCoincide(asignacion, texto)) continue;
+        vistos.add(clave);
+        lista.push(asignacion);
+      }
+    }
+    return lista;
+  }, [consultaLista, planes, texto]);
+
+  const resultados = useMemo(() => {
+    const censoVisible = consultaLista ? censo : [];
+    const pool = [...locales, ...censoVisible.map(asignacionDesdeCenso)];
+    const grupoDe = (asignacion: AsignacionVista): string => {
+      if (asignacion.aspirante) return `aspirante:${asignacion.aspirante.id}`;
+      if (asignacion.autoridad) return `autoridad:${asignacion.autoridad.id}`;
+      const cedula = cedulasDe(asignacion)[0];
+      if (cedula) {
+        const porCedula = pool.find(
+          (item) =>
+            (item.aspirante != null || item.autoridad != null) && cedulasDe(item).includes(cedula),
+        );
+        if (porCedula?.aspirante) return `aspirante:${porCedula.aspirante.id}`;
+        if (porCedula?.autoridad) return `autoridad:${porCedula.autoridad.id}`;
+        return `cedula:${cedula}`;
+      }
+      const firma = tokensPersona(asignacion);
+      if (firma.length >= 2) {
+        const porNombre =
+          pool.find((item) => item.aspirante != null && mismaFirma(firma, tokensPersona(item))) ??
+          pool.find((item) => item.autoridad != null && mismaFirma(firma, tokensPersona(item)));
+        if (porNombre?.aspirante) return `aspirante:${porNombre.aspirante.id}`;
+        if (porNombre?.autoridad) return `autoridad:${porNombre.autoridad.id}`;
+        return `nombre:${firma.join(" ")}`;
+      }
+      return clavePersonaAsignacion(asignacion);
+    };
+    const mapa = new Map<string, AsignacionVista>();
+    for (const asignacion of pool) {
+      const clave = grupoDe(asignacion);
+      const actual = mapa.get(clave);
+      if (!actual) {
+        mapa.set(clave, asignacion);
+        continue;
+      }
+      const peso = (item: AsignacionVista) => (item.aspirante ? 2 : item.autoridad ? 1 : 0);
+      if (peso(asignacion) > peso(actual)) mapa.set(clave, asignacion);
+    }
+    return [...mapa.values()]
+      .map((asignacion) => ({ asignacion, roles: guardiasDelMes(planes, asignacion) }))
+      .sort((a, b) => {
+        const pesoA = a.roles.length > 0 ? 0 : 1;
+        const pesoB = b.roles.length > 0 ? 0 : 1;
+        if (pesoA !== pesoB) return pesoA - pesoB;
+        return nombreMostrado(a.asignacion).localeCompare(nombreMostrado(b.asignacion), "es");
+      })
+      .slice(0, 12);
+  }, [censo, consultaLista, locales, planes]);
+
+  useEffect(() => {
+    if (!consultaLista) {
+      seq.current += 1;
+      return;
+    }
+    const id = ++seq.current;
+    const tokens = tokensNombre(texto);
+    const timer = window.setTimeout(() => {
+      void buscarPersonalGlobal(texto, 20)
+        .then((rows) => {
+          if (seq.current !== id) return null;
+          if (rows.length > 0 || tokens.length < 2) return rows;
+          const apellido = [...tokens].sort((a, b) => b.length - a.length)[0] ?? "";
+          return buscarPersonalGlobal(apellido, 20).then((mas) =>
+            mas.filter((persona) => {
+              const folded = foldBusqueda(`${persona.nombres} ${persona.apellidos} ${persona.cedula}`);
+              return tokens.every((token) => folded.includes(token));
+            }),
+          );
+        })
+        .then((rows) => {
+          if (rows == null || seq.current !== id) return;
+          setCenso(rows);
+          setConsultaResuelta(texto);
+        })
+        .catch(() => {
+          if (seq.current !== id) return;
+          setCenso([]);
+          setConsultaResuelta(texto);
+        });
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [consultaLista, texto]);
+
+  useEffect(() => {
+    const cerrar = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setAbierto(false);
+    };
+    document.addEventListener("pointerdown", cerrar);
+    return () => document.removeEventListener("pointerdown", cerrar);
+  }, []);
+
+  const panelAbierto = abierto && texto.length > 0;
+  const buscando = consultaLista && consultaResuelta !== texto;
+  const indice = resultados.length === 0 ? 0 : Math.min(activo, resultados.length - 1);
+
+  useEffect(() => {
+    if (!panelAbierto || resultados.length === 0) return;
+    document.getElementById(`${listId}-${indice}`)?.scrollIntoView({ block: "nearest" });
+  }, [indice, listId, panelAbierto, resultados.length]);
+
+  const elegir = (asignacion: AsignacionVista) => {
+    onElegir(asignacion);
+    setConsulta("");
+    setCenso([]);
+    setAbierto(false);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setAbierto(true);
+      if (resultados.length === 0) return;
+      setActivo((i) => (Math.min(i, resultados.length - 1) + 1) % resultados.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setAbierto(true);
+      if (resultados.length === 0) return;
+      setActivo((i) => {
+        const actual = Math.min(i, resultados.length - 1);
+        return (actual - 1 + resultados.length) % resultados.length;
+      });
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const elegido = resultados[indice];
+      if (elegido) elegir(elegido.asignacion);
+    } else if (event.key === "Escape") {
+      setAbierto(false);
+    }
+  };
+
+  return (
+    <div ref={rootRef} className="relative w-full max-w-xl">
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+      <Input
+        value={consulta}
+        onChange={(event) => {
+          setConsulta(event.target.value);
+          setActivo(0);
+          setCenso([]);
+          setAbierto(true);
+        }}
+        onFocus={() => setAbierto(true)}
+        onKeyDown={onKeyDown}
+        placeholder="Buscar aspirante por nombre o cédula…"
+        className="h-9 bg-white pr-8 pl-8 text-sm shadow-sm"
+        aria-label="Buscar aspirante del mes"
+        aria-expanded={panelAbierto}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={panelAbierto && resultados.length > 0 ? `${listId}-${indice}` : undefined}
+        autoComplete="off"
+        spellCheck={false}
+      />
+      {consulta ? (
+        <button
+          type="button"
+          className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          aria-label="Borrar búsqueda"
+          onClick={() => {
+            setConsulta("");
+            setCenso([]);
+            setAbierto(false);
+          }}
+        >
+          <X className="size-3.5" aria-hidden />
+        </button>
+      ) : null}
+      {panelAbierto ? (
+        <div className="absolute z-40 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+          {!consultaLista ? (
+            <p className="px-3 py-3 text-xs text-slate-500">
+              Escribe al menos 2 letras o 3 números de la cédula.
+            </p>
+          ) : resultados.length === 0 ? (
+            <p className="px-3 py-3 text-xs text-slate-500">
+              {buscando ? "Buscando…" : `Nadie coincide en el censo ni en ${etiquetaMes(anio, mes)}.`}
+            </p>
+          ) : (
+            <ul id={listId} role="listbox" aria-label="Aspirantes" className="max-h-80 overflow-y-auto py-1">
+              {resultados.map((item, index) => {
+                const cedulaItem = item.asignacion.aspirante
+                  ? formatCedulaMillares(item.asignacion.aspirante.cedula)
+                  : item.asignacion.autoridad?.cedula?.trim()
+                    ? formatCedulaMillares(item.asignacion.autoridad.cedula)
+                    : null;
+                const roles = item.roles.map((grupo) => grupo.plan.nombre);
+                return (
+                  <li
+                    key={clavePersonaAsignacion(item.asignacion)}
+                    id={`${listId}-${index}`}
+                    role="option"
+                    aria-selected={index === indice}
+                  >
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex w-full flex-col gap-0.5 px-3 py-2 text-left",
+                        index === indice ? "bg-slate-100" : "hover:bg-slate-50",
+                      )}
+                      onMouseEnter={() => setActivo(index)}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => elegir(item.asignacion)}
+                    >
+                      <span className="truncate text-sm font-medium text-slate-900">
+                        {nombreMostrado(item.asignacion)}
+                      </span>
+                      <span className="truncate text-[11px] text-slate-500">
+                        {cedulaItem ? (
+                          <span className="font-mono tabular-nums">{cedulaItem}</span>
+                        ) : (
+                          item.asignacion.grado
+                        )}
+                        {" · "}
+                        {roles.length === 0
+                          ? `Sin roles en ${etiquetaMes(anio, mes)}`
+                          : roles.join(" · ")}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function iniciales(texto: string): string {
@@ -592,12 +945,15 @@ export function RolesServicioView({
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">Roles de servicio</h1>
-          <p className="text-xs text-slate-500">Elige el mes del cuadro.</p>
+      <header className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900">Roles de servicio</h1>
+            <p className="text-xs text-slate-500">Elige el mes del cuadro.</p>
+          </div>
+          <SelectorMesCuadro anio={anio} mes={mes} diaHoy={diaHoy} sellado={sellado} onIr={irAMes} />
         </div>
-        <SelectorMesCuadro anio={anio} mes={mes} diaHoy={diaHoy} sellado={sellado} onIr={irAMes} />
+        <BuscadorPersonaMes planes={planes} anio={anio} mes={mes} onElegir={setPersonaGuardias} />
       </header>
       {planes.length === 0 ? (
         <Card className="shadow-sm ring-slate-200/80">
@@ -1204,15 +1560,6 @@ export function RolesServicioView({
               }}
             />
 
-            <GuardiasMesDialog
-              asignacion={personaGuardias}
-              planes={planes}
-              anio={anio}
-              mes={mes}
-              diaSeleccionado={diaSeleccionado}
-              onClose={() => setPersonaGuardias(null)}
-            />
-
             <Dialog open={selloAbierto} onOpenChange={setSelloAbierto}>
               <DialogContent className="max-w-sm">
                 <DialogHeader>
@@ -1272,6 +1619,14 @@ export function RolesServicioView({
           </div>
         </div>
       )}
+      <GuardiasMesDialog
+        asignacion={personaGuardias}
+        planes={planes}
+        anio={anio}
+        mes={mes}
+        diaSeleccionado={diaSeleccionado}
+        onClose={() => setPersonaGuardias(null)}
+      />
     </div>
   );
 }
@@ -1464,15 +1819,19 @@ function GuardiasMesDialog({
         <DialogHeader className="pr-8">
           <DialogTitle>{asignacion ? nombreMostrado(asignacion) : "Guardias"}</DialogTitle>
           <DialogDescription>
-            {total === 0
-              ? `Sin guardias en ${etiquetaMes(anio, mes)}`
-              : `${total} ${total === 1 ? "guardia" : "guardias"} en ${etiquetaMes(anio, mes)}`}
+            {grupos.length === 0
+              ? `Sin roles en ${etiquetaMes(anio, mes)}`
+              : `${grupos.length} ${grupos.length === 1 ? "rol" : "roles"} en ${etiquetaMes(anio, mes)}${
+                  total > 0 ? ` · ${total} ${total === 1 ? "día" : "días"} de servicio` : ""
+                }`}
             {cedula ? ` · ${cedula}` : ""}
           </DialogDescription>
         </DialogHeader>
-        <div className="px-5 py-4">
+        <div className="max-h-[min(60vh,28rem)] overflow-y-auto px-5 py-4">
           {grupos.length === 0 ? (
-            <p className="text-sm text-slate-500">No tiene días marcados en este mes.</p>
+            <p className="text-sm text-slate-500">
+              No figura en el cuadro de {etiquetaMes(anio, mes)}.
+            </p>
           ) : (
             <ul className="space-y-4">
               {grupos.map((grupo) => (
@@ -1480,27 +1839,33 @@ function GuardiasMesDialog({
                   <p className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
                     {grupo.plan.nombre}
                   </p>
-                  <ul className="mt-1.5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
-                    {grupo.dias.map((item) => {
-                      const semana = NOMBRE_DIA[new Date(anio, mes - 1, item.dia).getDay()] ?? "";
-                      const esDiaAbierto = item.dia === diaSeleccionado;
-                      return (
-                        <li
-                          key={`${grupo.plan.clave}-${item.dia}-${item.marca}`}
-                          className={cn(
-                            "flex items-center justify-between gap-3 px-3 py-2 text-sm",
-                            esDiaAbierto && "bg-amber-50",
-                          )}
-                        >
-                          <span className="min-w-0 text-slate-900">
-                            <span className="font-semibold tabular-nums">{item.dia}</span>
-                            <span className="ml-1.5 capitalize text-slate-500">{semana}</span>
-                          </span>
-                          <span className="shrink-0 text-xs text-slate-600">{etiquetaMarcaGuardia(item.marca)}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  {grupo.dias.length === 0 ? (
+                    <p className="mt-1.5 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-500">
+                      Asignado, sin días marcados
+                    </p>
+                  ) : (
+                    <ul className="mt-1.5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
+                      {grupo.dias.map((item) => {
+                        const semana = NOMBRE_DIA[new Date(anio, mes - 1, item.dia).getDay()] ?? "";
+                        const esDiaAbierto = item.dia === diaSeleccionado;
+                        return (
+                          <li
+                            key={`${grupo.plan.clave}-${item.dia}-${item.marca}`}
+                            className={cn(
+                              "flex items-center justify-between gap-3 px-3 py-2 text-sm",
+                              esDiaAbierto && "bg-amber-50",
+                            )}
+                          >
+                            <span className="min-w-0 text-slate-900">
+                              <span className="font-semibold tabular-nums">{item.dia}</span>
+                              <span className="ml-1.5 text-slate-500 capitalize">{semana}</span>
+                            </span>
+                            <span className="shrink-0 text-xs text-slate-600">{etiquetaMarcaGuardia(item.marca)}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>

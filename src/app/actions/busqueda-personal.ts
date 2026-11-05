@@ -20,29 +20,41 @@ export type PersonaBusqueda = {
   peloton: string | null;
 };
 
-export async function buscarPersonalGlobal(consulta: string): Promise<PersonaBusqueda[]> {
+export async function buscarPersonalGlobal(consulta: string, limite = 8): Promise<PersonaBusqueda[]> {
   const session = await requireSession();
   if (!hasPermission(authContextFromSession(session), Permission.ASPIRANTES_READ)) return [];
 
   const texto = consulta.trim();
   const q = foldBusqueda(texto);
   const cedula = texto.replace(/\D/g, "");
-  if (q.length < 2 && cedula.length < 3) return [];
+  const tokens = q
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 2 && /[a-z]/.test(token));
+  if (tokens.length === 0 && cedula.length < 3) return [];
 
-  const or: Array<
-    | { nombresBusqueda: { contains: string } }
-    | { apellidosBusqueda: { contains: string } }
+  const partes: Array<
+    | {
+        AND: Array<{
+          OR: Array<
+            { nombresBusqueda: { contains: string } } | { apellidosBusqueda: { contains: string } }
+          >;
+        }>;
+      }
     | { cedula: { contains: string } }
   > = [];
-  if (q.length >= 2) {
-    or.push({ nombresBusqueda: { contains: q } });
-    or.push({ apellidosBusqueda: { contains: q } });
+  if (tokens.length > 0) {
+    partes.push({
+      AND: tokens.map((token) => ({
+        OR: [{ nombresBusqueda: { contains: token } }, { apellidosBusqueda: { contains: token } }],
+      })),
+    });
   }
-  if (cedula.length >= 3) or.push({ cedula: { contains: cedula } });
+  if (cedula.length >= 3) partes.push({ cedula: { contains: cedula } });
 
+  const take = Math.min(30, Math.max(1, Math.floor(limite) || 8));
   const rows = await prisma.aspirante.findMany({
-    where: { deletedAt: null, OR: or },
-    take: 8,
+    where: { deletedAt: null, OR: partes },
+    take,
     orderBy: [{ apellidos: "asc" }, { nombres: "asc" }],
     select: {
       id: true,

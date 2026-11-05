@@ -65,3 +65,40 @@ test("agrupa A01-A02 en una fila", () => {
   assert.equal(parejas[0]!.p2?.cedula, "2");
   assert.equal(sinCodigo.length, 1);
 });
+
+test("intercala un binomio femenino y uno masculino", () => {
+  const persona = (
+    nombres: string,
+    sexo: "FEMENINO" | "MASCULINO",
+    codigo: string,
+    peloton: number,
+  ) => ({
+    nombres,
+    apellidos: "Prueba",
+    cedula: codigo,
+    sexo,
+    codigoBinomio: codigo,
+    pelotonLabel: `Pelotón ${peloton}`,
+    pelotonNumero: peloton,
+  });
+
+  const { parejas } = agruparFilasBinomio([
+    persona("Ana", "FEMENINO", "A01", 1),
+    persona("Bea", "FEMENINO", "A02", 1),
+    persona("Carla", "FEMENINO", "A03", 1),
+    persona("Dora", "FEMENINO", "A04", 1),
+    persona("Luis", "MASCULINO", "B01", 1),
+    persona("Mario", "MASCULINO", "B02", 1),
+    persona("Eva", "FEMENINO", "C01", 2),
+    persona("Fabi", "FEMENINO", "C02", 2),
+    persona("Nico", "MASCULINO", "D01", 2),
+    persona("Omar", "MASCULINO", "D02", 2),
+    persona("Pablo", "MASCULINO", "D03", 2),
+    persona("Raul", "MASCULINO", "D04", 2),
+  ]);
+
+  assert.deepEqual(
+    parejas.map((fila) => `${fila.clave}:${fila.sexo}`),
+    ["A01:Femenino", "B01:Masculino", "A03:Femenino", "D01:Masculino", "C01:Femenino", "D03:Masculino"],
+  );
+});
