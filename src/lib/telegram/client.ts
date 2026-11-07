@@ -1,4 +1,4 @@
-import { resolveTelegramCredentials } from "@src/lib/telegram/credenciales";
+import { resolveTelegramCredentials, resolveTelegramToken } from "@src/lib/telegram/credenciales";
 
 export type TelegramSendResult = {
   messageId: number;
@@ -81,6 +81,30 @@ export async function sendTelegramMessage(text: string): Promise<TelegramSendRes
   }
 
   return { messageId };
+}
+
+/** Responde en el chat que escribió (privado), no en el grupo configurado. */
+export async function enviarTelegramAChat(chatId: string | number, text: string): Promise<void> {
+  const token = await resolveTelegramToken();
+  if (!token) {
+    throw new Error("Telegram no está configurado.");
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: "HTML",
+      link_preview_options: { is_disabled: true },
+    }),
+  });
+
+  const payload = await leerTelegram(response);
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.description ?? `Telegram HTTP ${response.status}`);
+  }
 }
 
 /** Reemplaza el texto de un mensaje que este bot ya publicó en el grupo. */

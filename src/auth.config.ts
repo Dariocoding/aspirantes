@@ -18,9 +18,10 @@ export const authConfig = {
         path.startsWith("/login") ||
         path.startsWith("/api/auth") ||
         path.startsWith("/api/cron") ||
+        path.startsWith("/api/telegram/webhook") ||
         path.startsWith("/actualizar-datos")
       ) {
-        // /api/cron/* se autentica con CRON_SECRET en la propia ruta
+        // /api/cron/* y el webhook se autentican con su secreto en la propia ruta
         return true;
       }
       return !!auth?.user;

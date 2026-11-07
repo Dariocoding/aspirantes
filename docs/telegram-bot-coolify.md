@@ -121,6 +121,30 @@ curl -fsS -X POST \
   "https://TU_DOMINIO/api/cron/telegram/servicios-manana?dryRun=1"
 ```
 
+## 7. Consulta por cédula (chat privado)
+
+Si alguien le escribe al bot **en privado** y le manda su cédula, responde los roles que esa persona monta en el mes en curso (fecha de Caracas). En el grupo no contesta.
+
+Hay que registrar el webhook una vez, con el dominio público ya desplegado:
+
+```bash
+npx tsx scripts/telegram-set-webhook.ts https://TU_DOMINIO/api/telegram/webhook
+```
+
+Usa el token del bot y, si existe, `TELEGRAM_WEBHOOK_SECRET` o `CRON_SECRET`. Telegram envía ese secreto en cada aviso. La ruta no pide sesión: el secreto se comprueba dentro del endpoint. Sin el webhook el bot sigue publicando en el grupo, pero no oye conversaciones.
+
+Dominio actual: `https://aspirantes.zenmail.to/api/telegram/webhook`.
+
+## 8. Foto de perfil
+
+La foto no se configura en el código. En Telegram, abre [@BotFather](https://t.me/BotFather):
+
+1. `/setuserpic`
+2. Elige este bot
+3. Envía la imagen (cuadrada, de frente). Sirve el logo de CEFOA.
+
+También vale `/mybots` → el bot → **Edit Bot** → **Edit Botpic**.
+
 ## Notas
 
 - La fecha del mensaje es la civil en `America/Caracas`.

@@ -18,6 +18,13 @@ export async function loadTelegramBotStored(): Promise<{ botToken: string; chatI
   return { botToken: row.botToken.trim(), chatId: row.chatId.trim() };
 }
 
+/** Token del bot, aunque el grupo aún no esté configurado. */
+export async function resolveTelegramToken(): Promise<string | null> {
+  const stored = await loadTelegramBotStored();
+  const token = stored?.botToken || process.env.TELEGRAM_BOT_TOKEN?.trim() || "";
+  return token || null;
+}
+
 /** Token y chat: primero lo guardado en configuración, si falta usa el entorno. */
 export async function resolveTelegramCredentials(): Promise<TelegramCredenciales | null> {
   const stored = await loadTelegramBotStored();
