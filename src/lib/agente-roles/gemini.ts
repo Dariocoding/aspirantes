@@ -1,6 +1,6 @@
 import { ejecutarHerramienta } from "@src/lib/agente-roles/herramientas";
 
-const MODELO = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-2.5-flash";
+const MODELO = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.8-flash";
 const MAX_VUELTAS = 8;
 
 const DECLARACIONES = [
@@ -172,11 +172,25 @@ function textoDe(parts: Parte[]): string {
     .trim();
 }
 
+function mensajeGemini(status: number, raw: string): string {
+  try {
+    const json = JSON.parse(raw) as { error?: { message?: string } };
+    const message = json.error?.message?.replace(/key=[^&\s]+/gi, "key").slice(0, 180);
+    if (message) return `Gemini respondió ${status}: ${message}`;
+  } catch {
+    /* el cuerpo no era JSON */
+  }
+  return `Gemini respondió ${status}.`;
+}
+
 async function generar(apiKey: string, system: string, contents: Contenido[]): Promise<Parte[]> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODELO)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODELO)}:generateContent`;
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
     signal: AbortSignal.timeout(50_000),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
@@ -189,7 +203,7 @@ async function generar(apiKey: string, system: string, contents: Contenido[]): P
   const raw = await response.text();
   if (!response.ok) {
     console.error(`[agente-roles] gemini ${response.status}: ${raw.slice(0, 400)}`);
-    throw new Error(`Gemini respondió ${response.status}.`);
+    throw new Error(mensajeGemini(response.status, raw));
   }
   const json = JSON.parse(raw) as {
     candidates?: Array<{ content?: { parts?: Parte[] }; finishReason?: string }>;
