@@ -104,6 +104,45 @@ function personaDe(asignacion: AsignacionDiurno): PersonaClave {
   };
 }
 
+function esRolMedicina(nombre: string): boolean {
+  return /\bmedicina\b/i.test(nombre);
+}
+
+/** Cuartelero, mantenimiento al aula y guardia de baño pueden coincidir con medicina. */
+function esPuestoCompatibleConMedicina(nombre: string): boolean {
+  return /cuarteler|mantenimiento\s+al\s+aula|guardia\s+ba[nñ]o/i.test(nombre);
+}
+
+function chocanDiurno(a: string, b: string): boolean {
+  if (esRolMedicina(a) && esPuestoCompatibleConMedicina(b)) return false;
+  if (esRolMedicina(b) && esPuestoCompatibleConMedicina(a)) return false;
+  return true;
+}
+
+/**
+ * Deja el puesto de mayor prioridad. Medicina no suelta cuartelero, aula ni baño.
+ * Esos puestos sí chocan entre sí si hay más de uno.
+ */
+function repartirChoque(puestos: Puesto[]): { seQueda: Puesto; extras: Puesto[] } | null {
+  if (puestos.length < 2) return null;
+  const ordenados = ordenarPuestos(puestos);
+  const seQueda = ordenados[0]!;
+  const extras = ordenados.slice(1).filter((puesto) => chocanDiurno(seQueda.planNombre, puesto.planNombre));
+  const compatibles = ordenados
+    .slice(1)
+    .filter((puesto) => !chocanDiurno(seQueda.planNombre, puesto.planNombre));
+  const ya = [seQueda];
+  for (const puesto of compatibles) {
+    if (ya.some((previo) => chocanDiurno(previo.planNombre, puesto.planNombre))) {
+      extras.push(puesto);
+      continue;
+    }
+    ya.push(puesto);
+  }
+  if (extras.length === 0) return null;
+  return { seQueda, extras };
+}
+
 /** Oficial de día, inspección, medicina y enfermería se conservan antes que el resto. */
 function prioridadRol(nombre: string): number {
   if (/oficial\s+de\s+d[ií]a/i.test(nombre)) return 0;
@@ -195,13 +234,14 @@ export function detectarRepeticionesDiurnas(planes: PlanDiurno[]): RepeticionDiu
       grupos.set(puesto.clave, lista);
     }
     for (const [clave, puestos] of grupos) {
-      if (puestos.length < 2) continue;
-      const ordenados = ordenarPuestos(puestos);
+      const choque = repartirChoque(puestos);
+      if (!choque) continue;
+      const involucrados = [choque.seQueda, ...choque.extras];
       repeticiones.push({
         dia,
         clave,
-        nombre: ordenados[0]!.etiqueta,
-        puestos: ordenados.map((puesto) => ({
+        nombre: choque.seQueda.etiqueta,
+        puestos: involucrados.map((puesto) => ({
           planClave: puesto.planClave,
           planNombre: puesto.planNombre,
           asignacionId: puesto.asignacionId,
@@ -261,13 +301,14 @@ export function sugerirRelevosDiurnos(planes: PlanDiurno[]): SugerenciaRelevoDiu
     }
 
     const claves = [...grupos.entries()]
-      .filter(([, puestos]) => puestos.length >= 2)
+      .filter(([, puestos]) => repartirChoque(puestos))
       .sort((a, b) => a[1][0]!.etiqueta.localeCompare(b[1][0]!.etiqueta, "es"));
 
     for (const [, puestos] of claves) {
-      const ordenados = ordenarPuestos(puestos);
-      const seQueda = ordenados[0]!;
-      for (const extra of ordenados.slice(1)) {
+      const choque = repartirChoque(puestos);
+      if (!choque) continue;
+      const seQueda = choque.seQueda;
+      for (const extra of choque.extras) {
         const plan = planes.find((item) => item.clave === extra.planClave);
         const ocupadas = new Set(puestosDelDia(planes, marcas, dia).map((puesto) => puesto.clave));
         let relevo: AsignacionDiurno | null = null;
@@ -334,6 +375,7 @@ export function mensajeChoqueDiurno(
       if (asignacion.id === asignacionId) continue;
       if (!asignacion.dias.some((item) => item.dia === dia)) continue;
       if (clavePersona(personaDe(asignacion)) !== clave) continue;
+      if (!chocanDiurno(destino.plan.nombre, plan.nombre)) continue;
       otros.push(plan.nombre);
     }
   }

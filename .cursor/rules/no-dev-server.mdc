@@ -1,14 +1,15 @@
 ---
-description: No arrancar el servidor de desarrollo en cada mensaje
+description: No abrir localhost ni arrancar el servidor para ver la app
 alwaysApply: true
 ---
 
-# No iniciar localhost
+# No abrir localhost
 
-No arranques el servidor de desarrollo al empezar un mensaje ni para verificar la interfaz.
+En este proyecto no abras el navegador contra localhost ni arranques el servidor para ver cómo va la app.
 
-- No ejecutes `npm run dev`, `next dev`, `pnpm dev` ni ningún comando que levante el puerto 3000 u otro puerto de la app.
+- No navegues a `localhost`, `127.0.0.1` ni al puerto 3000 (ni a otro puerto de la app) para comprobar la interfaz.
+- No uses el navegador integrado, capturas ni herramientas del browser contra la app local.
+- No ejecutes `npm run dev`, `next dev`, `pnpm dev` ni ningún comando que levante el servidor.
 - No compruebes si el puerto está libre, no mates el proceso y no vuelvas a lanzarlo.
-- El usuario ya tiene el servidor corriendo. Si hace falta mirar la app, usa el que ya existe.
-- Si no responde, dilo y sigue con el código o los tests. No lo inicies.
-- Solo levanta el servidor si el usuario lo pide de forma explícita en ese mensaje.
+- Verifica con el código, los tipos y los tests. Si hace falta la interfaz, espera a que el usuario lo pida en ese mensaje.
+- Solo abre o levanta localhost si el usuario lo pide de forma explícita en ese mensaje.

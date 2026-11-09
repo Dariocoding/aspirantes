@@ -28,4 +28,6 @@ export type RolesPermisosViewProps = {
   roles: RoleRow[];
   canManageRoles: boolean;
   canManageModules: boolean;
+  isSuper: boolean;
+  skillInicial: string | null;
 };

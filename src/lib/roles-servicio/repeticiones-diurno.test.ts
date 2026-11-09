@@ -104,6 +104,53 @@ test("no propone a quien ya tiene otro diurno ese día", () => {
   assert.equal(deAna?.relevo, null);
 });
 
+test("medicina puede coincidir con cuartelero, aula o baño", () => {
+  const planes = [
+    plan("med", "MEDICINA", [persona("a-med", "ALEXANDRA", [{ dia: 8 }], "asp-a")]),
+    plan("cuartel", "CUARTELERA FEMENINA DEL 2DO PELOTÓN", [
+      persona("a-cu", "ALEXANDRA", [{ dia: 8 }], "asp-a"),
+    ]),
+    plan("med2", "MEDICINA", [persona("o-med", "ORLANDO", [{ dia: 13 }], "asp-o")]),
+    plan("cuartelero", "CUARTELERO 1ER PELOTÓN MASCULINO", [
+      persona("o-cu", "ORLANDO", [{ dia: 13 }], "asp-o"),
+    ]),
+    plan("aula", "MANTENIMIENTO AL AULA (DIURNO) FEMENINA", [
+      persona("a-au", "ALEXANDRA", [{ dia: 9 }], "asp-a"),
+    ]),
+    plan("med-a2", "MEDICINA", [persona("a-med-9", "ALEXANDRA", [{ dia: 9 }], "asp-a")]),
+    plan("bano", "GUARDIA BAÑO 1ER PELOTÓN MASCULINO", [
+      persona("o-ba", "ORLANDO", [{ dia: 11 }], "asp-o"),
+    ]),
+    plan("med-o2", "MEDICINA", [persona("o-med-11", "ORLANDO", [{ dia: 11 }], "asp-o")]),
+  ];
+  assert.equal(detectarRepeticionesDiurnas(planes).length, 0);
+  assert.equal(sugerirRelevosDiurnos(planes).length, 0);
+  assert.equal(mensajeChoqueDiurno(planes, "a-cu", 8), null);
+  assert.equal(mensajeChoqueDiurno(planes, "a-au", 9), null);
+  assert.equal(mensajeChoqueDiurno(planes, "o-ba", 11), null);
+});
+
+test("medicina sigue chocando con otro diurno y el mismo rol repetido", () => {
+  const planes = [
+    plan("med", "MEDICINA", [persona("a-med", "ALEXANDRA", [{ dia: 6 }], "asp-a")]),
+    plan("comedor", "COMEDOR FEMENINA", [
+      persona("a-co-1", "ALEXANDRA", [{ dia: 6 }], "asp-a"),
+      persona("a-co-2", "ALEXANDRA", [{ dia: 6 }], "asp-a"),
+      persona("anyelis", "ANYELIS", [], "asp-anyelis"),
+    ]),
+  ];
+  const repeticiones = detectarRepeticionesDiurnas(planes);
+  assert.equal(repeticiones.length, 1);
+  assert.equal(repeticiones[0]?.puestos.some((puesto) => puesto.planNombre === "MEDICINA"), true);
+  assert.equal(
+    repeticiones[0]?.puestos.filter((puesto) => puesto.planNombre === "COMEDOR FEMENINA").length,
+    2,
+  );
+  const sugerencias = sugerirRelevosDiurnos(planes);
+  assert.equal(sugerencias.length, 2);
+  assert.equal(sugerencias.every((item) => item.seQuedaEn === "MEDICINA"), true);
+});
+
 test("mensaje de choque solo en diurno", () => {
   const planes = [
     plan("oficial", "OFICIAL DE DIA", [persona("ana-of", "ANA", [{ dia: 8 }], "asp-ana")]),

@@ -596,6 +596,13 @@ model FormatoPermiso {
   updatedAt      DateTime @updatedAt
 }
 
+/// Skill del agente de roles de servicio. Una sola fila (`agente_roles`).
+model AgenteRolesConfig {
+  id        String   @id
+  skill     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
 /// Token y chat del bot de Telegram. Una sola fila (`telegram_bot`).
 model TelegramBotConfig {
   id        String   @id

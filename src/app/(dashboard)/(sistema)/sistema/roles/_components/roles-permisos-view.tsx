@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { AgenteRolesPanel } from "@dashboard/sistema/roles/_components/agente-roles-panel";
 import { RolePermissionsPanel } from "@dashboard/sistema/roles/_components/role-permissions-panel";
 import { RolesListPanel } from "@dashboard/sistema/roles/_components/roles-list-panel";
 import type { RolesPermisosViewProps } from "@dashboard/sistema/roles/_components/types";
@@ -12,7 +13,8 @@ export function RolesPermisosView({
   modules,
   roles,
   canManageRoles,
-  canManageModules,
+  isSuper,
+  skillInicial,
 }: RolesPermisosViewProps) {
   const router = useRouter();
   const refresh = () => router.refresh();
@@ -48,8 +50,7 @@ export function RolesPermisosView({
           onRefresh={refresh}
         />
       </div>
-      {/*       <ModulesCatalog modules={modules} canManageModules={canManageModules} onRefresh={refresh} />
-       */}{" "}
+      {isSuper ? <AgenteRolesPanel skillInicial={skillInicial} /> : null}
     </div>
   );
 }

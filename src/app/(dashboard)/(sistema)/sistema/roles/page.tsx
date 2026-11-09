@@ -1,5 +1,6 @@
 ﻿import { auth } from "@src/auth";
 import { RolesPermisosView } from "@dashboard/sistema/roles/_components/roles-permisos-view";
+import { leerSkillGuardada } from "@src/lib/agente-roles/skill-store";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { prisma } from "@src/lib/prisma";
@@ -16,6 +17,14 @@ export default async function RolesPermisosPage() {
 
   const canManageRoles = hasPermission(ctx, Permission.ROLES_MANAGE);
   const canManageModules = hasPermission(ctx, Permission.MODULES_MANAGE);
+  let skillInicial: string | null = null;
+  if (ctx.isSuper) {
+    try {
+      skillInicial = await leerSkillGuardada();
+    } catch (error) {
+      console.error("[agente-roles] skill", error);
+    }
+  }
 
   const [modules, roles] = await Promise.all([
     prisma.authModule.findMany({
@@ -63,6 +72,8 @@ export default async function RolesPermisosPage() {
       }))}
       canManageRoles={canManageRoles}
       canManageModules={canManageModules}
+      isSuper={ctx.isSuper}
+      skillInicial={skillInicial}
     />
   );
 }
