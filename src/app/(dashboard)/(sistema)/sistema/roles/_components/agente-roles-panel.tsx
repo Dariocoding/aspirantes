@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Bot, Loader2, Save } from "lucide-react";
-import { conversarAgenteRoles, guardarSkillAgente } from "@src/app/actions/agente-roles";
+import { guardarSkillAgente } from "@src/app/actions/agente-roles";
 import { Badge } from "@src/components/ui/badge";
 import { Button } from "@src/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@src/components/ui/card";
@@ -31,6 +31,7 @@ export function AgenteRolesPanel({ skillInicial }: { skillInicial: string | null
   const [burbujas, setBurbujas] = useState<Burbuja[]>([]);
   const [borrador, setBorrador] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [estado, setEstado] = useState("Pensando con las reglas y los roles…");
   const [error, setError] = useState<string | null>(null);
   const listaRef = useRef<HTMLDivElement>(null);
   const skillRef = useRef(skill);
@@ -90,26 +91,99 @@ export function AgenteRolesPanel({ skillInicial }: { skillInicial: string | null
     setBurbujas(siguientes);
     setBorrador("");
     setError(null);
+    setEstado("Pensando con las reglas y los roles…");
     setEnviando(true);
-    const resultado = await conversarAgenteRoles(
-      siguientes.slice(-12).map((item) => ({ role: item.role, text: item.text })),
-    );
+    let respuesta: { ok: true; texto: string; pasos: string[]; skill: string | null } | { ok: false; message: string };
+    try {
+      const http = await fetch("/api/agente-roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mensajes: siguientes.slice(-12).map((item) => ({ role: item.role, text: item.text })),
+        }),
+      });
+      if (!http.body) {
+        respuesta = { ok: false, message: "El agente no abrió la respuesta." };
+      } else {
+        const lector = http.body.getReader();
+        const decodificador = new TextDecoder();
+        let pendiente = "";
+        respuesta = { ok: false, message: "El agente cerró sin contestar." };
+        while (true) {
+          const { done, value } = await lector.read();
+          if (done) break;
+          pendiente += decodificador.decode(value, { stream: true });
+          const lineas = pendiente.split("\n");
+          pendiente = lineas.pop() ?? "";
+          for (const linea of lineas) {
+            const limpia = linea.trim();
+            if (!limpia) continue;
+            const evento = JSON.parse(limpia) as {
+              tipo?: string;
+              texto?: string;
+              ok?: boolean;
+              message?: string;
+              pasos?: string[];
+              skill?: string | null;
+            };
+            if (evento.tipo === "aviso" && evento.texto) setEstado(evento.texto);
+            if (evento.tipo === "listo") {
+              respuesta = {
+                ok: true,
+                texto: evento.texto ?? "",
+                pasos: evento.pasos ?? [],
+                skill: evento.skill ?? null,
+              };
+            }
+            if (evento.tipo === "error") {
+              respuesta = { ok: false, message: evento.message ?? "No pude consultar al agente." };
+            }
+          }
+        }
+        const resto = pendiente.trim();
+        if (resto) {
+          try {
+            const evento = JSON.parse(resto) as { ok?: boolean; message?: string; tipo?: string; texto?: string };
+            if (evento.tipo === "listo" || evento.ok === true) {
+              respuesta = {
+                ok: true,
+                texto: evento.texto ?? "",
+                pasos: [],
+                skill: null,
+              };
+            } else if (evento.message) {
+              respuesta = { ok: false, message: evento.message };
+            }
+          } catch {
+            if (!http.ok) respuesta = { ok: false, message: `El agente respondió ${http.status}.` };
+          }
+        }
+        if (!http.ok && !respuesta.ok) {
+          respuesta = { ok: false, message: respuesta.message || `El agente respondió ${http.status}.` };
+        }
+      }
+    } catch (error) {
+      respuesta = {
+        ok: false,
+        message: error instanceof Error ? error.message : "No pude consultar al agente.",
+      };
+    }
     setEnviando(false);
-    if (!resultado.ok) {
-      setError(resultado.message);
+    if (!respuesta.ok) {
+      setError(respuesta.message);
       return;
     }
     setBurbujas((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: "assistant", text: resultado.texto, pasos: resultado.pasos },
+      { id: crypto.randomUUID(), role: "assistant", text: respuesta.texto, pasos: respuesta.pasos },
     ]);
-    if (resultado.skill) {
+    if (respuesta.skill) {
       if (skillRef.current === baseRef.current) {
-        setSkill(resultado.skill);
-        setBase(resultado.skill);
+        setSkill(respuesta.skill);
+        setBase(respuesta.skill);
         setSkillRemota(null);
       } else {
-        setSkillRemota(resultado.skill);
+        setSkillRemota(respuesta.skill);
       }
     }
   }
@@ -184,7 +258,7 @@ export function AgenteRolesPanel({ skillInicial }: { skillInicial: string | null
                   </div>
                 ))
               )}
-              {enviando ? <p className="text-xs text-slate-500">Revisando las reglas y los roles…</p> : null}
+              {enviando ? <p className="text-xs text-slate-500">{estado}</p> : null}
             </div>
             <form
               className="border-t border-slate-200/80 p-3"

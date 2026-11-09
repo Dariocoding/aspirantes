@@ -1,8 +1,8 @@
 import { ejecutarHerramienta } from "@src/lib/agente-roles/herramientas";
 
 const MODELO = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.8-flash";
-const MAX_VUELTAS = 4;
-const LIMITE_LLAMADA_MS = 45_000;
+const MAX_VUELTAS = 8;
+const LIMITE_LLAMADA_MS = 15 * 60 * 1000;
 
 const DECLARACIONES = [
   {
@@ -200,7 +200,7 @@ async function generar(apiKey: string, system: string, contents: Contenido[]): P
       toolConfig: { functionCallingConfig: { mode: "AUTO" } },
       generationConfig: {
         temperature: 0.2,
-        thinkingConfig: { thinkingLevel: "low" },
+        thinkingConfig: { thinkingLevel: "high" },
       },
     }),
   });
@@ -221,7 +221,27 @@ async function generar(apiKey: string, system: string, contents: Contenido[]): P
   return parts;
 }
 
-export async function conversarConAgente(mensajes: MensajeAgente[], skill: string): Promise<RespuestaAgente> {
+export function mensajesDelAgente(entrada: unknown): MensajeAgente[] | null {
+  if (!Array.isArray(entrada) || entrada.length === 0 || entrada.length > 16) return null;
+  const mensajes: MensajeAgente[] = [];
+  for (const item of entrada) {
+    if (!item || typeof item !== "object") return null;
+    const role = (item as { role?: unknown }).role;
+    const text = (item as { text?: unknown }).text;
+    if (role !== "user" && role !== "assistant") return null;
+    const limpio = typeof text === "string" ? text.trim().slice(0, 4000) : "";
+    if (!limpio) return null;
+    mensajes.push({ role, text: limpio });
+  }
+  if (mensajes.at(-1)?.role !== "user") return null;
+  return mensajes;
+}
+
+export async function conversarConAgente(
+  mensajes: MensajeAgente[],
+  skill: string,
+  avisar?: (texto: string) => void,
+): Promise<RespuestaAgente> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("Falta GEMINI_API_KEY en el servidor.");
 
@@ -241,14 +261,15 @@ export async function conversarConAgente(mensajes: MensajeAgente[], skill: strin
   for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta += 1) {
     let parts: Parte[];
     try {
+      avisar?.("Pensando con las reglas y los roles…");
       parts = await generar(apiKey, instruccion(skillActual, fecha), contents);
     } catch (error) {
       const tardio = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
       if (!tardio) throw error;
       return {
         texto: pasos.length > 0
-          ? "Gemini tardó demasiado. Esto es lo que ya alcanzó a quedar hecho."
-          : "Gemini tardó demasiado. Pídelo en un paso más corto.",
+          ? "Esta vuelta pasó de quince minutos. Lo que ya guardó sigue en el cuadro."
+          : "Gemini no contestó en quince minutos. Vuelve a enviarlo: sigue desde donde quedó.",
         pasos,
         skill: skillNueva,
       };
@@ -264,7 +285,12 @@ export async function conversarConAgente(mensajes: MensajeAgente[], skill: strin
       const nombre = parte.functionCall?.name ?? "";
       const args = parte.functionCall?.args ?? {};
       const resultado = await ejecutarHerramienta(nombre, args);
-      if (resultado.paso) pasos.push(...resultado.paso.split("\n").filter(Boolean));
+      if (resultado.paso) {
+        const lineas = resultado.paso.split("\n").filter(Boolean);
+        pasos.push(...lineas);
+        const ultimo = lineas.at(-1);
+        if (ultimo) avisar?.(ultimo);
+      }
       if (resultado.skill) {
         skillActual = resultado.skill;
         skillNueva = resultado.skill;

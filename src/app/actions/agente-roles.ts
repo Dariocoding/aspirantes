@@ -1,9 +1,11 @@
 "use server";
 
 import { auth } from "@src/auth";
-import { conversarConAgente, type MensajeAgente } from "@src/lib/agente-roles/gemini";
+import { conversarConAgente, mensajesDelAgente, type MensajeAgente } from "@src/lib/agente-roles/gemini";
 import { guardarSkillTexto, leerSkillGuardada } from "@src/lib/agente-roles/skill-store";
 import { authContextFromSession } from "@src/lib/auth/from-session";
+
+export const maxDuration = 800;
 
 export type ResultadoSkill =
   | { ok: true; skill: string }
@@ -31,23 +33,10 @@ export async function guardarSkillAgente(texto: string): Promise<ResultadoSkill>
   }
 }
 
-function mensajesLimpios(entrada: MensajeAgente[]): MensajeAgente[] | null {
-  if (!Array.isArray(entrada) || entrada.length === 0 || entrada.length > 16) return null;
-  const mensajes: MensajeAgente[] = [];
-  for (const item of entrada) {
-    if (!item || (item.role !== "user" && item.role !== "assistant")) return null;
-    const text = typeof item.text === "string" ? item.text.trim().slice(0, 4000) : "";
-    if (!text) return null;
-    mensajes.push({ role: item.role, text });
-  }
-  if (mensajes.at(-1)?.role !== "user") return null;
-  return mensajes;
-}
-
 export async function conversarAgenteRoles(entrada: MensajeAgente[]): Promise<ResultadoConversacion> {
   const permiso = await exigirSuper();
   if (permiso !== true) return permiso;
-  const mensajes = mensajesLimpios(entrada);
+  const mensajes = mensajesDelAgente(entrada);
   if (!mensajes) return { ok: false, message: "El mensaje no es válido." };
   try {
     const skill = await leerSkillGuardada();
