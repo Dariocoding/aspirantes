@@ -1,7 +1,8 @@
 import { ejecutarHerramienta } from "@src/lib/agente-roles/herramientas";
 
 const MODELO = process.env.GEMINI_TEXT_MODEL?.trim() || "gemini-3.8-flash";
-const MAX_VUELTAS = 8;
+const MAX_VUELTAS = 4;
+const LIMITE_LLAMADA_MS = 45_000;
 
 const DECLARACIONES = [
   {
@@ -191,13 +192,16 @@ async function generar(apiKey: string, system: string, contents: Contenido[]): P
       "Content-Type": "application/json",
       "x-goog-api-key": apiKey,
     },
-    signal: AbortSignal.timeout(50_000),
+    signal: AbortSignal.timeout(LIMITE_LLAMADA_MS),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: system }] },
       contents,
       tools: [{ functionDeclarations: DECLARACIONES }],
       toolConfig: { functionCallingConfig: { mode: "AUTO" } },
-      generationConfig: { temperature: 0.2 },
+      generationConfig: {
+        temperature: 0.2,
+        thinkingConfig: { thinkingLevel: "low" },
+      },
     }),
   });
   const raw = await response.text();
@@ -235,7 +239,20 @@ export async function conversarConAgente(mensajes: MensajeAgente[], skill: strin
   let skillNueva: string | null = null;
 
   for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta += 1) {
-    const parts = await generar(apiKey, instruccion(skillActual, fecha), contents);
+    let parts: Parte[];
+    try {
+      parts = await generar(apiKey, instruccion(skillActual, fecha), contents);
+    } catch (error) {
+      const tardio = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      if (!tardio) throw error;
+      return {
+        texto: pasos.length > 0
+          ? "Gemini tardó demasiado. Esto es lo que ya alcanzó a quedar hecho."
+          : "Gemini tardó demasiado. Pídelo en un paso más corto.",
+        pasos,
+        skill: skillNueva,
+      };
+    }
     const llamadas = parts.filter((parte) => parte.functionCall?.name);
     if (llamadas.length === 0) {
       return { texto: textoDe(parts) || "Listo.", pasos, skill: skillNueva };
