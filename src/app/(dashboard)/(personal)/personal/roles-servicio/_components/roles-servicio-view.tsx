@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, useTransition, type KeyboardEvent } from "react";
 import {
   ArrowDownUp,
+  Bot,
   CalendarDays,
   CalendarRange,
   ChevronLeft,
@@ -61,6 +62,7 @@ import {
 } from "@src/lib/roles-servicio/repeticiones-diurno";
 import { foldBusqueda } from "@src/lib/text/fold";
 import { cn } from "@src/lib/utils";
+import { AgenteRolesPanel } from "@dashboard/sistema/roles/_components/agente-roles-panel";
 import { RolPlanilla } from "./rol-planilla";
 import type { AsignacionVista, PlanVista } from "./types";
 
@@ -76,6 +78,8 @@ type Props = {
   canWrite?: boolean;
   /** El mes está cerrado: personal y marcas no se reescriben. */
   sellado?: boolean;
+  isSuper?: boolean;
+  skillAgente?: string | null;
 };
 
 type ModoVista = "dia" | "mes" | "cuadricula";
@@ -663,6 +667,8 @@ export function RolesServicioView({
   diaHoy,
   canWrite = false,
   sellado = false,
+  isSuper = false,
+  skillAgente = null,
 }: Props) {
   const router = useRouter();
   const totalDias = diasDelMes(anio, mes);
@@ -682,6 +688,7 @@ export function RolesServicioView({
   const [cuadriculaDesborda, setCuadriculaDesborda] = useState(false);
   const [generarOpen, setGenerarOpen] = useState(false);
   const [verificarOpen, setVerificarOpen] = useState(false);
+  const [agenteOpen, setAgenteOpen] = useState(false);
   const [generarPending, startGenerarTransition] = useTransition();
   const [verificarPending, startVerificarTransition] = useTransition();
   const [escaleraPending, startEscaleraTransition] = useTransition();
@@ -1060,6 +1067,18 @@ export function RolesServicioView({
                     })}
                   </div>
                 </div>
+                {isSuper ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-full justify-start gap-1.5 text-xs"
+                    onClick={() => setAgenteOpen(true)}
+                  >
+                    <Bot className="size-3.5" aria-hidden />
+                    Agente
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"
@@ -1559,6 +1578,18 @@ export function RolesServicioView({
                 });
               }}
             />
+
+            {isSuper ? (
+              <Dialog open={agenteOpen} onOpenChange={setAgenteOpen}>
+                <DialogContent className="max-h-[min(calc(100dvh-2rem),920px)] w-[calc(100vw-2rem)] max-w-6xl overflow-y-auto p-4 sm:p-5">
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>Agente de roles de servicio</DialogTitle>
+                    <DialogDescription>Chat para diseñar y cambiar las guardias, y las reglas que obedece.</DialogDescription>
+                  </DialogHeader>
+                  <AgenteRolesPanel skillInicial={skillAgente} />
+                </DialogContent>
+              </Dialog>
+            ) : null}
 
             <Dialog open={selloAbierto} onOpenChange={setSelloAbierto}>
               <DialogContent className="max-w-sm">

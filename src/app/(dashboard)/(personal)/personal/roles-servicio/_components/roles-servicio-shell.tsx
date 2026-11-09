@@ -10,6 +10,8 @@ type Props = {
   diaHoy: number | null;
   canWrite: boolean;
   sellado?: boolean;
+  isSuper?: boolean;
+  skillAgente?: string | null;
 };
 
 export function RolesServicioShell(props: Props) {
@@ -22,6 +24,8 @@ export function RolesServicioShell(props: Props) {
       diaHoy={props.diaHoy}
       canWrite={props.canWrite}
       sellado={props.sellado ?? false}
+      isSuper={props.isSuper ?? false}
+      skillAgente={props.skillAgente ?? null}
     />
   );
 }

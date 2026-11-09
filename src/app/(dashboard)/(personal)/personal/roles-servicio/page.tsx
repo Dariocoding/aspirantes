@@ -2,6 +2,7 @@ import { unauthorized } from "next/navigation";
 import { RolesServicioShell } from "./_components/roles-servicio-shell";
 import type { PlanVista } from "./_components/roles-servicio-view";
 import { auth } from "@src/auth";
+import { leerSkillGuardada } from "@src/lib/agente-roles/skill-store";
 import { authContextFromSession } from "@src/lib/auth/from-session";
 import { hasPermission, Permission } from "@src/lib/auth/permissions";
 import { marcasDesdeJson } from "@src/lib/roles-servicio/marcas";
@@ -19,6 +20,14 @@ export default async function RolesServicioPage({
   if (!hasPermission(ctx, Permission.ASPIRANTES_READ)) unauthorized();
 
   const canWrite = hasPermission(ctx, Permission.ASPIRANTES_WRITE);
+  let skillAgente: string | null = null;
+  if (ctx.isSuper) {
+    try {
+      skillAgente = await leerSkillGuardada();
+    } catch (error) {
+      console.error("[agente-roles] skill", error);
+    }
+  }
   const { rol, anio: anioRaw, mes: mesRaw } = await searchParams;
 
   const hoy = new Date();
@@ -82,6 +91,8 @@ export default async function RolesServicioPage({
       diaHoy={diaHoy}
       canWrite={canWrite}
       sellado={planesDb.length > 0 && planesDb.every((plan) => plan.sellado)}
+      isSuper={ctx.isSuper}
+      skillAgente={skillAgente}
     />
   );
 }
